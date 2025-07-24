@@ -1,17 +1,16 @@
 ﻿namespace Tiny.Formats.Yaml;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
 public class YamlTokenParser : ITokenParser<YamlTokenType>
 {
-    public TinyToken Parse(IEnumerable<Token<YamlTokenType>> tokens)
+    public TinyToken Parse(ReadOnlySpan<Token<YamlTokenType>> tokens)
     {
         TinyToken result = null;
 
-        using ParseContext<YamlTokenType> context = new(tokens, new AnyParser(r => result = r));
+        ParseContext<YamlTokenType> context = new(tokens, new AnyParser(r => result = r));
         while (context.CurrentToken is not null)
         {
             switch (context.CurrentToken.Type)
@@ -27,9 +26,10 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                     continue;
             }
 
-            context.Parser.Parse(context);
+            context.Parser.Parse(ref context);
         }
 
+        context.Dispose();
         return result;
     }
 
@@ -64,7 +64,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
         protected override int ResultCount => result.Count;
 
-        public override void Parse(ParseContext<YamlTokenType> context)
+        public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
             if (CheckIndent(context)) return;
 
@@ -121,7 +121,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
         protected override int ResultCount => result.Count;
 
-        public override void Parse(ParseContext<YamlTokenType> context)
+        public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
             if (CheckIndent(context)) return;
 
@@ -146,7 +146,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
             boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public override void Parse(ParseContext<YamlTokenType> context)
+        public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
             switch (context.LookaheadToken.Type)
             {
@@ -197,7 +197,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
     class AnyParser(Action<TinyToken> callback, int virtualIndent = 0) : Parser<YamlTokenType>(callback, virtualIndent)
     {
-        public override void Parse(ParseContext<YamlTokenType> context)
+        public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
             switch (context.CurrentToken.Type)
             {
@@ -226,9 +226,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
         callback,
         virtualIndent)
     {
-        readonly int expectedIndent = expectedIndent;
-
-        public override void Parse(ParseContext<YamlTokenType> context)
+        public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
             if (context.IndentLevel < expectedIndent)
             {

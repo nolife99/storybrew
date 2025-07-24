@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System.Collections.Generic;
@@ -58,7 +56,7 @@ public readonly struct ValueHashSetEqualityComparer<T> : IEqualityComparer<Value
     }
 
     // Equals method for the comparer itself.
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ValueHashSetEqualityComparer<T>;
+    public override bool Equals([NotNullWhen(true)] object obj) => obj is ValueHashSetEqualityComparer<T>;
 
     public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
 }

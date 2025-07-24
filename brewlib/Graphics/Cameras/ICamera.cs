@@ -30,5 +30,5 @@ public interface ICamera : IDisposable
     Vector3 ToScreen(Vector2 worldCoords);
     RectangleF ToScreen(RectangleF worldBox2);
 
-    event EventHandler Changed;
+    event Action<ICamera> Changed;
 }

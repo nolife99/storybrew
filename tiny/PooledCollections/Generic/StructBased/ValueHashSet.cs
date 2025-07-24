@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System;
@@ -45,8 +43,8 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
 
     internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    internal int[]? _buckets;
-    internal Entry<T>[]? _entries;
+    internal int[] _buckets;
+    internal Entry<T>[] _entries;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
@@ -55,7 +53,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
     internal int _freeList;
     internal int _freeCount;
     internal int _version;
-    internal IEqualityComparer<T>? _comparer;
+    internal IEqualityComparer<T> _comparer;
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
@@ -66,7 +64,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
 
     #region Constructors
 
-    internal ValueHashSet(IEqualityComparer<T>? comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
+    internal ValueHashSet(IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         _fastModMultiplier = default;
@@ -97,7 +95,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
     }
 
     internal ValueHashSet(IEnumerable<T> collection,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {
@@ -122,7 +120,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
     }
 
     internal ValueHashSet(int capacity,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {
@@ -417,7 +415,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
 
     #region IDeserializationCallback methods
 
-    public void OnDeserialization(object? sender)
+    public void OnDeserialization(object sender)
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
         if (siInfo is null)
@@ -440,7 +438,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
 #endif
 
-            var array = (T[]?)siInfo.GetValue(ElementsName, typeof(T[]));
+            var array = (T[])siInfo.GetValue(ElementsName, typeof(T[]));
             if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             // There are no resizes here because we already set capacity above.
@@ -1521,7 +1519,7 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
 
         public void Dispose() { }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {

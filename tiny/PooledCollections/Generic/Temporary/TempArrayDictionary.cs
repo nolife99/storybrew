@@ -1,7 +1,5 @@
 ﻿// https://github.com/sebas77/Svelto.Common/blob/master/DataStructures/Dictionaries/SveltoDictionary.cs
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;

@@ -7,6 +7,6 @@ public abstract class Parser<TToken>(Action<TinyToken> callback, int virtualInde
     protected Action<TinyToken> Callback => callback;
     protected int VirtualIndent => virtualIndent;
 
-    public abstract void Parse(ParseContext<TToken> context);
+    public abstract void Parse(scoped ref ParseContext<TToken> context);
     public abstract void End();
 }

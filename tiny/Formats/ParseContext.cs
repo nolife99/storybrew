@@ -1,19 +1,19 @@
 ﻿namespace Tiny.Formats;
 
 using System;
-using System.Collections.Generic;
-using PooledCollections.Generic;
+using PooledCollections.Generic.Temporary;
 
-public sealed class ParseContext<TTokenType> : IDisposable
+public ref struct ParseContext<TTokenType>
 {
-    readonly PooledStack<Parser<TTokenType>> parserStack = new();
-    readonly IEnumerator<Token<TTokenType>> tokenEnumerator;
+    TempStack<Parser<TTokenType>> parserStack;
+    ReadOnlySpan<Token<TTokenType>>.Enumerator tokenEnumerator;
 
-    public ParseContext(IEnumerable<Token<TTokenType>> tokens, Parser<TTokenType> initialParser)
+    public ParseContext(ReadOnlySpan<Token<TTokenType>> tokens, Parser<TTokenType> initialParser)
     {
         tokenEnumerator = tokens.GetEnumerator();
         initializeCurrentAndLookahead();
 
+        parserStack = TempStack.Create<Parser<TTokenType>>();
         parserStack.Push(initialParser);
     }
 
@@ -32,7 +32,6 @@ public sealed class ParseContext<TTokenType> : IDisposable
             PopParser();
         }
 
-        tokenEnumerator.Dispose();
         parserStack.Dispose();
     }
 
@@ -51,7 +50,7 @@ public sealed class ParseContext<TTokenType> : IDisposable
     public void ConsumeToken()
     {
         CurrentToken = LookaheadToken;
-        LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : default;
+        LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : null;
     }
 
     void initializeCurrentAndLookahead()

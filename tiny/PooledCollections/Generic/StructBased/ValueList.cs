@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System;
@@ -230,7 +228,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     // The method uses the Array.BinarySearch method to perform the
     // search.
     //
-    public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
+    public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
     {
         if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
         if (count < 0)
@@ -244,7 +242,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public int BinarySearch(T item) => BinarySearch(0, Count, item, null);
 
-    public int BinarySearch(T item, IComparer<T>? comparer) => BinarySearch(0, Count, item, comparer);
+    public int BinarySearch(T item, IComparer<T> comparer) => BinarySearch(0, Count, item, comparer);
 
     // Clears the contents of List.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -348,7 +346,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public bool Exists(Predicate<T> match) => FindIndex(match) != -1;
 
-    public T? Find(Predicate<T> match)
+    public T Find(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -398,7 +396,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         return -1;
     }
 
-    public T? FindLast(Predicate<T> match)
+    public T FindLast(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -773,7 +771,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     // Sorts the elements in this list.  Uses Array.Sort with the
     // provided comparer.
-    public void Sort(IComparer<T>? comparer) => Sort(0, Count, comparer);
+    public void Sort(IComparer<T> comparer) => Sort(0, Count, comparer);
 
     // Sorts the elements in a section of this list. The sort compares the
     // elements to each other using the given IComparer interface. If
@@ -783,7 +781,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     // This method uses the Array.Sort method to sort the elements.
     //
-    public void Sort(int index, int count, IComparer<T>? comparer)
+    public void Sort(int index, int count, IComparer<T> comparer)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -890,7 +888,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
             private set;
         }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {

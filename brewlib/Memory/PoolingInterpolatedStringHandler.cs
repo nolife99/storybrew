@@ -5,21 +5,11 @@ using System.Runtime.CompilerServices;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-[InterpolatedStringHandler] public ref struct PoolingInterpolatedStringHandler
+[InterpolatedStringHandler] public ref struct PoolingInterpolatedStringHandler(int literalLength,
+    int formattedCount,
+    IFormatProvider provider = null)
 {
-    readonly IFormatProvider provider;
-    internal TempList<char> buffer;
-
-    public PoolingInterpolatedStringHandler(int literalLength, int formattedCount, IFormatProvider provider = null)
-    {
-        var length = 10 * formattedCount + literalLength;
-
-        buffer = (uint)length <= (uint)Array.MaxLength ?
-            TempList.Create<char>(length) :
-            throw new InsufficientMemoryException();
-
-        this.provider = provider;
-    }
+    internal TempList<char> buffer = TempList.Create<char>(8 * formattedCount + literalLength);
 
     public void AppendLiteral(string value) => AppendFormatted(value.AsSpan());
 
@@ -54,34 +44,36 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // Avoids boxing value types
     public void AppendFormatted<T>(T value, int alignment = 0, string format = null)
     {
         switch (value)
         {
             case ISpanFormattable:
                 buffer.GetUnsafe(out var array, out var count);
-                var bufferSize = array.Length - count;
+                var bufferSize = buffer.Capacity - count;
+
+                Span<char> write = new(array, count, bufferSize);
 
                 int charsWritten;
                 if (value is Enum)
-                    while (!TryFormatUnconstrained(null, value, new(array, count, bufferSize), out charsWritten, format))
-                        Grow(ref buffer);
+                    while (!TryFormatUnconstrained(null, value, write, out charsWritten, format))
+                        Grow(ref buffer, ref write);
                 else
-                    while (!((ISpanFormattable)value).TryFormat(new(array, count, bufferSize),
-                        out charsWritten,
-                        format,
-                        provider))
-                        Grow(ref buffer);
+                    while (!((ISpanFormattable)value).TryFormat(write, out charsWritten, format, provider))
+                        Grow(ref buffer, ref write);
 
                 buffer.GetInsertSpan(count, charsWritten, false);
                 break;
 
-                void Grow(scoped ref TempList<char> buf)
+                void Grow(scoped ref TempList<char> buf, scoped ref Span<char> destBuf)
                 {
-                    bufferSize = array.Length < Array.MaxLength ? bufferSize << 1 : throw new InsufficientMemoryException();
+                    bufferSize = buf.Capacity < Array.MaxLength ? bufferSize << 1 : throw new InsufficientMemoryException();
 
                     buf.EnsureCapacity(buf.Count + bufferSize);
                     buf.GetUnsafe(out array, out _);
+
+                    destBuf = new(array, count, bufferSize);
                 }
 
             case IFormattable: AppendFormatted(((IFormattable)value).ToString(format, provider).AsSpan(), alignment); break;

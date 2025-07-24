@@ -3,7 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
 #pragma warning disable CS0184
 
 namespace Tiny.PooledCollections.Generic.Temporary;
@@ -59,7 +58,7 @@ public readonly ref struct TempHashSetEqualityComparer<T>
     }
 
     // Equals method for the comparer itself.
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is TempHashSetEqualityComparer<T>;
+    public override bool Equals([NotNullWhen(true)] object obj) => obj is TempHashSetEqualityComparer<T>;
 
     public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
 }

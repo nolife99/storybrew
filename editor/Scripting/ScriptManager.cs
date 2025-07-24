@@ -172,7 +172,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         using (var slnStream = File.Create(Path.Combine(ScriptsPath, "storyboard.sln")))
         using (var resourceStream = resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded))
-            resourceStream.CopyTo(slnStream);
+            resourceStream.CopyTo(slnStream, 65536);
 
         XmlDocument document = new() { PreserveWhitespace = false };
         try

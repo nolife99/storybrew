@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.IO;
@@ -14,6 +13,8 @@ using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
     : StoryboardSegment, IDisplayable, IPostProcessable
@@ -213,6 +214,25 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         foreach (var s in segments) s.TriggerEvents(fromTime, toTime);
     }
 
+    TempList<(StoryboardObject StoryboardObject, StoryboardTransform Transform)> Flatten(StoryboardTransform transform)
+    {
+        var result = TempList.Create<(StoryboardObject, StoryboardTransform)>();
+
+        StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale, false, false);
+        foreach (var storyboardObject in storyboardObjects)
+        {
+            if (storyboardObject is EditorStoryboardSegment segment)
+            {
+                using var entries = segment.Flatten(localTransform);
+                result.AddRange(entries.AsReadOnlySpan());
+            }
+
+            result.Add((storyboardObject, localTransform));
+        }
+
+        return result;
+    }
+
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer osbLayer,
@@ -226,11 +246,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         var exportSettings = ExportSettings.Default;
 
-        ByteCountingTextWriter writer = new(Project.Encoding);
-        using var sync = TextWriter.Synchronized(writer);
-
-        Parallel.ForEach(storyboardObjects,
-            sbo => sbo.WriteOsb(sync, exportSettings, osbLayer, StoryboardTransform.Identity));
+        using ByteCountingTextWriter writer = new(Project.Encoding);
+        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
 
         return (int)writer.ByteCount;
     }

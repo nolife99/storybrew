@@ -25,12 +25,15 @@ public sealed class Editor(NativeWindow window) : IDisposable
     readonly FrameClock clock = new();
 
     DrawContext drawContext;
-    public InputManager InputManager;
 
-    public bool IsFixedRateUpdate;
-    public ResourceContainer ResourceContainer;
+    Action<ResizeEventArgs> resizeToWindow;
     ScreenLayerManager screenLayerManager;
-    public Skin Skin;
+    Action<CancelEventArgs> window_Closing;
+    public InputManager InputManager { get; private set; }
+
+    public bool IsFixedRateUpdate { get; private set; }
+    public ResourceContainer ResourceContainer { get; private set; }
+    public Skin Skin { get; private set; }
     public FrameTimeSource TimeSource => clock;
 
     public void Dispose()
@@ -111,8 +114,22 @@ public sealed class Editor(NativeWindow window) : IDisposable
         inputDispatcher.Add(createOverlay(screenLayerManager));
         inputDispatcher.Add(screenLayerManager.InputHandler);
 
-        window.Resize += resizeToWindow;
-        window.Closing += window_Closing;
+        window.Resize += resizeToWindow = e =>
+        {
+            var width = e.Width;
+            var height = e.Height;
+
+            DrawState.Viewport = new(0, 0, width, height);
+
+            var virtualHeight = height * float.Max(1024f / width, 768f / height);
+            overlayCamera.VirtualHeight = (int)virtualHeight;
+
+            var virtualWidth = width * virtualHeight / height;
+            overlayCamera.VirtualWidth = (int)virtualWidth;
+            overlay.Size = new(virtualWidth, virtualHeight);
+        };
+
+        window.Closing += window_Closing = _ => screenLayerManager.Close();
 
         var workArea = displayDevice.WorkArea;
         var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
@@ -168,23 +185,6 @@ public sealed class Editor(NativeWindow window) : IDisposable
         overlay.Draw(drawContext);
 
         return DrawState.CompleteFrame();
-    }
-
-    void window_Closing(CancelEventArgs e) => screenLayerManager.Close();
-
-    void resizeToWindow(ResizeEventArgs e)
-    {
-        var width = e.Width;
-        var height = e.Height;
-
-        DrawState.Viewport = new(0, 0, width, height);
-
-        var virtualHeight = height * float.Max(1024f / width, 768f / height);
-        overlayCamera.VirtualHeight = (int)virtualHeight;
-
-        var virtualWidth = width * virtualHeight / height;
-        overlayCamera.VirtualWidth = (int)virtualWidth;
-        overlay.Size = new(virtualWidth, virtualHeight);
     }
 
     #region Overlay

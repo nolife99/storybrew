@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -103,7 +101,7 @@ public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection
 
         public TKey Current { get; private set; }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {

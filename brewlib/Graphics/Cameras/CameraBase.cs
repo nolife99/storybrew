@@ -76,7 +76,7 @@ public abstract class CameraBase : ICamera
         }
     }
 
-    public event EventHandler Changed;
+    public event Action<ICamera> Changed;
 
     public float NearPlane
     {
@@ -217,7 +217,7 @@ public abstract class CameraBase : ICamera
     protected void Invalidate()
     {
         needsUpdate = true;
-        Changed?.Invoke(this, EventArgs.Empty);
+        Changed?.Invoke(this);
     }
 
     void drawState_ViewportChanged() => Viewport = DrawState.Viewport;

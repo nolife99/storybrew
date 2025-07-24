@@ -1,10 +1,11 @@
-﻿namespace StorybrewEditor.Scripting;
+namespace StorybrewEditor.Scripting;
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Threading;
 using BrewLib.Memory;
@@ -17,10 +18,14 @@ using Storyboarding;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using ZLinq;
 
 public static class ScriptCompiler
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InternalLoad")]
+    static extern Assembly InternalLoad(AssemblyLoadContext c,
+        ReadOnlySpan<byte> arrAssembly,
+        ReadOnlySpan<byte> arrSymbols);
+
     public static Assembly Compile(AssemblyLoadContext context,
         IEnumerable<string> sourcePaths,
         string asmName,
@@ -70,22 +75,37 @@ public static class ScriptCompiler
             if (result.Success)
             {
                 assemblyStream.Position = 0;
-                return context.LoadFromStream(assemblyStream);
+                return InternalLoad(context, assemblyStream.WrittenSpan, default);
             }
         }
 
         using var error = TempList.Create("Compilation error\n \n".AsSpan());
-        foreach (var diagnostics in result.Diagnostics.AsValueEnumerable()
-            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
-            .GroupBy(k =>
-            {
-                if (k.Location.SourceTree is null) return "";
 
-                return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
-            }))
+        using var diagnosticGroups = TempDictionary.Create<string, ValueList<Diagnostic>>();
+        foreach (var diagnostic in result.Diagnostics)
         {
-            error.Append($"{Path.GetFileName(diagnostics.Key.AsSpan())}:\n");
-            foreach (var diagnostic in diagnostics) error.Append($"--{diagnostic.ToString()}\n");
+            if (diagnostic.Severity is not DiagnosticSeverity.Error) continue;
+
+            var key = "";
+            if (diagnostic.Location.SourceTree is not null)
+                if (trees.TryGetValue(diagnostic.Location.SourceTree, out var path))
+                    key = path.SourcePath;
+
+            if (!diagnosticGroups.TryGetValue(key, out var group))
+            {
+                group = ValueList.Create<Diagnostic>();
+                diagnosticGroups.Add(key, group);
+            }
+
+            group.Add(diagnostic);
+        }
+
+        foreach (var kvp in diagnosticGroups)
+        {
+            error.Append($"{Path.GetFileName(kvp.Key.AsSpan())}:\n");
+
+            using var diagnostics = kvp.Value;
+            foreach (var diagnostic in diagnostics) error.Append($"--{diagnostic}\n");
         }
 
         throw new ScriptCompilationException(error.AsReadOnlySpan().ToString());

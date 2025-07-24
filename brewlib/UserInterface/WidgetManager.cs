@@ -17,6 +17,7 @@ using Util;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
+    readonly Action<ICamera> CameraChanged;
     readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
@@ -44,6 +45,8 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         rootContainer.Add(tooltipOverlay = new(this) { Hoverable = false });
 
         initializeDragAndDrop();
+
+        CameraChanged = _ => InvalidateAnchors();
     }
 
     public Vector2 Size { get => rootContainer.Size; set => rootContainer.Size = value; }
@@ -77,9 +80,9 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         {
             if (camera == value) return;
 
-            if (camera is not null) camera.Changed -= ICameraChanged;
+            if (camera is not null) camera.Changed -= CameraChanged;
             camera = value;
-            if (camera is not null) camera.Changed += ICameraChanged;
+            if (camera is not null) camera.Changed += CameraChanged;
             RefreshHover();
         }
     }
@@ -115,8 +118,6 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         if (rootContainer.Visible) rootContainer.Draw(drawContext, 1);
         drawDragIndicator(drawContext);
     }
-
-    void ICameraChanged(object sender, EventArgs e) => InvalidateAnchors();
 
     #region Tooltip
 
@@ -420,7 +421,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         if (disposed) return;
 
         rootContainer.Dispose();
-        if (camera is not null) camera.Changed -= ICameraChanged;
+        if (camera is not null) camera.Changed -= CameraChanged;
 
         clickTargets.Dispose();
         dragData.Dispose();

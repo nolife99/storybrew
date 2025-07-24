@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -347,7 +345,7 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         readonly PooledQueue<T> _q;
         readonly int _version;
         int _index; // -1 = not started, -2 = ended/disposed
-        T? _currentElement;
+        T _currentElement;
 
         public Enumerator(PooledQueue<T> q)
         {
@@ -417,7 +415,7 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }
 
-        object? IEnumerator.Current => Current;
+        object IEnumerator.Current => Current;
 
         void IEnumerator.Reset()
         {

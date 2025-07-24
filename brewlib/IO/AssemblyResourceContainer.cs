@@ -6,7 +6,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
-using Memory;
 using Util;
 
 public sealed class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
@@ -44,17 +43,11 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
                 var stream = assembly.GetManifestResourceStream($"{baseNamespace}.zip");
                 if (stream is not null)
                 {
-                    archive ??= new(stream, ZipArchiveMode.Read, false);
+                    if (archive is null) archive = new(stream, ZipArchiveMode.Read, false);
+                    else stream.Dispose();
 
                     var entry = archive.GetEntry(path);
-                    if (entry is not null)
-                    {
-                        PoolingMemoryStream bytes = new();
-                        using (var entryStream = entry.Open()) entryStream.CopyTo(bytes, 65536);
-
-                        bytes.Position = 0;
-                        return bytes;
-                    }
+                    if (entry is not null) return entry.Open();
                 }
                 else
                 {

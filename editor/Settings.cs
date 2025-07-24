@@ -69,7 +69,7 @@ public class Settings
         Trace.WriteLine($"Saving settings at '{path}'");
 
         using SafeWriteStream stream = new(path);
-        using StreamWriter writer = new(stream, Project.Encoding);
+        using StreamWriter writer = new(stream, Project.Encoding, leaveOpen: true);
 
         foreach (var field in GetType().GetFields())
         {

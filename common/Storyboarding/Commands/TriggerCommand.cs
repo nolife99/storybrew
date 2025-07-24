@@ -5,7 +5,6 @@ using System.Linq;
 using BrewLib.Util;
 using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public sealed class TriggerCommand : CommandGroup
@@ -23,25 +22,9 @@ public sealed class TriggerCommand : CommandGroup
 
     public override bool IsFragmentableAt(float time) => false;
 
-    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
-    {
-        var list = StringHelper.Interpolate($"T,{TriggerName},");
-
-        using (var startTimeString =
-            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))
-            .ToOsbString(exportSettings)) list.AddRange(startTimeString.AsReadOnlySpan());
-
-        list.Add(',');
-        using (var endTimeString =
-            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(EndTime)).ToOsbString(
-                exportSettings)) list.AddRange(endTimeString.AsReadOnlySpan());
-
-        list.Add(',');
-        using (var groupString = ((CommandDecimal)Group).ToOsbString(exportSettings))
-            list.AddRange(groupString.AsReadOnlySpan());
-
-        return list;
-    }
+    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings) => StringHelper.Interpolate(
+        exportSettings.NumberFormat,
+        $"T,{TriggerName},{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(EndTime))},{Group}");
 
     public override int GetHashCode()
     {

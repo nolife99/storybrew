@@ -1,7 +1,5 @@
 ﻿// https://github.com/sebas77/Svelto.Common/blob/master/DataStructures/Dictionaries/SveltoDictionary.cs
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -331,7 +329,7 @@ using System.Runtime.Serialization;
         {
             Resize(Count, count);
 
-            var array = (T[]?)siInfo.GetValue(EntriesName, typeof(T[]));
+            var array = (T[])siInfo.GetValue(EntriesName, typeof(T[]));
 
             if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 

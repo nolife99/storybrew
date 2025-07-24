@@ -940,7 +940,7 @@ public sealed partial class Project : IDisposable
         {
             Trace.WriteLine($"Exporting diff specific events to {osuPath}");
             await using SafeWriteStream stream = new(osuPath);
-            await using StreamWriter writer = new(stream, Encoding);
+            await using StreamWriter writer = new(stream, Encoding, leaveOpen: true);
             using StreamReader reader = new(osuPath, Encoding);
             var inEvents = false;
             var inStoryboard = false;
@@ -986,7 +986,7 @@ public sealed partial class Project : IDisposable
         if (exportOsb && sbLayer.Count != 0)
         {
             Trace.WriteLine($"Exporting osb to {osbPath}");
-            await using StreamWriter writer = new(osbPath, false);
+            await using StreamWriter writer = new(osbPath, false, Encoding);
             await writer.WriteLineAsync("[Events]");
             await writer.WriteLineAsync("//Background and Video events");
 

@@ -1,19 +1,19 @@
 ﻿namespace Tiny.Formats.Json;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
 public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 {
-    public TinyToken Parse(IEnumerable<Token<JsonTokenType>> tokens)
+    public TinyToken Parse(ReadOnlySpan<Token<JsonTokenType>> tokens)
     {
         TinyToken result = null;
 
-        using ParseContext<JsonTokenType> context = new(tokens, new AnyParser(r => result = r));
-        while (context.CurrentToken is not null) context.Parser.Parse(context);
+        ParseContext<JsonTokenType> context = new(tokens, new AnyParser(r => result = r));
+        while (context.CurrentToken is not null) context.Parser.Parse(ref context);
 
+        context.Dispose();
         return result;
     }
 
@@ -24,7 +24,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
         public ObjectParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);
 
-        public override void Parse(ParseContext<JsonTokenType> context)
+        public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
             switch (context.CurrentToken.Type)
             {
@@ -83,7 +83,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
         public ArrayParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);
 
-        public override void Parse(ParseContext<JsonTokenType> context)
+        public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
             switch (context.CurrentToken.Type)
             {
@@ -116,7 +116,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
     partial class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
     {
-        public override void Parse(ParseContext<JsonTokenType> context)
+        public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
             switch (context.CurrentToken.Type)
             {
@@ -162,7 +162,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
     class AnyParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
     {
-        public override void Parse(ParseContext<JsonTokenType> context)
+        public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
             switch (context.CurrentToken.Type)
             {

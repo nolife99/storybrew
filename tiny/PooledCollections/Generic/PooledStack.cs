@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -333,7 +331,7 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         readonly PooledStack<T> _stack;
         readonly int _version;
         int _index;
-        T? _currentElement;
+        T _currentElement;
 
         public Enumerator(PooledStack<T> stack)
         {
@@ -387,7 +385,7 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }
 
-        object? IEnumerator.Current => Current;
+        object IEnumerator.Current => Current;
 
         void IEnumerator.Reset()
         {

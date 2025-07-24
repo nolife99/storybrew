@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;
@@ -299,7 +297,7 @@ public ref partial struct TempStack<T>
         readonly TempStack<T> _stack;
         readonly int _version;
         int _index;
-        T? _currentElement;
+        T _currentElement;
 
         public Enumerator(TempStack<T> stack)
         {

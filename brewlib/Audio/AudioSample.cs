@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IO;
 using ManagedBass;
-using SixLabors.ImageSharp.Memory;
+using Memory;
 
 public class AudioSample : IDisposable
 {
@@ -26,13 +26,15 @@ public class AudioSample : IDisposable
 
         if (stream is null) throw new BassException(Bass.LastError);
 
-        using (var bytes = MemoryAllocator.Default.Allocate<byte>((int)stream.Length))
-        using (bytes.Memory.Pin())
+        using PoolingMemoryStream copyStream = new();
+        stream.CopyTo(copyStream, 65536);
+
+        using (copyStream.WrittenMemory.Pin())
         {
-            var span = bytes.Memory.Span;
+            var span = copyStream.WrittenSpan;
             sample = Bass.SampleLoad(Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
                 0,
-                stream.Read(span),
+                (int)stream.Length,
                 MaxSimultaneousPlayBacks,
                 BassFlags.SampleOverrideLongestPlaying);
         }

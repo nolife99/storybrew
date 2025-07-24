@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System;
@@ -30,8 +28,8 @@ public partial struct ValueDictionary<TKey, TValue>
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
-    internal int[]? _buckets;
-    internal Entry<TKey, TValue>[]? _entries;
+    internal int[] _buckets;
+    internal Entry<TKey, TValue>[] _entries;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
@@ -41,7 +39,7 @@ public partial struct ValueDictionary<TKey, TValue>
     internal int _freeList;
     internal int _freeCount;
     internal int _version;
-    internal IEqualityComparer<TKey>? _comparer;
+    internal IEqualityComparer<TKey> _comparer;
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
@@ -57,7 +55,7 @@ public partial struct ValueDictionary<TKey, TValue>
     const int StartOfFreeList = -3;
 
     internal ValueDictionary(int capacity,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool)
     {
@@ -99,7 +97,7 @@ public partial struct ValueDictionary<TKey, TValue>
     }
 
     internal ValueDictionary(IDictionary<TKey, TValue> dictionary,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(dictionary?.Count ?? 0, comparer, bucketPool, entryPool)
     {
@@ -109,7 +107,7 @@ public partial struct ValueDictionary<TKey, TValue>
     }
 
     internal ValueDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
@@ -660,9 +658,7 @@ public partial struct ValueDictionary<TKey, TValue>
         ///     Items should not be added to or removed from the <see cref="ValueDictionary{TKey, TValue}"/> while the ref
         ///     <typeparamref name="TValue"/> is in use.
         /// </remarks>
-        public static ref TValue? GetValueRefOrAddDefault(ValueDictionary<TKey, TValue> dictionary,
-            TKey key,
-            out bool exists)
+        public static ref TValue GetValueRefOrAddDefault(ValueDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
         {
             // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
             // If you make any changes here, make sure to keep that version in sync as well.
@@ -822,7 +818,7 @@ public partial struct ValueDictionary<TKey, TValue>
         }
     }
 
-    public void OnDeserialization(object? sender)
+    public void OnDeserialization(object sender)
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
@@ -841,7 +837,7 @@ public partial struct ValueDictionary<TKey, TValue>
         {
             Initialize(hashsize);
 
-            var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
+            var array = (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
             if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
@@ -1192,7 +1188,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
         public void Dispose() { }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {
@@ -1236,7 +1232,7 @@ public partial struct ValueDictionary<TKey, TValue>
             }
         }
 
-        object? IDictionaryEnumerator.Value
+        object IDictionaryEnumerator.Value
         {
             get
             {

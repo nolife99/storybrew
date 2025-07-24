@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System.Collections.Generic;
@@ -13,7 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 /// <summary>Equality comparer for hashsets of hashsets</summary>
 public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHashSet<T>>
 {
-    public bool Equals(PooledHashSet<T>? x, PooledHashSet<T>? y)
+    public bool Equals(PooledHashSet<T> x, PooledHashSet<T> y)
     {
         // If they're the exact same instance, they're equal.
         if (ReferenceEquals(x, y)) return true;
@@ -45,7 +43,7 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
         return true;
     }
 
-    public int GetHashCode(PooledHashSet<T>? obj)
+    public int GetHashCode(PooledHashSet<T> obj)
     {
         var hashCode = 0; // default to 0 for null/empty set
 
@@ -58,7 +56,7 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
     }
 
     // Equals method for the comparer itself.
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is HashSetEqualityComparer<T>;
+    public override bool Equals([NotNullWhen(true)] object obj) => obj is HashSetEqualityComparer<T>;
 
     public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
 

@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System;
@@ -331,7 +329,7 @@ public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         readonly ValueStack<T> _stack;
         readonly int _version;
         int _index;
-        T? _currentElement;
+        T _currentElement;
 
         public Enumerator(in ValueStack<T> stack)
         {
@@ -385,7 +383,7 @@ public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCa
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }
 
-        object? IEnumerator.Current => Current;
+        object IEnumerator.Current => Current;
 
         void IEnumerator.Reset()
         {

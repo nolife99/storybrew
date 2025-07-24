@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using IO;
+using Memory;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -102,8 +103,17 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         using var stream = resourceContainer.GetStream(name, ResourceSource.Embedded);
         if (stream is null) return SystemFonts.Get(name, CultureInfo.InvariantCulture);
 
-        Trace.WriteLine(
-            $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
+        if (stream.CanSeek) fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture);
+        else
+        {
+            using PoolingMemoryStream copyStream = new();
+            stream.CopyTo(copyStream, 65536);
+
+            copyStream.Position = 0;
+            fontFamily = fontCollection.Add(copyStream, CultureInfo.InvariantCulture);
+        }
+
+        Trace.WriteLine($"Loaded font {fontFamily.Name} for {name}");
 
         return families[name] = fontFamily;
     }

@@ -90,7 +90,8 @@ public abstract class TinyToken
 
     public void Write(Stream stream, IFormat format)
     {
-        using StreamWriter writer = new(stream, Encoding.ASCII) { NewLine = "\n" };
+        using StreamWriter writer = new(stream, Encoding.ASCII, leaveOpen: true);
+        writer.NewLine = "\n";
 
         format.Write(writer, this);
     }

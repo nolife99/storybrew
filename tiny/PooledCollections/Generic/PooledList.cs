@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -12,38 +10,24 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using Internals;
 
-// Implements a variable-size List that uses an array of objects to store the
-// elements. A List has a capacity, which is the allocated length
-// of the internal array. As elements are added to a List, the capacity
-// of the List is automatically increased as required by reallocating the
-// internal array.
-//
-[DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallback, IDisposable
+public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
 {
-    internal const int DefaultCapacity = 4;
+    const int DefaultCapacity = 4;
 
     static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearItems = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal readonly ArrayPool<T> _pool;
 
-    internal T[] _items; // Do not rename (binary serialization)
+    internal T[] _items;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal int _size;
+    internal int _version;
 
-    internal int _size; // Do not rename (binary serialization)
-    internal int _version; // Do not rename (binary serialization)
-
-    // Constructs a List. The list is initially empty and has a capacity
-    // of zero. Upon adding the first element to the list the capacity is
-    // increased to DefaultCapacity, and then increased in multiples of two
-    // as required.
     public PooledList() : this(ArrayPool<T>.Shared) { }
 
     public PooledList(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
@@ -56,24 +40,14 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _pool = pool ?? ArrayPool<T>.Shared;
     }
 
-    // Constructs a List with a given initial capacity. The list is
-    // initially empty, but will have room for the given number of elements
-    // before any reallocations are required.
-    //
     public PooledList(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _items = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
 
-    // Constructs a List, copying the contents of the given collection. The
-    // size and capacity of the new list will both be equal to the size of the
-    // given collection.
-    //
     public PooledList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
         ArgumentNullException.ThrowIfNull(collection);
@@ -104,9 +78,9 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public PooledList(T[] items, ArrayPool<T> pool) : this(items.AsSpan(), pool) { }
 
-    public PooledList(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+    public PooledList(scoped ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
 
-    public PooledList(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    public PooledList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
         _pool = pool ?? ArrayPool<T>.Shared;
 
@@ -121,12 +95,9 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         }
     }
 
-    // Gets and sets the capacity of this list.  The capacity is the size of
-    // the internal array used to hold items.  When set, the internal
-    // array of the list is reallocated to the given capacity.
-    //
     public int Capacity
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _items.Length;
         set
         {
@@ -159,13 +130,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         }
     }
 
-    void IDeserializationCallback.OnDeserialization(object sender) =>
-
-        // We can't serialize array pools, so deserialized PooledLists will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
-
     public void Dispose()
     {
         ReturnArray(s_emptyArray);
@@ -173,22 +137,18 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // Read-only property describing how many elements are in the List.
     public int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _size;
     }
 
-    // Is this List read-only?
     bool ICollection<T>.IsReadOnly => false;
 
-    // Sets or Gets the element at the given index.
     public T this[int index]
     {
         get
         {
-            // Following trick can reduce the range check by one
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index);
         }
@@ -200,11 +160,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         }
     }
 
-    // Adds the given object to the end of this list. The size of the list is
-    // increased by one. If required, the capacity of the list is doubled
-    // before adding the new element.
-    //
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(T item)
     {
         _version++;
@@ -215,11 +170,14 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
             _size = size + 1;
             array[size] = item;
         }
-        else AddWithResize(item);
+        else
+        {
+            Grow(size + 1);
+            _size = size + 1;
+            _items[size] = item;
+        }
     }
 
-    // Clears the contents of List.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         _version++;
@@ -227,52 +185,25 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         {
             var size = _size;
             _size = 0;
-            if (size > 0) Array.Clear(_items, 0, size); // Clear the elements so that the gc can reclaim the references.
+            if (size > 0) Array.Clear(_items, 0, size);
         }
         else _size = 0;
     }
 
-    // Contains returns true if the specified element is in the List.
-    // It does a linear, O(n) search.  Equality is determined by calling
-    // EqualityComparer<T>.Default.Equals().
-    //
-    public bool Contains(T item) =>
-
-        // PERF: IndexOf calls Array.IndexOf, which internally
-        // calls EqualityComparer<T>.Default.IndexOf, which
-        // is specialized for different types. This
-        // boosts performance since instead of making a
-        // virtual method call each iteration of the loop,
-        // via EqualityComparer<T>.Default.Equals, we
-        // only make one virtual call to EqualityComparer.IndexOf.
-        _size != 0 && IndexOf(item) >= 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Contains(T item) => _size != 0 && IndexOf(item) >= 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public void CopyTo(T[] array, int arrayIndex) => CopyTo(0, array, arrayIndex, _size);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
-    // Returns the index of the first occurrence of a given value in a range of
-    // this list. The list is searched forwards from beginning to end.
-    // The elements of the list are compared to the given value using the
-    // Object.Equals method.
-    //
-    // This method uses the Array.IndexOf method to perform the
-    // search.
-    //
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IndexOf(T item) => Array.IndexOf(_items, item, 0, _size);
 
-    // Inserts an element into this list at a given index. The size of the list
-    // is increased by one. If required, the capacity of the list is doubled
-    // before inserting the new element.
-    //
     public void Insert(int index, T item)
     {
-        // Note that insertions at the end are legal.
         if ((uint)index > (uint)_size)
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index,
                 ExceptionResource.ArgumentOutOfRange_ListInsert);
@@ -284,22 +215,15 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // Removes the element at the given index. The size of the list is
-    // decreased by one.
     public bool Remove(T item)
     {
         var index = IndexOf(item);
-        if (index >= 0)
-        {
-            RemoveAt(index);
-            return true;
-        }
+        if (index < 0) return false;
 
-        return false;
+        RemoveAt(index);
+        return true;
     }
 
-    // Removes the element at the given index. The size of the list is
-    // decreased by one.
     public void RemoveAt(int index)
     {
         if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
@@ -309,60 +233,25 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // Non-inline from List.Add to improve its code quality as uncommon path
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    void AddWithResize(T item)
-    {
-        Debug.Assert(_size == _items.Length);
-        var size = _size;
-        Grow(size + 1);
-        _size = size + 1;
-        _items[size] = item;
-    }
-
-    // Adds the elements of the given collection to the end of this list. If
-    // required, the capacity of the list is increased to twice the previous
-    // capacity or the new size, whichever is larger.
-    //
     public void AddRange(IEnumerable<T> collection) => InsertRange(_size, collection);
 
     public ReadOnlyCollection<T> AsReadOnly() => new(this);
 
-    // Searches a section of the list for a given element using a binary search
-    // algorithm. Elements of the list are compared to the search value using
-    // the given IComparer interface. If comparer is null, elements of
-    // the list are compared to the search value using the IComparable
-    // interface, which in that case must be implemented by all elements of the
-    // list and the given search value. This method assumes that the given
-    // section of the list is already sorted; if this is not the case, the
-    // result will be incorrect.
-    //
-    // The method returns the index of the given value in the list. If the
-    // list does not contain the given value, the method returns a negative
-    // integer. The bitwise complement operator (~) can be applied to a
-    // negative result to produce the index of the first element (if any) that
-    // is larger than the given search value. This is also the index at which
-    // the search value should be inserted into the list in order for the list
-    // to remain sorted.
-    //
-    // The method uses the Array.BinarySearch method to perform the
-    // search.
-    //
-    public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
+    public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
         return Array.BinarySearch(_items, index, count, item, comparer);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int BinarySearch(T item) => BinarySearch(0, Count, item, null);
 
-    public int BinarySearch(T item, IComparer<T>? comparer) => BinarySearch(0, Count, item, comparer);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int BinarySearch(T item, IComparer<T> comparer) => BinarySearch(0, Count, item, comparer);
 
     public PooledList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter)
     {
@@ -377,7 +266,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return list;
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _size);
 
@@ -391,50 +279,31 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
 
-    /// <summary>
-    ///     Ensures that the capacity of this list is at least the specified <paramref name="capacity"/>. If the current
-    ///     capacity of the list is less than specified <paramref name="capacity"/>, the capacity is increased by continuously twice
-    ///     current capacity until it is at least the specified <paramref name="capacity"/>.
-    /// </summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this list.</returns>
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+        if (_items.Length >= capacity) return _items.Length;
 
-        if (_items.Length < capacity)
-        {
-            Grow(capacity);
-            _version++;
-        }
+        Grow(capacity);
+        _version++;
 
         return _items.Length;
     }
 
-    /// <summary>Increase the capacity of this list to at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
     void Grow(int capacity)
     {
-        Debug.Assert(_items.Length < capacity);
-
         var newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
 
-        // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-        // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
         if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
-
-        // If the computed capacity is still less than specified, set to the original argument.
-        // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
         if (newcapacity < capacity) newcapacity = capacity;
 
         Capacity = newcapacity;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Exists(Predicate<T> match) => FindIndex(match) != -1;
 
-    public T? Find(Predicate<T> match)
+    public T Find(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -461,8 +330,10 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return list;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindIndex(Predicate<T> match) => FindIndex(0, _size, match);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindIndex(int startIndex, Predicate<T> match) => FindIndex(startIndex, _size - startIndex, match);
 
     public int FindIndex(int startIndex, int count, Predicate<T> match)
@@ -484,7 +355,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return -1;
     }
 
-    public T? FindLast(Predicate<T> match)
+    public T FindLast(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -497,8 +368,10 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return default;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindLastIndex(Predicate<T> match) => FindLastIndex(_size - 1, _size, match);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindLastIndex(int startIndex, Predicate<T> match) => FindLastIndex(startIndex, startIndex + 1, match);
 
     public int FindLastIndex(int startIndex, int count, Predicate<T> match)
@@ -507,17 +380,14 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
         if (_size == 0)
         {
-            // Special case for 0 length List
             if (startIndex != -1) ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
         }
         else
         {
-            // Make sure we're not out of range
             if ((uint)startIndex >= (uint)_size)
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
         }
 
-        // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
         if (count < 0 || startIndex - count + 1 < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         var endIndex = startIndex - count;
@@ -547,21 +417,13 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         if (version != _version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
     }
 
-    // Returns an enumerator for this list with the given
-    // permission for removal of elements. If modifications made to the list
-    // while an enumeration is in progress, the MoveNext and
-    // GetObject methods of the enumerator will throw an exception.
-    //
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this);
 
     public PooledList<T> GetRange(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -571,30 +433,12 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return list;
     }
 
-    // Returns the index of the first occurrence of a given value in a range of
-    // this list. The list is searched forwards, starting at index
-    // index and ending at count number of elements. The
-    // elements of the list are compared to the given value using the
-    // Object.Equals method.
-    //
-    // This method uses the Array.IndexOf method to perform the
-    // search.
-    //
     public int IndexOf(T item, int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
         return Array.IndexOf(_items, item, index, _size - index);
     }
 
-    // Returns the index of the first occurrence of a given value in a range of
-    // this list. The list is searched forwards, starting at index
-    // index and upto count number of elements. The
-    // elements of the list are compared to the given value using the
-    // Object.Equals method.
-    //
-    // This method uses the Array.IndexOf method to perform the
-    // search.
-    //
     public int IndexOf(T item, int index, int count)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
@@ -604,11 +448,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return Array.IndexOf(_items, item, index, count);
     }
 
-    // Inserts the elements of the given collection at a given index. If
-    // required, the capacity of the list is increased to twice the previous
-    // capacity or the new size, whichever is larger.  Ranges may be added
-    // to the end of the list by setting index to the List's size.
-    //
     public void InsertRange(int index, IEnumerable<T> collection)
     {
         ArgumentNullException.ThrowIfNull(collection);
@@ -623,13 +462,9 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
                 if (_items.Length - _size < count) Grow(_size + count);
                 if (index < _size) Array.Copy(_items, index, _items, index + count, _size - index);
 
-                // If we're inserting a List into itself, we want to be able to deal with that.
-                if (this == c)
+                if (ReferenceEquals(this, c))
                 {
-                    // Copy first part of _items to insert location
                     Array.Copy(_items, 0, _items, index, index);
-
-                    // Copy last part of _items back to inserted location
                     Array.Copy(_items, index + count, _items, index * 2, _size - index);
                 }
                 else c.CopyTo(_items, index);
@@ -645,48 +480,19 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // Returns the index of the last occurrence of a given value in a range of
-    // this list. The list is searched backwards, starting at the end
-    // and ending at the first element in the list. The elements of the list
-    // are compared to the given value using the Object.Equals method.
-    //
-    // This method uses the Array.LastIndexOf method to perform the
-    // search.
-    //
     public int LastIndexOf(T item)
     {
-        if (_size == 0)
-
-            // Special case for empty list
-            return -1;
+        if (_size == 0) return -1;
 
         return LastIndexOf(item, _size - 1, _size);
     }
 
-    // Returns the index of the last occurrence of a given value in a range of
-    // this list. The list is searched backwards, starting at index
-    // index and ending at the first element in the list. The
-    // elements of the list are compared to the given value using the
-    // Object.Equals method.
-    //
-    // This method uses the Array.LastIndexOf method to perform the
-    // search.
-    //
     public int LastIndexOf(T item, int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
         return LastIndexOf(item, index, index + 1);
     }
 
-    // Returns the index of the last occurrence of a given value in a range of
-    // this list. The list is searched backwards, starting at index
-    // index and upto count elements. The elements of
-    // the list are compared to the given value using the Object.Equals
-    // method.
-    //
-    // This method uses the Array.LastIndexOf method to perform the
-    // search.
-    //
     public int LastIndexOf(T item, int index, int count)
     {
         if (Count != 0 && index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -695,10 +501,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
                 ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-        if (_size == 0)
-
-            // Special case for empty list
-            return -1;
+        if (_size == 0) return -1;
 
         if (index >= _size)
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index,
@@ -711,35 +514,25 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return Array.LastIndexOf(_items, item, index, count);
     }
 
-    // This method removes all items which matches the predicate.
-    // The complexity is O(n).
     public int RemoveAll(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
-        var freeIndex = 0; // the first free slot in items array
+        var freeIndex = 0;
         var items = _items;
 
-        // Find the first item which needs to be removed.
         while (freeIndex < _size && !match(items[freeIndex])) freeIndex++;
         if (freeIndex >= _size) return 0;
 
         var current = freeIndex + 1;
         while (current < _size)
         {
-            // Find the first item which needs to be kept.
             while (current < _size && match(items[current])) current++;
 
-            if (current < _size)
-
-                // copy item to the free slot.
-                items[freeIndex++] = items[current++];
+            if (current < _size) items[freeIndex++] = items[current++];
         }
 
-        if (s_clearItems)
-            Array.Clear(items,
-                freeIndex,
-                _size - freeIndex); // Clear the elements so that the gc can reclaim the references.
+        if (s_clearItems) Array.Clear(items, freeIndex, _size - freeIndex);
 
         var result = _size - freeIndex;
         _size = freeIndex;
@@ -747,14 +540,10 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return result;
     }
 
-    // Removes a range of elements from this list.
     public void RemoveRange(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -768,21 +557,13 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         }
     }
 
-    // Reverses the elements in this list.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reverse() => Reverse(0, Count);
 
-    // Reverses the elements in a range of this list. Following a call to this
-    // method, an element in the range given by index and count
-    // which was previously located at index i will now be located at
-    // index index + (index + count - i - 1).
-    //
     public void Reverse(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -790,29 +571,16 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // Sorts the elements in this list.  Uses the default comparer and
-    // Array.Sort.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Sort() => Sort(0, Count, null);
 
-    // Sorts the elements in this list.  Uses Array.Sort with the
-    // provided comparer.
-    public void Sort(IComparer<T>? comparer) => Sort(0, Count, comparer);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Sort(IComparer<T> comparer) => Sort(0, Count, comparer);
 
-    // Sorts the elements in a section of this list. The sort compares the
-    // elements to each other using the given IComparer interface. If
-    // comparer is null, the elements are compared to each other using
-    // the IComparable interface, which in that case must be implemented by all
-    // elements of the list.
-    //
-    // This method uses the Array.Sort method to sort the elements.
-    //
-    public void Sort(int index, int count, IComparer<T>? comparer)
+    public void Sort(int index, int count, IComparer<T> comparer)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -828,24 +596,8 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         _version++;
     }
 
-    // ToArray returns an array containing the contents of the List.
-    // This requires copying the List, which is an O(n) operation.
-    public T[] ToArray()
-    {
-        if (_size == 0) return s_emptyArray;
+    public T[] ToArray() => _size == 0 ? s_emptyArray : _items.AsSpan(0, _size).ToArray();
 
-        return _items.AsSpan(0, _size).ToArray();
-    }
-
-    // Sets the capacity of this list to the size of the list. This method can
-    // be used to minimize a list's memory overhead once it is known that no
-    // new elements will be added to the list. To completely clear a list and
-    // release all memory referenced by the list, execute the following
-    // statements:
-    //
-    // list.Clear();
-    // list.TrimExcess();
-    //
     public void TrimExcess()
     {
         var threshold = (int)(_items.Length * 0.9);
@@ -865,11 +617,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         return true;
     }
 
-    /// <summary>
-    ///     Advances the <see cref="Count"/> by the number of items specified, increasing the capacity if required, then
-    ///     returns a <see cref="Span{T}"/> representing the set of items to be added, allowing direct writes to that section of the
-    ///     collection.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
 
@@ -896,7 +643,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         InsertRange(index, array.AsSpan());
     }
 
-    public void InsertRange(int index, ReadOnlySpan<T> span)
+    public void InsertRange(int index, scoped ReadOnlySpan<T> span)
     {
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -904,10 +651,6 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         span.CopyTo(newSpan);
     }
 
-    /// <summary>
-    ///     Adds the elements of the given array to the end of this list. If required, the capacity of the list is increased to
-    ///     twice the previous capacity or the new size, whichever is larger.
-    /// </summary>
     public void AddRange(T[] array)
     {
         ArgumentNullException.ThrowIfNull(array);
@@ -915,26 +658,19 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         AddRange(array.AsSpan());
     }
 
-    /// <summary>
-    ///     Adds the elements of the given <see cref="ReadOnlySpan{T}"/> to the end of this list. If required, the capacity of
-    ///     the list is increased to twice the previous capacity or the new size, whichever is larger.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddRange(ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
+    public void AddRange(scoped ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _size);
+    public void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _size);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -1022,7 +758,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         int _index;
         readonly int _version;
 
-        public Enumerator(PooledList<T> list)
+        internal Enumerator(PooledList<T> list)
         {
             _list = list;
             _index = -1;
@@ -1048,7 +784,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
             get => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_list._items), _index);
         }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {

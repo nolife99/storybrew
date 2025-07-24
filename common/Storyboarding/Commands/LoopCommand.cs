@@ -2,9 +2,9 @@
 
 using System;
 using System.Linq;
+using BrewLib.Util;
 using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public sealed class LoopCommand : CommandGroup
@@ -54,21 +54,9 @@ public sealed class LoopCommand : CommandGroup
         return false;
     }
 
-    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
-    {
-        var list = TempList.Create<char>();
-        list.AddRange(['L', ',']);
-
-        using (var startTimeString =
-            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))
-            .ToOsbString(exportSettings)) list.AddRange(startTimeString.AsReadOnlySpan());
-
-        list.Add(',');
-        using (var groupString = ((CommandDecimal)LoopCount).ToOsbString(exportSettings))
-            list.AddRange(groupString.AsReadOnlySpan());
-
-        return list;
-    }
+    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings) => StringHelper.Interpolate(
+        exportSettings.NumberFormat,
+        $"L,{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{LoopCount}");
 
     public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
 

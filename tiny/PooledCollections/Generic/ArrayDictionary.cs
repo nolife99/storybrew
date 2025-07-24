@@ -1,7 +1,5 @@
 ﻿// https://github.com/sebas77/Svelto.Common/blob/master/DataStructures/Dictionaries/SveltoDictionary.cs
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -811,7 +809,7 @@ public class ArrayDictionary<TKey, TValue>
         {
             Resize(Count, count);
 
-            var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
+            var array = (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
             if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);

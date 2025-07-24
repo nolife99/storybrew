@@ -23,7 +23,7 @@ public readonly struct CommandResult<TValue> where TValue : struct, ICommandValu
         EndTime = command.EndTime + timeOffset;
     }
 
-    public bool IsBefore(ref readonly CommandResult<TValue> other)
+    public bool IsBefore(CommandResult<TValue> other)
         => StartTime < other.StartTime || StartTime == other.StartTime && EndTime < other.EndTime;
 
     public TValue ValueAtTime(float time) => command.ValueAtTime(time - timeOffset);

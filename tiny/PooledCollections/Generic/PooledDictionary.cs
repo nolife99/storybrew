@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -39,11 +37,11 @@ public partial class PooledDictionary<TKey, TValue>
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
-    internal int[]? _buckets;
-    internal IEqualityComparer<TKey>? _comparer;
+    internal int[] _buckets;
+    internal IEqualityComparer<TKey> _comparer;
 
     internal int _count;
-    internal Entry<TKey, TValue>[]? _entries;
+    internal Entry<TKey, TValue>[] _entries;
 
     [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
 
@@ -61,7 +59,7 @@ public partial class PooledDictionary<TKey, TValue>
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
-    public PooledDictionary(IEqualityComparer<TKey>? comparer) : this(0,
+    public PooledDictionary(IEqualityComparer<TKey> comparer) : this(0,
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
@@ -76,18 +74,18 @@ public partial class PooledDictionary<TKey, TValue>
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
-    public PooledDictionary(int capacity, IEqualityComparer<TKey>? comparer) : this(capacity,
+    public PooledDictionary(int capacity, IEqualityComparer<TKey> comparer) : this(capacity,
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
-    public PooledDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) : this(
+    public PooledDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer) : this(
         dictionary?.Count ?? 0,
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
-    public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) : this(
+    public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) : this(
         (collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
         ArrayPool<int>.Shared,
@@ -104,7 +102,7 @@ public partial class PooledDictionary<TKey, TValue>
         bucketPool,
         entryPool) { }
 
-    public PooledDictionary(IEqualityComparer<TKey>? comparer,
+    public PooledDictionary(IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(0, comparer, bucketPool, entryPool) { }
 
@@ -117,7 +115,7 @@ public partial class PooledDictionary<TKey, TValue>
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(collection, null, bucketPool, entryPool) { }
 
     public PooledDictionary(int capacity,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool)
     {
@@ -148,7 +146,7 @@ public partial class PooledDictionary<TKey, TValue>
     }
 
     public PooledDictionary(IDictionary<TKey, TValue> dictionary,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(dictionary?.Count ?? 0, comparer, bucketPool, entryPool)
     {
@@ -158,7 +156,7 @@ public partial class PooledDictionary<TKey, TValue>
     }
 
     public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
@@ -170,28 +168,28 @@ public partial class PooledDictionary<TKey, TValue>
         AddRange(collection);
     }
 
-    public PooledDictionary((TKey Key, TValue Value)[] array, IEqualityComparer<TKey>? comparer) : this(array.AsSpan(),
+    public PooledDictionary((TKey Key, TValue Value)[] array, IEqualityComparer<TKey> comparer) : this(array.AsSpan(),
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
     public PooledDictionary((TKey Key, TValue Value)[] array,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(array.AsSpan(), comparer, bucketPool, entryPool) { }
 
-    public PooledDictionary(KeyValuePair<TKey, TValue>[] array, IEqualityComparer<TKey>? comparer) : this(array.AsSpan(),
+    public PooledDictionary(KeyValuePair<TKey, TValue>[] array, IEqualityComparer<TKey> comparer) : this(array.AsSpan(),
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
     public PooledDictionary(KeyValuePair<TKey, TValue>[] array,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(array.AsSpan(), comparer, bucketPool, entryPool) { }
 
     public PooledDictionary(ReadOnlySpan<(TKey Key, TValue Value)> span,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
     {
@@ -199,7 +197,7 @@ public partial class PooledDictionary<TKey, TValue>
     }
 
     public PooledDictionary(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
     {
@@ -226,7 +224,7 @@ public partial class PooledDictionary<TKey, TValue>
 
     public PooledDictionaryValueCollection<TKey, TValue> Values => new(this);
 
-    public virtual void OnDeserialization(object? sender)
+    public virtual void OnDeserialization(object sender)
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
@@ -245,7 +243,7 @@ public partial class PooledDictionary<TKey, TValue>
         {
             Initialize(hashsize);
 
-            var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
+            var array = (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
             if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
@@ -1106,7 +1104,7 @@ public partial class PooledDictionary<TKey, TValue>
         ///     Items should not be added to or removed from the <see cref="PooledDictionary{TKey,TValue}"/> while the ref
         ///     <typeparamref name="TValue"/> is in use.
         /// </remarks>
-        public static ref TValue? GetValueRefOrAddDefault(PooledDictionary<TKey, TValue> dictionary,
+        public static ref TValue GetValueRefOrAddDefault(PooledDictionary<TKey, TValue> dictionary,
             TKey key,
             out bool exists)
         {
@@ -1319,7 +1317,7 @@ public partial class PooledDictionary<TKey, TValue>
 
         public void Dispose() { }
 
-        object? IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {
@@ -1363,7 +1361,7 @@ public partial class PooledDictionary<TKey, TValue>
             }
         }
 
-        object? IDictionaryEnumerator.Value
+        object IDictionaryEnumerator.Value
         {
             get
             {

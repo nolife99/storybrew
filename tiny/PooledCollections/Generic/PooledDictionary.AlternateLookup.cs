@@ -290,7 +290,7 @@ partial class PooledDictionary<TKey, TValue>
         }
 
         /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
-        internal ref TValue? GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
+        internal ref TValue GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
         {
             // NOTE: this method is a mirror of GetValueRefOrAddDefault above. Keep it in sync.
 

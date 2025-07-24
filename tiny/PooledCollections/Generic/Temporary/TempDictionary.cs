@@ -3,8 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;
@@ -26,8 +24,8 @@ public ref partial struct TempDictionary<TKey, TValue>
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
-    internal int[]? _buckets;
-    internal Entry<TKey, TValue>[]? _entries;
+    internal int[] _buckets;
+    internal Entry<TKey, TValue>[] _entries;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
@@ -37,7 +35,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     internal int _freeList;
     internal int _freeCount;
     internal int _version;
-    internal IEqualityComparer<TKey>? _comparer;
+    internal IEqualityComparer<TKey> _comparer;
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
@@ -53,7 +51,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     const int StartOfFreeList = -3;
 
     internal TempDictionary(int capacity,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool)
     {
@@ -91,11 +89,11 @@ public ref partial struct TempDictionary<TKey, TValue>
         // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
         // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
         // hash buckets become unbalanced.
-        if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>?)_stringComparer;
+        if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
     }
 
     internal TempDictionary(IDictionary<TKey, TValue> dictionary,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(dictionary?.Count ?? 0, comparer, bucketPool, entryPool)
     {
@@ -105,7 +103,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     }
 
     internal TempDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
@@ -591,7 +589,7 @@ public ref partial struct TempDictionary<TKey, TValue>
         ///     Items should not be added to or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
         ///     <typeparamref name="TValue"/> is in use.
         /// </remarks>
-        public static ref TValue? GetValueRefOrAddDefault(TempDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
+        public static ref TValue GetValueRefOrAddDefault(TempDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
         {
             // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
             // If you make any changes here, make sure to keep that version in sync as well.

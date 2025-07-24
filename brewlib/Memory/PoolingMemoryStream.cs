@@ -3,100 +3,113 @@
 using System;
 using System.Buffers;
 using System.IO;
-using System.Linq.Expressions;
-using System.Reflection;
+using SixLabors.ImageSharp.Memory;
 
-public sealed class PoolingMemoryStream : MemoryStream
+public sealed class PoolingMemoryStream : Stream
 {
-    static readonly ArrayPool<byte> Pool = ArrayPool<byte>.Shared;
+    readonly MemoryAllocator _allocator;
+    int length, position;
+    Memory<byte> memory;
+    IMemoryOwner<byte> memoryOwner;
 
-    static readonly Action<MemoryStream, byte[]> set__buffer;
-    static readonly Action<MemoryStream, int> set__capacity;
-    bool _disposed;
-
-    static PoolingMemoryStream()
+    public PoolingMemoryStream(MemoryAllocator allocator = null)
     {
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-
-        // TODO: Change to use UnsafeAccessorAttribute
-
-        var target = Expression.Parameter(typeof(MemoryStream));
-        var param = Expression.Parameter(typeof(byte[]));
-
-        set__buffer = Expression.Lambda<Action<MemoryStream, byte[]>>(
-                Expression.Assign(Expression.Field(target, target.Type.GetField("_buffer", flags)), param),
-                true,
-                target,
-                param)
-            .Compile();
-
-        param = Expression.Parameter(typeof(int));
-
-        set__capacity = Expression.Lambda<Action<MemoryStream, int>>(
-                Expression.Assign(Expression.Field(target, target.Type.GetField("_capacity", flags)), param),
-                true,
-                target,
-                param)
-            .Compile();
+        _allocator = allocator ?? MemoryAllocator.Default;
+        memoryOwner = _allocator.Allocate<byte>(0);
+        memory = memoryOwner.Memory;
+        length = 0;
+        position = 0;
     }
 
-    public PoolingMemoryStream() : this(0) { }
+    public ReadOnlySpan<byte> WrittenSpan => length == 0 ? default : memory.Span[..length];
+    public ReadOnlyMemory<byte> WrittenMemory => length == 0 ? default : memory[..length];
 
-    public PoolingMemoryStream(int capacity)
+    public override bool CanRead => true;
+    public override bool CanSeek => true;
+    public override bool CanWrite => true;
+    public override long Length => length;
+
+    public override long Position
     {
-        if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be non-negative");
-
-        InitializeBuffer(capacity);
+        get => position;
+        set => position = value >= 0 ? (int)value : throw new ArgumentOutOfRangeException(nameof(value));
     }
 
-    public override int Capacity
+    void EnsureCapacity(long requiredLength)
     {
-        get => base.Capacity;
-        set
+        if (requiredLength <= memory.Length) return;
+
+        var newCapacity = Math.Max(256, memory.Length * 2);
+        while (newCapacity < requiredLength) newCapacity *= 2;
+
+        var newMemoryOwner = _allocator.Allocate<byte>(newCapacity);
+        memory[..length].CopyTo(newMemoryOwner.Memory);
+        memoryOwner.Dispose();
+        memoryOwner = newMemoryOwner;
+        memory = newMemoryOwner.Memory;
+    }
+
+    public override void Write(byte[] buffer, int offset, int count) => Write(new(buffer, offset, count));
+
+    public override void Write(ReadOnlySpan<byte> buffer)
+    {
+        EnsureCapacity(position + buffer.Length);
+
+        buffer.CopyTo(memory.Span[position..]);
+
+        position += buffer.Length;
+        length = Math.Max(length, position);
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        if ((uint)offset + (uint)count > buffer.Length) throw new ArgumentOutOfRangeException();
+
+        var bytesToRead = Math.Min(count, length - position);
+        if (bytesToRead <= 0) return 0;
+
+        memory.Span.Slice(position, bytesToRead).CopyTo(new(buffer, offset, count));
+        position += bytesToRead;
+        return bytesToRead;
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        var newPosition = origin switch
         {
-            if (value < Length)
-                throw new ArgumentOutOfRangeException(nameof(value), "Capacity cannot be less than stream length");
+            SeekOrigin.Begin => offset,
+            SeekOrigin.Current => position + offset,
+            SeekOrigin.End => length + offset,
+            _ => throw new ArgumentException("Invalid seek origin", nameof(origin))
+        };
 
-            if (value == Capacity) return;
+        if (newPosition < 0)
+            throw new ArgumentOutOfRangeException(nameof(offset), "Attempted to seek before start of stream");
 
-            var oldBuffer = GetBuffer();
-            var newBuffer = Pool.Rent(value);
-
-            Buffer.BlockCopy(oldBuffer, 0, newBuffer, 0, Math.Min((int)Length, value));
-
-            set__buffer(this, newBuffer);
-            set__capacity(this, value);
-
-            Pool.Return(oldBuffer);
-        }
+        return position = (int)newPosition;
     }
 
-    void InitializeBuffer(int capacity)
+    public override void SetLength(long value)
     {
-        var buffer = Pool.Rent(capacity);
-        set__buffer(this, buffer);
-        set__capacity(this, buffer.Length);
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+        EnsureCapacity(value);
+        length = (int)value;
+        position = Math.Min(position, length);
     }
+
+    public override void Flush() { }
 
     protected override void Dispose(bool disposing)
     {
-        if (_disposed) return;
-
-        try
+        if (disposing)
         {
-            if (disposing)
-            {
-                var buffer = GetBuffer();
-                Pool.Return(buffer);
+            memoryOwner?.Dispose();
+            memoryOwner = null;
+            memory = default;
+        }
 
-                set__buffer(this, null);
-                set__capacity(this, 0);
-            }
-        }
-        finally
-        {
-            _disposed = true;
-            base.Dispose(disposing);
-        }
+        base.Dispose(disposing);
     }
 }

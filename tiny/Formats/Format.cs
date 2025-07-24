@@ -1,16 +1,18 @@
 ﻿namespace Tiny.Formats;
 
-using System.Collections.Generic;
+using System;
 using System.IO;
+using PooledCollections.Generic.Temporary;
+using PooledCollections.Generic.Temporary.Internals;
 
 public interface ITokenizer<TToken>
 {
-    IEnumerable<Token<TToken>> Tokenize(TextReader reader);
+    internal TempList<Token<TToken>> Tokenize(TextReader reader);
 }
 
 public interface ITokenParser<TToken>
 {
-    TinyToken Parse(IEnumerable<Token<TToken>> tokens);
+    TinyToken Parse(ReadOnlySpan<Token<TToken>> tokens);
 }
 
 public interface IFormat
@@ -24,6 +26,11 @@ public abstract class Format<TToken> : IFormat
     protected abstract ITokenizer<TToken> Tokenizer { get; }
     protected abstract ITokenParser<TToken> TokenParser { get; }
 
-    public TinyToken Read(TextReader reader) => TokenParser.Parse(Tokenizer.Tokenize(reader));
+    public TinyToken Read(TextReader reader)
+    {
+        using var tokens = Tokenizer.Tokenize(reader);
+        return TokenParser.Parse(tokens.AsReadOnlySpan());
+    }
+
     public abstract void Write(TextWriter writer, TinyToken value);
 }

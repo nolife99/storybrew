@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;
@@ -328,7 +326,7 @@ public ref partial struct TempQueue<T>
         readonly TempQueue<T> _q;
         readonly int _version;
         int _index; // -1 = not started, -2 = ended/disposed
-        T? _currentElement;
+        T _currentElement;
 
         public Enumerator(TempQueue<T> q)
         {

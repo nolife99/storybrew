@@ -1,55 +1,42 @@
-﻿namespace Tiny.Formats;
+namespace Tiny.Formats;
 
-using System.Collections.Generic;
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
+using PooledCollections.Generic.Temporary;
 using ZLinq;
 
-public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.Definition> definitions,
-    TTokenType? endLineToken) : ITokenizer<TTokenType> where TTokenType : struct
+public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] definitions, TTokenType? endLineToken)
+    : ITokenizer<TTokenType> where TTokenType : struct
 {
-    public IEnumerable<Token<TTokenType>> Tokenize(TextReader reader)
+    TempList<Token<TTokenType>> ITokenizer<TTokenType>.Tokenize(TextReader reader)
     {
+        var result = TempList.Create<Token<TTokenType>>();
         var lineNumber = 1;
 
         while (reader.ReadLine() is { } line)
         {
-            foreach (var token in Tokenize(line))
+            using var tokens = Tokenize(line);
+            foreach (var token in tokens)
             {
                 token.LineNumber = lineNumber;
-                yield return token;
+                result.Add(token);
             }
 
             ++lineNumber;
         }
+
+        return result;
     }
 
-    IEnumerable<Token<TTokenType>> Tokenize(string content)
+    TempList<Token<TTokenType>> Tokenize(string content)
     {
-        if (content == null) yield break;
+        var result = TempList.Create<Token<TTokenType>>();
+        if (content is null) return result;
 
-        // TODO: Change to allocation-less
-        /* using PooledList<Definition.Match> matches = new();
-        foreach (var def in definitions)
-        {
-            var matchColl = def.regex.Matches(content);
-            for (var i = 0; i < matchColl.Count; ++i)
-            {
-                var match = matchColl[i];
-                matches.Add(new()
-                {
-                    StartIndex = match.Index,
-                    EndIndex = match.Index + match.Length,
-                    Priority = i,
-                    Type = def.matchType,
-                    Value = match.Groups.Count > def.captureGroup ? match.Groups[def.captureGroup].Value : match.Value
-                });
-            }
-        }
-        matches.Sort((a, b) => a.StartIndex.CompareTo(b.StartIndex)); */
-
-        using var matches = definitions.AsValueEnumerable()
-            .SelectMany((d, i) => d.regex.Matches(content)
+        using var enumerator = definitions.AsValueEnumerable()
+            .SelectMany((d, i) => d.regex.Value.Matches(content)
                 .AsValueEnumerable()
                 .Select(match => new Definition.Match
                 {
@@ -60,36 +47,53 @@ public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.D
                     Value = match.Groups.Count > d.captureGroup ? match.Groups[d.captureGroup].Value : match.Value
                 }))
             .OrderBy(d => d.StartIndex)
-            .ToArrayPool();
+            .Enumerator;
 
-        var matchArr = matches.Array;
+        if (!enumerator.TryGetNext(out var current)) return result;
 
         Definition.Match previousMatch = default;
-        for (var i = 0; i < matches.Size; ++i)
-        {
-            var current = matchArr[i];
+        while (true)
+            if (previousMatch.Value is null || current.StartIndex >= previousMatch.EndIndex)
+            {
+                var skip = false;
+                var next = current;
 
-            if (previousMatch.Value is not null && current.StartIndex < previousMatch.EndIndex) continue;
+                while (enumerator.TryGetNext(out next))
+                {
+                    if (next.StartIndex != current.StartIndex) break;
 
-            if (i + 1 < matches.Size &&
-                matchArr[i + 1].StartIndex == current.StartIndex &&
-                matchArr[i + 1].Priority < current.Priority) continue;
+                    if (next.Priority >= current.Priority) continue;
 
-            yield return new(current.Type, current.Value) { CharNumber = current.StartIndex };
+                    skip = true;
+                    break;
+                }
 
-            previousMatch = current;
-        }
+                if (!skip)
+                {
+                    result.Add(new(current.Type, current.Value) { CharNumber = current.StartIndex });
+                    previousMatch = current;
+                }
 
-        if (endLineToken.HasValue) yield return new(endLineToken.Value);
+                if (next.StartIndex == current.StartIndex) continue;
+
+                current = next;
+            }
+            else if (!enumerator.TryGetNext(out current)) break;
+
+        if (endLineToken.HasValue) result.Add(new(endLineToken.Value));
+
+        return result;
     }
 
     public sealed class Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
     {
         internal readonly int captureGroup = captureGroup;
         internal readonly TTokenType matchType = matchType;
-        internal readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        internal readonly record struct Match
+        internal readonly Lazy<Regex> regex = new(() => new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            LazyThreadSafetyMode.None);
+
+        internal readonly struct Match
         {
             public int StartIndex { get; init; }
             public int EndIndex { get; init; }

@@ -431,7 +431,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
     {
-        for (var i = 0; i < 8; ++i)
+        for (var i = 0; i < 4; ++i)
         {
             var preferredSize = PreferredSize;
 

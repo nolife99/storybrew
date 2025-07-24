@@ -101,12 +101,11 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         using var endValueString =
             (ExportEndValue ? GetTransformedEndValue(transform) : tranformedStartValue).ToOsbString(exportSettings);
 
-        var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
-
         var result = StringHelper.Interpolate(exportSettings.NumberFormat,
             $"{Identifier},{(int)Easing},{startTimeString.AsReadOnlySpan()},");
 
-        if (!excludeEnd) result.AddRange(endTimeString.AsReadOnlySpan());
+        if (!startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan()))
+            result.AddRange(endTimeString.AsReadOnlySpan());
 
         result.Append($",{startValueString.AsReadOnlySpan()}");
         if (!startValueString.AsReadOnlySpan().SequenceEqual(endValueString.AsReadOnlySpan()))

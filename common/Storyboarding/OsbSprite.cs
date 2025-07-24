@@ -874,20 +874,16 @@ public class OsbSprite : StoryboardObject
                     rotate.EndValue); break;
 
             case LoopCommand loop:
-            {
                 StartLoopGroup(loop.StartTime + offset, loop.LoopCount);
                 foreach (var cmd in loop.Commands) addCommand(cmd);
                 EndGroup();
                 break;
-            }
 
             case TriggerCommand trigger:
-            {
                 StartTriggerGroup(trigger.TriggerName, trigger.StartTime + offset, trigger.EndTime + offset, trigger.Group);
                 foreach (var cmd in trigger.Commands) addCommand(cmd);
                 EndGroup();
                 break;
-            }
 
             default:
                 throw new NotSupportedException($"Failed to add command: No support for adding command of type {
@@ -934,22 +930,8 @@ public class OsbSprite : StoryboardObject
             MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ?
                 (CommandPosition)transform.ApplyToPositionXY(InitialPosition) : transform.ApplyToPosition(InitialPosition);
 
-        using var builder = StringHelper.Interpolate($"{layer},{Origin},\"{texturePath.AsSpan().Trim()}\",");
-
-        if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
-        {
-            using var str = transformedInitialPosition.X.ToOsbString(exportSettings);
-            builder.AddRange(str.AsReadOnlySpan());
-        }
-        else builder.Add('0');
-
-        builder.Add(',');
-        if (!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands)
-        {
-            using var str = transformedInitialPosition.Y.ToOsbString(exportSettings);
-            builder.AddRange(str.AsReadOnlySpan());
-        }
-        else builder.Add('0');
+        using var builder = StringHelper.Interpolate(exportSettings.NumberFormat,
+            $"{layer},{Origin},\"{texturePath.AsSpan().Trim()}\",{(!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands ? transformedInitialPosition.X : 0)},{(!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands ? transformedInitialPosition.Y : 0)}");
 
         writer.Write(builder.AsReadOnlySpan());
     }
@@ -977,7 +959,7 @@ public class OsbSprite : StoryboardObject
         OsbOrigin.BottomLeft => size with { X = 0 },
         OsbOrigin.BottomCentre => size with { X = size.X * .5f },
         OsbOrigin.BottomRight => size,
-        _ => throw new NotSupportedException(origin.ToString())
+        _ => throw new NotSupportedException(Enum.GetName(origin))
     };
 
     #region Display
