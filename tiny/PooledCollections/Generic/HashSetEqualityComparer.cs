@@ -1,32 +1,25 @@
 ﻿// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/HashSetEqualityComparer.cs
 
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 namespace Tiny.PooledCollections.Generic;
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>Equality comparer for hashsets of hashsets</summary>
-public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHashSet<T>>
+internal readonly struct HashSetEqualityComparer<T>
+    : IEqualityComparer<PooledHashSet<T>>, IEquatable<HashSetEqualityComparer<T>>
 {
     public bool Equals(PooledHashSet<T> x, PooledHashSet<T> y)
     {
-        // If they're the exact same instance, they're equal.
         if (ReferenceEquals(x, y)) return true;
 
-        // They're not both null, so if either is null, they're not equal.
         if (x is null || y is null) return false;
 
         var defaultComparer = EqualityComparer<T>.Default;
 
-        // If both sets use the same comparer, they're equal if they're the same
-        // size and one is a "subset" of the other.
         if (PooledHashSet<T>.EqualityComparersAreEqual(x, y))
             return x.Count == y.Count && y.IsSubsetOfHashSetWithSameComparer(x);
 
-        // Otherwise, do an O(N^2) match.
         foreach (var yi in y)
         {
             var found = false;
@@ -45,17 +38,15 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
 
     public int GetHashCode(PooledHashSet<T> obj)
     {
-        var hashCode = 0; // default to 0 for null/empty set
+        HashCode hashCode = new();
 
-        if (obj is not null)
-            foreach (var t in obj)
-                if (t is not null)
-                    hashCode ^= t.GetHashCode(); // same hashcode as default comparer
+        foreach (var t in obj)
+            if (t is not null)
+                hashCode.Add(t);
 
-        return hashCode;
+        return hashCode.ToHashCode();
     }
 
-    // Equals method for the comparer itself.
     public override bool Equals([NotNullWhen(true)] object obj) => obj is HashSetEqualityComparer<T>;
 
     public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
@@ -63,4 +54,6 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
     public static bool operator ==(HashSetEqualityComparer<T> left, HashSetEqualityComparer<T> right) => left.Equals(right);
 
     public static bool operator !=(HashSetEqualityComparer<T> left, HashSetEqualityComparer<T> right) => !(left == right);
+
+    public bool Equals(HashSetEqualityComparer<T> other) => true;
 }

@@ -104,11 +104,11 @@ public class ShaderBuilder
 
         // Main function
 
-        code.Append("void main() {");
+        code.AddRange("void main() {");
         ProgramScope.DeclareUnusedVaryingsAsVariables(ref code, Context);
         VertexShaderScope.DeclareVariables(ref code);
         Context.GenerateCode(ref code, () => VertexShader.Generate(Context));
-        code.Append("}\n");
+        code.AddRange("}\n");
         return code;
     }
 
@@ -122,10 +122,10 @@ public class ShaderBuilder
 
         // Main function
 
-        code.Append("void main() {");
+        code.AddRange("void main() {");
         FragmentShaderScope.DeclareVariables(ref code);
         Context.GenerateCode(ref code, () => FragmentShader.Generate(Context));
-        code.Append("}\n");
+        code.AddRange("}\n");
         return code;
     }
 }

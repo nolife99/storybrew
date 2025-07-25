@@ -20,12 +20,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 // A simple Queue of generic objects.  Internally it is implemented as a
 // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
 [DebuggerTypeProxy(typeof(ValueQueueDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueQueue<T> : IReadOnlyCollection<T>, IDeserializationCallback
+public partial struct ValueQueue<T> : IReadOnlyCollection<T>
 {
     internal T[] _array;
     internal int _head; // The index from which to dequeue if the queue isn't empty.
@@ -33,7 +32,7 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
     internal int _size; // Number of elements.
     internal int _version;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 
@@ -329,13 +328,6 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
         _array = replaceWith ?? s_emptyArray;
     }
-
-    void IDeserializationCallback.OnDeserialization(object sender) =>
-
-        // We can't serialize array pools, so deserialized PooledQueue will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
 
     // Implements an enumerator for a Queue.  The enumerator uses the
     // internal version number of the list to ensure that no modifications are

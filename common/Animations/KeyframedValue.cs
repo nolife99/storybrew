@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Scripting;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
@@ -140,7 +139,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             case 1: return keyframes[0].Value;
         }
 
-        var i = indexAt(time, false);
+        var i = indexFor(new(time), false);
         if (i == 0) return keyframes[0].Value;
         if (i == keyframes.Count) return keyframes[^1].Value;
 
@@ -285,9 +284,6 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
         return i;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    int indexAt(float time, bool before) => indexFor(new(time), before);
 
     #region Manipulation
 

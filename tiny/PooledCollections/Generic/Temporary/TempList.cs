@@ -20,7 +20,7 @@ public ref struct TempList<T>
     internal int _size;
     internal int _version;
 
-    [NonSerialized] internal readonly ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 
@@ -42,36 +42,59 @@ public ref struct TempList<T>
 
     internal TempList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        ArgumentNullException.ThrowIfNull(collection);
-
         _pool = pool ?? ArrayPool<T>.Shared;
         _version = 0;
 
-        if (collection is ICollection<T> c)
+        switch (collection)
         {
-            var count = c.Count;
-            if (count == 0)
-            {
-                _items = s_emptyArray;
+            case ICollection<T> c:
+                var count = c.Count;
+                if (count == 0)
+                {
+                    _items = s_emptyArray;
+                    _size = 0;
+                }
+                else
+                {
+                    _items = _pool.Rent(count);
+                    c.CopyTo(_items, 0);
+                    _size = count;
+
+                    _ref = ref MemoryMarshal.GetArrayDataReference(_items);
+                }
+
+                break;
+
+            case string s:
+                count = s.Length;
+                if (count == 0)
+                {
+                    _items = s_emptyArray;
+                    _size = 0;
+                }
+                else
+                {
+                    _items = _pool.Rent(count);
+                    s.CopyTo(0, Unsafe.As<char[]>(_items), 0, count);
+                    _size = count;
+
+                    _ref = ref MemoryMarshal.GetArrayDataReference(_items);
+                }
+
+                break;
+
+            default:
                 _size = 0;
-            }
-            else
-            {
-                _items = _pool.Rent(count);
-                c.CopyTo(_items, 0);
-                _size = count;
+                _items = s_emptyArray;
+
+                if (collection is null) return;
+
+                using (var en = collection!.GetEnumerator())
+                    while (en.MoveNext())
+                        Add(en.Current);
 
                 _ref = ref MemoryMarshal.GetArrayDataReference(_items);
-            }
-        }
-        else
-        {
-            _size = 0;
-            _items = s_emptyArray;
-            using var en = collection!.GetEnumerator();
-            while (en.MoveNext()) Add(en.Current);
-
-            _ref = ref MemoryMarshal.GetArrayDataReference(_items);
+                break;
         }
     }
 
@@ -149,7 +172,7 @@ public ref struct TempList<T>
         }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddRange(IEnumerable<T> collection) => InsertRange(_size, collection);
 
     public readonly int BinarySearch(int index, int count, T item, IComparer<T> comparer)
@@ -673,7 +696,7 @@ public ref struct TempList<T>
         AddRange(new ReadOnlySpan<T>(array));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public void AddRange(scoped ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

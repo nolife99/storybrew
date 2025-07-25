@@ -9,22 +9,12 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-[DebuggerTypeProxy(typeof(IDictionaryDebugView<,>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledDictionary<TKey, TValue>
-    : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable
-    where TKey : notnull
+public sealed partial class PooledDictionary<TKey, TValue>
+    : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDisposable where TKey : notnull
 {
-    // constants for serialization
-    const string VersionName = "Version"; // Do not rename (binary serialization)
-    const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
-    const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
-    const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-
     const int StartOfFreeList = -3;
 
     static readonly int[] s_emptyBuckets = [];
@@ -33,17 +23,17 @@ public partial class PooledDictionary<TKey, TValue>
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
     internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
     internal static readonly bool s_clearEntries = s_isReferenceKey || s_isReferenceValue;
-    [NonSerialized] internal static IEqualityComparer<string> _stringComparer = new Dictionary<string, byte>().Comparer;
+    internal static readonly IEqualityComparer<string> _stringComparer = new Dictionary<string, byte>().Comparer;
 
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
+
+    internal readonly ArrayPool<Entry<TKey, TValue>> _entryPool;
 
     internal int[] _buckets;
     internal IEqualityComparer<TKey> _comparer;
 
     internal int _count;
     internal Entry<TKey, TValue>[] _entries;
-
-    [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
@@ -119,7 +109,7 @@ public partial class PooledDictionary<TKey, TValue>
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool)
     {
-        if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _bucketPool = bucketPool ?? ArrayPool<int>.Shared;
         _entryPool = entryPool ?? ArrayPool<Entry<TKey, TValue>>.Shared;
@@ -135,14 +125,9 @@ public partial class PooledDictionary<TKey, TValue>
         {
             _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-            // hash buckets become unbalanced.
             if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
         }
-        else if (
-            comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
-            comparer != EqualityComparer<TKey>.Default) _comparer = comparer;
+        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default)) _comparer = comparer;
     }
 
     public PooledDictionary(IDictionary<TKey, TValue> dictionary,
@@ -204,62 +189,10 @@ public partial class PooledDictionary<TKey, TValue>
         foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
     }
 
-    protected PooledDictionary(SerializationInfo info, StreamingContext context)
-    {
-        _bucketPool = ArrayPool<int>.Shared;
-        _entryPool = ArrayPool<Entry<TKey, TValue>>.Shared;
-
-        _buckets = s_emptyBuckets;
-        _entries = s_emptyEntries;
-
-        // We can't do anything with the keys and values until the entire graph has been deserialized
-        // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
-        // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
-        HashHelpers.SerializationInfoTable.Add(this, info);
-    }
-
     public IEqualityComparer<TKey> Comparer => _comparer ?? EqualityComparer<TKey>.Default;
 
     public PooledDictionaryKeyCollection<TKey, TValue> Keys => new(this);
-
     public PooledDictionaryValueCollection<TKey, TValue> Values => new(this);
-
-    public virtual void OnDeserialization(object sender)
-    {
-        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
-
-        if (siInfo is null)
-
-            // We can return immediately if this function is called twice.
-            // Note we remove the serialization info from the table at the end of this method.
-            return;
-
-        var realVersion = siInfo.GetInt32(VersionName);
-        var hashsize = siInfo.GetInt32(HashSizeName);
-        _comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName,
-            typeof(IEqualityComparer<TKey>))!; // When serialized if comparer is null, we use the default.
-
-        if (hashsize != 0)
-        {
-            Initialize(hashsize);
-
-            var array = (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName,
-                typeof(KeyValuePair<TKey, TValue>[]));
-
-            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-
-            for (var i = 0; i < array.Length; i++)
-            {
-                if (array[i].Key is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
-
-                Add(array[i].Key, array[i].Value);
-            }
-        }
-        else _buckets = s_emptyBuckets;
-
-        _version = realVersion;
-        HashHelpers.SerializationInfoTable.Remove(this);
-    }
 
     public int Count
     {
@@ -280,18 +213,10 @@ public partial class PooledDictionary<TKey, TValue>
 
             throw new KeyNotFoundException(nameof(key));
         }
-        set
-        {
-            var modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-            Debug.Assert(modified);
-        }
+        set => TryInsert(key, value, InsertionBehavior.OverwriteExisting);
     }
 
-    public void Add(TKey key, TValue value)
-    {
-        var modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-        Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
-    }
+    public void Add(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
 
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
         => Add(keyValuePair.Key, keyValuePair.Value);
@@ -299,38 +224,29 @@ public partial class PooledDictionary<TKey, TValue>
     bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
     {
         ref var value = ref FindValue(keyValuePair.Key);
-        if (!Unsafe.IsNullRef(ref value) && EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value)) return true;
-
-        return false;
+        return !Unsafe.IsNullRef(ref value) && EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value);
     }
 
     bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
     {
         ref var value = ref FindValue(keyValuePair.Key);
-        if (!Unsafe.IsNullRef(ref value) && EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value))
-        {
-            Remove(keyValuePair.Key);
-            return true;
-        }
+        if (Unsafe.IsNullRef(ref value) || !EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value)) return false;
 
-        return false;
+        Remove(keyValuePair.Key);
+        return true;
     }
 
     public void Clear()
     {
         var count = _count;
-        if (count > 0)
-        {
-            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            Debug.Assert(_entries is not null, "_entries should be non-null");
+        if (count <= 0) return;
 
-            Array.Clear(_buckets, 0, _buckets.Length);
+        Array.Clear(_buckets, 0, _buckets.Length);
 
-            _count = 0;
-            _freeList = -1;
-            _freeCount = 0;
-            Array.Clear(_entries, 0, count);
-        }
+        _count = 0;
+        _freeList = -1;
+        _freeCount = 0;
+        Array.Clear(_entries, 0, count);
     }
 
     public bool ContainsKey(TKey key) => !Unsafe.IsNullRef(ref FindValue(key));
@@ -341,55 +257,42 @@ public partial class PooledDictionary<TKey, TValue>
 
     public bool Remove(TKey key)
     {
-        // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets.IsNullOrEmpty()) return false;
+
+        uint collisionCount = 0;
+        var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
+        ref var bucket = ref GetBucket(hashCode);
+        var entries = _entries;
+        var last = -1;
+        var i = bucket - 1;
+        while (i >= 0)
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
-            uint collisionCount = 0;
-            var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
-            ref var bucket = ref GetBucket(hashCode);
-            var entries = _entries;
-            var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
-            while (i >= 0)
+            ref var entry = ref entries[i];
+
+            if (entry.HashCode == hashCode &&
+                (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
             {
-                ref var entry = ref entries[i];
+                if (last < 0) bucket = entry.Next + 1;
+                else entries[last].Next = entry.Next;
 
-                if (entry.HashCode == hashCode &&
-                    (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
-                {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
-                    else entries[last].Next = entry.Next;
+                entry.Next = StartOfFreeList - _freeList;
 
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                if (s_isReferenceKey) entry.Key = default!;
 
-                    entry.Next = StartOfFreeList - _freeList;
+                if (s_isReferenceValue) entry.Value = default!;
 
-                    if (s_isReferenceKey) entry.Key = default!;
-
-                    if (s_isReferenceValue) entry.Value = default!;
-
-                    _freeList = i;
-                    _freeCount++;
-                    return true;
-                }
-
-                last = i;
-                i = entry.Next;
-
-                collisionCount++;
-                if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
-                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                _freeList = i;
+                _freeCount++;
+                return true;
             }
+
+            last = i;
+            i = entry.Next;
+
+            if (++collisionCount > (uint)entries.Length)
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
         }
 
         return false;
@@ -430,29 +333,13 @@ public partial class PooledDictionary<TKey, TValue>
 
     IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
-    public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        info.AddValue(VersionName, _version);
-        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-        info.AddValue(HashSizeName, _buckets?.Length ?? 0); // This is the length of the bucket array
-
-        if (!_buckets.IsNullOrEmpty())
-        {
-            var array = new KeyValuePair<TKey, TValue>[Count];
-            CopyTo(array, 0);
-            info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -478,70 +365,40 @@ public partial class PooledDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets is not null)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         _buckets = replaceWith ?? s_emptyBuckets;
     }
 
     void ReturnEntries(Entry<TKey, TValue>[] replaceWith)
     {
-        if (_entries is not null)
-            try
-            {
-                _entryPool.Return(_entries, s_clearEntries);
-            }
-            catch { }
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = replaceWith ?? s_emptyEntries;
     }
 
     void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
     {
-        // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
-        // avoid the enumerator allocation and overhead by looping through the entries array directly.
-        // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
-        // back-compat with subclasses that may have overridden the enumerator behavior.
-        if (collection.GetType() == typeof(PooledDictionary<TKey, TValue>))
+        if (collection is PooledDictionary<TKey, TValue> source)
         {
-            var source = (PooledDictionary<TKey, TValue>)collection;
-
-            if (source.Count == 0)
-
-                // Nothing to copy, all done
-                return;
-
-            // This is not currently a true .AddRange as it needs to be an initialized dictionary
-            // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
-            Debug.Assert(source._entries is not null);
-            Debug.Assert(_entries is not null);
-            Debug.Assert(_entries.Length >= source.Count);
-            Debug.Assert(_count == 0);
+            if (source.Count == 0) return;
 
             var oldEntries = source._entries;
-            if (source._comparer == _comparer)
+            if (ReferenceEquals(source._comparer, _comparer))
             {
-                // If comparers are the same, we can copy _entries without rehashing.
                 CopyEntries(oldEntries, source._count);
                 return;
             }
 
-            // Comparers differ need to rehash all the entires via Add
             var count = source._count;
             for (var i = 0; i < count; i++)
 
-                // Only copy if an entry
                 if (oldEntries[i].Next >= -1)
                     Add(oldEntries[i].Key, oldEntries[i].Value);
 
             return;
         }
 
-        // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
         foreach (var pair in collection) Add(pair.Key, pair.Value);
     }
 
@@ -556,16 +413,12 @@ public partial class PooledDictionary<TKey, TValue>
         }
         else if (typeof(TValue).IsValueType)
         {
-            // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value))
                     return true;
         }
         else
         {
-            // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-            // https://github.com/dotnet/runtime/issues/10050
-            // So cache in a local rather than get EqualityComparer per loop iteration
             var defaultComparer = EqualityComparer<TValue>.Default;
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && defaultComparer.Equals(entries[i].Value, value))
@@ -598,7 +451,6 @@ public partial class PooledDictionary<TKey, TValue>
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
         if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "expected entries to be is not null");
             var comparer = _comparer;
             if (comparer is null)
             {
@@ -608,13 +460,9 @@ public partial class PooledDictionary<TKey, TValue>
                 uint collisionCount = 0;
                 if (typeof(TKey).IsValueType)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                    i--;
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                         entry = ref entries[i];
@@ -627,21 +475,14 @@ public partial class PooledDictionary<TKey, TValue>
                     }
                     while (collisionCount <= (uint)entries.Length);
 
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     goto ConcurrentOperation;
                 }
 
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
 
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -653,8 +494,6 @@ public partial class PooledDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
             else
@@ -663,11 +502,9 @@ public partial class PooledDictionary<TKey, TValue>
                 var i = GetBucket(hashCode);
                 var entries = _entries;
                 uint collisionCount = 0;
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -679,8 +516,6 @@ public partial class PooledDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
         }
@@ -705,7 +540,6 @@ public partial class PooledDictionary<TKey, TValue>
         var buckets = _bucketPool.Rent(size);
         var entries = _entryPool.Rent(size);
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         _freeList = -1;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -722,91 +556,72 @@ public partial class PooledDictionary<TKey, TValue>
 
     internal bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
     {
-        // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
-        // If you make any changes here, make sure to keep that version in sync as well.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        Debug.Assert(_buckets.IsNullOrEmpty() == false);
 
         var entries = _entries;
-        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
         var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
         uint collisionCount = 0;
         ref var bucket = ref GetBucket(hashCode);
-        var i = bucket - 1; // Value in _buckets is 1-based
+        var i = bucket - 1;
 
         if (comparer is null)
         {
             if (typeof(TKey).IsValueType)
 
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
                     {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        switch (behavior)
                         {
-                            entries[i].Value = value;
-                            return true;
-                        }
+                            case InsertionBehavior.OverwriteExisting:
+                                entries[i].Value = value;
+                                return true;
 
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            case InsertionBehavior.ThrowOnExisting:
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                        }
 
                         return false;
                     }
 
                     i = entries[i].Next;
 
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
+                    if (++collisionCount > (uint)entries.Length)
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             else
             {
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
                     {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        switch (behavior)
                         {
-                            entries[i].Value = value;
-                            return true;
-                        }
+                            case InsertionBehavior.OverwriteExisting:
+                                entries[i].Value = value;
+                                return true;
 
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            case InsertionBehavior.ThrowOnExisting:
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                        }
 
                         return false;
                     }
 
                     i = entries[i].Next;
 
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
+                    if (++collisionCount > (uint)entries.Length)
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             }
@@ -814,31 +629,26 @@ public partial class PooledDictionary<TKey, TValue>
         else
             while (true)
             {
-                // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                // Test uint in if rather than loop condition to drop range check for following array access
                 if ((uint)i >= (uint)entries.Length) break;
 
                 if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
                 {
-                    if (behavior == InsertionBehavior.OverwriteExisting)
+                    switch (behavior)
                     {
-                        entries[i].Value = value;
-                        return true;
-                    }
+                        case InsertionBehavior.OverwriteExisting:
+                            entries[i].Value = value;
+                            return true;
 
-                    if (behavior == InsertionBehavior.ThrowOnExisting)
-                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                        case InsertionBehavior.ThrowOnExisting:
+                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                    }
 
                     return false;
                 }
 
                 i = entries[i].Next;
 
-                collisionCount++;
-                if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
+                if (++collisionCount > (uint)entries.Length)
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
 
@@ -846,8 +656,6 @@ public partial class PooledDictionary<TKey, TValue>
         if (_freeCount > 0)
         {
             index = _freeList;
-            Debug.Assert(StartOfFreeList - entries[_freeList].Next >= -1,
-                "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
             _freeCount--;
@@ -868,20 +676,15 @@ public partial class PooledDictionary<TKey, TValue>
 
         ref var entry = ref entries![index];
         entry.HashCode = hashCode;
-        entry.Next = bucket - 1; // Value in _buckets is 1-based
+        entry.Next = bucket - 1;
         entry.Key = key;
         entry.Value = value;
-        bucket = index + 1; // Value in _buckets is 1-based
+        bucket = index + 1;
         _version++;
 
-        // Value types never rehash
         if (!typeof(TKey).IsValueType &&
-                collisionCount > HashHelpers.HashCollisionThreshold &&
-                ReferenceEquals(comparer, _stringComparer))
-
-            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // i.e. EqualityComparer<string>.Default.
-            Resize(entries.Length, true);
+            collisionCount > HashHelpers.HashCollisionThreshold &&
+            ReferenceEquals(comparer, _stringComparer)) Resize(entries.Length, true);
 
         return true;
     }
@@ -890,11 +693,6 @@ public partial class PooledDictionary<TKey, TValue>
 
     void Resize(int newSize, bool forceNewHashCodes)
     {
-        // Value types never rehash
-        Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
-        Debug.Assert(_entries is not null, "_entries should be non-null");
-        Debug.Assert(newSize >= _entries.Length);
-
         var count = _count;
         var entries = _entryPool.Rent(newSize);
         Array.Copy(_entries, entries, count);
@@ -910,7 +708,6 @@ public partial class PooledDictionary<TKey, TValue>
             if (ReferenceEquals(_comparer, EqualityComparer<TKey>.Default)) _comparer = null;
         }
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         RenewBuckets(newSize);
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -921,7 +718,7 @@ public partial class PooledDictionary<TKey, TValue>
             if (entries[i].Next >= -1)
             {
                 ref var bucket = ref GetBucket(entries[i].HashCode);
-                entries[i].Next = bucket - 1; // Value in _buckets is 1-based
+                entries[i].Next = bucket - 1;
                 bucket = i + 1;
             }
 
@@ -931,21 +728,16 @@ public partial class PooledDictionary<TKey, TValue>
 
     public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
-        // This overload is a copy of the overload Remove(TKey key) with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
             var entries = _entries;
             var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
+            var i = bucket - 1;
             while (i >= 0)
             {
                 ref var entry = ref entries[i];
@@ -953,13 +745,10 @@ public partial class PooledDictionary<TKey, TValue>
                 if (entry.HashCode == hashCode &&
                     (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
+                    if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
 
                     value = entry.Value;
-
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
 
@@ -975,11 +764,7 @@ public partial class PooledDictionary<TKey, TValue>
                 last = i;
                 i = entry.Next;
 
-                collisionCount++;
-                if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
+                if (++collisionCount > (uint)entries.Length)
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
         }
@@ -990,10 +775,9 @@ public partial class PooledDictionary<TKey, TValue>
 
     public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
-    /// <summary>Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage</summary>
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         var currentCapacity = _entries?.Length ?? 0;
         if (currentCapacity >= capacity) return currentCapacity;
@@ -1007,21 +791,11 @@ public partial class PooledDictionary<TKey, TValue>
         return newSize;
     }
 
-    /// <summary>Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its entries</summary>
-    /// <remarks>
-    ///     This method can be used to minimize the memory overhead once it is known that no new elements will be added. To
-    ///     allocate minimum size storage array, execute the following statements: dictionary.Clear(); dictionary.TrimExcess();
-    /// </remarks>
     public void TrimExcess() => TrimExcess(Count);
 
-    /// <summary>
-    ///     Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing
-    ///     storage
-    /// </summary>
-    /// <remarks>This method can be used to minimize the memory overhead once it is known that no new elements will be added.</remarks>
     public void TrimExcess(int capacity)
     {
-        if (capacity < Count) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+        ArgumentOutOfRangeException.ThrowIfLessThan(capacity, Count);
 
         var newSize = HashHelpers.GetPrime(capacity);
         var oldEntries = _entries;
@@ -1034,32 +808,27 @@ public partial class PooledDictionary<TKey, TValue>
         _version++;
         Initialize(newSize);
 
-        Debug.Assert(oldEntries is not null);
-
         CopyEntries(oldEntries, oldCount);
 
         _bucketPool.Return(oldBuckets);
-        _entryPool.Return(oldEntries, s_clearEntries);
+        _entryPool.Return(oldEntries!, s_clearEntries);
     }
 
     void CopyEntries(Entry<TKey, TValue>[] entries, int count)
     {
-        Debug.Assert(_entries is not null);
-
         var newEntries = _entries;
         var newCount = 0;
         for (var i = 0; i < count; i++)
         {
             var hashCode = entries[i].HashCode;
-            if (entries[i].Next >= -1)
-            {
-                ref var entry = ref newEntries[newCount];
-                entry = entries[i];
-                ref var bucket = ref GetBucket(hashCode);
-                entry.Next = bucket - 1; // Value in _buckets is 1-based
-                bucket = newCount + 1;
-                newCount++;
-            }
+            if (entries[i].Next < -1) continue;
+
+            ref var entry = ref newEntries[newCount];
+            entry = entries[i];
+            ref var bucket = ref GetBucket(hashCode);
+            entry.Next = bucket - 1;
+            bucket = newCount + 1;
+            newCount++;
         }
 
         _count = newCount;
@@ -1086,55 +855,31 @@ public partial class PooledDictionary<TKey, TValue>
         _buckets = buckets;
     }
 
-    /// <summary>
-    ///     A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>. These
-    ///     methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids the
-    ///     additional overhead on each <see cref="PooledDictionary{TKey,TValue}"/> instantiation, especially in AOT scenarios.
-    /// </summary>
     internal static class CollectionsMarshalHelper
     {
-        /// <summary>
-        ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="PooledDictionary{TKey,TValue}"/>, adding a new
-        ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
-        /// </summary>
-        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-        /// <param name="key">The key used for lookup.</param>
-        /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
-        /// <remarks>
-        ///     Items should not be added to or removed from the <see cref="PooledDictionary{TKey,TValue}"/> while the ref
-        ///     <typeparamref name="TValue"/> is in use.
-        /// </remarks>
         public static ref TValue GetValueRefOrAddDefault(PooledDictionary<TKey, TValue> dictionary,
             TKey key,
             out bool exists)
         {
-            // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
-            // If you make any changes here, make sure to keep that version in sync as well.
-
             ArgumentNullException.ThrowIfNull(key);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
-            Debug.Assert(dictionary._buckets.IsNullOrEmpty() == false);
 
             var entries = dictionary._entries;
-            Debug.Assert(entries is not null, "expected entries to be non-null");
 
             var comparer = dictionary._comparer;
             var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
             uint collisionCount = 0;
             ref var bucket = ref dictionary.GetBucket(hashCode);
-            var i = bucket - 1; // Value in _buckets is 1-based
+            var i = bucket - 1;
 
             if (comparer is null)
             {
                 if (typeof(TKey).IsValueType)
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
@@ -1145,24 +890,14 @@ public partial class PooledDictionary<TKey, TValue>
                         }
 
                         i = entries[i].Next;
-
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
+                        if (++collisionCount > (uint)entries.Length)
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 else
                 {
-                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/runtime/issues/10050
-                    // So cache in a local rather than get EqualityComparer per loop iteration
                     var defaultComparer = EqualityComparer<TKey>.Default;
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
@@ -1174,11 +909,7 @@ public partial class PooledDictionary<TKey, TValue>
 
                         i = entries[i].Next;
 
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
+                        if (++collisionCount > (uint)entries.Length)
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 }
@@ -1186,8 +917,6 @@ public partial class PooledDictionary<TKey, TValue>
             else
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
@@ -1199,11 +928,7 @@ public partial class PooledDictionary<TKey, TValue>
 
                     i = entries[i].Next;
 
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
+                    if (++collisionCount > (uint)entries.Length)
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
 
@@ -1211,8 +936,6 @@ public partial class PooledDictionary<TKey, TValue>
             if (dictionary._freeCount > 0)
             {
                 index = dictionary._freeList;
-                Debug.Assert(StartOfFreeList - entries[dictionary._freeList].Next >= -1,
-                    "shouldn't overflow because `next` cannot underflow");
 
                 dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].Next;
                 dictionary._freeCount--;
@@ -1233,29 +956,21 @@ public partial class PooledDictionary<TKey, TValue>
 
             ref var entry = ref entries![index];
             entry.HashCode = hashCode;
-            entry.Next = bucket - 1; // Value in _buckets is 1-based
+            entry.Next = bucket - 1;
             entry.Key = key;
             entry.Value = default!;
-            bucket = index + 1; // Value in _buckets is 1-based
+            bucket = index + 1;
             dictionary._version++;
 
-            // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
                 ReferenceEquals(comparer, _stringComparer))
             {
-                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                // i.e. EqualityComparer<string>.Default.
                 dictionary.Resize(entries.Length, true);
 
                 exists = false;
 
-                // At this point the entries array has been resized, so the current reference we have is no longer valid.
-                // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
-                // lookup is guaranteed to always find a value though and it will never return a null reference here.
                 ref var value = ref dictionary.FindValue(key)!;
-
-                Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
 
                 return ref value;
             }
@@ -1272,12 +987,12 @@ public partial class PooledDictionary<TKey, TValue>
         readonly int _version;
         int _index;
         KeyValuePair<TKey, TValue> _current;
-        readonly int _getEnumeratorRetType; // What should Enumerator.Current return?
+        readonly int _getEnumeratorRetType;
 
-        internal const int DictEntry = 1;
+        const int DictEntry = 1;
         internal const int KeyValuePair = 2;
 
-        public Enumerator(PooledDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+        internal Enumerator(PooledDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
@@ -1291,17 +1006,14 @@ public partial class PooledDictionary<TKey, TValue>
             if (_version != _dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-            // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
             while ((uint)_index < (uint)_dictionary._count)
             {
                 ref var entry = ref _dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    _current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                _current = new(entry.Key, entry.Value);
+                return true;
             }
 
             _index = _dictionary._count + 1;
@@ -1346,7 +1058,7 @@ public partial class PooledDictionary<TKey, TValue>
                 if (_index == 0 || _index == _dictionary._count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
-                return new DictionaryEntry(_current.Key, _current.Value);
+                return new(_current.Key, _current.Value);
             }
         }
 

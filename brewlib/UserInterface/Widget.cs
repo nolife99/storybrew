@@ -200,7 +200,7 @@ public class Widget(WidgetManager manager) : IDisposable
     {
         if (modifiers.IsEmpty) return baseName;
 
-        using var sb = TempList.Create(baseName.AsSpan());
+        using var sb = TempList.Create(baseName);
         foreach (var modifier in modifiers)
         {
             if (string.IsNullOrEmpty(modifier)) continue;

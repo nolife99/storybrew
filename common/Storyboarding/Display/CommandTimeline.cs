@@ -26,10 +26,11 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
 
     CommandChannel<TValue> defaultChannel, currentChannel;
     public TValue DefaultValue;
-    Action<CommandChannel<TValue>> groupEndAction;
+    Action<CommandChannel<TValue>, object> groupEndAction;
+    object groupEndActionState;
 
-    public CommandTimeline() { }
-    public CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
+    internal CommandTimeline() { }
+    internal CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
 
     public ReadOnlySpan<ICommand> Commands => defaultChannel is null ?
         default :
@@ -60,13 +61,15 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         CommandChannelLoop<TValue> loopChannel = new();
         currentChannel = loopChannel;
 
-        groupEndAction = channel =>
+        groupEndActionState = loop;
+        groupEndAction = (channel, state) =>
         {
             var c = (CommandChannelLoop<TValue>)channel;
+            var l = (LoopCommand)state;
 
-            c.LoopCount = loop.LoopCount;
-            c.LoopStartTime = loop.StartTime;
-            c.LoopDuration = loop.CommandsDuration;
+            c.LoopCount = l.LoopCount;
+            c.LoopStartTime = l.StartTime;
+            c.LoopDuration = l.CommandsDuration;
         };
     }
 
@@ -83,14 +86,16 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
 
         if (currentChannel.Commands.Length > 0)
         {
-            groupEndAction(currentChannel);
+            groupEndAction(currentChannel, groupEndActionState);
 
             channels ??= [];
             channels.Add(currentChannel);
         }
 
         currentChannel = defaultChannel;
+
         groupEndAction = null;
+        groupEndActionState = null;
     }
 
     bool Add(ITypedCommand<TValue> command)

@@ -6,20 +6,20 @@ using System.Runtime.CompilerServices;
 
 public readonly ref struct ArrayDictionaryInternalsRef<TKey, TValue>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex;
+    public readonly int Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
-    [NonSerialized] public readonly bool ClearValues;
+    public readonly bool ClearEntries;
+    public readonly bool ClearValues;
 
-    [NonSerialized] public readonly ReadOnlySpan<ArrayEntry<TKey>> Entries;
-    [NonSerialized] public readonly ReadOnlySpan<TValue> Values;
-    [NonSerialized] public readonly ReadOnlySpan<int> Buckets;
+    public readonly ReadOnlySpan<ArrayEntry<TKey>> Entries;
+    public readonly ReadOnlySpan<TValue> Values;
+    public readonly ReadOnlySpan<int> Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
+    public readonly ArrayPool<TValue> ValuePool;
+    public readonly ArrayPool<int> BucketPool;
 
     public ArrayDictionaryInternalsRef(ArrayDictionary<TKey, TValue> source)
     {

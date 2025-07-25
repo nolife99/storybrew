@@ -1,13 +1,12 @@
 ﻿namespace StorybrewCommon.Curves;
 
-using System.Collections.Generic;
 using System.Numerics;
 
 /// <summary>Represents a curve.</summary>
 /// <remarks>A <see cref="BaseCurve"/> is the base class for all curves.</remarks>
 public abstract class BaseCurve : Curve
 {
-    List<(float Distance, Vector2 Position)> distancePosition;
+    (float Distance, Vector2 Position)[] distancePosition;
 
     float length;
 
@@ -39,7 +38,7 @@ public abstract class BaseCurve : Curve
         var nextPosition = EndPosition;
 
         var i = 0;
-        while (i < distancePosition.Count)
+        while (i < distancePosition.Length)
         {
             var (Distance, Position) = distancePosition[i];
             if (Distance > distance) break;
@@ -49,7 +48,7 @@ public abstract class BaseCurve : Curve
             ++i;
         }
 
-        if (i < distancePosition.Count - 1)
+        if (i < distancePosition.Length - 1)
         {
             var (Distance, Position) = distancePosition[i + 1];
             nextDistance = Distance;
@@ -66,12 +65,8 @@ public abstract class BaseCurve : Curve
     /// <inheritdoc/>
     public Vector2 PositionAtDelta(float delta) => PositionAtDistance(delta * Length);
 
-    void initialize()
-    {
-        distancePosition = [];
-        Initialize(distancePosition, out length);
-    }
+    void initialize() => Initialize(ref distancePosition, out length);
 
     /// <summary/>
-    protected abstract void Initialize(List<(float, Vector2)> distancePosition, out float length);
+    protected abstract void Initialize(scoped ref (float, Vector2)[] distancePosition, out float length);
 }

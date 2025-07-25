@@ -5,13 +5,12 @@ using System.Buffers;
 
 public readonly struct StackInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Size, Version;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
+    public readonly ArrayPool<T> Pool;
 
-    public StackInternals(PooledStack<T> source)
+    internal StackInternals(PooledStack<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -22,12 +21,7 @@ public readonly struct StackInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array is not null)
-            try
-            {
-                Pool?.Return(Array, ClearArray);
-            }
-            catch { }
+        if (Array is not null) Pool?.Return(Array, ClearArray);
     }
 }
 

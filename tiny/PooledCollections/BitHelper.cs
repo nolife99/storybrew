@@ -6,7 +6,7 @@ namespace Tiny.PooledCollections;
 
 using System;
 
-public readonly ref struct BitHelper
+internal readonly ref struct BitHelper
 {
     const int IntSize = sizeof(int) * 8;
     readonly Span<int> _span;
@@ -57,6 +57,5 @@ public readonly ref struct BitHelper
         return -1;
     }
 
-    /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
     public static int ToIntArrayLength(int n) => n > 0 ? (n - 1) / IntSize + 1 : 0;
 }

@@ -658,7 +658,7 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
         AddRange(array.AsSpan());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public void AddRange(scoped ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.StructBased;
+﻿namespace Tiny.PooledCollections.Generic.StructBased;
 
 using System;
 using System.Buffers;

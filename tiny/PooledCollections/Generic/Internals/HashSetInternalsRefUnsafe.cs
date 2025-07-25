@@ -7,20 +7,17 @@ using System.Runtime.CompilerServices;
 public readonly struct HashSetInternalsRefUnsafe<T>
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<T>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<T> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<T>[] Entries;
+    public readonly IEqualityComparer<T> Comparer;
 
-    public HashSetInternalsRefUnsafe(PooledHashSet<T> source)
+    internal HashSetInternalsRefUnsafe(PooledHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

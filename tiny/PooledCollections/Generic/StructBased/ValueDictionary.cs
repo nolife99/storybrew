@@ -12,19 +12,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-[DebuggerTypeProxy(typeof(IDictionaryDebugView<,>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueDictionary<TKey, TValue>
-    : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
+public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     where TKey : notnull
 {
-    // constants for serialization
-    const string VersionName = "Version"; // Do not rename (binary serialization)
-    const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
-    const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
-    const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
@@ -41,12 +32,11 @@ public partial struct ValueDictionary<TKey, TValue>
     internal int _version;
     internal IEqualityComparer<TKey> _comparer;
 
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
 
-    [NonSerialized]
-    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
-    [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
+    internal readonly ArrayPool<Entry<TKey, TValue>> _entryPool;
 
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
     internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
@@ -63,7 +53,7 @@ public partial struct ValueDictionary<TKey, TValue>
         _entries = null;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
+        _fastModMultiplier = 0;
 #endif
 
         _count = 0;
@@ -84,15 +74,8 @@ public partial struct ValueDictionary<TKey, TValue>
             _entries = s_emptyEntries;
         }
 
-        if (comparer is not null &&
-            comparer !=
-            EqualityComparer<TKey>
-                .Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
-            _comparer = comparer;
+        if (comparer is not null && comparer != EqualityComparer<TKey>.Default) _comparer = comparer;
 
-        // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-        // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-        // hash buckets become unbalanced.
         if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
     }
 
@@ -121,21 +104,12 @@ public partial struct ValueDictionary<TKey, TValue>
 
     void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
     {
-        // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
-        // avoid the enumerator allocation and overhead by looping through the entries array directly.
-        // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
-        // back-compat with subclasses that may have overridden the enumerator behavior.
-        if (collection.GetType() == typeof(ValueDictionary<TKey, TValue>))
+        if (collection is ValueDictionary<TKey, TValue>)
         {
             var source = (ValueDictionary<TKey, TValue>)collection;
 
-            if (source.Count == 0)
+            if (source.Count == 0) return;
 
-                // Nothing to copy, all done
-                return;
-
-            // This is not currently a true .AddRange as it needs to be an initialized dictionary
-            // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
             Debug.Assert(source._entries is not null);
             Debug.Assert(_entries is not null);
             Debug.Assert(_entries.Length >= source.Count);
@@ -144,48 +118,20 @@ public partial struct ValueDictionary<TKey, TValue>
             var oldEntries = source._entries;
             if (source._comparer == _comparer)
             {
-                // If comparers are the same, we can copy _entries without rehashing.
                 CopyEntries(oldEntries, source._count);
                 return;
             }
 
-            // Comparers differ need to rehash all the entires via Add
             var count = source._count;
             for (var i = 0; i < count; i++)
 
-                // Only copy if an entry
                 if (oldEntries[i].Next >= -1)
                     Add(oldEntries[i].Key, oldEntries[i].Value);
 
             return;
         }
 
-        // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
         foreach (var pair in collection) Add(pair.Key, pair.Value);
-    }
-
-    ValueDictionary(SerializationInfo info, StreamingContext context)
-    {
-#if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
-#endif
-
-        _count = 0;
-        _freeList = 0;
-        _freeCount = 0;
-        _version = 0;
-        _comparer = null;
-
-        _bucketPool = ArrayPool<int>.Shared;
-        _entryPool = ArrayPool<Entry<TKey, TValue>>.Shared;
-
-        _buckets = s_emptyBuckets;
-        _entries = s_emptyEntries;
-
-        // We can't do anything with the keys and values until the entire graph has been deserialized
-        // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
-        // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
-        HashHelpers.SerializationInfoTable.Add(this, info);
     }
 
     public readonly IEqualityComparer<TKey> Comparer => _comparer ?? EqualityComparer<TKey>.Default;
@@ -233,7 +179,7 @@ public partial struct ValueDictionary<TKey, TValue>
     public void Add(TKey key, TValue value)
     {
         var modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-        Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
+        Debug.Assert(modified);
     }
 
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
@@ -289,16 +235,12 @@ public partial struct ValueDictionary<TKey, TValue>
         }
         else if (typeof(TValue).IsValueType)
         {
-            // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value))
                     return true;
         }
         else
         {
-            // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-            // https://github.com/dotnet/runtime/issues/10050
-            // So cache in a local rather than get EqualityComparer per loop iteration
             var defaultComparer = EqualityComparer<TValue>.Default;
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && defaultComparer.Equals(entries[i].Value, value))
@@ -328,22 +270,6 @@ public partial struct ValueDictionary<TKey, TValue>
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         => new Enumerator(this, Enumerator.KeyValuePair);
 
-    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        info.AddValue(VersionName, _version);
-        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-        info.AddValue(HashSizeName, _buckets?.Length ?? 0); // This is the length of the bucket array
-
-        if (_buckets is not null)
-        {
-            var array = new KeyValuePair<TKey, TValue>[Count];
-            CopyTo(array, 0);
-            info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
-        }
-    }
-
     internal ref TValue FindValue(TKey key)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -361,13 +287,9 @@ public partial struct ValueDictionary<TKey, TValue>
                 uint collisionCount = 0;
                 if (typeof(TKey).IsValueType)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                    i--;
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                         entry = ref entries[i];
@@ -380,21 +302,14 @@ public partial struct ValueDictionary<TKey, TValue>
                     }
                     while (collisionCount <= (uint)entries.Length);
 
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     goto ConcurrentOperation;
                 }
 
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
 
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -406,8 +321,6 @@ public partial struct ValueDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
             else
@@ -416,11 +329,9 @@ public partial struct ValueDictionary<TKey, TValue>
                 var i = GetBucket(hashCode);
                 var entries = _entries;
                 uint collisionCount = 0;
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -432,8 +343,6 @@ public partial struct ValueDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
         }
@@ -458,7 +367,6 @@ public partial struct ValueDictionary<TKey, TValue>
         var buckets = _bucketPool.Rent(size);
         var entries = _entryPool.Rent(size);
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         _freeList = -1;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -475,9 +383,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
     internal bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
     {
-        // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
-        // If you make any changes here, make sure to keep that version in sync as well.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (_buckets.IsNullOrEmpty()) Initialize(0);
@@ -491,17 +396,14 @@ public partial struct ValueDictionary<TKey, TValue>
 
         uint collisionCount = 0;
         ref var bucket = ref GetBucket(hashCode);
-        var i = bucket - 1; // Value in _buckets is 1-based
+        var i = bucket - 1;
 
         if (comparer is null)
         {
             if (typeof(TKey).IsValueType)
 
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
@@ -523,21 +425,13 @@ public partial struct ValueDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             else
             {
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
@@ -558,9 +452,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             }
@@ -568,8 +459,6 @@ public partial struct ValueDictionary<TKey, TValue>
         else
             while (true)
             {
-                // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                // Test uint in if rather than loop condition to drop range check for following array access
                 if ((uint)i >= (uint)entries.Length) break;
 
                 if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
@@ -590,9 +479,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
 
@@ -622,47 +508,23 @@ public partial struct ValueDictionary<TKey, TValue>
 
         ref var entry = ref entries![index];
         entry.HashCode = hashCode;
-        entry.Next = bucket - 1; // Value in _buckets is 1-based
+        entry.Next = bucket - 1;
         entry.Key = key;
         entry.Value = value;
-        bucket = index + 1; // Value in _buckets is 1-based
+        bucket = index + 1;
         _version++;
 
-        // Value types never rehash
         if (!typeof(TKey).IsValueType &&
-                collisionCount > HashHelpers.HashCollisionThreshold &&
-                ReferenceEquals(comparer, _stringComparer))
-
-            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // i.e. EqualityComparer<string>.Default.
-            Resize(entries.Length, true);
+            collisionCount > HashHelpers.HashCollisionThreshold &&
+            ReferenceEquals(comparer, _stringComparer)) Resize(entries.Length, true);
 
         return true;
     }
 
-    /// <summary>
-    ///     A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>. These
-    ///     methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids the
-    ///     additional overhead on each <see cref="ValueDictionary{TKey, TValue}"/> instantiation, especially in AOT scenarios.
-    /// </summary>
     internal static class CollectionsMarshalHelper
     {
-        /// <summary>
-        ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="ValueDictionary{TKey, TValue}"/>, adding a new
-        ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
-        /// </summary>
-        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-        /// <param name="key">The key used for lookup.</param>
-        /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
-        /// <remarks>
-        ///     Items should not be added to or removed from the <see cref="ValueDictionary{TKey, TValue}"/> while the ref
-        ///     <typeparamref name="TValue"/> is in use.
-        /// </remarks>
         public static ref TValue GetValueRefOrAddDefault(ValueDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
         {
-            // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
-            // If you make any changes here, make sure to keep that version in sync as well.
-
             ArgumentNullException.ThrowIfNull(key);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
@@ -676,17 +538,14 @@ public partial struct ValueDictionary<TKey, TValue>
 
             uint collisionCount = 0;
             ref var bucket = ref dictionary.GetBucket(hashCode);
-            var i = bucket - 1; // Value in _buckets is 1-based
+            var i = bucket - 1;
 
             if (comparer is null)
             {
                 if (typeof(TKey).IsValueType)
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
@@ -700,21 +559,13 @@ public partial struct ValueDictionary<TKey, TValue>
 
                         collisionCount++;
                         if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 else
                 {
-                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/runtime/issues/10050
-                    // So cache in a local rather than get EqualityComparer per loop iteration
                     var defaultComparer = EqualityComparer<TKey>.Default;
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
@@ -728,9 +579,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                         collisionCount++;
                         if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 }
@@ -738,8 +586,6 @@ public partial struct ValueDictionary<TKey, TValue>
             else
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
@@ -753,9 +599,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
 
@@ -785,26 +628,20 @@ public partial struct ValueDictionary<TKey, TValue>
 
             ref var entry = ref entries![index];
             entry.HashCode = hashCode;
-            entry.Next = bucket - 1; // Value in _buckets is 1-based
+            entry.Next = bucket - 1;
             entry.Key = key;
             entry.Value = default!;
-            bucket = index + 1; // Value in _buckets is 1-based
+            bucket = index + 1;
             dictionary._version++;
 
-            // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
                 ReferenceEquals(comparer, _stringComparer))
             {
-                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                // i.e. EqualityComparer<string>.Default.
                 dictionary.Resize(entries.Length, true);
 
                 exists = false;
 
-                // At this point the entries array has been resized, so the current reference we have is no longer valid.
-                // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
-                // lookup is guaranteed to always find a value though and it will never return a null reference here.
                 ref var value = ref dictionary.FindValue(key)!;
 
                 Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
@@ -818,48 +655,10 @@ public partial struct ValueDictionary<TKey, TValue>
         }
     }
 
-    public void OnDeserialization(object sender)
-    {
-        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
-
-        if (siInfo is null)
-
-            // We can return immediately if this function is called twice.
-            // Note we remove the serialization info from the table at the end of this method.
-            return;
-
-        var realVersion = siInfo.GetInt32(VersionName);
-        var hashsize = siInfo.GetInt32(HashSizeName);
-        _comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName,
-            typeof(IEqualityComparer<TKey>))!; // When serialized if comparer is null, we use the default.
-
-        if (hashsize != 0)
-        {
-            Initialize(hashsize);
-
-            var array = (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName,
-                typeof(KeyValuePair<TKey, TValue>[]));
-
-            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-
-            for (var i = 0; i < array.Length; i++)
-            {
-                if (array[i].Key is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
-
-                Add(array[i].Key, array[i].Value);
-            }
-        }
-        else _buckets = s_emptyBuckets;
-
-        _version = realVersion;
-        HashHelpers.SerializationInfoTable.Remove(this);
-    }
-
     void Resize() => Resize(HashHelpers.ExpandPrime(_count), false);
 
     void Resize(int newSize, bool forceNewHashCodes)
     {
-        // Value types never rehash
         Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
         Debug.Assert(_entries is not null, "_entries should be non-null");
         Debug.Assert(newSize >= _entries.Length);
@@ -879,7 +678,6 @@ public partial struct ValueDictionary<TKey, TValue>
             if (ReferenceEquals(_comparer, EqualityComparer<TKey>.Default)) _comparer = null;
         }
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         RenewBuckets(newSize);
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -890,7 +688,7 @@ public partial struct ValueDictionary<TKey, TValue>
             if (entries[i].Next >= -1)
             {
                 ref var bucket = ref GetBucket(entries[i].HashCode);
-                entries[i].Next = bucket - 1; // Value in _buckets is 1-based
+                entries[i].Next = bucket - 1;
                 bucket = i + 1;
             }
 
@@ -900,21 +698,16 @@ public partial struct ValueDictionary<TKey, TValue>
 
     public bool Remove(TKey key)
     {
-        // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
             var entries = _entries;
             var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
+            var i = bucket - 1;
             while (i >= 0)
             {
                 ref var entry = ref entries[i];
@@ -922,7 +715,7 @@ public partial struct ValueDictionary<TKey, TValue>
                 if (entry.HashCode == hashCode &&
                     (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
+                    if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
 
                     Debug.Assert(StartOfFreeList - _freeList < 0,
@@ -944,9 +737,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
         }
@@ -956,21 +746,16 @@ public partial struct ValueDictionary<TKey, TValue>
 
     public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
-        // This overload is a copy of the overload Remove(TKey key) with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
             var entries = _entries;
             var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
+            var i = bucket - 1;
             while (i >= 0)
             {
                 ref var entry = ref entries[i];
@@ -978,7 +763,7 @@ public partial struct ValueDictionary<TKey, TValue>
                 if (entry.HashCode == hashCode &&
                     (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
+                    if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
 
                     value = entry.Value;
@@ -1002,9 +787,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
         }
@@ -1036,7 +818,6 @@ public partial struct ValueDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
-    /// <summary>Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage</summary>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -1053,18 +834,8 @@ public partial struct ValueDictionary<TKey, TValue>
         return newSize;
     }
 
-    /// <summary>Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its entries</summary>
-    /// <remarks>
-    ///     This method can be used to minimize the memory overhead once it is known that no new elements will be added. To
-    ///     allocate minimum size storage array, execute the following statements: dictionary.Clear(); dictionary.TrimExcess();
-    /// </remarks>
     public void TrimExcess() => TrimExcess(Count);
 
-    /// <summary>
-    ///     Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing
-    ///     storage
-    /// </summary>
-    /// <remarks>This method can be used to minimize the memory overhead once it is known that no new elements will be added.</remarks>
     public void TrimExcess(int capacity)
     {
         if (capacity < Count) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -1080,8 +851,6 @@ public partial struct ValueDictionary<TKey, TValue>
         _version++;
         Initialize(newSize);
 
-        Debug.Assert(oldEntries is not null);
-
         CopyEntries(oldEntries, oldCount);
 
         _bucketPool.Return(oldBuckets);
@@ -1090,8 +859,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
     void CopyEntries(Entry<TKey, TValue>[] entries, int count)
     {
-        Debug.Assert(_entries is not null);
-
         var newEntries = _entries;
         var newCount = 0;
         for (var i = 0; i < count; i++)
@@ -1102,7 +869,7 @@ public partial struct ValueDictionary<TKey, TValue>
                 ref var entry = ref newEntries[newCount];
                 entry = entries[i];
                 ref var bucket = ref GetBucket(hashCode);
-                entry.Next = bucket - 1; // Value in _buckets is 1-based
+                entry.Next = bucket - 1;
                 bucket = newCount + 1;
                 newCount++;
             }
@@ -1143,7 +910,7 @@ public partial struct ValueDictionary<TKey, TValue>
         readonly int _version;
         int _index;
         KeyValuePair<TKey, TValue> _current;
-        readonly int _getEnumeratorRetType; // What should Enumerator.Current return?
+        readonly int _getEnumeratorRetType;
 
         internal const int DictEntry = 1;
         internal const int KeyValuePair = 2;
@@ -1162,8 +929,6 @@ public partial struct ValueDictionary<TKey, TValue>
             if (_version != _dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-            // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
             while ((uint)_index < (uint)_dictionary._count)
             {
                 ref var entry = ref _dictionary._entries![_index++];
@@ -1180,15 +945,15 @@ public partial struct ValueDictionary<TKey, TValue>
             return false;
         }
 
-        public KeyValuePair<TKey, TValue> Current
+        public readonly KeyValuePair<TKey, TValue> Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _current;
         }
 
-        public void Dispose() { }
+        public readonly void Dispose() { }
 
-        object IEnumerator.Current
+        readonly object IEnumerator.Current
         {
             get
             {
@@ -1210,7 +975,7 @@ public partial struct ValueDictionary<TKey, TValue>
             _current = default;
         }
 
-        DictionaryEntry IDictionaryEnumerator.Entry
+        readonly DictionaryEntry IDictionaryEnumerator.Entry
         {
             get
             {
@@ -1221,7 +986,7 @@ public partial struct ValueDictionary<TKey, TValue>
             }
         }
 
-        object IDictionaryEnumerator.Key
+        readonly object IDictionaryEnumerator.Key
         {
             get
             {
@@ -1232,7 +997,7 @@ public partial struct ValueDictionary<TKey, TValue>
             }
         }
 
-        object IDictionaryEnumerator.Value
+        readonly object IDictionaryEnumerator.Value
         {
             get
             {

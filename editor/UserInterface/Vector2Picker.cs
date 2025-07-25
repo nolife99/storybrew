@@ -4,7 +4,9 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.UserInterface;
+using BrewLib.Util;
 using StorybrewCommon.Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class Vector2Picker : Widget, Field
 {
@@ -99,8 +101,11 @@ public class Vector2Picker : Widget, Field
 
     void updateWidgets()
     {
-        xTextbox.SetValueSilent(value.X.ToString());
-        yTextbox.SetValueSilent(value.Y.ToString());
+        using (var x = value.X.ToCharArray(provider: CultureInfo.InvariantCulture))
+            xTextbox.SetValueSilent(x.AsReadOnlySpan());
+
+        using (var y = value.Y.ToCharArray(provider: CultureInfo.InvariantCulture))
+            yTextbox.SetValueSilent(y.AsReadOnlySpan());
     }
 
     protected override void Layout()

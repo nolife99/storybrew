@@ -4,7 +4,6 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public static class PathHelper
@@ -58,7 +57,7 @@ public static class PathHelper
         {
             File.Delete(path);
         }
-        catch (SystemException) { }
+        catch (IOException) { }
     }
 
     public static string WithStandardSeparators(string path)
@@ -73,7 +72,6 @@ public static class PathHelper
         return chars.ToString();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WithStandardSeparatorsUnsafe(scoped ReadOnlySpan<char> path)
     {
         var chars = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(path), path.Length);
@@ -99,7 +97,7 @@ public static class PathHelper
 
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
-    public static bool IsValidPath(string path) => !MemoryExtensions.ContainsAny(path, invalidChars);
+    public static bool IsValidPath(scoped ReadOnlySpan<char> path) => !path.ContainsAny(invalidChars);
 
     public static bool IsValidFilename(char character) => !invalidChars.Contains(character) &&
         (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character));

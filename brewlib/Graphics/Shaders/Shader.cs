@@ -201,14 +201,17 @@ public sealed partial class Shader : IDisposable
             if (!errorRegex.IsMatch(splitLine)) continue;
 
             var match = errorRegex.Match(splitLine.ToString());
-            var character = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-            var lineNumber = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) - 1;
+
+            if (int.TryParse(match.Groups[2].ValueSpan, CultureInfo.InvariantCulture, out var lineNumber)) --lineNumber;
 
             if (lineNumber > 0) sb.Append($"  {splitCode[lineNumber - 1].AsReadOnlySpan()}\n");
             sb.Append($"> {splitCode[lineNumber].AsReadOnlySpan()}");
 
-            for (var i = 0; i < character + 2; ++i) sb.Add(' ');
-            sb.Append("^\n");
+            if (int.TryParse(match.Groups[1].ValueSpan, CultureInfo.InvariantCulture, out var character))
+                for (var i = 0; i < character + 2; ++i)
+                    sb.Add(' ');
+
+            sb.AddRange("^\n");
         }
 
         foreach (var s in splitCode) s.Dispose();

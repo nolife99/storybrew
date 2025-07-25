@@ -47,7 +47,7 @@ public readonly ref struct TempDictionaryKeyCollection<TKey, TValue>
             Current = default;
         }
 
-        public void Dispose() { }
+        public readonly void Dispose() { }
 
         public bool MoveNext()
         {

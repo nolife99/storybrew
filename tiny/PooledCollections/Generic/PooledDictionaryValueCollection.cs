@@ -8,16 +8,14 @@ namespace Tiny.PooledCollections.Generic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>)), DebuggerDisplay("Count = {Count}")]
 public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollection<TValue>, IReadOnlyCollection<TValue>
 {
     readonly PooledDictionary<TKey, TValue> _dictionary;
 
-    public PooledDictionaryValueCollection(PooledDictionary<TKey, TValue> dictionary)
+    internal PooledDictionaryValueCollection(PooledDictionary<TKey, TValue> dictionary)
     {
         ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -26,20 +24,20 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
 
     public Enumerator GetEnumerator() => new(_dictionary);
 
-    public void CopyTo(TValue[] array, int index)
+    public void CopyTo(TValue[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        if ((uint)index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+        if ((uint)arrayIndex > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 
-        if (array.Length - index < _dictionary.Count)
+        if (array.Length - arrayIndex < _dictionary.Count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var count = _dictionary._count;
         var entries = _dictionary._entries;
         for (var i = 0; i < count; i++)
             if (entries![i].Next >= -1)
-                array[index++] = entries[i].Value;
+                array[arrayIndex++] = entries[i].Value;
     }
 
     public int Count => _dictionary.Count;
@@ -90,11 +88,10 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
             {
                 ref var localEntry = ref Unsafe.Add(ref entry, _index++);
 
-                if (localEntry.Next >= -1)
-                {
-                    Current = localEntry.Value;
-                    return true;
-                }
+                if (localEntry.Next < -1) continue;
+
+                Current = localEntry.Value;
+                return true;
             }
 
             _index = _dictionary._count + 1;

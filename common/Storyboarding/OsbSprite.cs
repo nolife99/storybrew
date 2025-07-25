@@ -64,15 +64,7 @@ public class OsbSprite : StoryboardObject
     public bool InGroup => currentCommandGroup is not null;
 
     /// <returns> The path to the image of the <see cref="OsbSprite"/>. </returns>
-    public string TexturePath
-    {
-        get => texturePath;
-        set
-        {
-            PathHelper.WithStandardSeparatorsUnsafe(value.AsSpan());
-            texturePath = value;
-        }
-    }
+    public string TexturePath { get => texturePath; set => texturePath = PathHelper.WithStandardSeparators(value); }
 
     /// <returns> The initial position of the <see cref="OsbSprite"/>. </returns>
     public CommandPosition InitialPosition

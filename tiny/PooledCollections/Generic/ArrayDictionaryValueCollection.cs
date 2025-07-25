@@ -54,7 +54,7 @@ public readonly struct ArrayDictionaryValueCollection<TKey, TValue> : ICollectio
 
         int _index;
 
-        public Enumerator(ArrayDictionary<TKey, TValue> dictionary)
+        internal Enumerator(ArrayDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _index = -1;

@@ -22,7 +22,6 @@ public sealed class DrawContext : IDisposable
             ?.SetValue(allocator, 65536);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
 
     public void Register<T>(T obj, bool dispose = false) where T : class

@@ -11,16 +11,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 public ref partial struct TempDictionary<TKey, TValue>
 {
-    // constants for serialization
-    const string VersionName = "Version"; // Do not rename (binary serialization)
-    const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
-    const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
-    const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
@@ -37,16 +30,15 @@ public ref partial struct TempDictionary<TKey, TValue>
     internal int _version;
     internal IEqualityComparer<TKey> _comparer;
 
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
 
-    [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
+    internal readonly ArrayPool<Entry<TKey, TValue>> _entryPool;
 
-    [NonSerialized]
-    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
-    internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
-    internal static readonly bool s_clearEntries = s_isReferenceKey || s_isReferenceValue;
+    internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>(),
+        s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>(),
+        s_clearEntries = s_isReferenceKey || s_isReferenceValue;
 
     const int StartOfFreeList = -3;
 
@@ -56,7 +48,7 @@ public ref partial struct TempDictionary<TKey, TValue>
         ArrayPool<Entry<TKey, TValue>> entryPool)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
+        _fastModMultiplier = 0;
 #endif
 
         _count = 0;
@@ -257,24 +249,6 @@ public ref partial struct TempDictionary<TKey, TValue>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this, Enumerator.KeyValuePair);
-
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        info.AddValue(VersionName, _version);
-        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-        info.AddValue(HashSizeName, _buckets?.Length ?? 0); // This is the length of the bucket array
-
-        if (_buckets is not null)
-        {
-            var pool = ArrayPool<KeyValuePair<TKey, TValue>>.Shared;
-            var array = pool.Rent(Count);
-            CopyTo(array, 0);
-            info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
-            pool.Return(array, s_clearEntries);
-        }
-    }
 
     internal ref TValue FindValue(TKey key)
     {
@@ -800,7 +774,7 @@ public ref partial struct TempDictionary<TKey, TValue>
 
         ArgumentNullException.ThrowIfNull(key);
 
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
             Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
@@ -856,7 +830,7 @@ public ref partial struct TempDictionary<TKey, TValue>
 
         ArgumentNullException.ThrowIfNull(key);
 
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
             Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
@@ -1013,12 +987,7 @@ public ref partial struct TempDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets is not null)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1073,7 +1042,5 @@ public ref partial struct TempDictionary<TKey, TValue>
             get;
             private set;
         }
-
-        public void Dispose() { }
     }
 }

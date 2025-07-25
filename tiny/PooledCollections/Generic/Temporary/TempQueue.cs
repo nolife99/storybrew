@@ -28,7 +28,7 @@ public ref partial struct TempQueue<T>
     internal int _size; // Number of elements.
     internal int _version;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 

@@ -3,7 +3,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
@@ -106,7 +105,6 @@ using Vector4 = System.Numerics.Vector4;
     public static CommandColor FromHtml(string htmlColor)
         => Color.ParseHex(htmlColor.StartsWith('#') ? htmlColor : '#' + htmlColor);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
 #pragma warning disable CS1591

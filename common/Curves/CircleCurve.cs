@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Curves;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.Temporary;
 
@@ -17,17 +16,17 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
     public override Vector2 EndPosition => endPoint;
 
     /// <summary/>
-    protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
+    protected override void Initialize(scoped ref (float, Vector2)[] distancePosition, out float length)
     {
-        using var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint], out var amountPoints);
-        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Length);
+        using var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint]);
+        distancePosition = GC.AllocateUninitializedArray<(float, Vector2)>(linearSegments.Length - 1);
 
         length = 0;
-        for (var i = 0; i < amountPoints - 1; ++i)
+        for (var i = 0; i < distancePosition.Length; ++i)
         {
             var cur = linearSegments[i];
 
-            distancePosition.Add((length, cur));
+            distancePosition[i] = (length, cur);
             length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
     }
@@ -42,10 +41,10 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
         0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static TempArray<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, out int amountPoints)
+    static TempArray<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
     {
         CircularArcProperties pr = new(controlPoints);
-        amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
+        var amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
             int.Max(2, (int)float.Ceiling(pr.ThetaRange / (2 * float.Acos(1 - circular_arc_tolerance / pr.Radius))));
 

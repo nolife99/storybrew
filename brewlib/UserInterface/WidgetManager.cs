@@ -17,7 +17,6 @@ using Util;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
-    readonly Action<ICamera> CameraChanged;
     readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
@@ -45,8 +44,6 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         rootContainer.Add(tooltipOverlay = new(this) { Hoverable = false });
 
         initializeDragAndDrop();
-
-        CameraChanged = _ => InvalidateAnchors();
     }
 
     public Vector2 Size { get => rootContainer.Size; set => rootContainer.Size = value; }
@@ -86,6 +83,8 @@ public sealed class WidgetManager : IInputHandler, IDisposable
             RefreshHover();
         }
     }
+
+    void CameraChanged(ICamera c) => InvalidateAnchors();
 
     public void RefreshHover()
     {

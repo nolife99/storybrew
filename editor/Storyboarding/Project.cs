@@ -141,10 +141,13 @@ public sealed partial class Project : IDisposable
             if (!MapsetPathIsValid) return Path.Combine(ProjectFolderPath, "storyboard.osb");
 
             var regex = OsuFileRegex();
-            var osuFilename = Path.GetFileName(MainBeatmap.Path);
+            var osuFilename = Path.GetFileName(MainBeatmap.Path.AsSpan());
 
-            Match match;
-            if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, match.Groups[1].Value + ".osb");
+            if (regex.IsMatch(osuFilename))
+            {
+                var match = regex.Match(osuFilename.ToString());
+                return Path.Combine(MapsetPath, string.Concat(match.Groups[1].ValueSpan, ".osb"));
+            }
 
             foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly))
                 return osbFilePath;

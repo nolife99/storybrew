@@ -79,7 +79,7 @@ public static class ScriptCompiler
             }
         }
 
-        using var error = TempList.Create("Compilation error\n \n".AsSpan());
+        using var error = TempList.Create("Compilation error\n \n");
 
         using var diagnosticGroups = TempDictionary.Create<string, ValueList<Diagnostic>>();
         foreach (var diagnostic in result.Diagnostics)

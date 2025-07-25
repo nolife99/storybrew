@@ -20,7 +20,6 @@ public static class BitmapHelper
             IsFullyTransparentDiscontiguous(buffer);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static bool IsFullyTransparentContiguous(scoped ReadOnlySpan<Rgba32> buffer)
     {
         if (Vector.IsHardwareAccelerated)
@@ -52,7 +51,6 @@ public static class BitmapHelper
         return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static bool IsFullyTransparentDiscontiguous(Buffer2D<Rgba32> buffer)
     {
         for (var y = 0; y < buffer.Height; ++y)

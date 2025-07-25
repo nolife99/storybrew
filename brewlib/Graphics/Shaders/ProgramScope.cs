@@ -62,7 +62,7 @@ public class ProgramScope
         {
             code.Append($"struct {type.Name} {{\n");
             foreach (var field in type.Fields) code.Append($"{field.ShaderTypeName.GetString()} {field.Name};\n");
-            code.Append("};\n");
+            code.AddRange("};\n");
         }
 
         foreach (var type in ssbos)
@@ -74,7 +74,7 @@ public class ProgramScope
             {
                 code.Append($"{field.ShaderTypeName.GetString()} {field.Name}");
 
-                if (field.ArrayCount == 0) code.Append("[];");
+                if (field.ArrayCount == 0) code.AddRange("[];");
                 else if (field.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{field.ArrayCount}];");
 
                 code.Add('\n');
@@ -90,7 +90,7 @@ public class ProgramScope
         {
             code.Append($"uniform {uniform.ShaderTypeName.GetString()} {uniform.Name}");
             if (uniform.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{uniform.ArrayCount}]");
-            code.Append(";\n");
+            code.AddRange(";\n");
         }
     }
 
@@ -106,11 +106,11 @@ public class ProgramScope
         foreach (var varying in varyings)
             if (context.Uses(varying))
             {
-                if (varying.ShaderTypeName.IsFlatType()) code.Append("flat ");
+                if (varying.ShaderTypeName.IsFlatType()) code.AddRange("flat ");
                 code.Append($"{(isFragmentShader ? "in" : "out")} {varying.ShaderTypeName.GetString()} {varying.Name}");
 
                 if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-                code.Append(";\n");
+                code.AddRange(";\n");
             }
 
         return;
@@ -121,7 +121,7 @@ public class ProgramScope
                 $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
 
             if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-            code.Append(";\n");
+            code.AddRange(";\n");
         }
     }
 
@@ -132,7 +132,7 @@ public class ProgramScope
             {
                 code.Append($"{varying.ShaderTypeName.GetString()} {varying.Name}");
                 if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-                code.Append(";\n");
+                code.AddRange(";\n");
             }
     }
 }

@@ -3,40 +3,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-** Purpose: A circular-array implementation of a generic queue.
-**
-**
-=============================================================================*/
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-// A simple Queue of generic objects.  Internally it is implemented as a
-// circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
-[DebuggerTypeProxy(typeof(PooledQueueDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCallback
+public sealed class PooledQueue<T> : IReadOnlyCollection<T>
 {
     static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
+    internal readonly ArrayPool<T> _pool;
     internal T[] _array;
-    internal int _head; // The index from which to dequeue if the queue isn't empty.
+    internal int _head;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
-
-    internal int _size; // Number of elements.
-    internal int _tail; // The index at which to enqueue if the queue isn't full.
+    internal int _size;
+    internal int _tail;
     internal int _version;
 
     public PooledQueue() : this(ArrayPool<T>.Shared) { }
@@ -45,16 +32,12 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
     public PooledQueue(IEnumerable<T> collection) : this(collection, ArrayPool<T>.Shared) { }
 
-    // Creates a queue with room for capacity objects. The default initial
-    // capacity and grow factor are used.
     public PooledQueue(ArrayPool<T> pool)
     {
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = s_emptyArray;
     }
 
-    // Creates a queue with room for capacity objects. The default grow factor
-    // is used.
     public PooledQueue(int capacity, ArrayPool<T> pool)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
@@ -63,8 +46,6 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
 
-    // Fills a Queue with the elements of an ICollection.  Uses the enumerator
-    // to get each of the elements.
     public PooledQueue(IEnumerable<T> collection, ArrayPool<T> pool)
     {
         ArgumentNullException.ThrowIfNull(collection);
@@ -74,14 +55,27 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         if (_size != _array.Length) _tail = _size;
     }
 
-    void IDeserializationCallback.OnDeserialization(object sender) =>
+    public PooledQueue(T[] items) : this(items.AsSpan(), ArrayPool<T>.Shared) { }
 
-        // We can't serialize array pools, so deserialized PooledQueue will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
+    public PooledQueue(T[] items, ArrayPool<T> pool) : this(items.AsSpan(), pool) { }
 
-    /// <internalonly/>
+    public PooledQueue(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+
+    public PooledQueue(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    {
+        _pool = pool ?? ArrayPool<T>.Shared;
+
+        var count = span.Length;
+
+        if (count == 0) _array = s_emptyArray;
+        else
+        {
+            _array = _pool.Rent(count);
+            span.CopyTo(_array);
+            _size = count;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
 
@@ -94,7 +88,6 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         get => _size;
     }
 
-    // Removes all Objects from the queue.
     public void Clear()
     {
         if (_size != 0)
@@ -127,10 +120,9 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
     {
         ArgumentNullException.ThrowIfNull(dest);
 
-        CopyTo(dest, destIndex, count);
+        CopyTo(dest.AsSpan(destIndex, count));
     }
 
-    // Adds item to the tail of the queue.
     public void Enqueue(T item)
     {
         if (_size == _array.Length) Grow(_size + 1);
@@ -141,14 +133,9 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         _version++;
     }
 
-    // GetEnumerator returns an IEnumerator over this Queue.  This
-    // Enumerator will support removing.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this);
 
-    // Removes the object at the head of the queue and returns it. If the queue
-    // is empty, this method throws an
-    // InvalidOperationException.
     public T Dequeue()
     {
         var head = _head;
@@ -183,9 +170,6 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         return true;
     }
 
-    // Returns the object at the head of the queue. The object remains in the
-    // queue. If the queue is empty, this method throws an
-    // InvalidOperationException.
     public T Peek()
     {
         if (_size == 0) ThrowForEmptyQueue();
@@ -205,22 +189,15 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         return true;
     }
 
-    // Returns true if the queue contains at least one object equal to item.
-    // Equality is determined using EqualityComparer<T>.Default.Equals().
     public bool Contains(T item)
     {
         if (_size == 0) return false;
 
         if (_head < _tail) return Array.IndexOf(_array, item, _head, _size) >= 0;
 
-        // We've wrapped around. Check both partitions, the least recently enqueued first.
         return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 || Array.IndexOf(_array, item, 0, _tail) >= 0;
     }
 
-    // Iterates over the objects in the queue, returning an array of the
-    // objects in the Queue, or an empty array if the queue is empty.
-    // The order of elements in the array is first in to last in, the same
-    // order produced by successive calls to Dequeue.
     public T[] ToArray()
     {
         if (_size == 0) return s_emptyArray;
@@ -237,8 +214,6 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         return arr;
     }
 
-    // PRIVATE Grows or shrinks the buffer to hold capacity objects. Capacity
-    // must be >= _size.
     void SetCapacity(int capacity)
     {
         var newArray = _pool.Rent(capacity);
@@ -265,22 +240,14 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         _version++;
     }
 
-    // Increments the index wrapping it if necessary.
     void MoveNext(ref int index)
     {
-        // It is tempting to use the remainder operator here but it is actually much slower
-        // than a simple comparison and a rarely taken branch.
-        // JIT produces better code than with ternary operator ?:
         var tmp = index + 1;
         if (tmp == _array.Length) tmp = 0;
         index = tmp;
     }
 
-    void ThrowForEmptyQueue()
-    {
-        Debug.Assert(_size == 0);
-        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyQueue();
-    }
+    static void ThrowForEmptyQueue() => ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyQueue();
 
     public void TrimExcess()
     {
@@ -288,14 +255,9 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
         if (_size < threshold) SetCapacity(_size);
     }
 
-    /// <summary>Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this queue.</returns>
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         if (_array.Length < capacity) Grow(capacity);
 
@@ -304,22 +266,15 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
     void Grow(int capacity)
     {
-        Debug.Assert(_array.Length < capacity);
-
         const int GrowFactor = 2;
         const int MinimumGrow = 4;
 
         var newcapacity = GrowFactor * _array.Length;
 
-        // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-        // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
         if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
-        // Ensure minimum growth is respected.
         newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
 
-        // If the computed capacity is still less than specified, set to the original argument.
-        // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
         if (newcapacity < capacity) newcapacity = capacity;
 
         SetCapacity(newcapacity);
@@ -327,27 +282,57 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_array is not null)
-            try
-            {
-                _pool.Return(_array, s_clearArray);
-            }
-            catch { }
+        if (_array is not null) _pool.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
     }
 
-    // Implements an enumerator for a Queue.  The enumerator uses the
-    // internal version number of the list to ensure that no modifications are
-    // made to the list while an enumeration is in progress.
+    public void Dispose()
+    {
+        ReturnArray(s_emptyArray);
+        _head = _tail = _size = 0;
+        _version++;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(scoped Span<T> dest) => CopyTo(dest, 0, _size);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(dest, destIndex, _size);
+
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (dest.Length - destIndex < count || _size < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+        var numToCopy = count;
+        var src = _array.AsSpan(0, _size);
+
+        if (src.Length == 0 || numToCopy == 0) return;
+
+        var firstPart = Math.Min(src.Length - _head, numToCopy);
+        src.Slice(_head, firstPart).CopyTo(dest.Slice(destIndex, firstPart));
+
+        numToCopy -= firstPart;
+        if (numToCopy <= 0) return;
+
+        destIndex += src.Length - _head;
+        src[..numToCopy].CopyTo(dest.Slice(destIndex, numToCopy));
+    }
+
     public struct Enumerator : IEnumerator<T>
     {
         readonly PooledQueue<T> _q;
         readonly int _version;
-        int _index; // -1 = not started, -2 = ended/disposed
+        int _index;
         T _currentElement;
 
-        public Enumerator(PooledQueue<T> q)
+        internal Enumerator(PooledQueue<T> q)
         {
             _q = q;
             _version = q._version;
@@ -371,28 +356,16 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
             if (_index == _q._size)
             {
-                // We've run past the last element
                 _index = -2;
                 _currentElement = default;
                 return false;
             }
 
-            // Cache some fields in locals to decrease code size
             var array = _q._array;
             var capacity = array.Length;
 
-            // _index represents the 0-based index into the queue, however the queue
-            // doesn't have to start from 0 and it may not even be stored contiguously in memory.
-
-            var arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
-            if (arrayIndex >= capacity)
-
-                // NOTE: Originally we were using the modulo operator here, however
-                // on Intel processors it has a very high instruction latency which
-                // was slowing down the loop quite a bit.
-                // Replacing it with simple comparison/subtraction operations sped up
-                // the average foreach loop by 2x.
-                arrayIndex -= capacity; // wrap around if needed
+            var arrayIndex = _q._head + _index;
+            if (arrayIndex >= capacity) arrayIndex -= capacity;
 
             _currentElement = array[arrayIndex];
             return true;
@@ -409,8 +382,6 @@ public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCa
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            Debug.Assert(_index == -1 || _index == -2);
-
             if (_index == -1) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }

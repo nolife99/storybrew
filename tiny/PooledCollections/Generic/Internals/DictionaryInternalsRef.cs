@@ -7,22 +7,22 @@ using System.Runtime.CompilerServices;
 public readonly ref struct DictionaryInternalsRef<TKey, TValue>
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool IsReferenceKey;
-    [NonSerialized] public readonly bool IsReferenceValue;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count;
+    public readonly int FreeList;
+    public readonly int FreeCount;
+    public readonly int Version;
+    public readonly bool IsReferenceKey;
+    public readonly bool IsReferenceValue;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ReadOnlySpan<int> Buckets;
-    [NonSerialized] public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
-    [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
+    public readonly ReadOnlySpan<int> Buckets;
+    public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
+    public readonly IEqualityComparer<TKey> Comparer;
 
-    public DictionaryInternalsRef(PooledDictionary<TKey, TValue> source)
+    internal DictionaryInternalsRef(PooledDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

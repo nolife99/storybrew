@@ -7,21 +7,18 @@ using System.Collections.Generic;
 public readonly struct HashSetInternals<T> : IDisposable
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<T>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<T> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<T>[] Entries;
+    public readonly IEqualityComparer<T> Comparer;
 
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
-    [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<Entry<T>> EntryPool;
 
     internal HashSetInternals(PooledHashSet<T> source)
     {
@@ -51,8 +48,6 @@ public readonly struct HashSetInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static HashSetInternals<T> TakeOwnership<T>(PooledHashSet<T> source)
     {
         var internals = new HashSetInternals<T>(source);

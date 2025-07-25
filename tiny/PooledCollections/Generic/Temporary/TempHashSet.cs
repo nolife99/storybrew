@@ -35,8 +35,8 @@ public ref partial struct TempHashSet<T>
 
     internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    internal int[]? _buckets;
-    internal Entry<T>[]? _entries;
+    internal int[] _buckets;
+    internal Entry<T>[] _entries;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
@@ -45,21 +45,20 @@ public ref partial struct TempHashSet<T>
     internal int _freeList;
     internal int _freeCount;
     internal int _version;
-    internal IEqualityComparer<T>? _comparer;
+    internal IEqualityComparer<T> _comparer;
 
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
 
-    [NonSerialized] internal ArrayPool<Entry<T>> _entryPool;
+    internal readonly ArrayPool<Entry<T>> _entryPool;
 
-    [NonSerialized]
-    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
     #region Constructors
 
-    internal TempHashSet(IEqualityComparer<T>? comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
+    internal TempHashSet(IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
+        _fastModMultiplier = 0;
 #endif
 
         _count = 0;
@@ -87,7 +86,7 @@ public ref partial struct TempHashSet<T>
     }
 
     internal TempHashSet(IEnumerable<T> collection,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {
@@ -107,7 +106,7 @@ public ref partial struct TempHashSet<T>
     }
 
     internal TempHashSet(int capacity,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {

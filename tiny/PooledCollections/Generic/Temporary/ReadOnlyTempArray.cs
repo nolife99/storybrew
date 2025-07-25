@@ -4,9 +4,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-public readonly ref struct ReadOnlyTempArray<T>
+public ref struct ReadOnlyTempArray<T>
 {
-    internal readonly TempArray<T> _array;
+    internal TempArray<T> _array;
 
     ReadOnlyTempArray(TempArray<T> array) => _array = array;
 
@@ -31,7 +31,6 @@ public readonly ref struct ReadOnlyTempArray<T>
         get => _array.IsValid;
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _array.Length);
 
@@ -48,33 +47,29 @@ public readonly ref struct ReadOnlyTempArray<T>
         CopyTo(index, new Span<T>(dest), destIndex, count);
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
+    public void CopyTo(scoped TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
+    public void CopyTo(scoped TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(int index, in TempArray<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped TempArray<T> dest, int destIndex, int count)
         => CopyTo(index, MemoryMarshal.CreateSpan(ref dest._ref, count), destIndex, count);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _array.Length);
+    public void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _array.Length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(destIndex);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(destIndex, dest.Length);
@@ -97,5 +92,5 @@ public readonly ref struct ReadOnlyTempArray<T>
     public void Dispose() => _array.Dispose();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator ReadOnlyTempArray<T>(in TempArray<T> array) => new(array);
+    public static implicit operator ReadOnlyTempArray<T>(TempArray<T> array) => new(array);
 }

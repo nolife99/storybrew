@@ -3,14 +3,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-** Purpose: An array implementation of a generic stack.
-**
-**
-=============================================================================*/
-
 namespace Tiny.PooledCollections.Generic;
 
 using System;
@@ -20,25 +12,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-// A simple stack of objects.  Internally it is implemented as an array,
-// so Push can be O(n).  Pop is O(1).
-
-[DebuggerTypeProxy(typeof(PooledStackDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCallback
+public sealed class PooledStack<T> : IReadOnlyCollection<T>
 {
     const int DefaultCapacity = 4;
 
     static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
-    internal T[] _array; // Storage for stack elements. Do not rename (binary serialization)
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
+    internal T[] _array;
 
-    internal int _size; // Number of items in the stack. Do not rename (binary serialization)
-    internal int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
+    internal int _size;
+    internal int _version;
 
     public PooledStack() : this(ArrayPool<T>.Shared) { }
 
@@ -52,8 +39,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         _array = s_emptyArray;
     }
 
-    // Create a stack with a specific initial capacity.  The initial capacity
-    // must be a non-negative number.
     public PooledStack(int capacity, ArrayPool<T> pool)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
@@ -62,8 +47,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
 
-    // Fills a Stack with the contents of a particular collection.  The items are
-    // pushed onto the stack in the same order they are read by the enumerator.
     public PooledStack(IEnumerable<T> collection, ArrayPool<T> pool)
     {
         ArgumentNullException.ThrowIfNull(collection);
@@ -72,14 +55,27 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
     }
 
-    void IDeserializationCallback.OnDeserialization(object sender) =>
+    public PooledStack(T[] items) : this(items.AsSpan(), ArrayPool<T>.Shared) { }
 
-        // We can't serialize array pools, so deserialized PooledQueue will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
+    public PooledStack(T[] items, ArrayPool<T> pool) : this(items.AsSpan(), pool) { }
 
-    /// <internalonly/>
+    public PooledStack(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+
+    public PooledStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    {
+        _pool = pool ?? ArrayPool<T>.Shared;
+
+        var count = span.Length;
+
+        if (count == 0) _array = s_emptyArray;
+        else
+        {
+            _array = _pool.Rent(count);
+            span.CopyTo(_array);
+            _size = count;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
 
@@ -92,29 +88,15 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         get => _size;
     }
 
-    // Removes all Objects from the Stack.
     public void Clear()
     {
-        if (s_clearArray)
-            Array.Clear(_array,
-                0,
-                _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+        if (s_clearArray) Array.Clear(_array, 0, _size);
 
         _size = 0;
         _version++;
     }
 
-    public bool Contains(T item) =>
-
-        // Compare items using the default equality comparer
-        // PERF: Internally Array.LastIndexOf calls
-        // EqualityComparer<T>.Default.LastIndexOf, which
-        // is specialized for different types. This
-        // boosts performance since instead of making a
-        // virtual method call each iteration of the loop,
-        // via EqualityComparer<T>.Default.Equals, we
-        // only make one virtual call to EqualityComparer.LastIndexOf.
-        _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
+    public bool Contains(T item) => _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(dest, 0, _size);
@@ -129,7 +111,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         CopyTo(dest.AsSpan(), destIndex, count);
     }
 
-    // Returns an IEnumerator for this Stack.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this);
 
@@ -143,27 +124,18 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         }
 
         var threshold = (int)(_array.Length * 0.9);
-        if (_size < threshold)
-        {
-            var newArray = _pool.Rent(_size);
-            if (newArray.Length < _array.Length)
-            {
-                Array.Copy(_array, newArray, _size);
-                ReturnArray(newArray);
-                _version++;
-            }
-            else
+        if (_size >= threshold) return;
 
-                // The array from the pool wasn't any smaller than the one we already had,
-                // (we can only control minimum size) so return it and do nothing.
-                // If we create an exact-sized array not from the pool, we'll
-                // get an exception when returning it to the pool.
-                _pool.Return(newArray);
+        var newArray = _pool.Rent(_size);
+        if (newArray.Length < _array.Length)
+        {
+            Array.Copy(_array, newArray, _size);
+            ReturnArray(newArray);
+            _version++;
         }
+        else _pool.Return(newArray);
     }
 
-    // Returns the top object on the stack without removing it.  If the stack
-    // is empty, Peek throws an InvalidOperationException.
     public T Peek()
     {
         var size = _size - 1;
@@ -189,22 +161,17 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         return true;
     }
 
-    // Pops an item from the top of the stack.  If the stack is empty, Pop
-    // throws an InvalidOperationException.
     public T Pop()
     {
         var size = _size - 1;
         var array = _array;
 
-        // if (_size == 0) is equivalent to if (size == -1), and this case
-        // is covered with (uint)size, thus allowing bounds check elimination
-        // https://github.com/dotnet/coreclr/pull/9773
         if ((uint)size >= (uint)array.Length) ThrowForEmptyStack();
 
         _version++;
         _size = size;
         var item = array[size];
-        if (s_clearArray) array[size] = default!; // Free memory quicker.
+        if (s_clearArray) array[size] = default!;
         return item;
     }
 
@@ -226,7 +193,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         return true;
     }
 
-    // Pushes an item to the top of the stack.
     public void Push(T item)
     {
         var size = _size;
@@ -241,24 +207,15 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         else PushWithResize(item);
     }
 
-    // Non-inline from Stack.Push to improve its code quality as uncommon path
     [MethodImpl(MethodImplOptions.NoInlining)]
     void PushWithResize(T item)
     {
-        Debug.Assert(_size == _array.Length);
         Grow(_size + 1);
         _array[_size] = item;
         _version++;
         _size++;
     }
 
-    /// <summary>
-    ///     Ensures that the capacity of this Stack is at least the specified <paramref name="capacity"/>. If the current
-    ///     capacity of the Stack is less than specified <paramref name="capacity"/>, the capacity is increased by continuously
-    ///     twice current capacity until it is at least the specified <paramref name="capacity"/>.
-    /// </summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this stack.</returns>
     public int EnsureCapacity(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
@@ -274,16 +231,10 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
 
     void Grow(int capacity)
     {
-        Debug.Assert(_array.Length < capacity);
-
         var newCapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
 
-        // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-        // Note that this check works even when _items.Length overflowed thanks to the (uint) cast.
         if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
 
-        // If computed capacity is still less than specified, set to the original argument.
-        // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
         if (newCapacity < capacity) newCapacity = capacity;
 
         var newArray = _pool.Rent(newCapacity);
@@ -292,7 +243,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         _array = newArray;
     }
 
-    // Copies the Stack to an array, in the same order Pop would return the items.
     public T[] ToArray()
     {
         if (_size == 0) return s_emptyArray;
@@ -310,12 +260,7 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
 
     void ReturnArray(T[] replaceWith = null)
     {
-        if (_array is not null)
-            try
-            {
-                _pool.Return(_array, s_clearArray);
-            }
-            catch { }
+        if (_array is not null) _pool.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
     }
@@ -326,6 +271,38 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
     }
 
+    public void Dispose()
+    {
+        ReturnArray(s_emptyArray);
+        _size = 0;
+        _version++;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(scoped Span<T> dest) => CopyTo(dest, 0, _size);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(dest, destIndex, _size);
+
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowArrayIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (dest.Length - destIndex < count || _size < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+        var src = _array.AsSpan(0, _size);
+
+        if (src.Length == 0) return;
+
+        var srcIndex = 0;
+        var dstIndex = destIndex + count;
+        while (srcIndex < count) dest[--dstIndex] = src[srcIndex++];
+    }
+
     public struct Enumerator : IEnumerator<T>
     {
         readonly PooledStack<T> _stack;
@@ -333,7 +310,7 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         int _index;
         T _currentElement;
 
-        public Enumerator(PooledStack<T> stack)
+        internal Enumerator(PooledStack<T> stack)
         {
             _stack = stack;
             _version = stack._version;
@@ -347,23 +324,21 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         {
             bool retval;
             if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-            if (_index == -2)
+            switch (_index)
             {
-                // First call to enumerator.
-                _index = _stack._size - 1;
-                retval = _index >= 0;
-                if (retval) _currentElement = _stack._array[_index];
-                return retval;
+                case -2:
+                {
+                    _index = _stack._size - 1;
+                    retval = _index >= 0;
+                    if (retval) _currentElement = _stack._array[_index];
+                    return retval;
+                }
+
+                case -1: return false;
             }
 
-            if (_index == -1)
-
-                // End of enumeration.
-                return false;
-
             retval = --_index >= 0;
-            if (retval) _currentElement = _stack._array[_index];
-            else _currentElement = default;
+            _currentElement = retval ? _stack._array[_index] : default;
 
             return retval;
         }
@@ -379,8 +354,6 @@ public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCa
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            Debug.Assert(_index == -1 || _index == -2);
-
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }

@@ -62,9 +62,6 @@ public record ControlPoint : IComparable<ControlPoint>
                 $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
             (IsKiai ? " Kiai" : "");
 
-    /// <inheritdoc/>
-    public override int GetHashCode() => ToString().GetHashCode();
-
     ///<summary> Parses a control point from a given line. </summary>
     public static ControlPoint Parse(scoped ReadOnlySpan<char> line)
     {

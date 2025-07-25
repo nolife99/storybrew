@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Buffers;
@@ -8,22 +6,20 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
-    [NonSerialized] public readonly bool ClearValues;
+    public readonly bool ClearEntries, ClearValues;
 
-    [NonSerialized] public readonly ArrayEntry<TKey>[] Entries;
-    [NonSerialized] public readonly TValue[] Values;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<TKey>[] Entries;
+    public readonly TValue[] Values;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
+    public readonly ArrayPool<TValue> ValuePool;
+    public readonly ArrayPool<int> BucketPool;
 
-    public ArrayDictionaryInternalsRefUnsafe(ArrayDictionary<TKey, TValue> source)
+    internal ArrayDictionaryInternalsRefUnsafe(ArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;

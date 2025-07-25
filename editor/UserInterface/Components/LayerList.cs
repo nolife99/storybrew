@@ -240,14 +240,8 @@ public class LayerList : Widget
 
     static TempList<char> getLayerDetails(EditorStoryboardLayer layer, Effect effect)
     {
-        var str = TempList.Create("using ".AsSpan());
-        if (layer.EstimatedSize > 30720)
-        {
-            str.AddRange(effect.BaseName);
-            str.AddRange(" (".AsSpan());
-            str.AddRange(StringHelper.ToByteSize(layer.EstimatedSize).AsSpan());
-            str.Add(')');
-        }
+        var str = TempList.Create("using ");
+        if (layer.EstimatedSize > 30720) str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})");
         else str.AddRange(effect.BaseName);
 
         return str;

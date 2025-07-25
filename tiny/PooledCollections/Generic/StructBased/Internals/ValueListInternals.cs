@@ -5,13 +5,13 @@ using System.Buffers;
 
 public readonly struct ValueListInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly T[] Items;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Size;
+    public readonly int Version;
+    public readonly bool ClearItems;
+    public readonly T[] Items;
+    public readonly ArrayPool<T> Pool;
 
-    internal ValueListInternals(in ValueList<T> source)
+    internal ValueListInternals(ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -22,20 +22,13 @@ public readonly struct ValueListInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Items is not null && Items.Length > 0)
-            try
-            {
-                Pool?.Return(Items, ClearItems);
-            }
-            catch { }
+        if (Items is not null) Pool?.Return(Items, ClearItems);
     }
 }
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueListInternals<T> TakeOwnership<T>(ref ValueList<T> source)
+    public static ValueListInternals<T> TakeOwnership<T>(scoped ref ValueList<T> source)
     {
         var internals = new ValueListInternals<T>(source);
 
@@ -45,10 +38,10 @@ partial class ValueCollectionInternals
         return internals;
     }
 
-    public static ValueArray<T> ToValueArray<T>(ref ValueList<T> source)
+    public static ValueArray<T> ToValueArray<T>(scoped ref ValueList<T> source)
     {
         var internals = TakeOwnership(ref source);
 
-        return new ValueArray<T> { _array = internals.Items, _length = internals.Size, _pool = internals.Pool };
+        return new() { _array = internals.Items, _length = internals.Size, Pool = internals.Pool };
     }
 }

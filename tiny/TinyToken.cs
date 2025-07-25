@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Formats;
 using Formats.Json;
@@ -45,8 +46,11 @@ public abstract class TinyToken
     public static implicit operator TinyToken(decimal value) => new TinyValue(value);
     public static implicit operator TinyToken(decimal? value) => new TinyValue(value);
 
+    [OverloadResolutionPriority(1)] public abstract T Value<T>(scoped ReadOnlySpan<char> key);
+
     public abstract T Value<T>(object key);
-    public T Value<T>() => Value<T>(null);
+
+    public T Value<T>() => Value<T>((object)null);
 
     public static TinyToken ToToken(object value)
     {

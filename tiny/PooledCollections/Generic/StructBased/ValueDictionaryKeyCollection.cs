@@ -71,7 +71,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
             Current = default;
         }
 
-        public void Dispose() { }
+        public readonly void Dispose() { }
 
         public bool MoveNext()
         {
@@ -96,7 +96,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
 
         public TKey Current { get; private set; }
 
-        object IEnumerator.Current
+        readonly object IEnumerator.Current
         {
             get
             {

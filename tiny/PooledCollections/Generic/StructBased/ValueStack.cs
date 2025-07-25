@@ -20,19 +20,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-// A simple stack of objects.  Internally it is implemented as an array,
-// so Push can be O(n).  Pop is O(1).
-
-[DebuggerTypeProxy(typeof(ValueStackDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCallback
+public partial struct ValueStack<T> : IReadOnlyCollection<T>
 {
     internal T[] _array; // Storage for stack elements. Do not rename (binary serialization)
     internal int _size; // Number of items in the stack. Do not rename (binary serialization)
     internal int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 
@@ -317,13 +312,6 @@ public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
     }
 
-    void IDeserializationCallback.OnDeserialization(object sender) =>
-
-        // We can't serialize array pools, so deserialized PooledQueue will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
-
     public struct Enumerator : IEnumerator<T>
     {
         readonly ValueStack<T> _stack;
@@ -331,7 +319,7 @@ public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCa
         int _index;
         T _currentElement;
 
-        public Enumerator(in ValueStack<T> stack)
+        internal Enumerator(in ValueStack<T> stack)
         {
             _stack = stack;
             _version = stack._version;

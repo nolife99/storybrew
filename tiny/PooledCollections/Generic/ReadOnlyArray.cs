@@ -34,7 +34,6 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
         get => _array is not null;
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, Length);
 
@@ -51,19 +50,16 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, Length);
+    public void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, Length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, Length);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, Length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -104,7 +100,7 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
         readonly int _length;
         int _index;
 
-        public Enumerator(T[] array)
+        internal Enumerator(T[] array)
         {
             _array = array ?? s_emptyArray;
             _length = _array.Length;

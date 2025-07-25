@@ -6,12 +6,11 @@ using System.Runtime.InteropServices;
 
 public readonly struct ListInternalsRefUnsafe<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly T[] Items;
+    public readonly int Size, Version;
+    public readonly bool ClearItems;
+    public readonly T[] Items;
 
-    public ListInternalsRefUnsafe(PooledList<T> source)
+    internal ListInternalsRefUnsafe(PooledList<T> source)
     {
         Size = source._size;
         Version = source._version;

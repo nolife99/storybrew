@@ -13,7 +13,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 // Implements a variable-size List that uses an array of objects to store the
 // elements. A List has a capacity, which is the allocated length
@@ -22,7 +21,7 @@ using System.Runtime.Serialization;
 // internal array.
 //
 [DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallback
+public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
 {
     internal const int DefaultCapacity = 4;
 
@@ -30,7 +29,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     internal int _size; // Do not rename (binary serialization)
     internal int _version; // Do not rename (binary serialization)
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 
@@ -837,20 +836,13 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         return true;
     }
 
-    void IDeserializationCallback.OnDeserialization(object sender) =>
-
-        // We can't serialize array pools, so deserialized PooledLists will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
-
     public struct Enumerator : IEnumerator<T>
     {
         readonly ValueList<T> _list;
         int _index;
         readonly int _version;
 
-        public Enumerator(in ValueList<T> list)
+        internal Enumerator(in ValueList<T> list)
         {
             _list = list;
             _index = 0;

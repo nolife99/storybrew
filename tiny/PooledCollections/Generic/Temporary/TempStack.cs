@@ -26,7 +26,7 @@ public ref partial struct TempStack<T>
     internal int _size; // Number of items in the stack. Do not rename (binary serialization)
     internal int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
-    [NonSerialized] internal readonly ArrayPool<T> _pool;
+    internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 

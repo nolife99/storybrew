@@ -88,6 +88,8 @@ public class TinyArray() : TinyToken, IList<TinyToken>
     IEnumerator IEnumerable.GetEnumerator() => tokens.GetEnumerator();
     public ReadOnlySpan<TinyToken> AsReadOnlySpan() => new(tokens, 0, Count);
 
+    public override T Value<T>(scoped ReadOnlySpan<char> key) => throw new NotSupportedException("Key must be an integer");
+
     public override T Value<T>(object key) => key switch
     {
         null => (T)(object)this,

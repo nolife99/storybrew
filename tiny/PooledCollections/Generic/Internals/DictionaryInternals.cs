@@ -1,5 +1,3 @@
-#pragma warning disable CS8632
-
 namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
@@ -9,23 +7,18 @@ using System.Collections.Generic;
 public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool IsReferenceKey;
-    [NonSerialized] public readonly bool IsReferenceValue;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool IsReferenceKey, IsReferenceValue, ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<TKey, TValue>[] Entries;
+    public readonly IEqualityComparer<TKey> Comparer;
 
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
-    [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
     internal DictionaryInternals(PooledDictionary<TKey, TValue> source)
     {
@@ -57,8 +50,6 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static DictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(PooledDictionary<TKey, TValue> source)
     {
         var internals = new DictionaryInternals<TKey, TValue>(source);

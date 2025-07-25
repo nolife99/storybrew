@@ -3,6 +3,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
@@ -19,18 +20,16 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using ScreenLayers;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public sealed class Editor(NativeWindow window) : IDisposable
 {
     readonly FrameClock clock = new();
 
     DrawContext drawContext;
-
-    Action<ResizeEventArgs> resizeToWindow;
     ScreenLayerManager screenLayerManager;
-    Action<CancelEventArgs> window_Closing;
-    public InputManager InputManager { get; private set; }
 
+    public InputManager InputManager { get; private set; }
     public bool IsFixedRateUpdate { get; private set; }
     public ResourceContainer ResourceContainer { get; private set; }
     public Skin Skin { get; private set; }
@@ -114,22 +113,8 @@ public sealed class Editor(NativeWindow window) : IDisposable
         inputDispatcher.Add(createOverlay(screenLayerManager));
         inputDispatcher.Add(screenLayerManager.InputHandler);
 
-        window.Resize += resizeToWindow = e =>
-        {
-            var width = e.Width;
-            var height = e.Height;
-
-            DrawState.Viewport = new(0, 0, width, height);
-
-            var virtualHeight = height * float.Max(1024f / width, 768f / height);
-            overlayCamera.VirtualHeight = (int)virtualHeight;
-
-            var virtualWidth = width * virtualHeight / height;
-            overlayCamera.VirtualWidth = (int)virtualWidth;
-            overlay.Size = new(virtualWidth, virtualHeight);
-        };
-
-        window.Closing += window_Closing = _ => screenLayerManager.Close();
+        window.Resize += resizeToWindow;
+        window.Closing += window_Closing;
 
         var workArea = displayDevice.WorkArea;
         var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
@@ -240,7 +225,13 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         altOverlayTop.Pack(0, 0, 1024);
 
-        Program.Settings.Volume.Bind(volumeSlider, () => volumeSlider.Tooltip = $"Volume: {volumeSlider.Value:P0}");
+        Program.Settings.Volume.Bind(volumeSlider,
+            () =>
+            {
+                using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Volume: {volumeSlider.Value:P0}");
+                volumeSlider.Tooltip = text.AsReadOnlySpan();
+            });
+
         overlay.Root.OnMouseWheel += (_, e) =>
         {
             if (!InputManager.AltOnly) return false;
@@ -271,6 +262,23 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         altOverlayTop.Opacity = altOpacity;
         altOverlayTop.Displayed = altOpacity > 0;
+    }
+
+    void window_Closing(CancelEventArgs e) => screenLayerManager.Close();
+
+    void resizeToWindow(ResizeEventArgs e)
+    {
+        var width = e.Width;
+        var height = e.Height;
+
+        DrawState.Viewport = new(0, 0, width, height);
+
+        var virtualHeight = height * float.Max(1024f / width, 768f / height);
+        overlayCamera.VirtualHeight = (int)virtualHeight;
+
+        var virtualWidth = width * virtualHeight / height;
+        overlayCamera.VirtualWidth = (int)virtualWidth;
+        overlay.Size = new(virtualWidth, virtualHeight);
     }
 
     #endregion

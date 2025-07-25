@@ -5,13 +5,12 @@ using System.Buffers;
 
 public readonly struct ListInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly T[] Items;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Size, Version;
+    public readonly bool ClearItems;
+    public readonly T[] Items;
+    public readonly ArrayPool<T> Pool;
 
-    public ListInternals(PooledList<T> source)
+    internal ListInternals(PooledList<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -22,12 +21,7 @@ public readonly struct ListInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Items is not null && Items.Length > 0)
-            try
-            {
-                Pool?.Return(Items, ClearItems);
-            }
-            catch { }
+        if (Items is not null) Pool?.Return(Items, ClearItems);
     }
 }
 

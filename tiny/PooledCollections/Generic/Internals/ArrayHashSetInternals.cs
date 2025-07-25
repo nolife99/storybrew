@@ -1,23 +1,20 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Buffers;
 
 public readonly struct ArrayHashSetInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ArrayEntry<T>[] Entries;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<T>[] Entries;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
     internal ArrayHashSetInternals(ArrayHashSet<T> source)
     {

@@ -6,19 +6,18 @@ using System.Runtime.CompilerServices;
 
 public readonly ref struct ArrayHashSetInternalsRef<T>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ReadOnlySpan<ArrayEntry<T>> Entries;
-    [NonSerialized] public readonly ReadOnlySpan<int> Buckets;
+    public readonly ReadOnlySpan<ArrayEntry<T>> Entries;
+    public readonly ReadOnlySpan<int> Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
-    public ArrayHashSetInternalsRef(ArrayHashSet<T> source)
+    internal ArrayHashSetInternalsRef(ArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;

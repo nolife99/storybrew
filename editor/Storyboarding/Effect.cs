@@ -14,7 +14,7 @@ public abstract class Effect : IDisposable
 {
     readonly PooledList<EditorStoryboardLayer> layers;
 
-    ValueArray<char> name = ValueArray.Create("Unnamed Effect".AsSpan());
+    ValueArray<char> name = ValueArray.Create<char>("Unnamed Effect");
     EditorStoryboardLayer placeHolderLayer;
 
     public Effect(Project project)

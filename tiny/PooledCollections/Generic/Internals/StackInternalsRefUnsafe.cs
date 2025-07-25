@@ -5,12 +5,11 @@ using System.Runtime.CompilerServices;
 
 public readonly struct StackInternalsRefUnsafe<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
+    public readonly int Size, Version;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
 
-    public StackInternalsRefUnsafe(PooledStack<T> source)
+    internal StackInternalsRefUnsafe(PooledStack<T> source)
     {
         Size = source._size;
         Version = source._version;

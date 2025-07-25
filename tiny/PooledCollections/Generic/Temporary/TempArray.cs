@@ -10,10 +10,10 @@ public ref struct TempArray<T>
     internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
     static readonly T[] s_emptyArray = [];
 
-    internal T[] _array; // Do not rename (binary serialization)
-    internal int _length; // Do not rename (binary serialization)
+    internal T[] _array;
+    internal int _length;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal ArrayPool<T> _pool;
 
     internal TempArray(int length, ArrayPool<T> pool)
     {
@@ -65,7 +65,6 @@ public ref struct TempArray<T>
         }
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
 
@@ -82,7 +81,6 @@ public ref struct TempArray<T>
         CopyTo(index, new Span<T>(dest), destIndex, count);
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
 
@@ -96,15 +94,12 @@ public ref struct TempArray<T>
     public readonly void CopyTo(int index, TempArray<T> dest, int destIndex, int count)
         => CopyTo(index, MemoryMarshal.CreateSpan(ref dest._ref, count), destIndex, count);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(Span<T> dest) => CopyTo(0, dest, 0, _length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
@@ -174,4 +169,47 @@ public ref struct TempArray<T>
             Current = default;
         }
     }
+}
+
+public static class TempArray
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(int length) => new(int.Max(length, 0), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(int length, ArrayPool<T> pool) => new(int.Max(length, 0), pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Empty<T>() => Create<T>(0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Empty<T>(ArrayPool<T> pool) => new(0, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array) => new(array, array.Length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool) => new(array, array.Length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length)
+        => new(array, int.Clamp(length, 0, array.Length), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
+        => new(array, int.Clamp(length, 0, array.Length), pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(T[] array) => new(array, array.Length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(T[] array, ArrayPool<T> pool) => new(array, array.Length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(T[] array, int length)
+        => new(array, int.Clamp(length, 0, array.Length), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempArray<T> Create<T>(T[] array, int length, ArrayPool<T> pool)
+        => new(array, int.Clamp(length, 0, array.Length), pool);
 }

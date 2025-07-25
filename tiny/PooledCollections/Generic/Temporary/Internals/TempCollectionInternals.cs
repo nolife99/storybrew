@@ -1,5 +1,3 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Temporary.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public static partial class TempCollectionInternals { }

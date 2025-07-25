@@ -102,8 +102,8 @@ public class ShaderContext
 
         if (code is not null)
         {
-            code.AddRange(expression().AsSpan());
-            code.AddRange(";\n".AsSpan());
+            code.AddRange(expression());
+            code.AddRange(";\n");
         }
         else expression();
 
@@ -118,7 +118,7 @@ public class ShaderContext
 
         foreach (var range in line.Split('\n'))
         {
-            code.AddRange("\n// ".AsSpan());
+            code.AddRange("\n// ");
             code.AddRange(line[range]);
         }
 
@@ -145,8 +145,8 @@ public class ShaderContext
 
             code.AddRange(result.ShaderTypeName.GetString());
             code.Add(' ');
-            code.AddRange(result.Name.AsSpan());
-            code.AddRange(";\n".AsSpan());
+            code.AddRange(result.Name);
+            code.AddRange(";\n");
         }
         else throw new ArgumentNullException(nameof(expression));
     }

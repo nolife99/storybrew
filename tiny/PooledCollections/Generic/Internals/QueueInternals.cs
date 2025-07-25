@@ -5,15 +5,12 @@ using System.Buffers;
 
 public readonly struct QueueInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Head;
-    [NonSerialized] public readonly int Tail;
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Head, Tail, Size, Version;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
+    public readonly ArrayPool<T> Pool;
 
-    public QueueInternals(PooledQueue<T> source)
+    internal QueueInternals(PooledQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -26,12 +23,7 @@ public readonly struct QueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array is not null)
-            try
-            {
-                Pool?.Return(Array, ClearArray);
-            }
-            catch { }
+        if (Array is not null) Pool?.Return(Array, ClearArray);
     }
 }
 

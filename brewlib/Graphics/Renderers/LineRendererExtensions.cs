@@ -1,12 +1,10 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
 
 public static class LineRendererExtensions
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DrawSquare(this ILineRenderer line, Vector3 from, Vector3 to, Color color)
     {
         Vector3 topRight = new(to.X, from.Y, from.Z);

@@ -25,8 +25,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
         Vector2 measuredSize;
         if (char.IsWhiteSpace(c))
         {
-            var prepended = c == '\n' ? "\u200b\n" : c.ToString();
-            DrawState.TextGenerator.CreateBitmap(prepended,
+            DrawState.TextGenerator.CreateBitmap(c == '\n' ? ['\u200b', c] : [c],
                 name,
                 size,
                 Vector2.Zero,
@@ -37,7 +36,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
 
-        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(),
+        using var bitmap = DrawState.TextGenerator.CreateBitmap([c],
             name,
             size,
             Vector2.Zero,

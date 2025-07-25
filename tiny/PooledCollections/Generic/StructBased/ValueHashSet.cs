@@ -12,19 +12,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 [DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<T>, ISerializable, IDeserializationCallback
+public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
 {
-    // This uses the same array-based implementation as Dictionary<TKey, TValue>.
-
-    // Constants for serialization
-    const string CapacityName = "Capacity"; // Do not rename (binary serialization)
-    const string ElementsName = "Elements"; // Do not rename (binary serialization)
-    const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-    const string VersionName = "Version"; // Do not rename (binary serialization)
-
     /// <summary>Cutoff point for stackallocs. This corresponds to the number of ints.</summary>
     const int StackAllocThreshold = 100;
 
@@ -55,19 +46,18 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
     internal int _version;
     internal IEqualityComparer<T> _comparer;
 
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
 
-    [NonSerialized] internal ArrayPool<Entry<T>> _entryPool;
+    internal readonly ArrayPool<Entry<T>> _entryPool;
 
-    [NonSerialized]
-    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
     #region Constructors
 
     internal ValueHashSet(IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
+        _fastModMultiplier = 0;
 #endif
 
         _count = 0;
@@ -127,31 +117,6 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
 
         if (capacity > 0) Initialize(capacity);
-    }
-
-    ValueHashSet(SerializationInfo info, StreamingContext context)
-    {
-#if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        _fastModMultiplier = default;
-#endif
-
-        _count = 0;
-        _freeList = 0;
-        _freeCount = 0;
-        _version = 0;
-        _comparer = null;
-
-        _bucketPool = ArrayPool<int>.Shared;
-        _entryPool = ArrayPool<Entry<T>>.Shared;
-
-        _buckets = s_emptyBuckets;
-        _entries = s_emptyEntries;
-
-        // We can't do anything with the keys and values until the entire graph has been
-        // deserialized and we have a reasonable estimate that GetHashCode is not going to
-        // fail.  For the time being, we'll just cache this.  The graph is not valid until
-        // OnDeserialization has been called.
-        HashHelpers.SerializationInfoTable.Add(this, info);
     }
 
     /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
@@ -388,67 +353,6 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    #endregion
-
-    #region ISerializable methods
-
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        info.AddValue(VersionName,
-            _version); // need to serialize version to avoid problems with serializing while enumerating
-
-        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
-        info.AddValue(CapacityName, _buckets?.Length ?? 0);
-
-        if (_buckets is not null)
-        {
-            var array = new T[Count];
-            CopyTo(array);
-            info.AddValue(ElementsName, array, typeof(T[]));
-        }
-    }
-
-    #endregion
-
-    #region IDeserializationCallback methods
-
-    public void OnDeserialization(object sender)
-    {
-        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
-        if (siInfo is null)
-
-            // It might be necessary to call OnDeserialization from a container if the
-            // container object also implements OnDeserialization. We can return immediately
-            // if this function is called twice. Note we set _siInfo to null at the end of this method.
-            return;
-
-        var capacity = siInfo.GetInt32(CapacityName);
-        _comparer = (IEqualityComparer<T>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
-        _freeList = -1;
-        _freeCount = 0;
-
-        if (capacity != 0)
-        {
-            Initialize(capacity);
-
-#if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
-#endif
-
-            var array = (T[])siInfo.GetValue(ElementsName, typeof(T[]));
-            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-
-            // There are no resizes here because we already set capacity above.
-            for (var i = 0; i < array.Length; i++) AddIfNotPresent(array[i], out _);
-        }
-        else _buckets = s_emptyBuckets;
-
-        _version = siInfo.GetInt32(VersionName);
-        HashHelpers.SerializationInfoTable.Remove(this);
-    }
 
     #endregion
 
@@ -1517,9 +1421,9 @@ public partial struct ValueHashSet<T> : ISet<T>, PooledCollections.IReadOnlySet<
             private set;
         }
 
-        public void Dispose() { }
+        public readonly void Dispose() { }
 
-        object IEnumerator.Current
+        readonly object IEnumerator.Current
         {
             get
             {

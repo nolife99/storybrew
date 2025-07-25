@@ -93,7 +93,7 @@ public sealed class FontGenerator : IDisposable
 
     readonly PooledDictionary<string, FontTexture> cache = new();
 
-    readonly FastRandom debugRandom;
+    readonly Random debugRandom;
     readonly FontDescription description;
     readonly PooledList<FontEffect> effects;
 
@@ -193,12 +193,9 @@ public sealed class FontGenerator : IDisposable
         realText.Mutate(b =>
         {
             if (debugRandom is not null)
-            {
-                debugRandom.Reinitialise(cache.Count);
                 b.Clear(Color.FromPixel(new Rgba32((byte)debugRandom.Next(100, 255),
                     (byte)debugRandom.Next(100, 255),
                     (byte)debugRandom.Next(100, 255))));
-            }
 
             foreach (var t in effects)
                 if (!t.Overlay)

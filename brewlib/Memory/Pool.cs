@@ -22,6 +22,7 @@ public sealed class Pool<T>(Action<T> disposer = null) where T : class, new()
     {
         disposer?.Invoke(obj);
 
-        if (fastItem is not null || Interlocked.CompareExchange(ref fastItem, obj, null) is not null) queue.Enqueue(obj);
+        var item = fastItem;
+        if (item is not null || Interlocked.CompareExchange(ref fastItem, obj, null) is not null) queue.Enqueue(obj);
     }
 }

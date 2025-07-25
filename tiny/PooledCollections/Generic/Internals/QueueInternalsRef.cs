@@ -5,14 +5,11 @@ using System.Runtime.CompilerServices;
 
 public readonly ref struct QueueInternalsRef<T>
 {
-    [NonSerialized] public readonly int Head;
-    [NonSerialized] public readonly int Tail;
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    public readonly int Head, Tail, Size, Version;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
-    public QueueInternalsRef(PooledQueue<T> source)
+    internal QueueInternalsRef(PooledQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;

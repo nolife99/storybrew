@@ -5,12 +5,11 @@ using System.Runtime.CompilerServices;
 
 public readonly ref struct StackInternalsRef<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    public readonly int Size, Version;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
-    public StackInternalsRef(PooledStack<T> source)
+    internal StackInternalsRef(PooledStack<T> source)
     {
         Size = source._size;
         Version = source._version;

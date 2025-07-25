@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Temporary.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Temporary.Internals;
 
 using System;
 using System.Collections.Generic;

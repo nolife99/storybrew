@@ -185,9 +185,9 @@ public class ScriptedEffect : Effect
 
         if (!log.IsWhiteSpace())
         {
-            if (statusMessage.Count > 0) statusMessage.AddRange("\n\n".AsSpan());
+            if (statusMessage.Count > 0) statusMessage.AddRange("\n\n");
 
-            statusMessage.AddRange("Log:\n\n".AsSpan());
+            statusMessage.AddRange("Log:\n\n");
             statusMessage.AddRange(log);
         }
 

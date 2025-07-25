@@ -190,7 +190,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         {
                             if (!styles.GetAlternateLookup<ReadOnlySpan<char>>()
                                     .TryGetValue(implicitParentStyleName, out parentStyle) &&
-                                styleTypeObject.Value<TinyToken>(implicitParentStyleName.ToString()) is not null)
+                                styleTypeObject.Value<TinyToken>(implicitParentStyleName) is not null)
                                 throw new InvalidDataException(
                                     $"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
 

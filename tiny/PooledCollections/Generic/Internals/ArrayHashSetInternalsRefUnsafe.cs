@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Buffers;
@@ -8,19 +6,19 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ArrayHashSetInternalsRefUnsafe<T>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex;
+    public readonly int Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ArrayEntry<T>[] Entries;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<T>[] Entries;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
-    public ArrayHashSetInternalsRefUnsafe(ArrayHashSet<T> source)
+    internal ArrayHashSetInternalsRefUnsafe(ArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;

@@ -61,6 +61,8 @@ public class TinyValue : TinyToken
     public override bool IsEmpty => value is null;
     public override TinyTokenType Type => type;
 
+    public override T Value<T>(scoped ReadOnlySpan<char> key) => throw new NotSupportedException("Key must be null");
+
     public override T Value<T>(object key)
     {
         if (key is not null) throw new ArgumentException($"Key must be null, was {key}", nameof(key));

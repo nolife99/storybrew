@@ -6,12 +6,11 @@ using System.Runtime.InteropServices;
 
 public readonly ref struct ListInternalsRef<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly ReadOnlySpan<T> Items;
+    public readonly int Size, Version;
+    public readonly bool ClearItems;
+    public readonly ReadOnlySpan<T> Items;
 
-    public ListInternalsRef(PooledList<T> source)
+    internal ListInternalsRef(PooledList<T> source)
     {
         Size = source._size;
         Version = source._version;

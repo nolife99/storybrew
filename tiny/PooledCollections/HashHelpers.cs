@@ -5,36 +5,17 @@
 namespace Tiny.PooledCollections;
 
 using System;
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Threading;
 
-public static class HashHelpers
+internal static class HashHelpers
 {
     public const int HashCollisionThreshold = 100;
-
-    // This is the maximum prime smaller than Array.MaxArrayLength
     public const int MaxPrimeArrayLength = 0x7FEFFFFD;
 
     public const int HashPrime = 101;
-    static ConditionalWeakTable<object, SerializationInfo> s_serializationInfoTable;
 
-    // Table of prime numbers to use as hash table sizes.
-    // A typical resize algorithm would pick the smallest prime number in this array
-    // that is larger than twice the previous capacity.
-    // Suppose our Hashtable currently has capacity x and enough elements are added
-    // such that a resize needs to occur. Resizing first computes 2x then finds the
-    // first prime in the table greater than 2x, i.e. if primes are ordered
-    // p_1, p_2, ..., p_i, ..., it finds p_n such that p_n-1 < 2x < p_n.
-    // Doubling is important for preserving the asymptotic complexity of the
-    // hashtable operations such as add.  Having a prime guarantees that double
-    // hashing does not lead to infinite loops.  IE, your hash function will be
-    // h1(key) + i*h2(key), 0 <= i < size.  h2 and the size must be relatively prime.
-    // We prefer the low computation costs of higher prime numbers over the increased
-    // memory allocation of a fixed prime number i.e. when right sizing a HashSet.
     public static readonly int[] primes =
     [
         1,
@@ -112,20 +93,6 @@ public static class HashHelpers
         7199369
     ];
 
-    public static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable
-    {
-        get
-        {
-            if (s_serializationInfoTable is null)
-                Interlocked.CompareExchange(ref s_serializationInfoTable,
-                    new ConditionalWeakTable<object, SerializationInfo>(),
-                    null);
-
-            return s_serializationInfoTable;
-        }
-    }
-
-    // https://github.com/dotnet/runtime/blob/50c3df750a2ad6996159100245645d010c693d87/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs#L820
     public static int GetNonRandomizedHashCode(ReadOnlySpan<char> chars)
     {
         ref var src = ref MemoryMarshal.GetReference(chars);
@@ -140,16 +107,12 @@ public static class HashHelpers
         {
             length -= 4;
 
-            // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
             hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ ptr;
             hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ Unsafe.Add(ref ptr, 1);
             ptr = ref Unsafe.AddByteOffset(ref ptr, 2);
         }
 
-        if (length > 0)
-
-            // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-            hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ptr;
+        if (length > 0) hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ptr;
 
         return (int)(hash1 + hash2 * 1566083941);
     }
@@ -173,16 +136,13 @@ public static class HashHelpers
     {
         if (min < 0) throw new ArgumentException("Cannot get the next prime from a negative number.");
 
-        var primes = HashHelpers.primes.AsSpan();
-
+        var primes = HashHelpers.primes;
         for (var i = 0; i < primes.Length; i++)
         {
             var prime = primes[i];
             if (prime >= min) return prime;
         }
 
-        //outside of our predefined table.
-        //compute the hard way.
         for (var i = min | 1; i < int.MaxValue; i += 2)
             if (IsPrime(i) && (i - 1) % HashPrime != 0)
                 return i;
@@ -190,40 +150,21 @@ public static class HashHelpers
         return min;
     }
 
-    // Returns size of hashtable to grow to.
     public static int ExpandPrime(int oldSize)
     {
         var newSize = 2 * oldSize;
 
-        // Allow the hashtables to grow to maximum possible size (~2G elements) before encountering capacity overflow.
-        // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
-        {
-            Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
-            return MaxPrimeArrayLength;
-        }
+        if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize) return MaxPrimeArrayLength;
 
         return GetPrime(newSize);
     }
 
-    /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
-    /// <remarks>This should only be used on 64-bit.</remarks>
     public static ulong GetFastModMultiplier(uint divisor) => ulong.MaxValue / divisor + 1;
 
-    /// <summary>Performs a mod operation using the multiplier pre-computed with <see cref="GetFastModMultiplier"/>.</summary>
-    /// <remarks>This should only be used on 64-bit.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint FastMod(uint value, uint divisor, ulong multiplier)
     {
-        // We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
-        // which allows to avoid the long multiplication if the divisor is less than 2**31.
-        Debug.Assert(divisor <= int.MaxValue);
-
-        // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _). This version
-        // is faster than BigMul currently because we only need the high bits.
         var highbits = (uint)(((multiplier * value >> 32) + 1) * divisor >> 32);
-
-        Debug.Assert(highbits == value % divisor);
         return highbits;
     }
 }

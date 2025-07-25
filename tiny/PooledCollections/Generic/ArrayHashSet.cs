@@ -7,32 +7,21 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
-/// <summary>
-///     HashSet that <typeparamref name="T"/> are stored in dense arrays. Effectively, internal items can be iterated over
-///     like normal arrays.
-/// </summary>
-/// <remarks>To iterate over items as arrays, it must be get through unsafe APIs.</remarks>
-[Serializable] public class ArrayHashSet<T> : IArrayHashSet<T>, ISerializable, IDeserializationCallback, IDisposable
-    where T : notnull
+public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : notnull
 {
-    // constants for serialization
-    const string CountName = "Count"; // Do not rename (binary serialization). Must save buckets.Length
-    const string EntriesName = "Entries"; // Do not rename (binary serialization)
-
     internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
     static readonly ArrayEntry<T>[] s_emptyEntries = [];
     static readonly int[] s_emptyBuckets = [];
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
+    internal readonly ArrayPool<int> _bucketPool;
+
+    internal readonly ArrayPool<ArrayEntry<T>> _entryPool;
     internal int[] _buckets;
     internal int _collisions;
 
     internal ArrayEntry<T>[] _entries;
-
-    [NonSerialized] internal ArrayPool<ArrayEntry<T>> _entryPool;
     internal ulong _fastModBucketsMultiplier;
 
     internal int _freeEntryIndex;
@@ -60,13 +49,7 @@ using System.Runtime.Serialization;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Add(in T item) => TryGetIndex(in item, out _);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Add(T item, out int index) => TryGetIndex(item, out index);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Add(in T item, out int index) => TryGetIndex(in item, out index);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
@@ -75,23 +58,13 @@ using System.Runtime.Serialization;
 
         _freeEntryIndex = 0;
 
-        //Buckets cannot be FastCleared because it's important that the values are reset to 0
         Array.Clear(_buckets, 0, _buckets.Length);
 
         if (s_clearEntries) Array.Clear(_entries, 0, _entries.Length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
-    //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
-    //constant states) because it will be used in multithreaded parallel code
     public bool Contains(T item) => TryFindIndex(item, out _);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
-    //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
-    //constant states) because it will be used in multithreaded parallel code
-    public bool Contains(in T item) => TryFindIndex(in item, out _);
 
     public void EnsureCapacity(int capacity)
     {
@@ -110,39 +83,24 @@ using System.Runtime.Serialization;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Remove(T item) => Remove(item, out _);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Remove(in T item) => Remove(in item, out _);
-
     public bool Remove(T item, out int index)
     {
         var hash = item.GetHashCode();
         var bucketIndex = Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-        //find the bucket
         var indexToValueToRemove = _buckets[bucketIndex] - 1;
 
-        //Part one: look for the actual item in the bucket list if found I update the bucket list so that it doesn't
-        //point anymore to the cell to remove
         while (indexToValueToRemove != -1)
         {
             ref var entry = ref _entries[indexToValueToRemove];
             if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
             {
-                //if the item is found and the bucket points directly to the node to remove
                 if (_buckets[bucketIndex] - 1 == indexToValueToRemove)
                 {
 #if DEBUG
                     if (entry.Next != -1) throw new InvalidOperationException("If the bucket points to the cell, next MUST NOT exists");
 #endif
 
-                    //the bucket will point to the previous cell. if a previous cell exists
-                    //its next pointer must be updated!
-                    //<--- iteration order
-                    //                      Bucket points always to the last one
-                    //   ------- ------- -------
-                    //   |  1  | |  2  | |  3  | //bucket cannot have next, only previous
-                    //   ------- ------- -------
-                    //--> insert order
                     _buckets[bucketIndex] = entry.Previous + 1;
                 }
 #if DEBUG
@@ -163,136 +121,26 @@ using System.Runtime.Serialization;
         if (indexToValueToRemove == -1)
         {
             index = 0;
-            return false; //not found!
+            return false;
         }
 
         index = indexToValueToRemove;
 
-        _freeEntryIndex--; //one less value to iterate
+        _freeEntryIndex--;
 
-        //Part two:
-        //At this point nodes pointers and buckets are updated, but the _values array
-        //still has got the value to delete. Remember the goal of this dictionary is to be able
-        //to iterate over the values like an array, so the values array must always be up to date
-
-        //if the cell to remove is the last one in the list, we can perform less operations (no swapping needed)
-        //otherwise we want to move the last value cell over the value to remove
         if (indexToValueToRemove != _freeEntryIndex)
         {
-            //we can move the last value of both arrays in place of the one to delete.
-            //in order to do so, we need to be sure that the bucket pointer is updated.
-            //first we find the index in the bucket list of the pointer that points to the cell
-            //to move
             ref var entry = ref _entries[_freeEntryIndex];
             var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-            //if the item is found and the bucket points directly to the node to remove
-            //it must now point to the cell where it's going to be moved
             if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
 
-            //otherwise it means that there was more than one item with the same hash (collision), so
-            //we need to update the linked list and its pointers
             var next = entry.Next;
             var previous = entry.Previous;
 
-            //they now point to the cell where the last value is moved into
             if (next != -1) _entries[next].Previous = indexToValueToRemove;
             if (previous != -1) _entries[previous].Next = indexToValueToRemove;
 
-            //finally, actually move the values
-            _entries[indexToValueToRemove] = entry;
-        }
-
-        return true;
-    }
-
-    public bool Remove(in T item, out int index)
-    {
-        var hash = item.GetHashCode();
-        var bucketIndex = Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
-
-        //find the bucket
-        var indexToValueToRemove = _buckets[bucketIndex] - 1;
-
-        //Part one: look for the actual item in the bucket list if found I update the bucket list so that it doesn't
-        //point anymore to the cell to remove
-        while (indexToValueToRemove != -1)
-        {
-            ref var entry = ref _entries[indexToValueToRemove];
-            if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
-            {
-                //if the item is found and the bucket points directly to the node to remove
-                if (_buckets[bucketIndex] - 1 == indexToValueToRemove)
-                {
-#if DEBUG
-                    if (entry.Next != -1) throw new InvalidOperationException("If the bucket points to the cell, next MUST NOT exists");
-#endif
-
-                    //the bucket will point to the previous cell. if a previous cell exists
-                    //its next pointer must be updated!
-                    //<--- iteration order
-                    //                      Bucket points always to the last one
-                    //   ------- ------- -------
-                    //   |  1  | |  2  | |  3  | //bucket cannot have next, only previous
-                    //   ------- ------- -------
-                    //--> insert order
-                    _buckets[bucketIndex] = entry.Previous + 1;
-                }
-#if DEBUG
-                else
-                {
-                    if (entry.Next == -1) throw new InvalidOperationException("If the bucket points to another cell, next MUST exists");
-                }
-#endif
-
-                UpdateLinkedList(indexToValueToRemove, ref _entries);
-
-                break;
-            }
-
-            indexToValueToRemove = entry.Previous;
-        }
-
-        if (indexToValueToRemove == -1)
-        {
-            index = 0;
-            return false; //not found!
-        }
-
-        index = indexToValueToRemove;
-
-        _freeEntryIndex--; //one less value to iterate
-
-        //Part two:
-        //At this point nodes pointers and buckets are updated, but the _values array
-        //still has got the value to delete. Remember the goal of this dictionary is to be able
-        //to iterate over the values like an array, so the values array must always be up to date
-
-        //if the cell to remove is the last one in the list, we can perform less operations (no swapping needed)
-        //otherwise we want to move the last value cell over the value to remove
-        if (indexToValueToRemove != _freeEntryIndex)
-        {
-            //we can move the last value of both arrays in place of the one to delete.
-            //in order to do so, we need to be sure that the bucket pointer is updated.
-            //first we find the index in the bucket list of the pointer that points to the cell
-            //to move
-            ref var entry = ref _entries[_freeEntryIndex];
-            var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
-
-            //if the item is found and the bucket points directly to the node to remove
-            //it must now point to the cell where it's going to be moved
-            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
-
-            //otherwise it means that there was more than one item with the same hash (collision), so
-            //we need to update the linked list and its pointers
-            var next = entry.Next;
-            var previous = entry.Previous;
-
-            //they now point to the cell where the last value is moved into
-            if (next != -1) _entries[next].Previous = indexToValueToRemove;
-            if (previous != -1) _entries[previous].Next = indexToValueToRemove;
-
-            //finally, actually move the values
             _entries[indexToValueToRemove] = entry;
         }
 
@@ -313,57 +161,10 @@ using System.Runtime.Serialization;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
-    public virtual void OnDeserialization(object sender)
-    {
-        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
-
-        if (siInfo is null)
-
-            // We can return immediately if this function is called twice.
-            // Note we remove the serialization info from the table at the end of this method.
-            return;
-
-        var count = siInfo.GetInt32(CountName);
-
-        if (count > 0)
-        {
-            Resize(Count, count);
-
-            var array = (T[])siInfo.GetValue(EntriesName, typeof(T[]));
-
-            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-
-            for (var i = 0; i < array.Length; i++)
-            {
-                if (array[i] is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
-
-                Add(array[i]);
-            }
-        }
-
-        HashHelpers.SerializationInfoTable.Remove(this);
-    }
-
     public void Dispose()
     {
         ReturnBuckets(s_emptyBuckets);
         ReturnEntries(s_emptyEntries);
-    }
-
-    public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        ArgumentNullException.ThrowIfNull(info);
-
-        var count = Count;
-
-        info.AddValue(CountName, count);
-
-        if (count > 0)
-        {
-            var array = new T[count];
-            CopyTo(array);
-            info.AddValue(EntriesName, array, typeof(T[]));
-        }
     }
 
     void Initialize(int capacity)
@@ -393,25 +194,7 @@ using System.Runtime.Serialization;
         return default;
 #else
 
-        //Burst is not able to vectorise code if throw is found, regardless if it's actually ever thrown
         TryFindIndex(item, out var findIndex);
-
-        return findIndex;
-#endif
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetIndex(in T item)
-    {
-#if DEBUG
-        if (TryFindIndex(in item, out var findIndex) == true) return findIndex;
-
-        ThrowHelper.ThrowKeyNotFoundException(item);
-        return default;
-#else
-
-        //Burst is not able to vectorise code if throw is found, regardless if it's actually ever thrown
-        TryFindIndex(in item, out var findIndex);
 
         return findIndex;
 #endif
@@ -419,275 +202,93 @@ using System.Runtime.Serialization;
 
     bool TryGetIndex(T item, out int index)
     {
-        var hash = item.GetHashCode(); //IEquatable doesn't enforce the override of GetHashCode
+        var hash = item.GetHashCode();
         var bucketIndex = (int)Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-        //buckets value -1 means it's empty
         var valueIndex = _buckets[bucketIndex] - 1;
 
         if (valueIndex == -1)
         {
             ResizeIfNeeded();
 
-            //create the info node at the last position and fill it with the relevant information
             _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash);
         }
-        else //collision or already exists
+        else
         {
             if (s_typeOfKey.IsValueType)
             {
                 var currentValueIndex = valueIndex;
                 do
                 {
-                    //must check if the item already exists in the dictionary
-                    //ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic, since .NET Core 2.1
-
                     ref var entry = ref _entries[currentValueIndex];
                     if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
                     {
-                        //the item already exists, simply replace the value!
                         index = currentValueIndex;
                         return false;
                     }
 
                     currentValueIndex = entry.Previous;
                 }
-                while (currentValueIndex != -1); //-1 means no more values with item with the same hash
+                while (currentValueIndex != -1);
             }
             else
             {
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<T>.Default;
 
                 var currentValueIndex = valueIndex;
                 do
                 {
-                    //must check if the item already exists in the dictionary
-
                     ref var entry = ref _entries[currentValueIndex];
                     if (entry.Hashcode == hash && defaultComparer.Equals(entry.Key, item))
                     {
-                        //the item already exists, simply replace the value!
                         index = currentValueIndex;
                         return false;
                     }
 
                     currentValueIndex = entry.Previous;
                 }
-                while (currentValueIndex != -1); //-1 means no more values with item with the same hash
+                while (currentValueIndex != -1);
             }
 
             ResizeIfNeeded();
 
-            //oops collision!
             _collisions++;
 
-            //create a new node which previous index points to node currently pointed in the bucket
             _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash, valueIndex);
 
-            //update the next of the existing cell to point to the new one
-            //old one -> new one | old one <- next one
             _entries[valueIndex].Next = _freeEntryIndex;
-
-            //Important: the new node is always the one that will be pointed by the bucket cell
-            //so I can assume that the one pointed by the bucket is always the last value added
-            //(next = -1)
         }
 
-        //item with this bucketIndex will point to the last value created
-        //ToDo: if instead I assume that the original one is the one in the bucket
-        //I wouldn't need to update the bucket here. Small optimization but important
         _buckets[bucketIndex] = _freeEntryIndex + 1;
 
         index = _freeEntryIndex;
         _freeEntryIndex++;
 
-        //too many collisions?
         if (_collisions > _buckets.Length)
         {
-            //we need more space and less collisions
             RenewBuckets(HashHelpers.ExpandPrime(_collisions));
             _collisions = 0;
             _fastModBucketsMultiplier = HashHelpers.GetFastModMultiplier((uint)_buckets.Length);
 
-            //we need to get all the hash code of all the values stored so far and spread them over the new bucket
-            //length
             for (var newValueIndex = 0; newValueIndex < _freeEntryIndex; newValueIndex++)
             {
-                //get the original hash code and find the new bucketIndex due to the new length
                 ref var entry = ref _entries[newValueIndex];
                 bucketIndex = (int)Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-                //bucketsIndex can be -1 or a next value. If it's -1 means no collisions. If there is collision,
-                //we create a new node which prev points to the old one. Old one next points to the new one.
-                //the bucket will now points to the new one
-                //In this way we can rebuild the linkedlist.
-                //get the current valueIndex, it's -1 if no collision happens
                 var existingValueIndex = _buckets[bucketIndex] - 1;
 
-                //update the bucket index to the index of the current item that share the bucketIndex
-                //(last found is always the one in the bucket)
                 _buckets[bucketIndex] = newValueIndex + 1;
                 if (existingValueIndex != -1)
                 {
-                    //oops a value was already being pointed by this cell in the new bucket list,
-                    //it means there is a collision, problem
                     _collisions++;
 
-                    //the bucket will point to this value, so
-                    //the previous index will be used as previous for the new value.
                     entry.Previous = existingValueIndex;
                     entry.Next = -1;
 
-                    //and update the previous next index to the new one
                     _entries[existingValueIndex].Next = newValueIndex;
                 }
                 else
                 {
-                    //ok nothing was indexed, the bucket was empty. We need to update the previous
-                    //values of next and previous
-                    entry.Next = -1;
-                    entry.Previous = -1;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    bool TryGetIndex(in T item, out int index)
-    {
-        var hash = item.GetHashCode(); //IEquatable doesn't enforce the override of GetHashCode
-        var bucketIndex = (int)Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
-
-        //buckets value -1 means it's empty
-        var valueIndex = _buckets[bucketIndex] - 1;
-
-        if (valueIndex == -1)
-        {
-            ResizeIfNeeded();
-
-            //create the info node at the last position and fill it with the relevant information
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(in item, hash);
-        }
-        else //collision or already exists
-        {
-            if (s_typeOfKey.IsValueType)
-            {
-                var currentValueIndex = valueIndex;
-                do
-                {
-                    //must check if the item already exists in the dictionary
-                    //ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic, since .NET Core 2.1
-
-                    ref var entry = ref _entries[currentValueIndex];
-                    if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
-                    {
-                        //the item already exists, simply replace the value!
-                        index = currentValueIndex;
-                        return false;
-                    }
-
-                    currentValueIndex = entry.Previous;
-                }
-                while (currentValueIndex != -1); //-1 means no more values with item with the same hash
-            }
-            else
-            {
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
-                var defaultComparer = EqualityComparer<T>.Default;
-
-                var currentValueIndex = valueIndex;
-                do
-                {
-                    //must check if the item already exists in the dictionary
-
-                    ref var entry = ref _entries[currentValueIndex];
-                    if (entry.Hashcode == hash && defaultComparer.Equals(entry.Key, item))
-                    {
-                        //the item already exists, simply replace the value!
-                        index = currentValueIndex;
-                        return false;
-                    }
-
-                    currentValueIndex = entry.Previous;
-                }
-                while (currentValueIndex != -1); //-1 means no more values with item with the same hash
-            }
-
-            ResizeIfNeeded();
-
-            //oops collision!
-            _collisions++;
-
-            //create a new node which previous index points to node currently pointed in the bucket
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(in item, hash, valueIndex);
-
-            //update the next of the existing cell to point to the new one
-            //old one -> new one | old one <- next one
-            _entries[valueIndex].Next = _freeEntryIndex;
-
-            //Important: the new node is always the one that will be pointed by the bucket cell
-            //so I can assume that the one pointed by the bucket is always the last value added
-            //(next = -1)
-        }
-
-        //item with this bucketIndex will point to the last value created
-        //ToDo: if instead I assume that the original one is the one in the bucket
-        //I wouldn't need to update the bucket here. Small optimization but important
-        _buckets[bucketIndex] = _freeEntryIndex + 1;
-
-        index = _freeEntryIndex;
-        _freeEntryIndex++;
-
-        //too many collisions?
-        if (_collisions > _buckets.Length)
-        {
-            //we need more space and less collisions
-            RenewBuckets(HashHelpers.ExpandPrime(_collisions));
-            _collisions = 0;
-            _fastModBucketsMultiplier = HashHelpers.GetFastModMultiplier((uint)_buckets.Length);
-
-            //we need to get all the hash code of all the values stored so far and spread them over the new bucket
-            //length
-            for (var newValueIndex = 0; newValueIndex < _freeEntryIndex; newValueIndex++)
-            {
-                //get the original hash code and find the new bucketIndex due to the new length
-                ref var entry = ref _entries[newValueIndex];
-                bucketIndex = (int)Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
-
-                //bucketsIndex can be -1 or a next value. If it's -1 means no collisions. If there is collision,
-                //we create a new node which prev points to the old one. Old one next points to the new one.
-                //the bucket will now points to the new one
-                //In this way we can rebuild the linkedlist.
-                //get the current valueIndex, it's -1 if no collision happens
-                var existingValueIndex = _buckets[bucketIndex] - 1;
-
-                //update the bucket index to the index of the current item that share the bucketIndex
-                //(last found is always the one in the bucket)
-                _buckets[bucketIndex] = newValueIndex + 1;
-                if (existingValueIndex != -1)
-                {
-                    //oops a value was already being pointed by this cell in the new bucket list,
-                    //it means there is a collision, problem
-                    _collisions++;
-
-                    //the bucket will point to this value, so
-                    //the previous index will be used as previous for the new value.
-                    entry.Previous = existingValueIndex;
-                    entry.Next = -1;
-
-                    //and update the previous next index to the new one
-                    _entries[existingValueIndex].Next = newValueIndex;
-                }
-                else
-                {
-                    //ok nothing was indexed, the bucket was empty. We need to update the previous
-                    //values of next and previous
                     entry.Next = -1;
                     entry.Previous = -1;
                 }
@@ -706,31 +307,24 @@ using System.Runtime.Serialization;
     {
         var entries = _entries;
 
-        if (newCapacity > entries.Length)
+        if (newCapacity <= entries.Length) return;
+
+        var newEntries = _entryPool.Rent(newCapacity);
+
+        if (newEntries.Length > entries.Length)
         {
-            var newEntries = _entryPool.Rent(newCapacity);
+            if (count > 0) Array.Copy(entries, newEntries, count);
 
-            if (newEntries.Length > entries.Length)
-            {
-                if (count > 0) Array.Copy(entries, newEntries, count);
+            _entries = newEntries;
 
-                _entries = newEntries;
-
-                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
-            }
-            else _entryPool.Return(newEntries);
+            if (entries is not null) _entryPool.Return(entries, s_clearEntries);
         }
+        else _entryPool.Return(newEntries);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrimExcess() => Resize(Count, Count);
 
-    //I store all the index with an offset + 1, so that in the bucket list 0 means actually not existing.
-    //When read the offset must be offset by -1 again to be the real one. In this way
-    //I avoid to initialize the array to -1
-
-    //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
-    //constant states) because it will be used in multithreaded parallel code
     public bool TryFindIndex(T item, out int findIndex)
     {
         var hash = item.GetHashCode();
@@ -739,45 +333,11 @@ using System.Runtime.Serialization;
 
         var valueIndex = _buckets[bucketIndex] - 1;
 
-        //even if we found an existing value we need to be sure it's the one we requested
         while (valueIndex != -1)
         {
             ref var entry = ref _entries[valueIndex];
             if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
             {
-                //this is the one
-                findIndex = valueIndex;
-                return true;
-            }
-
-            valueIndex = entry.Previous;
-        }
-
-        findIndex = 0;
-        return false;
-    }
-
-    //I store all the index with an offset + 1, so that in the bucket list 0 means actually not existing.
-    //When read the offset must be offset by -1 again to be the real one. In this way
-    //I avoid to initialize the array to -1
-
-    //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
-    //constant states) because it will be used in multithreaded parallel code
-    public bool TryFindIndex(in T item, out int findIndex)
-    {
-        var hash = item.GetHashCode();
-
-        var bucketIndex = (int)Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
-
-        var valueIndex = _buckets[bucketIndex] - 1;
-
-        //even if we found an existing value we need to be sure it's the one we requested
-        while (valueIndex != -1)
-        {
-            ref var entry = ref _entries[valueIndex];
-            if (entry.Hashcode == hash && EqualityComparer<T>.Default.Equals(entry.Key, item))
-            {
-                //this is the one
                 findIndex = valueIndex;
                 return true;
             }
@@ -796,12 +356,12 @@ using System.Runtime.Serialization;
     public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(dest, 0, Count);
+    public void CopyTo(scoped Span<T> dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
-    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -847,7 +407,7 @@ using System.Runtime.Serialization;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
     {
-        if (hashcode >= N) //is the condition return actually an optimization?
+        if (hashcode >= N)
             return Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N;
 
         return hashcode;
@@ -890,13 +450,10 @@ using System.Runtime.Serialization;
 #if DEBUG
             if (_count != _startCount) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 #endif
-            if (_index < _count - 1)
-            {
-                ++_index;
-                return true;
-            }
+            if (_index >= _count - 1) return false;
 
-            return false;
+            ++_index;
+            return true;
         }
 
         public T Current

@@ -4,6 +4,7 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.UserInterface;
+using BrewLib.Util;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -136,9 +137,14 @@ public class Vector3Picker : Widget, Field
 
     void updateWidgets()
     {
-        xTextbox.SetValueSilent(value[0].ToString(CultureInfo.InvariantCulture));
-        yTextbox.SetValueSilent(value[1].ToString(CultureInfo.InvariantCulture));
-        zTextbox.SetValueSilent(value[2].ToString(CultureInfo.InvariantCulture));
+        using (var x = value[0].ToCharArray(provider: CultureInfo.InvariantCulture))
+            xTextbox.SetValueSilent(x.AsReadOnlySpan());
+
+        using (var y = value[1].ToCharArray(provider: CultureInfo.InvariantCulture))
+            yTextbox.SetValueSilent(y.AsReadOnlySpan());
+
+        using (var z = value[2].ToCharArray(provider: CultureInfo.InvariantCulture))
+            zTextbox.SetValueSilent(z.AsReadOnlySpan());
     }
 
     protected override void Layout()

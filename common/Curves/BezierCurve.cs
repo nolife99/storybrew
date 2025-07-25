@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Curves;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
@@ -22,21 +21,22 @@ public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
     public override Vector2 EndPosition => points[^1];
 
     /// <inheritdoc/>
-    protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
+    protected override void Initialize(scoped ref (float, Vector2)[] distancePosition, out float length)
     {
         using var linearSegments = BSplineToPiecewiseLinear(points, points.Length - 1);
-        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Count - 1);
+        distancePosition = GC.AllocateUninitializedArray<(float, Vector2)>(linearSegments.Count - 1);
 
         length = 0;
-        for (var i = 0; i < linearSegments.Count - 1; ++i)
+        for (var i = 0; i < distancePosition.Length; ++i)
         {
             var cur = linearSegments[i];
 
-            distancePosition.Add((length, cur));
+            distancePosition[i] = (length, cur);
             length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
     }
 
+    // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
     static TempList<Vector2> BSplineToPiecewiseLinear(scoped ReadOnlySpan<Vector2> controlPoints, int degree)
     {

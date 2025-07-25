@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
+using System.Globalization;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -10,6 +11,7 @@ using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Skinning.Styles;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class HsbColorPicker : Widget, Field
 {
@@ -152,7 +154,8 @@ public class HsbColorPicker : Widget, Field
         previewSprite.Color = Color.FromScaledVector(value);
         Rgba32 bit32 = new(value);
 
-        htmlTextbox.SetValueSilent($"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
+        using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
+        htmlTextbox.SetValueSilent(text.AsReadOnlySpan());
     }
 
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
@@ -168,6 +171,17 @@ public class HsbColorPicker : Widget, Field
 
     protected override void Dispose(bool disposing)
     {
+        hueSlider.OnValueChanged -= slider_OnValueChanged;
+        saturationSlider.OnValueChanged -= slider_OnValueChanged;
+        brightnessSlider.OnValueChanged -= slider_OnValueChanged;
+        alphaSlider.OnValueChanged -= slider_OnValueChanged;
+
+        hueSlider.OnValueCommited -= slider_OnValueCommited;
+        saturationSlider.OnValueCommited -= slider_OnValueCommited;
+        brightnessSlider.OnValueCommited -= slider_OnValueCommited;
+        alphaSlider.OnValueCommited -= slider_OnValueCommited;
+        htmlTextbox.OnValueCommited -= htmlTextbox_OnValueCommited;
+
         if (disposing) previewSprite.Dispose();
         base.Dispose(disposing);
     }

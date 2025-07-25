@@ -107,7 +107,7 @@ public class NewProjectMenu : UiScreenLayer
 
     void updateButtonsState()
     {
-        var projectFolderName = projectNameTextbox.Value;
+        var projectFolderName = Path.GetFileName(projectNameTextbox.Value);
         if (projectFolderName.IsWhiteSpace())
         {
             startButton.Tooltip = "The project name isn't valid";
@@ -116,7 +116,7 @@ public class NewProjectMenu : UiScreenLayer
             return;
         }
 
-        var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName.ToString());
+        var projectFolderPath = Path.Join(Project.ProjectsFolder, projectFolderName);
         if (Directory.Exists(projectFolderPath))
         {
             startButton.Tooltip = $"A project named '{projectFolderName}' already exists";

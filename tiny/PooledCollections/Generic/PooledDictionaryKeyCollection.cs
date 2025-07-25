@@ -8,14 +8,12 @@ namespace Tiny.PooledCollections.Generic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
-[DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>)), DebuggerDisplay("Count = {Count}")]
 public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection<TKey>, IReadOnlyCollection<TKey>
 {
     readonly PooledDictionary<TKey, TValue> _dictionary;
 
-    public PooledDictionaryKeyCollection(PooledDictionary<TKey, TValue> dictionary)
+    internal PooledDictionaryKeyCollection(PooledDictionary<TKey, TValue> dictionary)
     {
         ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -24,20 +22,20 @@ public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection
 
     public Enumerator GetEnumerator() => new(_dictionary);
 
-    public void CopyTo(TKey[] array, int index)
+    public void CopyTo(TKey[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        if (index < 0 || index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+        if (arrayIndex < 0 || arrayIndex > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 
-        if (array.Length - index < _dictionary.Count)
+        if (array.Length - arrayIndex < _dictionary.Count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var count = _dictionary._count;
         var entries = _dictionary._entries;
         for (var i = 0; i < count; i++)
             if (entries![i].Next >= -1)
-                array[index++] = entries[i].Key;
+                array[arrayIndex++] = entries[i].Key;
     }
 
     public int Count => _dictionary.Count;
@@ -62,50 +60,40 @@ public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
-    public struct Enumerator : IEnumerator<TKey>
+    public struct Enumerator(PooledDictionary<TKey, TValue> dictionary) : IEnumerator<TKey>
     {
-        readonly PooledDictionary<TKey, TValue> _dictionary;
-        int _index;
-        readonly int _version;
-
-        public Enumerator(PooledDictionary<TKey, TValue> dictionary)
-        {
-            _dictionary = dictionary;
-            _version = dictionary._version;
-            _index = 0;
-            Current = default;
-        }
+        int _index = 0;
+        readonly int _version = dictionary._version;
 
         public void Dispose() { }
 
         public bool MoveNext()
         {
-            if (_version != _dictionary._version)
+            if (_version != dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            while ((uint)_index < (uint)_dictionary._count)
+            while ((uint)_index < (uint)dictionary._count)
             {
-                ref var entry = ref _dictionary._entries![_index++];
+                ref var entry = ref dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    Current = entry.Key;
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                Current = entry.Key;
+                return true;
             }
 
-            _index = _dictionary._count + 1;
+            _index = dictionary._count + 1;
             Current = default;
             return false;
         }
 
-        public TKey Current { get; private set; }
+        public TKey Current { get; private set; } = default;
 
         object IEnumerator.Current
         {
             get
             {
-                if (_index == 0 || _index == _dictionary._count + 1)
+                if (_index == 0 || _index == dictionary._count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                 return Current;
@@ -114,7 +102,7 @@ public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection
 
         void IEnumerator.Reset()
         {
-            if (_version != _dictionary._version)
+            if (_version != dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = 0;

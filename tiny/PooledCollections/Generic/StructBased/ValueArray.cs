@@ -4,13 +4,10 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
-[DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Length}"), Serializable]
-public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCallback
+public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
 {
     internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
     static readonly T[] s_emptyArray = [];
@@ -18,24 +15,29 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
     internal T[] _array;
     internal int _length;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    internal ArrayPool<T> Pool
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+        init;
+    }
 
     internal ValueArray(int length, ArrayPool<T> pool)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         _length = length;
-        _pool = pool ?? ArrayPool<T>.Shared;
-        _array = _length == 0 ? s_emptyArray : _pool.Rent(length);
+        Pool = pool ?? ArrayPool<T>.Shared;
+        _array = _length == 0 ? s_emptyArray : Pool.Rent(length);
     }
 
-    internal ValueArray(scoped ref readonly ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
+    internal ValueArray(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-        _pool = pool ?? ArrayPool<T>.Shared;
+        Pool = pool ?? ArrayPool<T>.Shared;
         _length = length;
-        _array = _pool.Rent(length);
+        _array = Pool.Rent(length);
 
         if (array.IsEmpty) return;
 
@@ -139,7 +141,7 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_array is not null) _pool.Return(_array, s_clearArray);
+        if (_array is not null) Pool.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
     }
@@ -149,13 +151,6 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
         ReturnArray(s_emptyArray);
         _length = 0;
     }
-
-    void IDeserializationCallback.OnDeserialization(object sender) =>
-
-        // We can't serialize array pools, so deserialized PooledLists will
-        // have to use the shared pool, even if they were using a custom pool
-        // before serialization.
-        _pool = ArrayPool<T>.Shared;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this);
@@ -216,4 +211,46 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
             }
         }
     }
+}
+
+public static class ValueArray
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(T[] array) => new(array, array.Length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(T[] array, ArrayPool<T> pool) => new(array, array.Length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(T[] array, int length) => new(array, length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(T[] array, int length, ArrayPool<T> pool)
+        => new(new ReadOnlySpan<T>(array, 0, length), length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(int length) => new(length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Create<T>(int length, ArrayPool<T> pool) => new(length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Empty<T>() => Create<T>(0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArray<T> Empty<T>(ArrayPool<T> pool) => Create(0, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array) => new(array, array.Length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool) => new(array, array.Length, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length)
+        => new(array, length, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
+        => new(array, length, pool);
 }

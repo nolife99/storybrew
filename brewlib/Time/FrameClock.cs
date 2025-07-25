@@ -18,13 +18,13 @@ public class FrameClock : FrameTimeSource
 
     public bool Playing => true;
 
-    public event EventHandler Changed;
+    public event Action<FrameClock> Changed;
 
     public void AdvanceFrameTo(float time)
     {
         Previous = Current;
         Current = time;
 
-        if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
+        if (Previous != Current) Changed?.Invoke(this);
     }
 }

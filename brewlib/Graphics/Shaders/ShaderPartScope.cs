@@ -26,7 +26,7 @@ public class ShaderPartScope(string variablePrefix)
             code.Append($"{variable.ShaderTypeName.GetString()} {variable.Name}");
             if (variable.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{variable.ArrayCount}]");
 
-            code.Append(";\n");
+            code.AddRange(";\n");
         }
     }
 }

@@ -102,10 +102,6 @@ public static class StringHelper
 
     public static TempList<char> Interpolate(scoped ref PoolingInterpolatedStringHandler handler) => handler.buffer;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Append(this scoped ref readonly TempList<char> list, string value)
-        => Unsafe.AsRef(in list).AddRange(value.AsSpan());
-
     public static void AppendFormatted<T>(this scoped ref readonly TempList<char> list,
         T value,
         scoped ReadOnlySpan<char> format = default,

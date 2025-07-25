@@ -1,6 +1,4 @@
-﻿#pragma warning disable CS8632
-
-namespace Tiny.PooledCollections.Generic.Internals;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Collections.Generic;
@@ -9,22 +7,22 @@ using System.Runtime.CompilerServices;
 public readonly struct DictionaryInternalsRefUnsafe<TKey, TValue>
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool IsReferenceKey;
-    [NonSerialized] public readonly bool IsReferenceValue;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count;
+    public readonly int FreeList;
+    public readonly int FreeCount;
+    public readonly int Version;
+    public readonly bool IsReferenceKey;
+    public readonly bool IsReferenceValue;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<TKey, TValue>[] Entries;
+    public readonly IEqualityComparer<TKey> Comparer;
 
-    public DictionaryInternalsRefUnsafe(PooledDictionary<TKey, TValue> source)
+    internal DictionaryInternalsRefUnsafe(PooledDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

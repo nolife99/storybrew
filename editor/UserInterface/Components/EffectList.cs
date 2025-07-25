@@ -85,8 +85,9 @@ public partial class EffectList : Widget
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) project.OnEffectsChanged -= project_OnEffectsChanged;
+        project.OnEffectsChanged -= project_OnEffectsChanged;
         project = null;
+
         base.Dispose(disposing);
     }
 
@@ -304,7 +305,7 @@ public partial class EffectList : Widget
             case EffectStatus.Configuring:
             case EffectStatus.Updating:
                 button.Icon = IconFont.StopCircle;
-                tooltip.AddRange(" (Cancel)".AsSpan());
+                tooltip.AddRange(" (Cancel)");
                 button.Tooltip = tooltip.AsReadOnlySpan();
                 button.Disabled = false;
                 break;
@@ -435,7 +436,7 @@ public partial class EffectList : Widget
 
     static TempList<char> getEffectDetails(Effect effect)
     {
-        var str = TempList.Create("using ".AsSpan());
+        var str = TempList.Create("using ");
         if (effect.EstimatedSize > 30720) str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})");
         else str.AddRange(effect.BaseName);
 

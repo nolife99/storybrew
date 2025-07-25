@@ -42,6 +42,11 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
 
     public void Add(KeyValuePair<string, TinyToken> item) => Add(item.Key, item.Value);
 
+    public override T Value<T>(scoped ReadOnlySpan<char> key)
+        => keyToIndexMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out var index) ?
+            items[index].Value.Value<T>() :
+            default;
+
     public override T Value<T>(object key) => key switch
     {
         null => (T)(object)this,

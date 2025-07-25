@@ -16,7 +16,7 @@ public readonly struct ValueArrayInternals<T> : IDisposable
         Length = source._length;
         ClearArray = ValueArray<T>.s_clearArray;
         Array = source._array;
-        Pool = source._pool;
+        Pool = source.Pool;
     }
 
     public void Dispose()
