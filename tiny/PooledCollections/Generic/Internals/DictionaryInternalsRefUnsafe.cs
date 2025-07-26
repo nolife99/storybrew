@@ -94,7 +94,7 @@ partial class CollectionInternalsUnsafe
     ///     <typeparamref name="TValue"/> is in use.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue?
+    public static ref TValue
         GetValueRefOrAddDefault<TKey, TValue>(PooledDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
         where TKey : notnull
         => ref PooledDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);

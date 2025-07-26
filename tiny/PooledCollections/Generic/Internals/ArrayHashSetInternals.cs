@@ -43,7 +43,7 @@ partial class CollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ArrayHashSetInternals<T> TakeOwnership<T>(ArrayHashSet<T> source)
+    public static ArrayHashSetInternals<T> TransferOwner<T>(ArrayHashSet<T> source)
     {
         var internals = new ArrayHashSetInternals<T>(source);
 

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internals;
 
 public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
 {
@@ -72,28 +73,20 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
         }
     }
 
-    int IReadOnlyCollection<T>.Count
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _length;
-    }
+    int IReadOnlyCollection<T>.Count => _length;
 
-    T IReadOnlyList<T>.this[int index]
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this[index];
-    }
+    T IReadOnlyList<T>.this[int index] => this[index];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
+    public readonly void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public readonly void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, T[] dest, int destIndex, int count)
+    public readonly void CopyTo(int index, T[] dest, int destIndex, int count)
     {
         ArgumentNullException.ThrowIfNull(dest);
 
@@ -101,28 +94,28 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in ValueArray<T> dest) => CopyTo(0, dest, 0, _length);
+    public readonly void CopyTo(ValueArray<T> dest) => CopyTo(0, dest, 0, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in ValueArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public readonly void CopyTo(ValueArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in ValueArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(ValueArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(int index, in ValueArray<T> dest, int destIndex, int count)
+    public readonly void CopyTo(int index, ValueArray<T> dest, int destIndex, int count)
         => CopyTo(index, dest._array.AsSpan(), destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped in Span<T> dest) => CopyTo(0, in dest, 0, _length);
+    public readonly void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped in Span<T> dest, int destIndex) => CopyTo(0, in dest, destIndex, _length);
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped in Span<T> dest, int destIndex, int count) => CopyTo(0, in dest, destIndex, count);
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, scoped in Span<T> dest, int destIndex, int count)
+    public readonly void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -132,28 +125,21 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
         if (dest.Length - destIndex < count || _length - index < count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-        var src = _array.AsSpan(0, _length);
+        if (_length == 0) return;
 
-        if (src.Length == 0) return;
-
-        src.Slice(index, count).CopyTo(dest.Slice(destIndex, count));
-    }
-
-    void ReturnArray(T[] replaceWith)
-    {
-        if (_array is not null) Pool.Return(_array, s_clearArray);
-
-        _array = replaceWith ?? s_emptyArray;
+        this.AsSpan(index, count).CopyTo(dest[destIndex..]);
     }
 
     public void Dispose()
     {
-        ReturnArray(s_emptyArray);
+        if (_array is not null) Pool.Return(_array, s_clearArray);
+
+        _array = s_emptyArray;
         _length = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public readonly Enumerator GetEnumerator() => new(this);
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
@@ -163,7 +149,7 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
         readonly ValueArray<T> _array;
         int _index;
 
-        internal Enumerator(in ValueArray<T> array)
+        internal Enumerator(ValueArray<T> array)
         {
             _array = array;
             _index = 0;

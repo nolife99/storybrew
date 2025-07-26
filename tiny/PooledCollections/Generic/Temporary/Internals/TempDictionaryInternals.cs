@@ -68,7 +68,7 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(ref TempDictionary<TKey, TValue> source)
+    public static TempDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(ref TempDictionary<TKey, TValue> source)
     {
         var internals = new TempDictionaryInternals<TKey, TValue>(source);
         source.Dispose();

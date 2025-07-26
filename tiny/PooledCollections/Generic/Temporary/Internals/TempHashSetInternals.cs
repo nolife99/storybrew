@@ -63,7 +63,7 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempHashSetInternals<T> TakeOwnership<T>(this scoped ref TempHashSet<T> source)
+    public static TempHashSetInternals<T> TransferOwner<T>(this scoped ref TempHashSet<T> source)
     {
         var internals = new TempHashSetInternals<T>(in source);
         source.Dispose();

@@ -2,15 +2,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ValueQueueInternalsRef<T>
 {
-    [NonSerialized] public readonly int Head;
-    [NonSerialized] public readonly int Tail;
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    public readonly int Head, Tail, Size, Version;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
     internal ValueQueueInternalsRef(scoped ref readonly ValueQueue<T> source)
     {
@@ -25,11 +23,9 @@ public readonly ref struct ValueQueueInternalsRef<T>
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueQueueInternalsRef<T> GetRef<T>(this scoped ref readonly ValueQueue<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueQueue<T> source,
         out int head,
@@ -37,10 +33,9 @@ partial class ValueCollectionInternals
     {
         head = source._head;
         tail = source._tail;
-        return source._array.AsSpan(0, source._size);
+        return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
     }
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueQueue<T> source,
         out int head,
@@ -48,6 +43,6 @@ partial class ValueCollectionInternals
     {
         head = source._head;
         tail = source._tail;
-        return source._array.AsMemory(0, source._size);
+        return new(source._array, 0, source._size);
     }
 }

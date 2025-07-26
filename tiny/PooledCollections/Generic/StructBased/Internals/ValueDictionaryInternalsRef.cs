@@ -3,24 +3,20 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool IsReferenceKey;
-    [NonSerialized] public readonly bool IsReferenceValue;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool IsReferenceKey, IsReferenceValue, ClearEntries;
 
-    [NonSerialized] public readonly ReadOnlySpan<int> Buckets;
-    [NonSerialized] public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
-    [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
+    public readonly ReadOnlySpan<int> Buckets;
+    public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
+    public readonly IEqualityComparer<TKey> Comparer;
 
     internal ValueDictionaryInternalsRef(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
@@ -43,18 +39,16 @@ public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
         this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<TKey, TValue>> AsReadOnlySpan<TKey, TValue>(
-        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source)
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._count);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<Entry<TKey, TValue>> AsReadOnlyMemory<TKey, TValue>(
-        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(source._entries, 0, source._count);
 }

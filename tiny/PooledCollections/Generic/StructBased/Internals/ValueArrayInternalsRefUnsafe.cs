@@ -2,12 +2,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct ValueArrayInternalsRefUnsafe<T>
 {
-    [NonSerialized] public readonly int Length;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
 
     internal ValueArrayInternalsRefUnsafe(scoped ref readonly ValueArray<T> source)
     {
@@ -19,50 +20,47 @@ public readonly struct ValueArrayInternalsRefUnsafe<T>
 
 partial class ValueCollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly ValueArray<T> source) => new(in source);
+    public static ValueArrayInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueArray<T> source)
+        => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source)
-        => source._array.AsSpan(0, source._length);
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, int start) => source._array.AsSpan(start);
+    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, int start) => AsSpan(in source)[start..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, int start, int length)
-        => source._array.AsSpan(start, length);
+        => AsSpan(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, Index startIndex)
-        => source._array.AsSpan(startIndex);
+    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, Index index)
+        => AsSpan(in source)[index..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, Range range)
-        => source._array.AsSpan(range);
+    public static Span<T> AsSpan<T>(this scoped ref readonly ValueArray<T> source, Range range) => AsSpan(in source)[range];
 
-    /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source)
-        => source._array.AsMemory(0, source._length);
+        => new(source._array, 0, source._length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source, int start)
-        => source._array.AsMemory(start);
+        => new(source._array, start, source._length - start);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source, int start, int length)
-        => source._array.AsMemory(start, length);
+        => AsMemory(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source, Index startIndex)
-        => source._array.AsMemory(startIndex);
+    public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source, Index index)
+        => AsMemory(in source)[index..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly ValueArray<T> source, Range range)
-        => source._array.AsMemory(range);
+        => AsMemory(in source)[range];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly ValueArray<T> source, out T[] array, out int length)

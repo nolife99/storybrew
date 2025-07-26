@@ -48,7 +48,7 @@ public readonly struct HashSetInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    public static HashSetInternals<T> TakeOwnership<T>(PooledHashSet<T> source)
+    public static HashSetInternals<T> TransferOwner<T>(PooledHashSet<T> source)
     {
         var internals = new HashSetInternals<T>(source);
 

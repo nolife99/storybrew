@@ -523,7 +523,9 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
     internal static class CollectionsMarshalHelper
     {
-        public static ref TValue GetValueRefOrAddDefault(ValueDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
+        public static ref TValue GetValueRefOrAddDefault(scoped ref ValueDictionary<TKey, TValue> dictionary,
+            TKey key,
+            out bool exists)
         {
             ArgumentNullException.ThrowIfNull(key);
 

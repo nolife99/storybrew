@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 public readonly ref struct ValueArrayInternalsRef<T>
 {
-    [NonSerialized] public readonly int Length;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
     internal ValueArrayInternalsRef(scoped ref readonly ValueArray<T> source)
     {
@@ -20,11 +20,9 @@ public readonly ref struct ValueArrayInternalsRef<T>
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayInternalsRef<T> GetRef<T>(this scoped ref readonly ValueArray<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueArray<T> source)
         => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._length);
@@ -38,14 +36,13 @@ partial class ValueCollectionInternals
         => AsReadOnlySpan(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueArray<T> source, Index startIndex)
-        => AsReadOnlySpan(in source)[startIndex..];
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueArray<T> source, Index index)
+        => AsReadOnlySpan(in source)[index..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueArray<T> source, Range range)
         => AsReadOnlySpan(in source)[range];
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueArray<T> source)
         => new(source._array, 0, source._length);
@@ -56,13 +53,13 @@ partial class ValueCollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueArray<T> source, int start, int length)
-        => new(source._array, start, length);
+        => AsReadOnlyMemory(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueArray<T> source, Index startIndex)
-        => source._array.AsMemory(startIndex);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueArray<T> source, Index index)
+        => AsReadOnlyMemory(in source)[index..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueArray<T> source, Range range)
-        => source._array.AsMemory(range);
+        => AsReadOnlyMemory(in source)[range];
 }

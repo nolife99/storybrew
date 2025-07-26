@@ -6,20 +6,18 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
-    [NonSerialized] public readonly bool ClearValues;
+    public readonly bool ClearEntries, ClearValues;
 
-    [NonSerialized] public readonly ArrayEntry<TKey>[] Entries;
-    [NonSerialized] public readonly TValue[] Values;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<TKey>[] Entries;
+    public readonly TValue[] Values;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
+    public readonly ArrayPool<TValue> ValuePool;
+    public readonly ArrayPool<int> BucketPool;
 
     internal ValueArrayDictionaryInternals(scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
     {
@@ -51,9 +49,7 @@ public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueArrayDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(
+    public static ValueArrayDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
         this scoped ref ValueArrayDictionary<TKey, TValue> source)
     {
         ValueArrayDictionaryInternals<TKey, TValue> internals = new(ref source);

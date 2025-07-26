@@ -8,13 +8,13 @@ using System.Runtime.CompilerServices;
 
 partial struct ValueHashSet<T> : IDisposable
 {
-    public ValueHashSet(ReadOnlySpan<T> span, IEqualityComparer<T>? comparer) : this(span,
+    public ValueHashSet(ReadOnlySpan<T> span, IEqualityComparer<T> comparer) : this(span,
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
     public ValueHashSet(ReadOnlySpan<T> span,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {

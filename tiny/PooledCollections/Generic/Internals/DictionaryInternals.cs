@@ -50,7 +50,7 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
 partial class CollectionInternals
 {
-    public static DictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(PooledDictionary<TKey, TValue> source)
+    public static DictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(PooledDictionary<TKey, TValue> source)
     {
         var internals = new DictionaryInternals<TKey, TValue>(source);
 

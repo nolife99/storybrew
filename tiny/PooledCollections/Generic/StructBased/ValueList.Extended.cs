@@ -27,14 +27,6 @@ partial struct ValueList<T> : IDisposable
         _version = 0;
     }
 
-    /// <summary>
-    ///     Advances the <see cref="Count"/> by the number of items specified, increasing the capacity if required, then
-    ///     returns a <see cref="Span{T}"/> representing the set of items to be added, allowing direct writes to that section of the
-    ///     collection.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
-
     internal Span<T> GetInsertSpan(int index, int count, bool clearSpan)
     {
         EnsureCapacity(_size + count);

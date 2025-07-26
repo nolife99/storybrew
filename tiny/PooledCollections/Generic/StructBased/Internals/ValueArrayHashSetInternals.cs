@@ -6,17 +6,16 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ValueArrayHashSetInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ArrayEntry<T>[] Entries;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<T>[] Entries;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
     internal ValueArrayHashSetInternals(scoped ref readonly ValueArrayHashSet<T> source)
     {
@@ -43,9 +42,7 @@ public readonly struct ValueArrayHashSetInternals<T> : IDisposable
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueArrayHashSetInternals<T> TakeOwnership<T>(this scoped ref ValueArrayHashSet<T> source)
+    public static ValueArrayHashSetInternals<T> TransferOwner<T>(this scoped ref ValueArrayHashSet<T> source)
     {
         ValueArrayHashSetInternals<T> internals = new(ref source);
         source.Dispose();

@@ -19,31 +19,31 @@ public static class TempHashSet
         => new(collection, null, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(IEqualityComparer<T>? comparer)
+    public static TempHashSet<T> Create<T>(IEqualityComparer<T> comparer)
         => new(comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(IEnumerable<T> collection, IEqualityComparer<T>? comparer)
+    public static TempHashSet<T> Create<T>(IEnumerable<T> collection, IEqualityComparer<T> comparer)
         => new(collection, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(int capacity, IEqualityComparer<T>? comparer)
+    public static TempHashSet<T> Create<T>(int capacity, IEqualityComparer<T> comparer)
         => new(capacity, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(IEqualityComparer<T>? comparer,
+    public static TempHashSet<T> Create<T>(IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) => new(comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(IEnumerable<T> collection,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) => new(collection, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(int capacity,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) => new(capacity, comparer, bucketPool, entryPool);
 
@@ -51,14 +51,14 @@ public static class TempHashSet
     public static TempHashSet<T> Create<T>(T[] items) => new(items.AsSpan());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(T[] items, IEqualityComparer<T>? comparer) => new(items.AsSpan(),
+    public static TempHashSet<T> Create<T>(T[] items, IEqualityComparer<T> comparer) => new(items.AsSpan(),
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(T[] items,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) => new(items.AsSpan(), comparer, bucketPool, entryPool);
 
@@ -66,12 +66,12 @@ public static class TempHashSet
     public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span) => new(span);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span, IEqualityComparer<T>? comparer)
+    public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span, IEqualityComparer<T> comparer)
         => new(span, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) => new(span, comparer, bucketPool, entryPool);
 }

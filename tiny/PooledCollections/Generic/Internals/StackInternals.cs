@@ -29,7 +29,7 @@ partial class CollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static StackInternals<T> TakeOwnership<T>(PooledStack<T> source)
+    public static StackInternals<T> TransferOwner<T>(PooledStack<T> source)
     {
         var internals = new StackInternals<T>(source);
 

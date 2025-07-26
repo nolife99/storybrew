@@ -878,12 +878,6 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
     #region Helper methods
 
     /// <summary>
-    ///     Returns an <see cref="IEqualityComparer"/> object that can be used for equality testing of a
-    ///     <see cref="ValueHashSet{T}"/> object.
-    /// </summary>
-    public static IEqualityComparer<ValueHashSet<T>> CreateSetComparer() => new ValueHashSetEqualityComparer<T>();
-
-    /// <summary>
     ///     Initializes buckets and slots arrays. Uses suggested capacity by finding next prime greater than or equal to
     ///     capacity.
     /// </summary>

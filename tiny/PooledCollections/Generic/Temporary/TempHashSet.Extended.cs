@@ -10,21 +10,21 @@ partial struct TempHashSet<T>
 {
     public TempHashSet(T[] items) : this(items.AsSpan()) { }
 
-    public TempHashSet(T[] items, IEqualityComparer<T>? comparer) : this(items.AsSpan(),
+    public TempHashSet(T[] items, IEqualityComparer<T> comparer) : this(items.AsSpan(),
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
-    public TempHashSet(T[] items, IEqualityComparer<T>? comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool) :
+    public TempHashSet(T[] items, IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool) :
         this(items.AsSpan(), comparer, bucketPool, entryPool) { }
 
-    public TempHashSet(ReadOnlySpan<T> span, IEqualityComparer<T>? comparer = null) : this(span,
+    public TempHashSet(ReadOnlySpan<T> span, IEqualityComparer<T> comparer = null) : this(span,
         comparer,
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
     public TempHashSet(ReadOnlySpan<T> span,
-        IEqualityComparer<T>? comparer,
+        IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {

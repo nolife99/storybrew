@@ -3,13 +3,13 @@
 using System;
 using System.Numerics;
 using SixLabors.ImageSharp;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Util;
 
 public sealed class TextLayout : IDisposable
 {
-    readonly PooledList<TextLayoutLine> _lines = new();
+    ValueList<TextLayoutLine> _lines = ValueList.Create<TextLayoutLine>();
 
     public TextLayout(scoped ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
@@ -23,7 +23,7 @@ public sealed class TextLayout : IDisposable
                 TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
 
                 var span = text.Slice(start, length);
-                foreach (var c in span) line.Add(font.GetGlyph(c), c, glyphIndex++);
+                foreach (var c in span) line.Add(font.GetGlyph(c), glyphIndex++);
 
                 _lines.Add(line);
                 width = float.Max(width, line.Width);
@@ -33,7 +33,7 @@ public sealed class TextLayout : IDisposable
         if (_lines.Count == 0) _lines.Add(new(this, 0, alignment, true));
         var lastLine = _lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
-        lastLine.Add(new(null, 0, font.LineHeight), '\0', glyphIndex);
+        lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
 
         Size = new(width, height);
     }
@@ -156,7 +156,7 @@ public sealed class TextLayout : IDisposable
 
 public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmpty) : IDisposable
 {
-    readonly PooledList<TextLayoutGlyph> _glyphs = new();
+    ValueList<TextLayoutGlyph> _glyphs = ValueList.Create<TextLayoutGlyph>();
     bool advance = advanceOnEmpty;
 
     public ReadOnlySpan<TextLayoutGlyph> Glyphs => _glyphs.AsReadOnlySpan();
@@ -172,11 +172,11 @@ public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alig
 
     public void Dispose() => _glyphs.Dispose();
 
-    internal void Add(FontGlyph glyph, char character, int glyphIndex)
+    internal void Add(FontGlyph glyph, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
-        _glyphs.Add(new(this, glyph, character, glyphIndex, Width));
+        _glyphs.Add(new(this, glyph, glyphIndex, Width));
         if (advance) Width += glyph.Width;
         if (glyph.Height > Height) Height = glyph.Height;
     }
@@ -184,7 +184,7 @@ public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alig
     public TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
 }
 
-public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, char Character, int Index, float X)
+public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, int Index, float X)
 {
     public Vector2 Position
     {

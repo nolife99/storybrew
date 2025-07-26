@@ -2,13 +2,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ValueStackInternalsRef<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    public readonly int Size, Version;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
     internal ValueStackInternalsRef(scoped ref readonly ValueStack<T> source)
     {
@@ -21,17 +21,14 @@ public readonly ref struct ValueStackInternalsRef<T>
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueStackInternalsRef<T> GetRef<T>(this scoped ref readonly ValueStack<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueStack<T> source)
-        => source._array.AsSpan(0, source._size);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueStack<T> source)
-        => source._array.AsMemory(0, source._size);
+        => new(source._array, 0, source._size);
 }

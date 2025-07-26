@@ -36,7 +36,7 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempStackInternals<T> TakeOwnership<T>(this scoped ref TempStack<T> source)
+    public static TempStackInternals<T> TransferOwner<T>(this scoped ref TempStack<T> source)
     {
         var internals = new TempStackInternals<T>(in source);
         source.Dispose();

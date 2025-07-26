@@ -30,7 +30,7 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempListInternals<T> TakeOwnership<T>(this scoped ref TempList<T> source)
+    public static TempListInternals<T> TransferOwner<T>(this scoped ref TempList<T> source)
     {
         var internals = new TempListInternals<T>(in source);
         source.Dispose();
@@ -40,7 +40,7 @@ partial class TempCollectionInternals
 
     public static TempArray<T> ToTempArray<T>(this scoped ref TempList<T> source)
     {
-        var internals = TakeOwnership(ref source);
+        var internals = TransferOwner(ref source);
 
         return new TempArray<T> { _array = internals.Items, _length = internals.Size, _pool = internals.Pool };
     }

@@ -3,20 +3,20 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ValueArrayHashSetInternalsRef<T>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ReadOnlySpan<ArrayEntry<T>> Entries;
-    [NonSerialized] public readonly ReadOnlySpan<int> Buckets;
+    public readonly ReadOnlySpan<ArrayEntry<T>> Entries;
+    public readonly ReadOnlySpan<int> Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
     internal ValueArrayHashSetInternalsRef(scoped ref readonly ValueArrayHashSet<T> source)
     {
@@ -36,18 +36,16 @@ public readonly ref struct ValueArrayHashSetInternalsRef<T>
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly ValueArrayHashSet<T> source)
         => new(in source);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<ArrayEntry<T>> AsReadOnlySpan<T>(this scoped ref readonly ValueArrayHashSet<T> source)
-        => source._entries.AsSpan(0, source.Count);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries),
+            source._freeEntryIndex);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(this scoped ref readonly ValueArrayHashSet<T> source)
-        => source._entries.AsMemory(0, source.Count);
+        => new(source._entries, 0, source.Count);
 }

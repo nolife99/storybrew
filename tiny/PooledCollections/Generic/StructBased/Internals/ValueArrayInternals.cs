@@ -6,10 +6,10 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ValueArrayInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Length;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
+    public readonly ArrayPool<T> Pool;
 
     internal ValueArrayInternals(scoped ref readonly ValueArray<T> source)
     {
@@ -27,9 +27,7 @@ public readonly struct ValueArrayInternals<T> : IDisposable
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueArrayInternals<T> TakeOwnership<T>(this scoped ref ValueArray<T> source)
+    public static ValueArrayInternals<T> TransferOwner<T>(this scoped ref ValueArray<T> source)
     {
         ValueArrayInternals<T> internals = new(ref source);
         source.Dispose();

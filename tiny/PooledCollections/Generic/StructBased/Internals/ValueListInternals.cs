@@ -2,11 +2,11 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct ValueListInternals<T> : IDisposable
 {
-    public readonly int Size;
-    public readonly int Version;
+    public readonly int Size, Version;
     public readonly bool ClearItems;
     public readonly T[] Items;
     public readonly ArrayPool<T> Pool;
@@ -28,19 +28,19 @@ public readonly struct ValueListInternals<T> : IDisposable
 
 partial class ValueCollectionInternals
 {
-    public static ValueListInternals<T> TakeOwnership<T>(scoped ref ValueList<T> source)
+    public static ValueListInternals<T> TransferOwner<T>(scoped ref ValueList<T> source)
     {
-        var internals = new ValueListInternals<T>(source);
-
-        source._items = null;
+        ValueListInternals<T> internals = new(source);
         source.Dispose();
+
+        source = Unsafe.NullRef<ValueList<T>>();
 
         return internals;
     }
 
     public static ValueArray<T> ToValueArray<T>(scoped ref ValueList<T> source)
     {
-        var internals = TakeOwnership(ref source);
+        var internals = TransferOwner(ref source);
 
         return new() { _array = internals.Items, _length = internals.Size, Pool = internals.Pool };
     }

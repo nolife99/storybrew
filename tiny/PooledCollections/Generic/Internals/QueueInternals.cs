@@ -31,7 +31,7 @@ partial class CollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static QueueInternals<T> TakeOwnership<T>(PooledQueue<T> source)
+    public static QueueInternals<T> TransferOwner<T>(PooledQueue<T> source)
     {
         var internals = new QueueInternals<T>(source);
 

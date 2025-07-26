@@ -79,7 +79,7 @@ partial class TempCollectionInternalsUnsafe
     ///     <typeparamref name="TValue"/> is in use.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
+    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
         TKey key,
         out bool exists) where TKey : notnull
         => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);

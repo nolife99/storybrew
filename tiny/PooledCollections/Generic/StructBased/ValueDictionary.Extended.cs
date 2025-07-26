@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 partial struct ValueDictionary<TKey, TValue> : IDisposable
 {
     internal ValueDictionary(ReadOnlySpan<(TKey Key, TValue Value)> span,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
     {
@@ -16,7 +16,7 @@ partial struct ValueDictionary<TKey, TValue> : IDisposable
     }
 
     internal ValueDictionary(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
-        IEqualityComparer<TKey>? comparer,
+        IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
     {

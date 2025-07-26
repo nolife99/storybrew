@@ -6,13 +6,10 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ValueQueueInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Head;
-    [NonSerialized] public readonly int Tail;
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Head, Tail, Size, Version;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
+    public readonly ArrayPool<T> Pool;
 
     internal ValueQueueInternals(scoped ref readonly ValueQueue<T> source)
     {
@@ -33,9 +30,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
 
 partial class ValueCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueQueueInternals<T> TakeOwnership<T>(this scoped ref ValueQueue<T> source)
+    public static ValueQueueInternals<T> TransferOwner<T>(this scoped ref ValueQueue<T> source)
     {
         ValueQueueInternals<T> internals = new(ref source);
         source.Dispose();

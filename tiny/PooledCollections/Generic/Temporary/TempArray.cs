@@ -120,29 +120,25 @@ public ref struct TempArray<T>
         src.Slice(index, count).CopyTo(dest.Slice(destIndex, count));
     }
 
-    void ReturnArray(T[] replaceWith)
+    public void Dispose()
     {
         if (IsValid) _pool?.Return(_array, s_clearArray);
 
-        _array = replaceWith ?? s_emptyArray;
+        _array = s_emptyArray;
         _ref = ref MemoryMarshal.GetArrayDataReference(_array);
-    }
 
-    public void Dispose()
-    {
-        ReturnArray(s_emptyArray);
         _length = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(ref this);
+    public readonly Enumerator GetEnumerator() => new(this);
 
     public ref struct Enumerator
     {
         readonly TempArray<T> _array;
         int _index;
 
-        internal Enumerator(scoped ref TempArray<T> array)
+        internal Enumerator(TempArray<T> array)
         {
             _array = array;
             _index = -1;
