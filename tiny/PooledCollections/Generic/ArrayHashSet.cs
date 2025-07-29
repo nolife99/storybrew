@@ -148,7 +148,7 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
+    public void CopyTo(T[] array, int arrayIndex) => CopyTo(array.AsSpan(), arrayIndex, Count);
 
     bool ICollection<T>.IsReadOnly => false;
 

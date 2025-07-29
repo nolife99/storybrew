@@ -5,13 +5,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using IO;
+using BrewLib.IO;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
-using Util;
 using Image = SixLabors.ImageSharp.Image;
 
 public sealed class Texture2d : Texture2dRegion

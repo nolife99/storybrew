@@ -2,9 +2,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Temporary;
-using Util;
 
 public class ProgramScope
 {

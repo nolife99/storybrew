@@ -2,7 +2,7 @@
 
 using System;
 using System.Numerics;
-using Cameras;
+using BrewLib.Graphics.Cameras;
 using SixLabors.ImageSharp;
 
 public interface Drawable : IDisposable

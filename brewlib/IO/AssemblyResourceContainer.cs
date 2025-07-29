@@ -6,7 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
-using Util;
+using BrewLib.Util;
 
 public sealed class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
     : ResourceContainer, IDisposable

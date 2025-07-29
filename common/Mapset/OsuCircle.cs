@@ -6,7 +6,7 @@ using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
-/// <summary>Represents an osu! hit circle.</summary>
+/// <summary> Represents an osu! hit circle. </summary>
 public record OsuCircle : OsuHitObject
 {
     internal static OsuCircle Parse(TempList<ValueList<char>> values,

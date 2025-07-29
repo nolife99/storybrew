@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using IO;
+using BrewLib.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;

@@ -3,8 +3,8 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using BrewLib.Graphics.Textures;
 using SixLabors.ImageSharp.PixelFormats;
-using Textures;
 
 public interface IQuadRenderer : IRenderer, IDisposable
 {
@@ -12,7 +12,7 @@ public interface IQuadRenderer : IRenderer, IDisposable
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-internal struct QuadPrimitive
+struct QuadPrimitive
 {
     public Vector2 vec1;
     public float u1, v1;

@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.Temporary;
 
-/// <summary>Represents a Catmull-Rom curve defined by a set of control points.</summary>
+/// <summary> Represents a Catmull-Rom curve defined by a set of control points. </summary>
 public class CatmullCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const int catmull_detail = 50;

@@ -3,10 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Animations;
-using Storyboarding;
-using Storyboarding.CommandValues;
-using Storyboarding.Util;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.Util;
 
 /// <summary> Represents a basic <see cref="OsbSprite"/> with 3D functionality. </summary>
 public class Sprite3d : Node3d, HasOsbSprites

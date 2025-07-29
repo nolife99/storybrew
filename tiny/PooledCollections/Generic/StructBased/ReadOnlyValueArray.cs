@@ -4,20 +4,17 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Internals;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 public struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
 {
     internal ValueArray<T> _array;
 
-    ReadOnlyValueArray(ValueArray<T> array) => _array = array;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyValueArray<T> Empty() => new(ValueArray.Empty<T>());
+    internal ReadOnlyValueArray(ValueArray<T> array) => _array = array;
 
     T IReadOnlyList<T>.this[int index] => _array[index];
 
-    public ref readonly T this[int index]
+    public readonly ref readonly T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => ref _array[index];
@@ -83,16 +80,56 @@ public struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly ValueArray<T>.Enumerator GetEnumerator() => new(_array);
+    public readonly Enumerator GetEnumerator() => new(_array);
 
     int IReadOnlyCollection<T>.Count => _array._length;
 
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new ValueArray<T>.Enumerator(_array);
-    IEnumerator IEnumerable.GetEnumerator() => new ValueArray<T>.Enumerator(_array);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(_array);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_array);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose() => _array.Dispose();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator ReadOnlyValueArray<T>(ValueArray<T> array) => new(array);
+
+    public struct Enumerator : IEnumerator<T>
+    {
+        readonly ValueArray<T> _array;
+        int _index;
+
+        internal Enumerator(ValueArray<T> array)
+        {
+            _array = array;
+            _index = -1;
+        }
+
+        public bool MoveNext()
+        {
+            var index = _index + 1;
+            if (index >= _array.Length) return false;
+
+            _index = index;
+            return true;
+        }
+
+        public readonly ref readonly T Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _array._array[_index];
+        }
+
+        public void Reset() => _index = -1;
+
+        T IEnumerator<T>.Current => Current;
+        object IEnumerator.Current => Current;
+
+        void IDisposable.Dispose() { }
+    }
+}
+
+public static class ReadOnlyValueArray
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlyValueArray<T> Empty<T>() => new(ValueArray.Empty<T>());
 }

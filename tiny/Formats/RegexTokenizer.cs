@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
-using PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary;
 using ZLinq;
 
 public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] definitions, TTokenType? endLineToken)

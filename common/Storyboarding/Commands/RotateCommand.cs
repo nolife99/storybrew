@@ -1,6 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
-using CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 #pragma warning disable CS1591
 public sealed record RotateCommand : Command<CommandDecimal>

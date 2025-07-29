@@ -235,11 +235,11 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
-        OsbLayer osbLayer,
+        OsbLayer layer,
         StoryboardTransform transform)
     {
         foreach (var sbo in storyboardObjects)
-            sbo.WriteOsb(writer, exportSettings, osbLayer, new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY));
+            sbo.WriteOsb(writer, exportSettings, layer, new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY));
     }
 
     public int CalculateSize(OsbLayer osbLayer)

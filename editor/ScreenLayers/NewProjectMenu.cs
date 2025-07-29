@@ -5,11 +5,11 @@ using System.IO;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Storyboarding;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.UserInterface;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using UserInterface;
 
 public class NewProjectMenu : UiScreenLayer
 {

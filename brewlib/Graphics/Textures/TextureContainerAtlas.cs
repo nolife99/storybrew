@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using IO;
+using BrewLib.IO;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
-using Util;
 
 public sealed class TextureContainerAtlas : TextureContainer
 {

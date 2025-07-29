@@ -5,12 +5,11 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 
-/// <summary>An example script containing en entire storyboard.
-///     <para/>
-///     It is best to split yours into multiple effects, or it could take a long time to update in the editor.
-///     <para/>
-///     To be used with <see href="https://osu.ppy.sh/s/183628"/></summary>
-internal class Jigoku : StoryboardObjectGenerator
+/// <summary>
+///     An example script containing en entire storyboard. <para/> It is best to split yours into multiple effects, or it
+///     could take a long time to update in the editor. <para/> To be used with <see href="https://osu.ppy.sh/s/183628"/>
+/// </summary>
+class Jigoku : StoryboardObjectGenerator
 {
     const float BgScaling = 480f / 768;
 

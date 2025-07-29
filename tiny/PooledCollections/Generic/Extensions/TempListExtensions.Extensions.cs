@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Temporary;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public static class TempListExtensions
 {

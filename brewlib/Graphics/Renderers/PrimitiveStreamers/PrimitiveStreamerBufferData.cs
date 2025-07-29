@@ -1,29 +1,28 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
-using Shaders;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
-internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
+sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : struct
 {
-    readonly PooledList<TPrimitive> primitiveBuffer = new(maxPrimitivesPerBatch);
+    readonly nint primitiveBuffer = Marshal.AllocHGlobal(Unsafe.SizeOf<TPrimitive>() * maxPrimitivesPerBatch);
+    int primitiveBufferOffset;
 
-    protected override void internalAddPrimitive(ref readonly TPrimitive primitive) => primitiveBuffer.Add(primitive);
+    protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
+        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitiveBuffer), primitiveBufferOffset++) =
+            primitive;
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
-        GL.BufferSubData(BufferTarget.ArrayBuffer,
-            0,
-            totalQueuedPrimitives * PrimitiveSize,
-            ref MemoryMarshal.GetReference(primitiveBuffer.AsReadOnlySpan()));
+        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, totalQueuedPrimitives * PrimitiveSize, primitiveBuffer);
 
-        primitiveBuffer.Clear();
+        primitiveBufferOffset = 0;
 
         if (IndexBufferId != -1) GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
@@ -38,5 +37,11 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
             MaxPrimitivesPerBatch * PrimitiveSize,
             0,
             BufferStorageFlags.DynamicStorageBit);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        Marshal.FreeHGlobal(primitiveBuffer);
     }
 }

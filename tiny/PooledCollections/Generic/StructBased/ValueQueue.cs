@@ -23,7 +23,6 @@ using System.Runtime.CompilerServices;
 
 // A simple Queue of generic objects.  Internally it is implemented as a
 // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
-[DebuggerTypeProxy(typeof(ValueQueueDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
 public partial struct ValueQueue<T> : IReadOnlyCollection<T>
 {
     internal T[] _array;
@@ -280,9 +279,9 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
         if (_size < threshold) SetCapacity(_size);
     }
 
-    /// <summary>Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this queue.</returns>
+    /// <summary> Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>. </summary>
+    /// <param name="capacity"> The minimum capacity to ensure. </param>
+    /// <returns> The new capacity of this queue. </returns>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0)

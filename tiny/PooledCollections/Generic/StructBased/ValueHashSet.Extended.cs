@@ -35,35 +35,35 @@ partial struct ValueHashSet<T> : IDisposable
         return ref Unsafe.NullRef<T>();
     }
 
-    /// <summary>Take the union of this PooledSet with other. Modifies this set.</summary>
-    /// <param name="other"></param>
+    /// <summary> Take the union of this PooledSet with other. Modifies this set. </summary>
+    /// <param name="other"> </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UnionWith(T[] other) => UnionWith((ReadOnlySpan<T>)other);
 
-    /// <summary>Take the union of this PooledSet with other. Modifies this set.</summary>
-    /// <param name="other">enumerable with items to add</param>
+    /// <summary> Take the union of this PooledSet with other. Modifies this set. </summary>
+    /// <param name="other"> enumerable with items to add </param>
     public void UnionWith(ReadOnlySpan<T> other)
     {
         for (int i = 0, len = other.Length; i < len; i++) AddIfNotPresent(other[i], out _);
     }
 
-    /// <summary>Takes the intersection of this set with other. Modifies this set.</summary>
+    /// <summary> Takes the intersection of this set with other. Modifies this set. </summary>
     /// <remarks>
-    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over and
-    ///     delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the property
-    ///     that the intersection of anything with the empty set is the empty set.
+    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
+    ///     and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the
+    ///     property that the intersection of anything with the empty set is the empty set.
     /// </remarks>
-    /// <param name="other">enumerable with items to add </param>
+    /// <param name="other"> enumerable with items to add </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IntersectWith(T[] other) => IntersectWith((ReadOnlySpan<T>)other);
 
-    /// <summary>Takes the intersection of this set with other. Modifies this set.</summary>
+    /// <summary> Takes the intersection of this set with other. Modifies this set. </summary>
     /// <remarks>
-    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over and
-    ///     delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the property
-    ///     that the intersection of anything with the empty set is the empty set.
+    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
+    ///     and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the
+    ///     property that the intersection of anything with the empty set is the empty set.
     /// </remarks>
-    /// <param name="other">enumerable with items to add </param>
+    /// <param name="other"> enumerable with items to add </param>
     public void IntersectWith(ReadOnlySpan<T> other)
     {
         // intersection of anything with empty set is empty set, so return if count is 0
@@ -83,7 +83,7 @@ partial struct ValueHashSet<T> : IDisposable
     ///     Iterate over other. If contained in this, mark an element in bit array corresponding to its position in _slots. If
     ///     anything is unmarked (in bit array), remove it. This attempts to allocate on the stack, if below StackAllocThreshold.
     /// </summary>
-    /// <param name="other"></param>
+    /// <param name="other"> </param>
     void IntersectWithSpan(ReadOnlySpan<T> other)
     {
         Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
@@ -114,13 +114,13 @@ partial struct ValueHashSet<T> : IDisposable
         }
     }
 
-    /// <summary>Remove items in other from this set. Modifies this set.</summary>
-    /// <param name="other">enumerable with items to remove</param>
+    /// <summary> Remove items in other from this set. Modifies this set. </summary>
+    /// <param name="other"> enumerable with items to remove </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ExceptWith(T[] other) => ExceptWith((ReadOnlySpan<T>)other);
 
-    /// <summary>Remove items in other from this set. Modifies this set.</summary>
-    /// <param name="other">enumerable with items to remove</param>
+    /// <summary> Remove items in other from this set. Modifies this set. </summary>
+    /// <param name="other"> enumerable with items to remove </param>
     public void ExceptWith(ReadOnlySpan<T> other)
     {
         // this is already the empty set; return
@@ -130,13 +130,13 @@ partial struct ValueHashSet<T> : IDisposable
         for (int i = 0, len = other.Length; i < len; i++) Remove(other[i]);
     }
 
-    /// <summary>Takes symmetric difference (XOR) with other and this set. Modifies this set.</summary>
-    /// <param name="other">array with items to XOR</param>
+    /// <summary> Takes symmetric difference (XOR) with other and this set. Modifies this set. </summary>
+    /// <param name="other"> array with items to XOR </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SymmetricExceptWith(T[] other) => SymmetricExceptWith((ReadOnlySpan<T>)other);
 
-    /// <summary>Takes symmetric difference (XOR) with other and this set. Modifies this set.</summary>
-    /// <param name="other">span with items to XOR</param>
+    /// <summary> Takes symmetric difference (XOR) with other and this set. Modifies this set. </summary>
+    /// <param name="other"> span with items to XOR </param>
     public void SymmetricExceptWith(ReadOnlySpan<T> other)
     {
         // if set is empty, then symmetric difference is other
@@ -157,7 +157,7 @@ partial struct ValueHashSet<T> : IDisposable
     ///     indicate whether to add/remove the item. If already present in collection, it will get marked for deletion. If added
     ///     from other, it will get marked as something not to remove.
     /// </summary>
-    /// <param name="other"></param>
+    /// <param name="other"> </param>
     void SymmetricExceptWithSpan(ReadOnlySpan<T> other)
     {
         var originalCount = _count;
@@ -197,15 +197,15 @@ partial struct ValueHashSet<T> : IDisposable
                 Remove(_entries![i].Value);
     }
 
-    /// <summary>Checks if this is a subset of other.</summary>
-    /// <param name="other"></param>
-    /// <returns>true if this is a subset of other; false if not</returns>
+    /// <summary> Checks if this is a subset of other. </summary>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a subset of other; false if not </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsSubsetOf(T[] other) => IsSubsetOf((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this is a subset of other.</summary>
-    /// <param name="other"></param>
-    /// <returns>true if this is a subset of other; false if not</returns>
+    /// <summary> Checks if this is a subset of other. </summary>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a subset of other; false if not </returns>
     public bool IsSubsetOf(ReadOnlySpan<T> other)
     {
         // The empty set is a subset of any set
@@ -215,25 +215,25 @@ partial struct ValueHashSet<T> : IDisposable
         return uniqueCount == Count && unfoundCount >= 0;
     }
 
-    /// <summary>Checks if this is a proper subset of other (i.e. strictly contained in)</summary>
+    /// <summary> Checks if this is a proper subset of other (i.e. strictly contained in) </summary>
     /// <remarks>
     ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
     ///     empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the
     ///     empty set.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a proper subset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a proper subset of other; false if not </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsProperSubsetOf(T[] other) => IsProperSubsetOf((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this is a proper subset of other (i.e. strictly contained in)</summary>
+    /// <summary> Checks if this is a proper subset of other (i.e. strictly contained in) </summary>
     /// <remarks>
     ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
     ///     empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the
     ///     empty set.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a proper subset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a proper subset of other; false if not </returns>
     public bool IsProperSubsetOf(ReadOnlySpan<T> other)
     {
         // no set is a proper subset of an empty set
@@ -258,8 +258,8 @@ partial struct ValueHashSet<T> : IDisposable
     ///     element not contained in other. An earlier implementation used delegates to perform these checks rather than returning
     ///     an ElementCount struct; however this was changed due to the perf overhead of delegates.
     /// </summary>
-    /// <param name="other"></param>
-    /// <param name="returnIfUnfound">Allows us to finish faster for equals and proper superset because unfoundCount must be 0.</param>
+    /// <param name="other"> </param>
+    /// <param name="returnIfUnfound"> Allows us to finish faster for equals and proper superset because unfoundCount must be 0. </param>
     (int UniqueCount, int UnfoundCount) CheckUniqueAndUnfoundElements(ReadOnlySpan<T> other, bool returnIfUnfound)
     {
         // Need special case in case this has no elements.
@@ -309,23 +309,23 @@ partial struct ValueHashSet<T> : IDisposable
         return (uniqueFoundCount, unfoundCount);
     }
 
-    /// <summary>Checks if this is a superset of other</summary>
+    /// <summary> Checks if this is a superset of other </summary>
     /// <remarks>
     ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
     ///     elements (it's the empty set), then this is a superset, even if this is also the empty set.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a superset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a superset of other; false if not </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsSupersetOf(T[] other) => IsSupersetOf((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this is a superset of other</summary>
+    /// <summary> Checks if this is a superset of other </summary>
     /// <remarks>
     ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
     ///     elements (it's the empty set), then this is a superset, even if this is also the empty set.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a superset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a superset of other; false if not </returns>
     public bool IsSupersetOf(ReadOnlySpan<T> other)
     {
         // if other is the empty set then this is a superset
@@ -334,27 +334,27 @@ partial struct ValueHashSet<T> : IDisposable
         return ContainsAllElements(other);
     }
 
-    /// <summary>Checks if this is a proper superset of other (i.e. other strictly contained in this)</summary>
+    /// <summary> Checks if this is a proper superset of other (i.e. other strictly contained in this) </summary>
     /// <remarks>
     ///     Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
     ///     was at least one element not contained in other. The following properties are used up-front to avoid element-wise
     ///     checks: 1. If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2.
     ///     If other is an empty set and this contains at least 1 element, then this is a proper superset.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a proper superset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a proper superset of other; false if not </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsProperSupersetOf(T[] other) => IsProperSupersetOf((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this is a proper superset of other (i.e. other strictly contained in this)</summary>
+    /// <summary> Checks if this is a proper superset of other (i.e. other strictly contained in this) </summary>
     /// <remarks>
     ///     Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
     ///     was at least one element not contained in other. The following properties are used up-front to avoid element-wise
     ///     checks: 1. If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2.
     ///     If other is an empty set and this contains at least 1 element, then this is a proper superset.
     /// </remarks>
-    /// <param name="other"></param>
-    /// <returns>true if this is a proper superset of other; false if not</returns>
+    /// <param name="other"> </param>
+    /// <returns> true if this is a proper superset of other; false if not </returns>
     public bool IsProperSupersetOf(ReadOnlySpan<T> other)
     {
         // the empty set isn't a proper superset of any set.
@@ -369,15 +369,15 @@ partial struct ValueHashSet<T> : IDisposable
         return uniqueCount < Count && unfoundCount == 0;
     }
 
-    /// <summary>Checks if this set overlaps other (i.e. they share at least one item)</summary>
-    /// <param name="other"></param>
-    /// <returns>true if these have at least one common element; false if disjoint</returns>
+    /// <summary> Checks if this set overlaps other (i.e. they share at least one item) </summary>
+    /// <param name="other"> </param>
+    /// <returns> true if these have at least one common element; false if disjoint </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Overlaps(T[] other) => Overlaps((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this set overlaps other (i.e. they share at least one item)</summary>
-    /// <param name="other"></param>
-    /// <returns>true if these have at least one common element; false if disjoint</returns>
+    /// <summary> Checks if this set overlaps other (i.e. they share at least one item) </summary>
+    /// <param name="other"> </param>
+    /// <returns> true if these have at least one common element; false if disjoint </returns>
     public bool Overlaps(ReadOnlySpan<T> other)
     {
         if (_count == 0) return false;
@@ -389,15 +389,15 @@ partial struct ValueHashSet<T> : IDisposable
         return false;
     }
 
-    /// <summary>Checks if this and other contain the same elements. This is set equality: duplicates and order are ignored</summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
+    /// <summary> Checks if this and other contain the same elements. This is set equality: duplicates and order are ignored </summary>
+    /// <param name="other"> </param>
+    /// <returns> </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool SetEquals(T[] other) => SetEquals((ReadOnlySpan<T>)other);
 
-    /// <summary>Checks if this and other contain the same elements. This is set equality: duplicates and order are ignored</summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
+    /// <summary> Checks if this and other contain the same elements. This is set equality: duplicates and order are ignored </summary>
+    /// <param name="other"> </param>
+    /// <returns> </returns>
     public bool SetEquals(ReadOnlySpan<T> other)
     {
         // if this count is 0 but other contains at least one element, they can't be equal
@@ -446,8 +446,8 @@ partial struct ValueHashSet<T> : IDisposable
     ///     Checks if this contains of other's elements. Iterates over other's elements and returns false as soon as it finds
     ///     an element in other that's not in this. Used by SupersetOf, ProperSupersetOf, and SetEquals.
     /// </summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
+    /// <param name="other"> </param>
+    /// <returns> </returns>
     bool ContainsAllElements(ReadOnlySpan<T> other)
     {
         for (int i = 0, len = other.Length; i < len; i++)

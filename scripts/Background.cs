@@ -3,7 +3,7 @@
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 
-internal class Background : StoryboardObjectGenerator
+class Background : StoryboardObjectGenerator
 {
     [Configurable] public int EndTime;
     [Configurable] public float Opacity = .2f;

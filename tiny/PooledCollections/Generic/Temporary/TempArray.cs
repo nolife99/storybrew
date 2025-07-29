@@ -2,6 +2,8 @@
 
 using System;
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -133,7 +135,7 @@ public ref struct TempArray<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Enumerator GetEnumerator() => new(this);
 
-    public ref struct Enumerator
+    public ref struct Enumerator : IEnumerator<T>
     {
         readonly TempArray<T> _array;
         int _index;
@@ -156,14 +158,19 @@ public ref struct TempArray<T>
         public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref Unsafe.Add(ref _array._ref, _index);
+            get => ref _array._array[_index];
         }
 
         public void Reset()
         {
-            _index = 0;
+            _index = -1;
             Current = default;
         }
+
+        T IEnumerator<T>.Current => Current;
+        object IEnumerator.Current => Current;
+
+        void IDisposable.Dispose() { }
     }
 }
 

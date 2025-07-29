@@ -12,7 +12,7 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Subtitles;
 
-internal class Karaoke : StoryboardObjectGenerator
+class Karaoke : StoryboardObjectGenerator
 {
     [Configurable] public bool EffectsOnly = false;
     [Configurable] public Rgba32 FontColor = Color.White.ToPixel<Rgba32>();

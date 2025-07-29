@@ -2,11 +2,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Graphics;
-using Input;
+using BrewLib.Graphics;
+using BrewLib.Input;
+using BrewLib.Time;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using Time;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;

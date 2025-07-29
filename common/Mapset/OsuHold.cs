@@ -6,7 +6,7 @@ using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
-/// <summary>Represents an osu!mania hold note.</summary>
+/// <summary> Represents an osu!mania hold note. </summary>
 public record OsuHold : OsuHitObject
 {
     int endTime;

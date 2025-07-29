@@ -25,11 +25,11 @@ public readonly struct TempQueueInternalsRefUnsafe<T>
 
 partial class TempCollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempQueueInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempQueue<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
@@ -38,7 +38,7 @@ partial class TempCollectionInternalsUnsafe
         return source._array.AsSpan(0, source._size);
     }
 
-    /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {

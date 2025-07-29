@@ -2,9 +2,9 @@
 
 using System;
 using System.Numerics;
-using Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
-/// <summary>Extension methods for <see cref="KeyframedValue{TValue}"/>.</summary>
+/// <summary> Extension methods for <see cref="KeyframedValue{TValue}"/>. </summary>
 public static class KeyframedValueExtensions
 {
     /// <summary>
@@ -36,7 +36,7 @@ public static class KeyframedValueExtensions
         if (active) action(startTime, lastKeyframeTime);
     }
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="x"> The x component of the scale to add. </param>
@@ -49,7 +49,7 @@ public static class KeyframedValueExtensions
         double y,
         Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="scale"> The scale to add. </param>
@@ -60,7 +60,7 @@ public static class KeyframedValueExtensions
         double scale,
         Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="x"> The x component of the position to add. </param>
@@ -73,7 +73,7 @@ public static class KeyframedValueExtensions
         double y,
         Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="xy"> The x and y components of the position to add. </param>
@@ -84,7 +84,7 @@ public static class KeyframedValueExtensions
         double xy,
         Func<float, float> easing = null) => keyframes.Add(time, new(xy, xy), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="x"> The x component of the vector to add. </param>
@@ -97,7 +97,7 @@ public static class KeyframedValueExtensions
         float y,
         Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="scale"> The scale to add. </param>
@@ -108,7 +108,7 @@ public static class KeyframedValueExtensions
         float scale,
         Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="x"> The x component of the vector to add. </param>
@@ -123,7 +123,7 @@ public static class KeyframedValueExtensions
         float z,
         Func<float, float> easing = null) => keyframes.Add(time, new(x, y, z), easing);
 
-    /// <summary>Adds a keyframe with the given value to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="scale"> The scale to add. </param>
@@ -134,7 +134,7 @@ public static class KeyframedValueExtensions
         float scale,
         Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
 
-    /// <summary>Adds a keyframe with the given rotation to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given rotation to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="axis"> The axis of rotation. </param>
@@ -151,7 +151,7 @@ public static class KeyframedValueExtensions
         return keyframes.Add(time, new(axis.X * sin, axis.Y * sin, axis.Z * sin, cos), easing);
     }
 
-    /// <summary>Adds a keyframe with the given rotation to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given rotation to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="angle"> The angle of rotation. </param>
@@ -165,7 +165,7 @@ public static class KeyframedValueExtensions
         Quaternion.CreateFromYawPitchRoll(angle, angle, angle),
         easing);
 
-    /// <summary>Adds a keyframe with the given rotation to the keyframes.</summary>
+    /// <summary> Adds a keyframe with the given rotation to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="pitch"> The angle of rotation about the x axis. </param>

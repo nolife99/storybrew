@@ -11,11 +11,11 @@ using System.Text.RegularExpressions;
 using BrewLib.IO;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using ScreenLayers;
-using Storyboarding;
+using StorybrewEditor.ScreenLayers;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
 
 public partial class EffectList : Widget
 {
@@ -301,6 +301,8 @@ public partial class EffectList : Widget
 
         switch (effect.Status)
         {
+            case EffectStatus.Initializing: button.Icon = IconFont.Pending; break;
+
             case EffectStatus.Loading:
             case EffectStatus.Configuring:
             case EffectStatus.Updating:
@@ -331,13 +333,11 @@ public partial class EffectList : Widget
                 break;
         }
 
-        button.Displayed = effect.Status != EffectStatus.Ready || !button.Disabled;
+        button.Displayed = effect.Status is not EffectStatus.Ready || !button.Disabled;
     }
 
     void createScript(string name)
     {
-        var resourceContainer = Manager.ScreenLayerManager.GetContext<Editor>().ResourceContainer;
-
         name = ZeroOrMoreDigitsPrefixRegex()
             .Replace(NotLetterNorNumberRegex()
                     .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""),
@@ -346,13 +346,15 @@ public partial class EffectList : Widget
         if (name.Length == 0) name = "EffectScript";
 
         var path = Path.Combine(project.ScriptsPath, $"{name}.cs");
-        var script = resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded);
+        var script = Manager.ScreenLayerManager.GetContext<Editor>()
+            .ResourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded);
 
         script = script.Replace("%CLASSNAME%", name);
 
         if (File.Exists(path))
         {
-            Manager.ScreenLayerManager.ShowMessage($"There is already a script named {name}");
+            using var text = StringHelper.Interpolate($"There is already a script named {name}");
+            Manager.ScreenLayerManager.ShowMessage(text.AsReadOnlySpan());
 
             return;
         }

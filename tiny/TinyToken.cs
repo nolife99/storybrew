@@ -5,9 +5,9 @@ using System.Collections;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Formats;
-using Formats.Json;
-using Formats.Yaml;
+using Tiny.Formats;
+using Tiny.Formats.Json;
+using Tiny.Formats.Yaml;
 
 public abstract class TinyToken
 {

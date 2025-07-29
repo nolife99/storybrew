@@ -2,9 +2,9 @@
 
 using System;
 using System.Numerics;
-using Graphics;
-using Graphics.Drawables;
-using Skinning.Styles;
+using BrewLib.Graphics;
+using BrewLib.Graphics.Drawables;
+using BrewLib.UserInterface.Skinning.Styles;
 
 public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 {

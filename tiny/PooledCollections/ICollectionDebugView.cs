@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-internal sealed class ICollectionDebugView<T>
+sealed class ICollectionDebugView<T>
 {
     readonly ICollection<T> _collection;
 

@@ -78,8 +78,9 @@ using Vector4 = System.Numerics.Vector4;
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
 
-    /// <summary>Creates a <see cref="CommandColor"/> from HSB values.
-    ///     <para>Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1</para>
+    /// <summary>
+    ///     Creates a <see cref="CommandColor"/> from HSB values.
+    ///     <para> Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1 </para>
     /// </summary>
     public static CommandColor FromHsb(double hue, double saturation, double brightness)
     {

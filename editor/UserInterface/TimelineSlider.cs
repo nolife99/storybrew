@@ -9,8 +9,8 @@ using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Storyboarding;
 using StorybrewCommon.Mapset;
+using StorybrewEditor.Storyboarding;
 
 public class TimelineSlider : Slider
 {

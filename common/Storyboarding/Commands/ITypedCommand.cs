@@ -1,7 +1,7 @@
 namespace StorybrewCommon.Storyboarding.Commands;
 
-using CommandValues;
-using Display;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.Display;
 
 #pragma warning disable CS1591
 public interface ITypedCommand<TValue> : ICommand where TValue : struct, ICommandValue

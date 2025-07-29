@@ -31,13 +31,13 @@ public class UiScreenLayer : ScreenLayer
         base.Resize(width, height);
     }
 
-    public override void Update(bool isTop, bool isCovered)
+    public override void Update(bool isTopFocus, bool isCovered)
     {
-        base.Update(isTop, isCovered);
+        base.Update(isTopFocus, isCovered);
 
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
-            var targetOpacity = isTop ? 1 : .3f;
+            var targetOpacity = isTopFocus ? 1 : .3f;
             opacity = float.Abs(opacity - targetOpacity) <= .07f ?
                 targetOpacity :
                 float.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);

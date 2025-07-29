@@ -6,8 +6,8 @@ using System.Globalization;
 using System.IO;
 using BrewLib.IO;
 using BrewLib.UserInterface;
-using Storyboarding;
 using StorybrewCommon.Util;
+using StorybrewEditor.Storyboarding;
 
 public class Settings
 {

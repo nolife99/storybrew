@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
-using Shaders;
 
-internal interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : struct
+interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : struct
 {
     int QueuedRenders { get; }
     int PrimitivesInBatch { get; }

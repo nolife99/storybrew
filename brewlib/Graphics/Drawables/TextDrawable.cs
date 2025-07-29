@@ -2,13 +2,13 @@
 
 using System;
 using System.Numerics;
-using Cameras;
-using Renderers;
+using BrewLib.Graphics.Cameras;
+using BrewLib.Graphics.Renderers;
+using BrewLib.Graphics.Text;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Text;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Util;
 
 public sealed class TextDrawable : Drawable
 {

@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System.Numerics;
-using Cameras;
-using Renderers;
+using BrewLib.Graphics.Cameras;
+using BrewLib.Graphics.Renderers;
+using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Textures;
-using Util;
 
 public sealed class Sprite : Drawable
 {

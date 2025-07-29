@@ -19,6 +19,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     AssemblyLoadContext appDomain;
 
+    Action<TScript> ctor;
+
     volatile int currentVersion, targetVersion = 1;
 
     PooledList<string> referencedAssemblies;
@@ -105,9 +107,6 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         referencedAssemblies.AsReadOnlySpan(),
                         token)
                     .GetType(ScriptTypeName, true);
-
-                appDomain?.Unload();
-                appDomain = scriptDomain;
             }
             catch (Exception e)
             {
@@ -118,10 +117,13 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                 if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";
                 throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
             }
+
+            appDomain?.Unload();
+            appDomain = scriptDomain;
         }
 
         var script = (TScript)Activator.CreateInstance(scriptType!, true);
-        script.Identifier = scriptType.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
+        script!.Identifier = Environment.TickCount.ToString(CultureInfo.InvariantCulture);
         return script;
     }
 

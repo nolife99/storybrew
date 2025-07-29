@@ -10,7 +10,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
 
-internal class Lyrics : StoryboardObjectGenerator
+class Lyrics : StoryboardObjectGenerator
 {
     [Configurable] public bool EffectsOnly = false;
     [Configurable] public Color FontColor = Color.White;

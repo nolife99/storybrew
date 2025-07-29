@@ -3,7 +3,7 @@
 using System;
 using System.Linq;
 using BrewLib.Util;
-using CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 
 #pragma warning disable CS1591

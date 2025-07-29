@@ -2,10 +2,10 @@
 
 using System;
 using System.Numerics;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
-using Util;
 
 public sealed class TextLayout : IDisposable
 {

@@ -9,7 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-internal static class HashHelpers
+static class HashHelpers
 {
     public const int HashCollisionThreshold = 100;
     public const int MaxPrimeArrayLength = 0x7FEFFFFD;

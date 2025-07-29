@@ -12,16 +12,16 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Scripting;
-using Storyboarding;
 using StorybrewCommon.Mapset;
+using StorybrewEditor.Scripting;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.UserInterface;
+using StorybrewEditor.UserInterface.Components;
+using StorybrewEditor.UserInterface.Drawables;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using UserInterface;
-using UserInterface.Components;
-using UserInterface.Drawables;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
@@ -505,7 +505,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 foreach (var map in array)
                 {
                     await Program.Schedule(s => s.proj.MainBeatmap = s.map, (map, proj));
-                    while (proj.EffectsStatus != EffectStatus.Ready)
+                    while (proj.EffectsStatus is not EffectStatus.Ready)
                     {
                         switch (proj.EffectsStatus)
                         {

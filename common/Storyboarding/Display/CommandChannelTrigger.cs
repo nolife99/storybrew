@@ -1,8 +1,8 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
-using CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
-internal sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public bool Active;
     public float TriggerTime;

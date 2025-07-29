@@ -9,11 +9,11 @@ using System.Reflection;
 using System.Xml;
 using BrewLib.IO;
 using BrewLib.Util;
-using Storyboarding;
 using StorybrewCommon.Scripting;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Util;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
@@ -137,8 +137,9 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             scheduler?.Schedule(e.FullPath,
                 _ =>
                 {
+                    var alternateLookup = scriptContainers.GetAlternateLookup<ReadOnlySpan<char>>();
                     if (!disposed &&
-                        scriptContainers.TryGetValue(Path.GetFileNameWithoutExtension(e.Name), out var container))
+                        alternateLookup.TryGetValue(Path.GetFileNameWithoutExtension(e.Name.AsSpan()), out var container))
                         container.ReloadScript();
                 });
     }
@@ -177,9 +178,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         XmlDocument document = new() { PreserveWhitespace = false };
         try
         {
-            using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded))
-            using (XmlTextReader sr = new(stream))
-                document.Load(sr);
+            using (var sr = XmlReader.Create(resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded),
+                new() { CloseInput = true })) document.Load(sr);
 
             var xmlns = document.DocumentElement.GetAttribute("xmlns");
 

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internals;
+using Tiny.PooledCollections.Generic.Internals;
 
 public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
 {
@@ -629,7 +629,7 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
         _size += count;
         _version++;
 
-        var output = _items.AsSpan(index, count);
+        var output = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index), count);
 
         if (clearSpan && s_clearItems) output.Clear();
 

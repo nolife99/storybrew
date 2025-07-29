@@ -35,12 +35,12 @@ public static class ValueTaskSourcePool<T>
 public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>, IValueTaskSource
 {
     /// <summary>
-    ///     A "captured" <see cref="SynchronizationContext"/> or <see cref="TaskScheduler"/> with which to invoke the callback,
-    ///     or null if no special context is required.
+    ///     A "captured" <see cref="SynchronizationContext"/> or <see cref="TaskScheduler"/> with which to invoke the
+    ///     callback, or null if no special context is required.
     /// </summary>
     object _capturedContext;
 
-    /// <summary>Whether the current operation has completed.</summary>
+    /// <summary> Whether the current operation has completed. </summary>
     bool _completed;
 
     /// <summary>
@@ -50,23 +50,23 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
     /// </summary>
     Action<object> _continuation;
 
-    /// <summary>State to pass to <see cref="_continuation"/>.</summary>
+    /// <summary> State to pass to <see cref="_continuation"/>. </summary>
     object _continuationState;
 
-    /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
+    /// <summary> The exception with which the operation failed, or null if it hasn't yet completed or completed successfully. </summary>
     ExceptionDispatchInfo _error;
 
-    /// <summary><see cref="ExecutionContext"/> to flow to the callback, or null if no flowing is required.</summary>
+    /// <summary> <see cref="ExecutionContext"/> to flow to the callback, or null if no flowing is required. </summary>
     ExecutionContext _executionContext;
 
-    /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
+    /// <summary> The result with which the operation succeeded, or the default value if it hasn't yet completed or failed. </summary>
     TResult _result;
 
-    /// <summary>Gets or sets whether to force continuations to run asynchronously.</summary>
-    /// <remarks>Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true.</remarks>
+    /// <summary> Gets or sets whether to force continuations to run asynchronously. </summary>
+    /// <remarks> Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true. </remarks>
     public bool RunContinuationsAsynchronously { get; set; }
 
-    /// <summary>Gets the operation version.</summary>
+    /// <summary> Gets the operation version. </summary>
     public short Version { get; private set; }
 
     /// <inheritdoc/>
@@ -75,8 +75,8 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
         if (token != Version || !_completed || _error is not null) ThrowForFailedGetResult(token);
     }
 
-    /// <summary>Gets the status of the operation.</summary>
-    /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+    /// <summary> Gets the status of the operation. </summary>
+    /// <param name="token"> Opaque value that was provided to the <see cref="ValueTask"/>'s constructor. </param>
     public ValueTaskSourceStatus GetStatus(short token)
     {
         ValidateToken(token);
@@ -86,8 +86,8 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
             ValueTaskSourceStatus.Faulted;
     }
 
-    /// <summary>Gets the result of the operation.</summary>
-    /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+    /// <summary> Gets the result of the operation. </summary>
+    /// <param name="token"> Opaque value that was provided to the <see cref="ValueTask"/>'s constructor. </param>
     [StackTraceHidden] public TResult GetResult(short token)
     {
         if (token != Version || !_completed || _error is not null) ThrowForFailedGetResult(token);
@@ -95,11 +95,11 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
         return _result!;
     }
 
-    /// <summary>Schedules the continuation action for this operation.</summary>
-    /// <param name="continuation">The continuation to invoke when the operation has completed.</param>
-    /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
-    /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
-    /// <param name="flags">The flags describing the behavior of the continuation.</param>
+    /// <summary> Schedules the continuation action for this operation. </summary>
+    /// <param name="continuation"> The continuation to invoke when the operation has completed. </param>
+    /// <param name="state"> The state object to pass to <paramref name="continuation"/> when it's invoked. </param>
+    /// <param name="token"> Opaque value that was provided to the <see cref="ValueTask"/>'s constructor. </param>
+    /// <param name="flags"> The flags describing the behavior of the continuation. </param>
     public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
     {
         ArgumentNullException.ThrowIfNull(continuation);
@@ -165,7 +165,7 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
         }
     }
 
-    /// <summary>Resets to prepare for the next operation.</summary>
+    /// <summary> Resets to prepare for the next operation. </summary>
     public void Reset()
     {
         ++Version;
@@ -178,16 +178,16 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
         _continuationState = null;
     }
 
-    /// <summary>Completes with a successful result.</summary>
-    /// <param name="result">The result.</param>
+    /// <summary> Completes with a successful result. </summary>
+    /// <param name="result"> The result. </param>
     public void SetResult(TResult result)
     {
         _result = result;
         SignalCompletion();
     }
 
-    /// <summary>Completes with an error.</summary>
-    /// <param name="error">The exception.</param>
+    /// <summary> Completes with an error. </summary>
+    /// <param name="error"> The exception. </param>
     public void SetException(Exception error)
     {
         _error = ExceptionDispatchInfo.Capture(error);
@@ -338,7 +338,7 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
     }
 }
 
-internal static class ManualResetValueTaskSourceCoreShared // separated out of generic to avoid unnecessary duplication
+static class ManualResetValueTaskSourceCoreShared // separated out of generic to avoid unnecessary duplication
 {
     internal static readonly Action<object> s_sentinel = CompletionSentinel;
 

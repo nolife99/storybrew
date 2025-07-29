@@ -2,8 +2,8 @@
 
 using System;
 using System.Diagnostics;
-using Commands;
-using CommandValues;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using ZLinq;

@@ -2,7 +2,7 @@ namespace StorybrewCommon.Storyboarding;
 
 using System.Collections.Generic;
 using System.Numerics;
-using CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Storyboarding segments for storyboard objects. </summary>
 public abstract class StoryboardSegment : StoryboardObject

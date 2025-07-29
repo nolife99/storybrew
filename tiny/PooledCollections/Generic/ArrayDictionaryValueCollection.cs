@@ -23,8 +23,8 @@ public readonly struct ArrayDictionaryValueCollection<TKey, TValue> : ICollectio
     public bool Contains(TValue item) => _dictionary.ContainsValue(item);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(TValue[] dest, int destIndex)
-        => _dictionary._values.AsSpan(0, _dictionary.Count).CopyTo(dest.AsSpan(destIndex));
+    public void CopyTo(TValue[] array, int arrayIndex)
+        => _dictionary._values.AsSpan(0, _dictionary.Count).CopyTo(array.AsSpan(arrayIndex));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(_dictionary);

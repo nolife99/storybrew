@@ -2,8 +2,8 @@
 
 using System;
 using System.Numerics;
+using BrewLib.UserInterface.Skinning.Styles;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Skinning.Styles;
 
 public class Slider : ProgressBar
 {

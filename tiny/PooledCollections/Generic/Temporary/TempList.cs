@@ -7,10 +7,11 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internals;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public ref struct TempList<T>
 {
@@ -367,7 +368,7 @@ public ref struct TempList<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(ref this);
+    public readonly Enumerator GetEnumerator() => new(in this);
 
     public readonly TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
@@ -601,7 +602,7 @@ public ref struct TempList<T>
         return true;
     }
 
-    public ref struct Enumerator
+    public ref struct Enumerator : IEnumerator<T>
     {
         readonly TempList<T> _list;
         int _index;
@@ -625,11 +626,17 @@ public ref struct TempList<T>
             return true;
         }
 
+        public void Reset() => _index = -1;
+
         public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref Unsafe.Add(ref _list._ref, _index);
+            get => ref _list._items[_index];
         }
+
+        T IEnumerator<T>.Current => Current;
+        object IEnumerator.Current => Current;
+        void IDisposable.Dispose() { }
     }
 
     internal TempList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
@@ -656,9 +663,9 @@ public ref struct TempList<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
+    internal Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
 
-    public Span<T> GetInsertSpan(int index, int count, bool clearSpan)
+    internal Span<T> GetInsertSpan(int index, int count, bool clearSpan)
     {
         EnsureCapacity(_size + count);
 

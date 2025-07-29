@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using StructBased;
+using Tiny.PooledCollections.Generic.StructBased;
 
 public static class ValueListExtensions
 {

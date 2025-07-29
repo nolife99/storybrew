@@ -36,15 +36,15 @@ public readonly struct ArrayHashSetInternalsRefUnsafe<T>
 
 partial class CollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ArrayHashSetInternalsRefUnsafe<T> GetRef<T>(ArrayHashSet<T> source) => new(source);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<T>> AsSpan<T>(this ArrayHashSet<T> source) => source._entries.AsSpan(0, source.Count);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<T>> AsMemory<T>(this ArrayHashSet<T> source)
         => source._entries.AsMemory(0, source.Count);

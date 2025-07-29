@@ -15,7 +15,7 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-internal class ImportOsb : StoryboardObjectGenerator
+class ImportOsb : StoryboardObjectGenerator
 {
     readonly PooledDictionary<ValueArray<char>, ValueArray<char>> vars = [];
 

@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System.Numerics;
-using Graphics;
+using BrewLib.Graphics;
+using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Util;
 
 public class ScrollArea : Widget
 {

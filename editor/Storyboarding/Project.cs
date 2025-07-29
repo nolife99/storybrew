@@ -18,9 +18,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
-using Mapset;
 using OpenTK.Mathematics;
-using Scripting;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
@@ -28,13 +26,15 @@ using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
+using StorybrewEditor.Mapset;
+using StorybrewEditor.Scripting;
+using StorybrewEditor.Util;
 using Tiny;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
 using ZLinq;
 using Path = System.IO.Path;
 
@@ -230,11 +230,11 @@ public sealed partial class Project : IDisposable
 
     bool allowEffectUpdates = true;
 
-    readonly AsyncActionQueue<Effect> effectUpdateQueue = new(false, Program.Settings.EffectThreads);
+    readonly AsyncActionQueue<Effect> effectUpdateQueue = new(true, Program.Settings.EffectThreads);
 
     public void QueueEffectUpdate(Effect effect)
     {
-        effectUpdateQueue.Queue(effect, effect.Path.GetHashCode(), effect.Update, effect.Multithreaded);
+        effectUpdateQueue.Queue(effect, effect.Path, effect.Update, effect.Multithreaded);
 
         refreshEffectsStatus();
     }
@@ -260,9 +260,10 @@ public sealed partial class Project : IDisposable
         Changed = true;
 
         effect.OnChanged += effect_OnChanged;
-        QueueEffectUpdate(effect);
+        refreshEffectsStatus();
 
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
+        QueueEffectUpdate(effect);
 
         return effect;
     }
@@ -285,7 +286,7 @@ public sealed partial class Project : IDisposable
         var count = 1;
         string name;
         do name = $"{baseName} {count++}";
-        while (effects.Exists(e => e.Name == name));
+        while (effects.Exists(e => e.Name.SequenceEqual(name)));
 
         return name;
     }

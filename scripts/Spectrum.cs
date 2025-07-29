@@ -7,7 +7,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 
 ///<summary> An example of a spectrum effect. </summary>
-internal class Spectrum : StoryboardObjectGenerator
+class Spectrum : StoryboardObjectGenerator
 {
     [Configurable] public int BarCount = 96;
     [Configurable] public int BeatDivisor = 16;

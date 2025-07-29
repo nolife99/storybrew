@@ -3,13 +3,13 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Shaders;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 
-internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
+abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
 {
     readonly int commandSize;
 
@@ -102,11 +102,10 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         var baseIndex = (totalQueuedPrimitives - PrimitivesInBatch) * vertexCount;
         internalQueueRender(ref baseIndex);
 
-        Span<byte> commandBytes = stackalloc byte[commandSize];
+        ref var commandBytes = ref MemoryMarshal.GetReference(commandBuffer.GetAddSpan(commandSize));
         if (IndexBufferId != -1)
         {
-            ref var command =
-                ref Unsafe.As<byte, MultiDrawElementsIndirectCommand>(ref MemoryMarshal.GetReference(commandBytes));
+            ref var command = ref Unsafe.As<byte, MultiDrawElementsIndirectCommand>(ref commandBytes);
 
             command.Count = (uint)(PrimitivesInBatch * indexCount);
             command.InstanceCount = 1;
@@ -116,16 +115,13 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         }
         else
         {
-            ref var command =
-                ref Unsafe.As<byte, MultiDrawArraysIndirectCommand>(ref MemoryMarshal.GetReference(commandBytes));
+            ref var command = ref Unsafe.As<byte, MultiDrawArraysIndirectCommand>(ref commandBytes);
 
             command.Count = (uint)(PrimitivesInBatch * indexCount);
             command.InstanceCount = 1;
             command.FirstVertex = (uint)baseIndex;
             command.BaseInstance = 0;
         }
-
-        commandBuffer.AddRange(commandBytes);
 
         ++queuedRenders;
         PrimitivesInBatch = 0;

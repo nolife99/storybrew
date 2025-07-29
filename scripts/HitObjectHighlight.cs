@@ -7,7 +7,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 
-internal class HitObjectHighlight : StoryboardObjectGenerator
+class HitObjectHighlight : StoryboardObjectGenerator
 {
     [Configurable] public bool Additive = true;
     [Configurable] public int BeatDivisor = 480;

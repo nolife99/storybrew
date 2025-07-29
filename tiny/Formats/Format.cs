@@ -2,8 +2,8 @@
 
 using System;
 using System.IO;
-using PooledCollections.Generic.Temporary;
-using PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public interface ITokenizer<TToken>
 {

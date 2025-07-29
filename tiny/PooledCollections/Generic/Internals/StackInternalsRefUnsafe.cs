@@ -20,15 +20,15 @@ public readonly struct StackInternalsRefUnsafe<T>
 
 partial class CollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static StackInternalsRefUnsafe<T> GetRef<T>(PooledStack<T> source) => new(source);
 
-    /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this PooledStack<T> source) => source._array.AsSpan(0, source._size);
 
-    /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this PooledStack<T> source) => source._array.AsMemory(0, source._size);
 

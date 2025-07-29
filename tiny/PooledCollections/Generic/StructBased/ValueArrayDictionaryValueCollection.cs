@@ -9,8 +9,7 @@ public readonly struct ValueArrayDictionaryValueCollection<TKey, TValue> : IColl
 {
     readonly ValueArrayDictionary<TKey, TValue> _dictionary;
 
-    internal ValueArrayDictionaryValueCollection(in ValueArrayDictionary<TKey, TValue> dictionary)
-        => _dictionary = dictionary;
+    internal ValueArrayDictionaryValueCollection(ValueArrayDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
 
     public int Count
     {
@@ -24,8 +23,8 @@ public readonly struct ValueArrayDictionaryValueCollection<TKey, TValue> : IColl
     public bool Contains(TValue item) => _dictionary.ContainsValue(item);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(TValue[] dest, int destIndex)
-        => _dictionary._values.AsSpan(0, _dictionary.Count).CopyTo(dest.AsSpan(destIndex));
+    public void CopyTo(TValue[] array, int arrayIndex)
+        => _dictionary._values.AsSpan(0, _dictionary.Count).CopyTo(array.AsSpan(arrayIndex));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(_dictionary);
@@ -55,7 +54,7 @@ public readonly struct ValueArrayDictionaryValueCollection<TKey, TValue> : IColl
 
         int _index;
 
-        public Enumerator(in ValueArrayDictionary<TKey, TValue> dictionary)
+        internal Enumerator(ValueArrayDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _index = -1;
@@ -68,13 +67,10 @@ public readonly struct ValueArrayDictionaryValueCollection<TKey, TValue> : IColl
 #if DEBUG
             if (_count != _dictionary.Count) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 #endif
-            if (_index < _count - 1)
-            {
-                ++_index;
-                return true;
-            }
+            if (_index >= _count - 1) return false;
 
-            return false;
+            ++_index;
+            return true;
         }
 
         public TValue Current

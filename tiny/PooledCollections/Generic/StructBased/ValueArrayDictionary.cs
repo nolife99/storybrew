@@ -8,45 +8,25 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue>, IDisposable where TKey : notnull
+public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue>, IDisposable where TKey : notnull
 {
     internal ArrayEntry<TKey>[] _entries;
     internal TValue[] _values;
     internal int[] _buckets;
 
-    internal int _freeEntryIndex;
-    internal int _collisions;
+    internal int _freeEntryIndex, _collisions;
     internal ulong _fastModBucketsMultiplier;
 
     internal readonly ArrayPool<ArrayEntry<TKey>> _entryPool;
     internal readonly ArrayPool<TValue> _valuePool;
     internal readonly ArrayPool<int> _bucketPool;
 
-    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_clearValues = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>(),
+        s_clearValues = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
-    static readonly Type s_typeOfKey = typeof(TKey);
     static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
     static readonly TValue[] s_emptyValues = [];
     static readonly int[] s_emptyBuckets = [];
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create() => new(0,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create(int capacity) => new(capacity,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create(int capacity,
-        ArrayPool<ArrayEntry<TKey>> entryPool,
-        ArrayPool<TValue> valuePool,
-        ArrayPool<int> bucketPool) => new(capacity, entryPool, valuePool, bucketPool);
 
     internal ValueArrayDictionary(int capacity,
         ArrayPool<ArrayEntry<TKey>> entryPool,
@@ -90,13 +70,13 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
         }
     }
 
-    public int Count
+    public readonly int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _freeEntryIndex;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _entries is not null && _values is not null && _buckets is not null;
@@ -115,12 +95,15 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public readonly Enumerator GetEnumerator() => new(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(TKey key, TValue value)
     {
-        var ret = TryGetIndex(key, out var index);
+#if DEBUG
+        var ret =
+#endif
+        TryGetIndex(key, out var index);
 
 #if DEBUG
         if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
@@ -142,7 +125,10 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Set(TKey key, TValue value)
     {
-        var ret = TryGetIndex(key, out var index);
+#if DEBUG
+        var ret =
+#endif
+        TryGetIndex(key, out var index);
 
 #if DEBUG
         if (ret == true) throw new InvalidOperationException("Try to set value on an unexisting key.");
@@ -166,7 +152,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool ContainsKey(TKey key) => TryFindIndex(key, out _);
+    public readonly bool ContainsKey(TKey key) => TryFindIndex(key, out _);
 
     public readonly bool ContainsValue(TValue value)
     {
@@ -196,7 +182,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryGetValue(TKey key, out TValue result)
+    public readonly bool TryGetValue(TKey key, out TValue result)
     {
         if (TryFindIndex(key, out var findIndex))
         {
@@ -223,7 +209,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetIndex(TKey key)
+    public readonly int GetIndex(TKey key)
     {
 #if DEBUG
         if (TryFindIndex(key, out var findIndex) == true) return findIndex;
@@ -253,7 +239,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
         }
         else
         {
-            if (s_typeOfKey.IsValueType)
+            if (typeof(TKey).IsValueType)
             {
                 var currentValueIndex = valueIndex;
                 do
@@ -292,7 +278,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
 
             _collisions++;
 
-            _entries[_freeEntryIndex] = new ArrayEntry<TKey>(key, hash, valueIndex);
+            _entries[_freeEntryIndex] = new(key, hash, valueIndex);
 
             _entries[valueIndex].Next = _freeEntryIndex;
         }
@@ -451,7 +437,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrimExcess() => Resize(Count, Count);
 
-    public bool TryFindIndex(TKey key, out int findIndex)
+    public readonly bool TryFindIndex(TKey key, out int findIndex)
     {
         var hash = key.GetHashCode();
 
@@ -476,22 +462,23 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
         => CopyTo(dest.AsSpan(), destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex)
+        => CopyTo(dest, destIndex, Count);
 
-    public void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -507,7 +494,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
 
         for (int i = 0, len = Count; i < len && count > 0; i++)
         {
-            dest[destIndex++] = new KeyValuePair<TKey, TValue>(keys[i].Key, values[i]);
+            dest[destIndex++] = new(keys[i].Key, values[i]);
             count--;
         }
     }
@@ -595,7 +582,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
         if (previous != -1) valuesInfo[previous].Next = next;
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(in this);
 
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
@@ -626,7 +613,7 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Remove(ArrayKeyValuePair<TKey, TValue> item) => Remove(item.Key);
 
     IEnumerator<ArrayKeyValuePair<TKey, TValue>> IEnumerable<ArrayKeyValuePair<TKey, TValue>>.GetEnumerator()
-        => new Enumerator(this);
+        => new Enumerator(in this);
 
     ICollection<TKey> IDictionary<TKey, TValue>.Keys
     {
@@ -665,5 +652,315 @@ public partial struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-        => new KeyValuePairEnumerator(this);
+        => new KeyValuePairEnumerator(in this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(TKey key)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = default;
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(TKey key, Func<TValue> builder)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = builder();
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd<TParam>(TKey key, FuncRef<TParam, TValue> builder, ref TParam parameter)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = builder(ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy>(TKey key, Func<TValueProxy> builder, ActionRef<TValueProxy> recycler)
+        where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        if (_values[findIndex] is null) _values[findIndex] = builder();
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy, TParam>(TKey key,
+        FuncRef<TParam, TValue> builder,
+        ActionRef<TValueProxy, TParam> recycler,
+        ref TParam parameter) where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        if (_values[findIndex] is null) _values[findIndex] = builder(ref parameter);
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetIndexedValueByRef(int index) => ref _values[index];
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetValueByRef(TKey key)
+    {
+#if DEBUG
+        if (TryFindIndex(key, out var findIndex) == true) return ref _values[findIndex];
+
+        ThrowHelper.ThrowKeyNotFoundException(key);
+        return ref Unsafe.NullRef<TValue>();
+#else
+        TryFindIndex(key, out var findIndex);
+
+        return ref _values[findIndex];
+#endif
+    }
+
+    public struct Enumerator : IEnumerator<ArrayKeyValuePair<TKey, TValue>>
+    {
+        readonly ValueArrayDictionary<TKey, TValue> _dictionary;
+
+#if DEBUG
+        int _startCount;
+#endif
+
+        int _count;
+        int _index;
+
+        internal Enumerator(scoped ref readonly ValueArrayDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = dictionary;
+            _index = -1;
+            _count = dictionary.Count;
+#if DEBUG
+            _startCount = dictionary.Count;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+#if DEBUG
+            if (_count != _startCount) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+            if (_index >= _count - 1) return false;
+
+            ++_index;
+            return true;
+        }
+
+        public ArrayKeyValuePair<TKey, TValue> Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(_dictionary._entries[_index].Key, _dictionary._values, _index);
+        }
+
+        object IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new ArrayKeyValuePair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values, _index);
+        }
+
+        public void SetRange(int startIndex, int count)
+        {
+            _index = startIndex - 1;
+            _count = count;
+#if DEBUG
+            if (_count > _startCount) throw new InvalidOperationException("Cannot set a count greater than its starting value");
+
+            _startCount = count;
+#endif
+        }
+
+        public void Reset() => _index = -1;
+
+        public void Dispose() { }
+    }
+
+    struct KeyValuePairEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+    {
+        readonly ValueArrayDictionary<TKey, TValue> _dictionary;
+
+#if DEBUG
+        int _startCount;
+#endif
+
+        readonly int _count;
+        int _index;
+
+        public KeyValuePairEnumerator(scoped ref readonly ValueArrayDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = dictionary;
+            _index = -1;
+            _count = dictionary.Count;
+#if DEBUG
+            _startCount = dictionary.Count;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+#if DEBUG
+            if (_count != _startCount) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+            if (_index >= _count - 1) return false;
+
+            ++_index;
+            return true;
+        }
+
+        public KeyValuePair<TKey, TValue> Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(_dictionary._entries[_index].Key, _dictionary._values[_index]);
+        }
+
+        object IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new KeyValuePair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values[_index]);
+        }
+
+        public void Reset() => _index = -1;
+
+        public void Dispose() { }
+    }
+
+    public readonly struct ValueArrayDictionaryKeyCollection<TKey, TValue> : ICollection<TKey>
+    {
+        readonly ValueArrayDictionary<TKey, TValue> _dictionary;
+
+        internal ValueArrayDictionaryKeyCollection(ValueArrayDictionary<TKey, TValue> dictionary)
+            => _dictionary = dictionary;
+
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _dictionary.Count;
+        }
+
+        public bool IsReadOnly => true;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(TKey item) => _dictionary.ContainsKey(item);
+
+        public void CopyTo(TKey[] array, int arrayIndex)
+        {
+            if (arrayIndex < 0 || arrayIndex > array.Length)
+                ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+            if (array.Length - arrayIndex < Count)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+
+            var keys = _dictionary._entries.AsSpan();
+
+            if (keys.Length == 0) return;
+
+            for (int i = 0, len = _dictionary.Count; i < len; i++) array[arrayIndex++] = keys[i].Key;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator() => new(_dictionary);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+
+        void ICollection<TKey>.Add(TKey item)
+            => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
+
+        void ICollection<TKey>.Clear()
+            => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
+
+        bool ICollection<TKey>.Remove(TKey item)
+        {
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
+            return false;
+        }
+
+        public struct Enumerator : IEnumerator<TKey>
+        {
+            readonly ValueArrayDictionary<TKey, TValue> _dictionary;
+            readonly int _count;
+
+            int _index;
+
+            internal Enumerator(ValueArrayDictionary<TKey, TValue> dictionary)
+            {
+                _dictionary = dictionary;
+                _index = -1;
+                _count = dictionary.Count;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+#if DEBUG
+                if (_count != _dictionary.Count) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+                if (_index >= _count - 1) return false;
+
+                ++_index;
+                return true;
+            }
+
+            public TKey Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _dictionary._entries[_index].Key;
+            }
+
+            public void Reset() => _index = -1;
+
+            public void Dispose() { }
+
+            object IEnumerator.Current => Current;
+        }
+    }
+}
+
+public static class ValueArrayDictionary
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>() => new(0,
+        ArrayPool<ArrayEntry<TKey>>.Shared,
+        ArrayPool<TValue>.Shared,
+        ArrayPool<int>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
+        ArrayPool<ArrayEntry<TKey>>.Shared,
+        ArrayPool<TValue>.Shared,
+        ArrayPool<int>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
+        ArrayPool<ArrayEntry<TKey>> entryPool,
+        ArrayPool<TValue> valuePool,
+        ArrayPool<int> bucketPool) => new(capacity, entryPool, valuePool, bucketPool);
 }

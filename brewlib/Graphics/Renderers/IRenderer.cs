@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using Cameras;
+using BrewLib.Graphics.Cameras;
 
 public interface IRenderer
 {

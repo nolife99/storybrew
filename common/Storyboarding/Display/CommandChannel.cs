@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Commands;
-using CommandValues;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 
-internal class CommandChannel<TValue> where TValue : struct, ICommandValue
+class CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     readonly List<ITypedCommand<TValue>> commands = [];
 

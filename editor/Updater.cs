@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using BrewLib.Util;
-using Util;
+using StorybrewEditor.Util;
 
 public static class Updater
 {

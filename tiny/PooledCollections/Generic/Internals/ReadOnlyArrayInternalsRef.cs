@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 partial class CollectionInternals
 {
-    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source) => source._array.AsSpan();
 
@@ -25,7 +25,7 @@ partial class CollectionInternals
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source, Range range)
         => source._array.AsSpan(range);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source) => source._array.AsMemory();
 

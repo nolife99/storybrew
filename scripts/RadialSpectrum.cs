@@ -7,7 +7,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 
 ///<summary> An example of a radial spectrum effect, using movement instead of scaling. </summary>
-internal class RadialSpectrum : StoryboardObjectGenerator
+class RadialSpectrum : StoryboardObjectGenerator
 {
     [Configurable] public int BarCount = 20;
     [Configurable] public int BeatDivisor = 8;

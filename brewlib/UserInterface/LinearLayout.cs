@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System.Numerics;
-using Skinning.Styles;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
 
 public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 {

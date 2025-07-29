@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
+using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Util;
 
 public sealed class ClickBehavior : IDisposable
 {

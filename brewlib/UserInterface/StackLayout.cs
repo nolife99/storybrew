@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System.Numerics;
-using Skinning.Styles;
+using BrewLib.UserInterface.Skinning.Styles;
 
 public sealed class StackLayout(WidgetManager manager) : Widget(manager)
 {

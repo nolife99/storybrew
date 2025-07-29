@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Animations;
 
 using System;
-using Storyboarding;
+using StorybrewCommon.Storyboarding;
 
 ///<summary> A static class providing keyframing easing functions. </summary>
 public static class EasingFunctions

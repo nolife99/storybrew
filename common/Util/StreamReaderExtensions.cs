@@ -5,7 +5,7 @@ using System.IO;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-/// <summary>Contains extension methods for <see cref="StreamReader"/> to parse .osu sections and section lines.</summary>
+/// <summary> Contains extension methods for <see cref="StreamReader"/> to parse .osu sections and section lines. </summary>
 public static class StreamReaderExtensions
 {
     /// <summary>
@@ -46,7 +46,7 @@ public static class StreamReaderExtensions
             }
     }
 
-    /// <summary>Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the file.</summary>
+    /// <summary> Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the file. </summary>
     public static void ParseKeyValueSection<TState>(this StreamReader reader,
         Action<ReadOnlySpan<char>, ReadOnlySpan<char>, TState> action,
         TState state)

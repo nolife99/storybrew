@@ -3,9 +3,9 @@
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using ScreenLayers;
-using Storyboarding;
-using Util;
+using StorybrewEditor.ScreenLayers;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 
 public class SettingsMenu : Widget
 {

@@ -6,8 +6,8 @@ using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using ScreenLayers;
-using Skinning.Styles;
+using StorybrewEditor.ScreenLayers;
+using StorybrewEditor.UserInterface.Skinning.Styles;
 
 public class PathSelector : Widget
 {

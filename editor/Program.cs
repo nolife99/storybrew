@@ -8,13 +8,15 @@ using System.IO;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
+using Vector = System.Numerics.Vector;
 
 public static class Program
 {
@@ -68,17 +70,12 @@ public static class Program
         var displayDevice = Monitors.GetPrimaryMonitor();
         using (var window = createWindow(displayDevice))
         {
-            Trace.Write(Environment.OSVersion);
-
             using Editor editor = new(window);
-
-            var refreshCallback = () =>
+            window.Refresh += () =>
             {
                 editor.Draw();
                 window.Context.SwapBuffers();
             };
-
-            window.Refresh += refreshCallback;
 
             using (NetHelper.Client = new())
             {
@@ -90,11 +87,11 @@ public static class Program
                 using (AudioManager = createAudioManager())
                     runMainLoop(window,
                         editor,
-                        1f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
-                        1f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
+                        TimeSpan.TicksPerSecond /
+                        (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
+                        TimeSpan.TicksPerSecond /
+                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
             }
-
-            window.Refresh -= refreshCallback;
         }
 
         Settings.Save();
@@ -137,28 +134,31 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(NativeWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
+    static void runMainLoop(NativeWindow window, Editor editor, long fixedRateUpdate, long targetFrame)
     {
-        float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0, statsUpdate = targetFrame * 5;
+        long prev = Stopwatch.GetTimestamp(), fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0,
+            statsUpdate = targetFrame * 5;
 
         var windowContext = window.Context;
-        var stopwatch = Stopwatch.StartNew();
 
-        while (!window.IsExiting)
+        var exiting = false;
+        window.Closing += _ => exiting = true;
+
+        while (!exiting)
         {
-            var cur = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency;
+            var cur = Stopwatch.GetTimestamp();
             var fixedUpdates = 0;
 
-            window.ProcessEvents(0);
+            GLFW.PollEvents();
             AudioManager.Update();
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
             {
                 fixedRate += fixedRateUpdate;
-                editor.Update(fixedRate);
+                editor.Update(fixedRate / (float)TimeSpan.TicksPerSecond);
             }
 
-            if (!window.Exists || window.IsExiting) return;
+            if (exiting) return;
 
             var draws = editor.Draw();
             windowContext.SwapBuffers();
@@ -166,18 +166,18 @@ public static class Program
             window.IsVisible = true;
             while (scheduledActions.TryDequeue(out var action)) action.Dispose();
 
-            var active = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency - cur;
+            var active = Stopwatch.GetTimestamp() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
+            if (sleepTime > 0) Thread.Sleep((int)(sleepTime / TimeSpan.TicksPerMillisecond));
 
             var frameTime = cur - prev;
             prev = cur;
             if (lastStat + statsUpdate > cur) continue;
 
-            av = (frameTime + av) * .5f;
-            avActive = (active + avActive) * .5f;
-            longest = float.Max(frameTime, longest);
+            av = (frameTime + av) / 2;
+            avActive = (active + avActive) / 2;
+            longest = long.Max(frameTime, longest);
 
             buildStatsMessage(editor, av, avActive, longest, draws);
 
@@ -186,12 +186,15 @@ public static class Program
         }
     }
 
-    static void buildStatsMessage(Editor editor, float av, float avActive, float longest, int draws)
+    static void buildStatsMessage(Editor editor, long av, long avActive, long longest, int draws)
     {
         if (!editor.statsLabel.Visible) return;
 
+        const long ticks = TimeSpan.TicksPerSecond;
+        const float millis = TimeSpan.TicksPerMillisecond;
+
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{1 / av:f0}/{1 / avActive:f0}fps (act:{avActive * 1000:f1} avg:{av * 1000:f1} hi:{longest * 1000:f1})\n{draws:n0} draws");
+            $"{ticks / av}/{ticks / avActive}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }
@@ -252,7 +255,11 @@ public static class Program
 
         Timer timer = new(s => ((TraceListener)s)!.Flush(), listener, 5000, 1000);
 
-        domain.ProcessExit += (_, _) => timer.Dispose();
+        domain.ProcessExit += (_, _) =>
+        {
+            timer.Dispose();
+            listener.Dispose();
+        };
     }
 
     static void logError(Exception e, string filename, bool show)
@@ -263,22 +270,31 @@ public static class Program
 
             insideErrorHandler = true;
 
+            using StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true);
             try
             {
-                using (StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true))
-                {
-                    w.Write(DateTimeOffset.Now + " - ");
-                    w.WriteLine(e);
-                    w.WriteLine();
-                }
+                w.Write(DateTimeOffset.Now + " - ");
+                w.WriteLine(e);
+                w.WriteLine();
 
                 Trace.Flush();
 
-                if (show) Environment.FailFast(e.Message, e);
+                if (!show) return;
+
+                var result = MessageBox.Show(
+                    $"An error occurred:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                    FullName,
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Error);
+
+                if (result is MessageBoxResult.OK)
+                    Process.Start(new ProcessStartInfo { FileName = DiscordUrl, UseShellExecute = true });
             }
             catch (Exception e2)
             {
-                Trace.WriteLine(e2.Message);
+                w.Write(DateTimeOffset.Now + " - ");
+                w.WriteLine(e2);
+                w.WriteLine();
             }
             finally
             {

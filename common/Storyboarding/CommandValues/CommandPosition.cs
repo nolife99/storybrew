@@ -6,7 +6,7 @@ using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
 
-///<summary> Base structure for movement commands.</summary>
+/// <summary> Base structure for movement commands. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandPosition
     : ICommandValue, IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
         ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,

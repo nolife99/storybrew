@@ -5,16 +5,16 @@ using System.Buffers;
 using System.IO;
 using System.Text;
 using BrewLib.Audio;
-using Mapset;
-using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewEditor.Mapset;
+using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
-using Util;
 
 public sealed class EditorGeneratorContext(Effect effect,
     string projectPath,
@@ -74,13 +74,13 @@ public sealed class EditorGeneratorContext(Effect effect,
         return result;
     }
 
-    public override StoryboardLayer GetLayer(string name)
+    public override StoryboardLayer GetLayer(string identifier)
     {
         foreach (var layer in _editorLayers)
-            if (name == layer.Name)
+            if (identifier == layer.Name)
                 return layer;
 
-        EditorStoryboardLayer newLayer = new(name, effect);
+        EditorStoryboardLayer newLayer = new(identifier, effect);
         _editorLayers.Add(newLayer);
         return newLayer;
     }

@@ -4,8 +4,8 @@ using System;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Storyboarding;
 using StorybrewCommon.Storyboarding;
+using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 

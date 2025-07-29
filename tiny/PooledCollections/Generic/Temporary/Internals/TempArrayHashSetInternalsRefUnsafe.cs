@@ -36,17 +36,17 @@ public readonly struct TempArrayHashSetInternalsRefUnsafe<T>
 
 partial class TempCollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayHashSetInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => new(in source);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<T>> AsSpan<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsSpan(0, source.Count);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<T>> AsMemory<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsMemory(0, source.Count);

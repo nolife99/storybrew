@@ -21,16 +21,16 @@ public readonly ref struct TempStackInternalsRef<T>
 
 partial class TempCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempStackInternalsRef<T> GetRef<T>(this scoped ref readonly TempStack<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempStack<T> source)
         => source._array.AsSpan(0, source._size);
 
-    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempStack<T> source)
         => source._array.AsMemory(0, source._size);

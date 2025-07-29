@@ -2,8 +2,8 @@
 
 using System.Numerics;
 
-/// <summary>Represents a curve.</summary>
-/// <remarks>A <see cref="BaseCurve"/> is the base class for all curves.</remarks>
+/// <summary> Represents a curve. </summary>
+/// <remarks> A <see cref="BaseCurve"/> is the base class for all curves. </remarks>
 public abstract class BaseCurve : Curve
 {
     (float Distance, Vector2 Position)[] distancePosition;

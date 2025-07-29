@@ -269,9 +269,9 @@ public ref partial struct TempQueue<T>
         if (_size < threshold) SetCapacity(_size);
     }
 
-    /// <summary>Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this queue.</returns>
+    /// <summary> Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>. </summary>
+    /// <param name="capacity"> The minimum capacity to ensure. </param>
+    /// <returns> The new capacity of this queue. </returns>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0)

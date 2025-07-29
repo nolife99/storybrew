@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Animations;
-using Storyboarding;
-using Storyboarding.Util;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Util;
 
 ///<summary> Represents a line segment, containing start and end nodes, with 3D functionality. </summary>
 public class Line3d : Node3d, HasOsbSprites

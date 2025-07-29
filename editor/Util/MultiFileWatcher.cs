@@ -12,9 +12,9 @@ public sealed class MultiFileWatcher : IDisposable
     static readonly Lock fileLock = new();
     readonly PooledDictionary<string, FileSystemWatcher> folderWatchers = new(), recursiveFolderWatchers = new();
     readonly ThrottledActionScheduler scheduler = new();
+    readonly PooledHashSet<string> watchedFilenames = [];
 
     bool disposed;
-    PooledHashSet<string> watchedFilenames = [];
 
     public IEnumerable<string> WatchedFilenames => watchedFilenames;
 
@@ -28,7 +28,7 @@ public sealed class MultiFileWatcher : IDisposable
         foreach (var watcher in recursiveFolderWatchers.Values) watcher.Dispose();
         recursiveFolderWatchers.Dispose();
 
-        watchedFilenames = null;
+        watchedFilenames.Dispose();
 
         OnFileChanged = null;
         disposed = true;
@@ -66,11 +66,7 @@ public sealed class MultiFileWatcher : IDisposable
                 watcher.Renamed += watcher_Changed;
                 watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
                 watcher.EnableRaisingEvents = true;
-
-                Trace.WriteLine($"Watching folder: {directoryPath}");
             }
-
-            Trace.WriteLine($"Watching file: {filename}");
         }
         else
         {
@@ -81,44 +77,36 @@ public sealed class MultiFileWatcher : IDisposable
             while (parentDirectory is not null && !parentDirectory.Exists)
                 parentDirectory = Directory.GetParent(parentDirectory.FullName);
 
-            if (parentDirectory is not null && parentDirectory != parentDirectory.Root)
+            if (parentDirectory is null || parentDirectory == parentDirectory.Root) return;
+
+            var parentDirectoryPath = parentDirectory.ToString();
+            if (recursiveFolderWatchers.ContainsKey(parentDirectoryPath)) return;
+
+            var watcher = recursiveFolderWatchers[parentDirectoryPath] = new()
             {
-                var parentDirectoryPath = parentDirectory.ToString();
-                if (recursiveFolderWatchers.ContainsKey(parentDirectoryPath)) return;
+                Path = parentDirectoryPath,
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
+            };
 
-                var watcher = recursiveFolderWatchers[parentDirectoryPath] = new()
-                {
-                    Path = parentDirectoryPath,
-                    IncludeSubdirectories = true,
-                    NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
-                };
-
-                watcher.Created += watcher_Changed;
-                watcher.Changed += watcher_Changed;
-                watcher.Renamed += watcher_Changed;
-                watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
-                watcher.EnableRaisingEvents = true;
-
-                Trace.WriteLine($"Watching folder and subfolders: {parentDirectoryPath}");
-            }
-            else Trace.TraceError($"Watching file: {filename}, directory does not exist");
+            watcher.Created += watcher_Changed;
+            watcher.Changed += watcher_Changed;
+            watcher.Renamed += watcher_Changed;
+            watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
+            watcher.EnableRaisingEvents = true;
         }
     }
 
-    void watcher_Changed(object sender, FileSystemEventArgs e)
-    {
-        Trace.WriteLine($"File {e.ChangeType}: {e.FullPath}");
-        scheduler.Schedule(e.FullPath,
-            _ =>
-            {
-                if (disposed) return;
+    void watcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath,
+        _ =>
+        {
+            if (disposed) return;
 
-                lock (fileLock)
-                    if (!watchedFilenames.Contains(e.FullPath))
-                        return;
+            lock (fileLock)
+                if (!watchedFilenames.Contains(e.FullPath))
+                    return;
 
-                Trace.WriteLine($"Watched file {e.ChangeType}: {e.FullPath}");
-                OnFileChanged?.Invoke(sender, e);
-            });
-    }
+            Trace.WriteLine($"Watched file {e.ChangeType}: {e.FullPath}");
+            OnFileChanged?.Invoke(sender, e);
+        });
 }

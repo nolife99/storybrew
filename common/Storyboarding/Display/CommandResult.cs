@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
-using Commands;
-using CommandValues;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 public readonly struct CommandResult<TValue> where TValue : struct, ICommandValue
 {

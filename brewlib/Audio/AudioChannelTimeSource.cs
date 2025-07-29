@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Audio;
 
-using Time;
+using BrewLib.Time;
 
 public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 {

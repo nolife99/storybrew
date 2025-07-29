@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 // Implements a variable-size List that uses an array of objects to store the
 // elements. A List has a capacity, which is the allocated length
@@ -285,12 +286,12 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         return list;
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
+    /// <summary> Copies this List into array, which must be of a compatible array type. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public void CopyTo(T[] array, int arrayIndex) => CopyTo(0, array, arrayIndex, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
@@ -307,8 +308,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
     ///     capacity of the list is less than specified <paramref name="capacity"/>, the capacity is increased by continuously twice
     ///     current capacity until it is at least the specified <paramref name="capacity"/>.
     /// </summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this list.</returns>
+    /// <param name="capacity"> The minimum capacity to ensure. </param>
+    /// <returns> The new capacity of this list. </returns>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0)
@@ -324,8 +325,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         return _items.Length;
     }
 
-    /// <summary>Increase the capacity of this list to at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
+    /// <summary> Increase the capacity of this list to at least the specified <paramref name="capacity"/>. </summary>
+    /// <param name="capacity"> The minimum capacity to ensure. </param>
     void Grow(int capacity)
     {
         Debug.Assert(_items.Length < capacity);
@@ -462,13 +463,13 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
     // GetObject methods of the enumerator will throw an exception.
     //
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public readonly Enumerator GetEnumerator() => new(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
     public ValueList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
@@ -795,18 +796,13 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
     {
         ArgumentNullException.ThrowIfNull(comparison);
 
-        if (_size > 1) Array.Sort(_items, 0, _size, new Comparer(comparison));
+        if (_size > 1) _items.AsSpan().Sort(comparison);
         _version++;
     }
 
     // ToArray returns an array containing the contents of the List.
     // This requires copying the List, which is an O(n) operation.
-    public T[] ToArray()
-    {
-        if (_size == 0) return s_emptyArray;
-
-        return _items.AsSpan(0, _size).ToArray();
-    }
+    public T[] ToArray() => _size == 0 ? s_emptyArray : this.AsSpan().ToArray();
 
     // Sets the capacity of this list to the size of the list. This method can
     // be used to minimize a list's memory overhead once it is known that no
@@ -842,70 +838,36 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         int _index;
         readonly int _version;
 
-        internal Enumerator(in ValueList<T> list)
+        internal Enumerator(scoped ref readonly ValueList<T> list)
         {
             _list = list;
-            _index = 0;
+            _index = -1;
             _version = list._version;
-            Current = default;
         }
 
-        public void Dispose() { }
+        void IDisposable.Dispose() { }
 
         public bool MoveNext()
         {
-            if (_version == _list._version && (uint)_index < (uint)_list._size)
-            {
-                Current = _list._items[_index];
-                _index++;
-                return true;
-            }
-
-            return MoveNextRare();
-        }
-
-        bool MoveNextRare()
-        {
             if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            _index = _list._size + 1;
-            Current = default;
-            return false;
+            var index = _index + 1;
+            if (index >= _list._size) return false;
+
+            _index = index;
+            return true;
         }
 
-        public T Current
+        public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
+            get => ref _list._items[_index];
         }
 
-        object IEnumerator.Current
-        {
-            get
-            {
-                if (_index == 0 || _index == _list._size + 1)
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
+        T IEnumerator<T>.Current => Current;
 
-                return Current;
-            }
-        }
+        object IEnumerator.Current => Current;
 
-        void IEnumerator.Reset()
-        {
-            if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
-            _index = 0;
-            Current = default;
-        }
-    }
-
-    readonly struct Comparer : IComparer<T>
-    {
-        readonly Comparison<T> _comparison;
-
-        public Comparer(Comparison<T> comparison) => _comparison = comparison;
-
-        public int Compare(T x, T y) => _comparison(x, y);
+        public void Reset() => _index = -1;
     }
 }

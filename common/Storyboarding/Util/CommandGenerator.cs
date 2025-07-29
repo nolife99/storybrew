@@ -6,11 +6,11 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Animations;
-using Commands;
-using CommandValues;
-using Scripting;
 using SixLabors.ImageSharp;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 
@@ -347,7 +347,7 @@ public record struct State
     ///<summary> Represents the base time, in milliseconds, of this state. </summary>
     public float Time;
 
-    /// <summary>Creates a default state.</summary>
+    /// <summary> Creates a default state. </summary>
     public State()
     {
         Additive = FlipH = FlipV = false;
@@ -370,7 +370,10 @@ public record struct State
     ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
     ///     <see cref="OsbOrigin"/>.
     /// </summary>
-    /// <returns><see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>.</returns>
+    /// <returns>
+    ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>
+    ///     .
+    /// </returns>
     public bool IsVisible(Vector2 imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;

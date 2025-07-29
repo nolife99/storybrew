@@ -40,12 +40,12 @@ public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 
 partial class CollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(ArrayDictionary<TKey, TValue> source)
         => new(source);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,
         out Span<ArrayEntry<TKey>> keys,
@@ -55,17 +55,17 @@ partial class CollectionInternalsUnsafe
         values = source._values.AsSpan(0, source.Count);
     }
 
-    /// <summary>Returns the internal Keys array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal Keys array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<TKey>> KeysAsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
         => source._entries.AsSpan(0, source.Count);
 
-    /// <summary>Returns the internal Values array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal Values array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<TValue> ValuesAsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
         => source._values.AsSpan(0, source.Count);
 
-    /// <summary>Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,
         out Memory<ArrayEntry<TKey>> keys,
@@ -75,12 +75,12 @@ partial class CollectionInternalsUnsafe
         values = source._values.AsMemory(0, source.Count);
     }
 
-    /// <summary>Returns the internal Keys array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal Keys array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<TKey>> KeysAsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
         => source._entries.AsMemory(0, source.Count);
 
-    /// <summary>Returns the internal Values array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal Values array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<TValue> ValuesAsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
         => source._values.AsMemory(0, source.Count);

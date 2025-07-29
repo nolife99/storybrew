@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using Textures;
+using BrewLib.Graphics.Textures;
 using Tiny.PooledCollections.Generic;
 
 public sealed class TextFontManager(TextureContainer container) : IDisposable

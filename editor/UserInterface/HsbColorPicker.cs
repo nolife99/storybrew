@@ -10,7 +10,7 @@ using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Skinning.Styles;
+using StorybrewEditor.UserInterface.Skinning.Styles;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class HsbColorPicker : Widget, Field

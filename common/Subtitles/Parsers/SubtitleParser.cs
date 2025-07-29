@@ -4,7 +4,7 @@ using System;
 using System.Globalization;
 using System.IO;
 
-internal interface SubtitleParser
+interface SubtitleParser
 {
     ///<summary> Parses a given subtitle file and returns the parsed set of subtitles. </summary>
     SubtitleSet Parse(string path);

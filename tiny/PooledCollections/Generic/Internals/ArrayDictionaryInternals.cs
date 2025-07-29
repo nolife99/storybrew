@@ -48,8 +48,8 @@ public readonly struct ArrayDictionaryInternals<TKey, TValue> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
+    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
+    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static ArrayDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(ArrayDictionary<TKey, TValue> source)
     {
         var internals = new ArrayDictionaryInternals<TKey, TValue>(source);

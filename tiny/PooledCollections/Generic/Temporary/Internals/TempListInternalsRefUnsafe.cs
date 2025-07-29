@@ -22,16 +22,16 @@ public readonly struct TempListInternalsRefUnsafe<T>
 
 partial class TempCollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempListInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempList<T> source) => new(in source);
 
-    /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempList<T> source)
         => MemoryMarshal.CreateSpan(ref source._ref, source._size);
 
-    /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempList<T> source) => new(source._items, 0, source._size);
 

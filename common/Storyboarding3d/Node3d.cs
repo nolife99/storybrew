@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding3d;
 
 using System.Numerics;
-using Animations;
+using StorybrewCommon.Animations;
 
 ///<summary> Represents a node in 3D world space. </summary>
 public class Node3d : Object3d

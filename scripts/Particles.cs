@@ -7,7 +7,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using Vector2 = System.Numerics.Vector2;
 
-internal class Particles : StoryboardObjectGenerator
+class Particles : StoryboardObjectGenerator
 {
     [Configurable] public bool Additive = false;
 

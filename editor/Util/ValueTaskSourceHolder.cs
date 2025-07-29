@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using BrewLib.Memory;
 using BrewLib.Util;
 
-internal sealed class ValueTaskSourceHolder<TState> : IDisposable
+sealed class ValueTaskSourceHolder<TState> : IDisposable
 {
     static readonly Pool<ValueTaskSourceHolder<TState>> Pool = new();
 

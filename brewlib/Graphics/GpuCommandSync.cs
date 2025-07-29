@@ -4,7 +4,7 @@ using System;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
 
-internal sealed class GpuCommandSync : IDisposable
+sealed class GpuCommandSync : IDisposable
 {
     static readonly PooledStack<SyncRange> syncRangePool = new();
 

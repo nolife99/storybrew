@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 
-/// <summary>Represents a composite curve made up of multiple other curves.</summary>
+/// <summary> Represents a composite curve made up of multiple other curves. </summary>
 public class CompositeCurve(scoped ReadOnlySpan<Curve> curves) : Curve
 {
     readonly Curve[] curves = curves.ToArray();

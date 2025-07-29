@@ -2,14 +2,12 @@
 
 using System.Runtime.InteropServices;
 
-[StructLayout(LayoutKind.Sequential, Size = 16)]
-internal ref struct MultiDrawArraysIndirectCommand
+[StructLayout(LayoutKind.Sequential)] ref struct MultiDrawArraysIndirectCommand
 {
     public uint Count, InstanceCount, FirstVertex, BaseInstance;
 }
 
-[StructLayout(LayoutKind.Sequential, Size = 20)]
-internal ref struct MultiDrawElementsIndirectCommand
+[StructLayout(LayoutKind.Sequential)] ref struct MultiDrawElementsIndirectCommand
 {
     public uint Count, InstanceCount, FirstIndex;
     public int BaseVertex;

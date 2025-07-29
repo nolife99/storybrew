@@ -27,8 +27,8 @@ public readonly struct ListInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
+    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
+    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static ListInternals<T> TransferOwner<T>(PooledList<T> source)
     {
         var internals = new ListInternals<T>(source);

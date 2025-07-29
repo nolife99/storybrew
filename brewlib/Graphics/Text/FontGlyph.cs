@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System.Numerics;
-using Textures;
+using BrewLib.Graphics.Textures;
 
 public readonly record struct FontGlyph(Texture2dRegion Texture, int Width, int Height)
 {

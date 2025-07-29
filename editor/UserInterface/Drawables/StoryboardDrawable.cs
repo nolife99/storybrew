@@ -6,7 +6,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Renderers;
 using SixLabors.ImageSharp;
-using Storyboarding;
+using StorybrewEditor.Storyboarding;
 
 public sealed class StoryboardDrawable(Project project) : Drawable
 {

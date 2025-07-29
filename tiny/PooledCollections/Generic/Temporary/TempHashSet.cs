@@ -17,7 +17,7 @@ public ref partial struct TempHashSet<T>
 {
     // This uses the same array-based implementation as Dictionary<TKey, TValue>.
 
-    /// <summary>Cutoff point for stackallocs. This corresponds to the number of ints.</summary>
+    /// <summary> Cutoff point for stackallocs. This corresponds to the number of ints. </summary>
     const int StackAllocThreshold = 100;
 
     /// <summary>
@@ -115,7 +115,7 @@ public ref partial struct TempHashSet<T>
         if (capacity > 0) Initialize(capacity);
     }
 
-    /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
+    /// <summary> Initializes the HashSet from another HashSet with the same element type and equality comparer. </summary>
     void ConstructFrom(TempHashSet<T> source)
     {
         if (source.Count == 0)
@@ -158,7 +158,7 @@ public ref partial struct TempHashSet<T>
 
     #region ICollection<T> methods
 
-    /// <summary>Removes all elements from the <see cref="TempHashSet{T}"/> object.</summary>
+    /// <summary> Removes all elements from the <see cref="TempHashSet{T}"/> object. </summary>
     public void Clear()
     {
         var count = _count;
@@ -175,12 +175,12 @@ public ref partial struct TempHashSet<T>
         }
     }
 
-    /// <summary>Determines whether the <see cref="TempHashSet{T}"/> contains the specified element.</summary>
-    /// <param name="item">The element to locate in the <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object contains the specified element; otherwise, false.</returns>
+    /// <summary> Determines whether the <see cref="TempHashSet{T}"/> contains the specified element. </summary>
+    /// <param name="item"> The element to locate in the <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns> true if the <see cref="TempHashSet{T}"/> object contains the specified element; otherwise, false. </returns>
     public bool Contains(T item) => FindItemIndex(item) >= 0;
 
-    /// <summary>Gets the index of the item in <see cref="_entries"/>, or -1 if it's not in the set.</summary>
+    /// <summary> Gets the index of the item in <see cref="_entries"/>, or -1 if it's not in the set. </summary>
     int FindItemIndex(T item)
     {
         var buckets = _buckets;
@@ -257,7 +257,7 @@ public ref partial struct TempHashSet<T>
         return -1;
     }
 
-    /// <summary>Gets a reference to the specified hashcode's bucket, containing an index into <see cref="_entries"/>.</summary>
+    /// <summary> Gets a reference to the specified hashcode's bucket, containing an index into <see cref="_entries"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     ref int GetBucketRef(int hashCode)
     {
@@ -320,7 +320,7 @@ public ref partial struct TempHashSet<T>
         return false;
     }
 
-    /// <summary>Gets the number of elements that are contained in the set.</summary>
+    /// <summary> Gets the number of elements that are contained in the set. </summary>
     public int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -344,22 +344,22 @@ public ref partial struct TempHashSet<T>
 
     #region HashSet methods
 
-    /// <summary>Adds the specified element to the <see cref="TempHashSet{T}"/>.</summary>
-    /// <param name="item">The element to add to the set.</param>
-    /// <returns>true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present.</returns>
+    /// <summary> Adds the specified element to the <see cref="TempHashSet{T}"/>. </summary>
+    /// <param name="item"> The element to add to the set. </param>
+    /// <returns> true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present. </returns>
     public bool Add(T item) => AddIfNotPresent(item, out _);
 
-    /// <summary>Searches the set for a given value and returns the equal value it finds, if any.</summary>
-    /// <param name="equalValue">The value to search for.</param>
+    /// <summary> Searches the set for a given value and returns the equal value it finds, if any. </summary>
+    /// <param name="equalValue"> The value to search for. </param>
     /// <param name="actualValue">
     ///     The value from the set that the search found, or the default value of <typeparamref name="T"/>
     ///     when the search yielded no match.
     /// </param>
-    /// <returns>A value indicating whether the search was successful.</returns>
+    /// <returns> A value indicating whether the search was successful. </returns>
     /// <remarks>
-    ///     This can be useful when you want to reuse a previously stored reference instead of a newly constructed one (so that
-    ///     more sharing of references can occur) or to look up a value that has more complete data than the value you currently
-    ///     have, although their comparer functions indicate they are equal.
+    ///     This can be useful when you want to reuse a previously stored reference instead of a newly constructed one (so
+    ///     that more sharing of references can occur) or to look up a value that has more complete data than the value you
+    ///     currently have, although their comparer functions indicate they are equal.
     /// </remarks>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
@@ -381,7 +381,7 @@ public ref partial struct TempHashSet<T>
     ///     Modifies the current <see cref="TempHashSet{T}"/> object to contain all elements that are present in itself, the
     ///     specified collection, or both.
     /// </summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
     public void UnionWith(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -393,7 +393,7 @@ public ref partial struct TempHashSet<T>
     ///     Modifies the current <see cref="TempHashSet{T}"/> object to contain only elements that are present in that object
     ///     and in the specified collection.
     /// </summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
     public void IntersectWith(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -421,8 +421,8 @@ public ref partial struct TempHashSet<T>
         IntersectWithEnumerable(other);
     }
 
-    /// <summary>Removes all elements in the specified collection from the current <see cref="TempHashSet{T}"/> object.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
+    /// <summary> Removes all elements in the specified collection from the current <see cref="TempHashSet{T}"/> object. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
     public void ExceptWith(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -438,7 +438,7 @@ public ref partial struct TempHashSet<T>
     ///     Modifies the current <see cref="TempHashSet{T}"/> object to contain only elements that are present either in that
     ///     object or in the specified collection, but not both.
     /// </summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
     public void SymmetricExceptWith(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -460,9 +460,9 @@ public ref partial struct TempHashSet<T>
         else SymmetricExceptWithEnumerable(other);
     }
 
-    /// <summary>Determines whether a <see cref="TempHashSet{T}"/> object is a subset of the specified collection.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object is a subset of <paramref name="other"/>; otherwise, false.</returns>
+    /// <summary> Determines whether a <see cref="TempHashSet{T}"/> object is a subset of the specified collection. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns> true if the <see cref="TempHashSet{T}"/> object is a subset of <paramref name="other"/>; otherwise, false. </returns>
     public bool IsSubsetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -487,9 +487,9 @@ public ref partial struct TempHashSet<T>
         return uniqueCount == Count && unfoundCount >= 0;
     }
 
-    /// <summary>Determines whether a <see cref="TempHashSet{T}"/> object is a proper subset of the specified collection.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object is a proper subset of <paramref name="other"/>; otherwise, false.</returns>
+    /// <summary> Determines whether a <see cref="TempHashSet{T}"/> object is a proper subset of the specified collection. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns> true if the <see cref="TempHashSet{T}"/> object is a proper subset of <paramref name="other"/>; otherwise, false. </returns>
     public bool IsProperSubsetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -517,9 +517,9 @@ public ref partial struct TempHashSet<T>
         return uniqueCount == Count && unfoundCount > 0;
     }
 
-    /// <summary>Determines whether a <see cref="TempHashSet{T}"/> object is a proper superset of the specified collection.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false.</returns>
+    /// <summary> Determines whether a <see cref="TempHashSet{T}"/> object is a proper superset of the specified collection. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns> true if the <see cref="TempHashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false. </returns>
     public bool IsSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -539,9 +539,12 @@ public ref partial struct TempHashSet<T>
         return ContainsAllElements(other);
     }
 
-    /// <summary>Determines whether a <see cref="TempHashSet{T}"/> object is a proper superset of the specified collection.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object is a proper superset of <paramref name="other"/>; otherwise, false.</returns>
+    /// <summary> Determines whether a <see cref="TempHashSet{T}"/> object is a proper superset of the specified collection. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns>
+    ///     true if the <see cref="TempHashSet{T}"/> object is a proper superset of <paramref name="other"/>; otherwise,
+    ///     false.
+    /// </returns>
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -576,7 +579,7 @@ public ref partial struct TempHashSet<T>
     ///     Determines whether the current <see cref="TempHashSet{T}"/> object and a specified collection share common
     ///     elements.
     /// </summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
     /// <returns>
     ///     true if the <see cref="TempHashSet{T}"/> object and <paramref name="other"/> share at least one common element;
     ///     otherwise, false.
@@ -594,9 +597,9 @@ public ref partial struct TempHashSet<T>
         return false;
     }
 
-    /// <summary>Determines whether a <see cref="TempHashSet{T}"/> object and the specified collection contain the same elements.</summary>
-    /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
-    /// <returns>true if the <see cref="TempHashSet{T}"/> object is equal to <paramref name="other"/>; otherwise, false.</returns>
+    /// <summary> Determines whether a <see cref="TempHashSet{T}"/> object and the specified collection contain the same elements. </summary>
+    /// <param name="other"> The collection to compare to the current <see cref="TempHashSet{T}"/> object. </param>
+    /// <returns> true if the <see cref="TempHashSet{T}"/> object is equal to <paramref name="other"/>; otherwise, false. </returns>
     public bool SetEquals(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -660,10 +663,10 @@ public ref partial struct TempHashSet<T>
         return numRemoved;
     }
 
-    /// <summary>Gets the <see cref="IEqualityComparer"/> object that is used to determine equality for the values in the set.</summary>
+    /// <summary> Gets the <see cref="IEqualityComparer"/> object that is used to determine equality for the values in the set. </summary>
     public IEqualityComparer<T> Comparer => _comparer ?? EqualityComparer<T>.Default;
 
-    /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
+    /// <summary> Ensures that this hash set can hold the specified number of elements without growing. </summary>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -726,8 +729,8 @@ public ref partial struct TempHashSet<T>
     }
 
     /// <summary>
-    ///     Sets the capacity of a <see cref="TempHashSet{T}"/> object to the actual number of elements it contains, rounded up
-    ///     to a nearby, implementation-specific value.
+    ///     Sets the capacity of a <see cref="TempHashSet{T}"/> object to the actual number of elements it contains, rounded
+    ///     up to a nearby, implementation-specific value.
     /// </summary>
     public void TrimExcess()
     {
@@ -797,10 +800,10 @@ public ref partial struct TempHashSet<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Entry<T>[] GetEntries() => _entries ?? s_emptyEntries;
 
-    /// <summary>Adds the specified element to the set if it's not already contained.</summary>
-    /// <param name="value">The element to add to the set.</param>
-    /// <param name="location">The index into <see cref="_entries"/> of the element.</param>
-    /// <returns>true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present.</returns>
+    /// <summary> Adds the specified element to the set if it's not already contained. </summary>
+    /// <param name="value"> The element to add to the set. </param>
+    /// <param name="location"> The index into <see cref="_entries"/> of the element. </param>
+    /// <returns> true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present. </returns>
     internal bool AddIfNotPresent(T value, out int location)
     {
         if (_buckets.IsNullOrEmpty()) Initialize(0);
@@ -1072,7 +1075,7 @@ public ref partial struct TempHashSet<T>
     ///     it wasn't present in this set, so add. As with other methods, callers take care of ensuring that other is a hashset
     ///     using the same equality comparer.
     /// </summary>
-    /// <param name="other"></param>
+    /// <param name="other"> </param>
     void SymmetricExceptWithUniqueHashSet(TempHashSet<T> other)
     {
         var otherEntries = other.GetEntries();
@@ -1093,7 +1096,7 @@ public ref partial struct TempHashSet<T>
     ///     it wasn't present in this set, so add. As with other methods, callers take care of ensuring that other is a hashset
     ///     using the same equality comparer.
     /// </summary>
-    /// <param name="other"></param>
+    /// <param name="other"> </param>
     void SymmetricExceptWithUniqueHashSet(HashSet<T> other)
     {
         foreach (var item in other)
@@ -1109,7 +1112,7 @@ public ref partial struct TempHashSet<T>
     ///     indicate whether to add/remove the item. If already present in collection, it will get marked for deletion. If added
     ///     from other, it will get marked as something not to remove.
     /// </summary>
-    /// <param name="other"></param>
+    /// <param name="other"> </param>
     void SymmetricExceptWithEnumerable(IEnumerable<T> other)
     {
         var originalCount = _count;
@@ -1168,8 +1171,8 @@ public ref partial struct TempHashSet<T>
     ///     element not contained in other. An earlier implementation used delegates to perform these checks rather than returning
     ///     an ElementCount struct; however this was changed due to the perf overhead of delegates.
     /// </summary>
-    /// <param name="other"></param>
-    /// <param name="returnIfUnfound">Allows us to finish faster for equals and proper superset because unfoundCount must be 0.</param>
+    /// <param name="other"> </param>
+    /// <param name="returnIfUnfound"> Allows us to finish faster for equals and proper superset because unfoundCount must be 0. </param>
     (int UniqueCount, int UnfoundCount) CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
     {
         // Need special case in case this has no elements.

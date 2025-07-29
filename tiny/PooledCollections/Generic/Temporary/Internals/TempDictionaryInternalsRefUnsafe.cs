@@ -43,17 +43,17 @@ public readonly struct TempDictionaryInternalsRefUnsafe<TKey, TValue>
 
 partial class TempCollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(
         this scoped ref readonly TempDictionary<TKey, TValue> source) => new(in source);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(
         this scoped ref readonly TempDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(
         this scoped ref readonly TempDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
@@ -68,21 +68,24 @@ partial class TempCollectionInternalsUnsafe
     }
 
     /// <summary>
-    ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/>, adding a new entry
-    ///     with a default value if it does not exist in the <paramref name="dictionary"/>.
+    ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/>, adding a new
+    ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
     /// </summary>
-    /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-    /// <param name="key">The key used for lookup.</param>
-    /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+    /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
+    /// <param name="key"> The key used for lookup. </param>
+    /// <param name="exists"> Whether or not a new entry for the given key was added to the dictionary. </param>
     /// <remarks>
     ///     Items should not be added to or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
     ///     <typeparamref name="TValue"/> is in use.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
-        TKey key,
-        out bool exists) where TKey : notnull
-        => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
+    public static ref TValue
+        GetValueRefOrAddDefault<TKey, TValue>(this scoped ref readonly TempDictionary<TKey, TValue> dictionary,
+            TKey key,
+            out bool exists) where TKey : notnull
+        => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(ref Unsafe.AsRef(in dictionary),
+            key,
+            out exists);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryInsert<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,

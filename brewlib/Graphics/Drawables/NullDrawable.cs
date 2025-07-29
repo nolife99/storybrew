@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System.Numerics;
-using Cameras;
+using BrewLib.Graphics.Cameras;
 using SixLabors.ImageSharp;
 
 public sealed class NullDrawable : Drawable

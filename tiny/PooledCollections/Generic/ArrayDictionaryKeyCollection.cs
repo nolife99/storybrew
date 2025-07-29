@@ -22,18 +22,19 @@ public readonly struct ArrayDictionaryKeyCollection<TKey, TValue> : ICollection<
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Contains(TKey item) => _dictionary.ContainsKey(item);
 
-    public void CopyTo(TKey[] dest, int destIndex)
+    public void CopyTo(TKey[] array, int arrayIndex)
     {
-        if (destIndex < 0 || destIndex > dest.Length)
+        if (arrayIndex < 0 || arrayIndex > array.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (dest.Length - destIndex < Count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (array.Length - arrayIndex < Count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var keys = _dictionary._entries.AsSpan();
 
         if (keys.Length == 0) return;
 
-        for (int i = 0, len = _dictionary.Count; i < len; i++) dest[destIndex++] = keys[i].Key;
+        for (int i = 0, len = _dictionary.Count; i < len; i++) array[arrayIndex++] = keys[i].Key;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

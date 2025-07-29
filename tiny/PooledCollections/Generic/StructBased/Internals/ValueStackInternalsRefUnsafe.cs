@@ -6,8 +6,7 @@ using System.Runtime.InteropServices;
 
 public readonly struct ValueStackInternalsRefUnsafe<T>
 {
-    public readonly int Size;
-    public readonly int Version;
+    public readonly int Size, Version;
     public readonly bool ClearArray;
     public readonly T[] Array;
 

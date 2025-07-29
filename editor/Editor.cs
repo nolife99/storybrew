@@ -19,7 +19,7 @@ using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using ScreenLayers;
+using StorybrewEditor.ScreenLayers;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public sealed class Editor(NativeWindow window) : IDisposable

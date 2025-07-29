@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Animations;
-using Storyboarding;
-using Storyboarding.Commands;
-using Storyboarding.CommandValues;
-using Storyboarding.Util;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.Util;
 
 ///<summary> Represents a basic 3D object. </summary>
 public class Object3d
@@ -64,8 +64,8 @@ public class Object3d
     }
 
     /// <summary>
-    ///     Queues <see cref="State"/> for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on the
-    ///     given <see cref="Camera"/>'s state.
+    ///     Queues <see cref="State"/> for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
+    ///     the given <see cref="Camera"/>'s state.
     /// </summary>
     public void GenerateTreeStates(float time, Camera camera) => GenerateTreeStates(
         time,
@@ -118,7 +118,7 @@ public class Object3d
     /// <param name="action"> Runs an action on each sprite. This is encapsulated in a loop group. </param>
     /// <param name="startTime"> The explicit start time of the loop group. </param>
     /// <param name="endTime"> The explicit end time of the loop group. </param>
-    /// <param name="loopCount">The amount of times to loop between <paramref name="startTime"/> and <paramref name="endTime"/>.</param>
+    /// <param name="loopCount"> The amount of times to loop between <paramref name="startTime"/> and <paramref name="endTime"/>. </param>
     /// <param name="offsetCommands"> Whether to offset the commands to relative inside the loop. </param>
     public void GenerateTreeLoopCommands(float startTime,
         float endTime,
@@ -148,7 +148,7 @@ public class Object3d
     /// </summary>
     public virtual void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState) { }
 
-    /// <summary>Generates commands on this <see cref="Object3d"/>'s sprites based on its queued <see cref="State"/>s.</summary>
+    /// <summary> Generates commands on this <see cref="Object3d"/>'s sprites based on its queued <see cref="State"/>s. </summary>
     /// <param name="action"> Runs an action on this object's sprites. </param>
     /// <param name="startTime">
     ///     The explicit start time of the commands (can be left <see langword="null"/> to use the

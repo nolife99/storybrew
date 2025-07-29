@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Frozen;
-using Graphics.Text;
+using BrewLib.Graphics.Text;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public static class LineBreaker

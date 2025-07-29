@@ -3,8 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Commands;
-using CommandValues;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public interface CommandTimeline

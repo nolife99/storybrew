@@ -43,7 +43,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
-internal static class ThrowHelper
+static class ThrowHelper
 {
     public static void ThrowArgumentOutOfRange_IndexMustBeLessException()
         => throw GetArgumentOutOfRangeException(EA.index, ER.ArgumentOutOfRange_IndexMustBeLess);
@@ -265,7 +265,7 @@ internal static class ThrowHelper
 //
 // The convention for this enum is using the argument name as the enum name
 //
-internal enum ExceptionArgument
+enum ExceptionArgument
 {
     obj,
     dictionary,
@@ -337,7 +337,7 @@ internal enum ExceptionArgument
 //
 // The convention for this enum is using the resource name as the enum name
 //
-internal enum ExceptionResource
+enum ExceptionResource
 {
     ArgumentOutOfRange_Index,
     ArgumentOutOfRange_IndexMustBeLess,

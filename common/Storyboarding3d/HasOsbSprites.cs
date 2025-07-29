@@ -2,8 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using Storyboarding;
-using Storyboarding.Util;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Util;
 
 ///<summary> Represents a 3D object that can generate and manage sprites. </summary>
 public interface HasOsbSprites

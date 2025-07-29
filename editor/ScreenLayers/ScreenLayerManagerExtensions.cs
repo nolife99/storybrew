@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
 using NfdExt;
-using Storyboarding;
-using Util;
+using StorybrewEditor.ScreenLayers.Util;
+using StorybrewEditor.Storyboarding;
 
 public static class ScreenLayerManagerExtensions
 {

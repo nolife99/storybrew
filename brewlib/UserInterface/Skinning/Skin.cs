@@ -5,15 +5,15 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using Graphics.Drawables;
-using Graphics.Textures;
-using IO;
+using BrewLib.Graphics.Drawables;
+using BrewLib.Graphics.Textures;
+using BrewLib.IO;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Styles;
 using Tiny;
 using Tiny.Formats.Json;
 using Tiny.PooledCollections.Generic;
-using Util;
 
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {

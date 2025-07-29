@@ -49,8 +49,8 @@ public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
 
 partial class TempCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
+    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
+    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempArrayDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
         this scoped ref TempArrayDictionary<TKey, TValue> source)
     {

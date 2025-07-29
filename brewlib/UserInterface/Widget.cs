@@ -3,16 +3,16 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using Graphics;
-using Graphics.Drawables;
+using BrewLib.Graphics;
+using BrewLib.Graphics.Drawables;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using SixLabors.ImageSharp;
-using Skinning.Styles;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
 
 public class Widget(WidgetManager manager) : IDisposable
 {

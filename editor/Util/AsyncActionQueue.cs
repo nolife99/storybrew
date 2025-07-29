@@ -27,7 +27,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
 
-    public int TaskCount => context.Queue.Count + Interlocked.CompareExchange(ref context.Running, 0, 0);
+    public int TaskCount => context.Queue.Count + context.Running.Count;
 
     public event Action<T, Exception> OnActionFailed
     {
@@ -35,7 +35,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, int uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
+    public void Queue(T target, string uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
     {
         for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
             actionRunners[i]?.Value.EnsureThreadAlive();
@@ -59,15 +59,15 @@ public sealed class AsyncActionQueue<T> : IDisposable
     }
 
     sealed record ActionContainer(T Target,
-        int UniqueKey,
+        string UniqueKey,
         Func<CancellationTokenSource, ValueTask> Action,
         bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
         public readonly ConcurrentQueue<ActionContainer> Queue = [];
+        public readonly ConcurrentDictionary<string, bool> Running = [];
         bool enabled;
-        public int Running;
         public bool RunningLoneTask;
 
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -168,7 +168,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         ActionContainer task = null;
                         while (localContext.Queue.TryDequeue(out var t))
                         {
-                            if (t.MustRunAlone && Interlocked.CompareExchange(ref localContext.Running, 0, 0) != 0)
+                            if (localContext.Running.ContainsKey(t.UniqueKey) ||
+                                t.MustRunAlone && localContext.Running.IsEmpty)
                             {
                                 localContext.Queue.Enqueue(t);
                                 continue;
@@ -184,7 +185,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             continue;
                         }
 
-                        Interlocked.Increment(ref localContext.Running);
+                        localContext.Running.TryAdd(task.UniqueKey, true);
                         if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, true);
 
                         try
@@ -197,15 +198,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         }
                         finally
                         {
-                            Interlocked.Decrement(ref localContext.Running);
+                            localContext.Running.TryRemove(task.UniqueKey, out _);
                             if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, false);
                         }
                     }
                 },
                 this,
-                tokenSrc.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default);
+                tokenSrc.Token);
         }
     }
 

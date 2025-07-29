@@ -2,10 +2,10 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
-using Shaders;
 
-internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : struct
+sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : struct
 {
     readonly int maxBatchSize;
 

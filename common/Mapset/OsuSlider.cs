@@ -4,20 +4,20 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
-using Curves;
+using StorybrewCommon.Curves;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-/// <summary>Represents an osu! slider.</summary>
+/// <summary> Represents an osu! slider. </summary>
 public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHitObject
 {
     Curve curve;
 
     Vector2 playfieldTipPosition;
 
-    /// <summary>The curve type of this slider.</summary>
+    /// <summary> The curve type of this slider. </summary>
     public SliderCurveType CurveType { get; init; }
 
     ///<summary> The total distance the slider ball travels, in osu!pixels. </summary>
@@ -35,19 +35,19 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     /// </summary>
     public ReadOnlySpan<OsuSliderNode> Nodes => nodes;
 
-    /// <summary>Gets the number of nodes in this slider.</summary>
+    /// <summary> Gets the number of nodes in this slider. </summary>
     public int NodeCount => nodes.Length;
 
-    /// <summary>Gets an enumeration of control points that make up the slider's curve.</summary>
+    /// <summary> Gets an enumeration of control points that make up the slider's curve. </summary>
     public ReadOnlySpan<Vector2> ControlPoints => controlPoints;
 
-    /// <summary>Gets the number of control points in this slider.</summary>
+    /// <summary> Gets the number of control points in this slider. </summary>
     public int ControlPointCount => controlPoints.Length;
 
     /// <inheritdoc/>
     public override float EndTime => StartTime + TravelCount * TravelDuration;
 
-    /// <summary>Gets the curve that represents this slider's shape.</summary>
+    /// <summary> Gets the curve that represents this slider's shape. </summary>
     public Curve Curve
     {
         get
@@ -57,7 +57,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         }
     }
 
-    /// <summary>Gets the position of the end of the slider's body in playfield coordinates.</summary>
+    /// <summary> Gets the position of the end of the slider's body in playfield coordinates. </summary>
     public Vector2 PlayfieldTipPosition
     {
         get
@@ -67,7 +67,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         }
     }
 
-    /// <summary>Gets the position of the end of the slider's body in storyboard coordinates.</summary>
+    /// <summary> Gets the position of the end of the slider's body in storyboard coordinates. </summary>
     public Vector2 TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
 
     /// <summary> How many times the slider ball travels across the slider's body. </summary>
@@ -346,43 +346,43 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     }
 }
 
-/// <summary>Represents a slider node in an osu! slider.</summary>
+/// <summary> Represents a slider node in an osu! slider. </summary>
 public class OsuSliderNode
 {
-    /// <summary>The hit sound additions of this node.</summary>
+    /// <summary> The hit sound additions of this node. </summary>
     public HitSoundAddition Additions { get; set; }
 
-    /// <summary>The custom sample set of this node.</summary>
+    /// <summary> The custom sample set of this node. </summary>
     public int CustomSampleSet { get; set; }
 
-    /// <summary>The sample set of this node.</summary>
+    /// <summary> The sample set of this node. </summary>
     public SampleSet SampleSet { get; set; }
 
-    /// <summary>The additions sample set of this node.</summary>
+    /// <summary> The additions sample set of this node. </summary>
     public SampleSet AdditionsSampleSet { get; set; }
 
-    /// <summary>The time in milliseconds of this node.</summary>
+    /// <summary> The time in milliseconds of this node. </summary>
     public float Time { get; set; }
 
-    /// <summary>The volume of this node.</summary>
+    /// <summary> The volume of this node. </summary>
     public float Volume { get; set; }
 }
 
-/// <summary>The curve type of a slider.</summary>
+/// <summary> The curve type of a slider. </summary>
 public enum SliderCurveType
 {
-    /// <summary>The curve type is unknown.</summary>
+    /// <summary> The curve type is unknown. </summary>
     Unknown,
 
-    /// <summary>The curve is linear.</summary>
+    /// <summary> The curve is linear. </summary>
     Linear,
 
-    /// <summary>The curve is a Catmull-Rom spline.</summary>
+    /// <summary> The curve is a Catmull-Rom spline. </summary>
     Catmull,
 
-    /// <summary>The curve is a bézier curve.</summary>
+    /// <summary> The curve is a bézier curve. </summary>
     Bezier,
 
-    /// <summary>The curve is a perfect circular arc.</summary>
+    /// <summary> The curve is a perfect circular arc. </summary>
     Perfect
 }

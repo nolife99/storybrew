@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 ///<summary> Represents a hit object in osu!. </summary>

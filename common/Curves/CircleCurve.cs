@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.Temporary;
 
-/// <summary>Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.</summary>
+/// <summary> Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point. </summary>
 public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) : BaseCurve
 {
     const float circular_arc_tolerance = .1f;

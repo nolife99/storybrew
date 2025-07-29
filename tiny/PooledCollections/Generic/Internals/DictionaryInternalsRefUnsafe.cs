@@ -43,17 +43,17 @@ public readonly struct DictionaryInternalsRefUnsafe<TKey, TValue>
 
 partial class CollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(PooledDictionary<TKey, TValue> source)
         => new(source);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
         => source._entries.AsSpan(0, source._count);
 
-    /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
         => source._entries.AsMemory(0, source._count);
@@ -71,8 +71,8 @@ partial class CollectionInternalsUnsafe
     ///     Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="PooledDictionary{TKey,TValue}"/> or a ref
     ///     null if it does not exist in the <paramref name="dictionary"/>.
     /// </summary>
-    /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-    /// <param name="key">The key used for lookup.</param>
+    /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
+    /// <param name="key"> The key used for lookup. </param>
     /// <remarks>
     ///     Items should not be added or removed from the <see cref="PooledDictionary{TKey,TValue}"/> while the ref
     ///     <typeparamref name="TValue"/> is in use. The ref null can be detected using
@@ -86,9 +86,9 @@ partial class CollectionInternalsUnsafe
     ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="PooledDictionary{TKey,TValue}"/>, adding a new
     ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
     /// </summary>
-    /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-    /// <param name="key">The key used for lookup.</param>
-    /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+    /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
+    /// <param name="key"> The key used for lookup. </param>
+    /// <param name="exists"> Whether or not a new entry for the given key was added to the dictionary. </param>
     /// <remarks>
     ///     Items should not be added to or removed from the <see cref="PooledDictionary{TKey,TValue}"/> while the ref
     ///     <typeparamref name="TValue"/> is in use.

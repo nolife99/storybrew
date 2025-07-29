@@ -1,8 +1,8 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
-using CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
-internal sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public int LoopCount = 1;
     public float LoopStartTime, LoopDuration;

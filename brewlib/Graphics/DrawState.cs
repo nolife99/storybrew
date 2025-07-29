@@ -6,18 +6,18 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Cameras;
-using IO;
+using BrewLib.Graphics.Cameras;
+using BrewLib.Graphics.Renderers;
+using BrewLib.Graphics.Text;
+using BrewLib.Graphics.Textures;
+using BrewLib.IO;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Renderers;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Text;
-using Textures;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Util;
 
 public static class DrawState
 {

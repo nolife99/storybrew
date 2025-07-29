@@ -59,8 +59,8 @@ partial struct ValueList<T> : IDisposable
     }
 
     /// <summary>
-    ///     Adds the elements of the given array to the end of this list. If required, the capacity of the list is increased to
-    ///     twice the previous capacity or the new size, whichever is larger.
+    ///     Adds the elements of the given array to the end of this list. If required, the capacity of the list is increased
+    ///     to twice the previous capacity or the new size, whichever is larger.
     /// </summary>
     public void AddRange(T[] array)
     {
@@ -76,15 +76,15 @@ partial struct ValueList<T> : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddRange(ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
 
-    /// <summary>Copies this List into the given span.</summary>
+    /// <summary> Copies this List into the given span. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _size);
 
-    /// <summary>Copies this List into the given span.</summary>
+    /// <summary> Copies this List into the given span. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
 
-    /// <summary>Copies this List into the given span.</summary>
+    /// <summary> Copies this List into the given span. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
@@ -161,12 +161,7 @@ partial struct ValueList<T> : IDisposable
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_items is not null)
-            try
-            {
-                _pool.Return(_items, s_clearItems);
-            }
-            catch { }
+        if (_items is not null) _pool.Return(_items, s_clearItems);
 
         _items = replaceWith ?? s_emptyArray;
     }

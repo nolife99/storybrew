@@ -250,12 +250,12 @@ public ref partial struct TempDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this, Enumerator.KeyValuePair);
 
-    internal ref TValue FindValue(TKey key)
+    internal readonly ref TValue FindValue(TKey key)
     {
         ArgumentNullException.ThrowIfNull(key);
 
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
             Debug.Assert(_entries is not null, "expected entries to be is not null");
             var comparer = _comparer;
@@ -553,17 +553,19 @@ public ref partial struct TempDictionary<TKey, TValue>
     internal static class CollectionsMarshalHelper
     {
         /// <summary>
-        ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/>, adding a new entry
-        ///     with a default value if it does not exist in the <paramref name="dictionary"/>.
+        ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/>, adding a new
+        ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
         /// </summary>
-        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-        /// <param name="key">The key used for lookup.</param>
-        /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+        /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
+        /// <param name="key"> The key used for lookup. </param>
+        /// <param name="exists"> Whether or not a new entry for the given key was added to the dictionary. </param>
         /// <remarks>
         ///     Items should not be added to or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
         ///     <typeparamref name="TValue"/> is in use.
         /// </remarks>
-        public static ref TValue GetValueRefOrAddDefault(TempDictionary<TKey, TValue> dictionary, TKey key, out bool exists)
+        public static ref TValue GetValueRefOrAddDefault(scoped ref TempDictionary<TKey, TValue> dictionary,
+            TKey key,
+            out bool exists)
         {
             // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
             // If you make any changes here, make sure to keep that version in sync as well.
@@ -897,7 +899,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
-    /// <summary>Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage</summary>
+    /// <summary> Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage </summary>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -914,7 +916,10 @@ public ref partial struct TempDictionary<TKey, TValue>
         return newSize;
     }
 
-    /// <summary>Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its entries</summary>
+    /// <summary>
+    ///     Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its
+    ///     entries
+    /// </summary>
     /// <remarks>
     ///     This method can be used to minimize the memory overhead once it is known that no new elements will be added. To
     ///     allocate minimum size storage array, execute the following statements: dictionary.Clear(); dictionary.TrimExcess();
@@ -926,7 +931,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     ///     Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing
     ///     storage
     /// </summary>
-    /// <remarks>This method can be used to minimize the memory overhead once it is known that no new elements will be added.</remarks>
+    /// <remarks> This method can be used to minimize the memory overhead once it is known that no new elements will be added. </remarks>
     public void TrimExcess(int capacity)
     {
         if (capacity < Count) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -975,7 +980,7 @@ public ref partial struct TempDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    ref int GetBucket(uint hashCode)
+    readonly ref int GetBucket(uint hashCode)
     {
         var buckets = _buckets!;
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -1004,7 +1009,7 @@ public ref partial struct TempDictionary<TKey, TValue>
         internal const int DictEntry = 1;
         internal const int KeyValuePair = 2;
 
-        public Enumerator(TempDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+        internal Enumerator(TempDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
         {
             _dictionary = dictionary;
             _version = dictionary._version;

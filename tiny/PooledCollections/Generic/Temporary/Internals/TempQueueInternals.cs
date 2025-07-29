@@ -32,8 +32,8 @@ public readonly struct TempQueueInternals<T> : IDisposable
 
 partial class TempCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
+    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
+    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempQueueInternals<T> TransferOwner<T>(this scoped ref TempQueue<T> source)
     {
         var internals = new TempQueueInternals<T>(ref source);

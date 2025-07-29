@@ -223,8 +223,8 @@ public ref partial struct TempStack<T>
     ///     capacity of the Stack is less than specified <paramref name="capacity"/>, the capacity is increased by continuously
     ///     twice current capacity until it is at least the specified <paramref name="capacity"/>.
     /// </summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this stack.</returns>
+    /// <param name="capacity"> The minimum capacity to ensure. </param>
+    /// <returns> The new capacity of this stack. </returns>
     public int EnsureCapacity(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);

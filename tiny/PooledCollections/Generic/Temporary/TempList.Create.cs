@@ -33,10 +33,10 @@ public static class TempList
     public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool)
         => new(new ReadOnlySpan<T>(items), pool ?? ArrayPool<T>.Shared);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(2)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(2)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
         => new(span, pool ?? ArrayPool<T>.Shared);
 }

@@ -1,16 +1,16 @@
 ﻿namespace StorybrewEditor.Mapset;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
 public class EditorBeatmap(string path) : Beatmap
 {
@@ -22,11 +22,11 @@ public class EditorBeatmap(string path) : Beatmap
         Color.FromPixel(new Rgba32(242, 24, 57))
     ];
 
-    readonly PooledList<int> bookmarks = [];
+    readonly List<int> bookmarks = [];
 
-    readonly PooledList<OsuBreak> breaks = [];
-    readonly PooledList<Color> comboColors = [..defaultComboColors];
-    readonly PooledList<OsuHitObject> hitObjects = [];
+    readonly List<OsuBreak> breaks = [];
+    readonly List<Color> comboColors = [..defaultComboColors];
+    readonly List<OsuHitObject> hitObjects = [];
     public readonly string Path = path;
 
     float approachRate = 5;
@@ -56,7 +56,7 @@ public class EditorBeatmap(string path) : Beatmap
     public override string Name => name;
     public override long Id => id;
     public override float StackLeniency => stackLeniency;
-    public override ReadOnlySpan<int> Bookmarks => bookmarks.AsReadOnlySpan();
+    public override ReadOnlySpan<int> Bookmarks => CollectionsMarshal.AsSpan(bookmarks);
     public override float HpDrainRate => hpDrainRate;
     public override float CircleSize => circleSize;
     public override float OverallDifficulty => overallDifficulty;
@@ -69,23 +69,23 @@ public class EditorBeatmap(string path) : Beatmap
         get
         {
             if (!hitObjectsPostProcessed) postProcessHitObjects();
-            return hitObjects.AsReadOnlySpan();
+            return CollectionsMarshal.AsSpan(hitObjects);
         }
     }
 
-    public override ReadOnlySpan<Color> ComboColors => comboColors.AsReadOnlySpan();
+    public override ReadOnlySpan<Color> ComboColors => CollectionsMarshal.AsSpan(comboColors);
     public override string BackgroundPath => backgroundPath;
-    public override ReadOnlySpan<OsuBreak> Breaks => breaks.AsReadOnlySpan();
+    public override ReadOnlySpan<OsuBreak> Breaks => CollectionsMarshal.AsSpan(breaks);
 
     public override string ToString() => Name;
 
     #region Timing
 
-    readonly PooledList<ControlPoint> controlPoints = [], timingPoints = [];
+    readonly List<ControlPoint> controlPoints = [], timingPoints = [];
 
-    public override ReadOnlySpan<ControlPoint> ControlPoints => controlPoints.AsReadOnlySpan();
+    public override ReadOnlySpan<ControlPoint> ControlPoints => CollectionsMarshal.AsSpan(controlPoints);
 
-    public override ReadOnlySpan<ControlPoint> TimingPoints => timingPoints.AsReadOnlySpan();
+    public override ReadOnlySpan<ControlPoint> TimingPoints => CollectionsMarshal.AsSpan(timingPoints);
 
     public override ControlPoint GetControlPointAt(float time)
     {

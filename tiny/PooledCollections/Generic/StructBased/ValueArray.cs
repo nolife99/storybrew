@@ -6,7 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internals;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
 {
@@ -45,25 +45,25 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
         array[..int.Min(array.Length, length)].CopyTo(_array);
     }
 
-    public int Length
+    public readonly int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _length;
     }
 
-    public int Capacity
+    public readonly int Capacity
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array.Length;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array is not null;
     }
 
-    public ref T this[int index]
+    public readonly ref T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
@@ -152,50 +152,30 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable
         internal Enumerator(ValueArray<T> array)
         {
             _array = array;
-            _index = 0;
-            Current = default;
+            _index = -1;
         }
 
         public bool MoveNext()
         {
-            if ((uint)_index < (uint)_array.Length)
-            {
-                Current = _array._array[_index];
-                ++_index;
-                return true;
-            }
+            var index = _index + 1;
+            if (index >= _array.Length) return false;
 
-            _index = _array.Length + 1;
-            Current = default;
-            return false;
+            _index = index;
+            return true;
         }
 
-        public T Current
+        public readonly ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
+            get => ref _array._array[_index];
         }
 
-        public void Reset()
-        {
-            _index = 0;
-            Current = default;
-        }
+        public void Reset() => _index = -1;
 
-        public void Dispose() { }
+        T IEnumerator<T>.Current => Current;
+        object IEnumerator.Current => Current;
 
-        object IEnumerator.Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if ((uint)_index >= (uint)_array.Length)
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-
-                return Current;
-            }
-        }
+        void IDisposable.Dispose() { }
     }
 }
 
@@ -222,9 +202,6 @@ public static class ValueArray
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArray<T> Empty<T>() => Create<T>(0);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArray<T> Empty<T>(ArrayPool<T> pool) => Create(0, pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array) => new(array, array.Length, ArrayPool<T>.Shared);

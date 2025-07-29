@@ -7,7 +7,7 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-/// <summary>Represents a bézier curve defined by a set of control points.</summary>
+/// <summary> Represents a bézier curve defined by a set of control points. </summary>
 public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const float BEZIER_TOLERANCE = .25f;

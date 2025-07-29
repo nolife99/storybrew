@@ -5,12 +5,12 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using IO;
+using BrewLib.IO;
+using BrewLib.Util;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
-using Util;
 
 public sealed class TextureContainerAsync : TextureContainer
 {
@@ -82,7 +82,7 @@ public sealed class TextureContainerAsync : TextureContainer
     #endregion
 }
 
-internal static class TextureUploadQueue
+static class TextureUploadQueue
 {
     const int UPLOAD_THREAD_COUNT = 2;
     static readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];

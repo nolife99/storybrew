@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Storyboarding;
+using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary.Internals;

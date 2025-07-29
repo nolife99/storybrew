@@ -3,9 +3,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using IO;
+using BrewLib.IO;
+using BrewLib.Memory;
 using ManagedBass;
-using Memory;
 
 public class AudioSample : IDisposable
 {

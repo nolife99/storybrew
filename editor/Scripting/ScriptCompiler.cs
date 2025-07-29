@@ -2,6 +2,7 @@ namespace StorybrewEditor.Scripting;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +15,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
-using Storyboarding;
+using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -57,10 +58,12 @@ public static class ScriptCompiler
             assemblies.Add(MetadataReference.CreateFromStream(stream));
         }
 
-        EmitResult result;
+        ImmutableArray<Diagnostic> result;
+
         using (PoolingMemoryStream assemblyStream = new())
+        using (PoolingMemoryStream pdbStream = new())
         {
-            result = CSharpCompilation
+            var compilation = CSharpCompilation
                 .Create(asmName,
                     trees.Keys,
                     assemblies,
@@ -68,21 +71,26 @@ public static class ScriptCompiler
                         allowUnsafe: true,
                         optimizationLevel: OptimizationLevel.Release))
                 .Emit(assemblyStream,
+                    pdbStream,
                     embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                    options: new(debugInformationFormat: DebugInformationFormat.Embedded),
+                    options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
                     cancellationToken: tokenSource);
 
-            if (result.Success)
+            if (compilation.Success)
             {
                 assemblyStream.Position = 0;
-                return InternalLoad(context, assemblyStream.WrittenSpan, default);
+                pdbStream.Position = 0;
+
+                return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
             }
+
+            result = compilation.Diagnostics;
         }
 
         using var error = TempList.Create("Compilation error\n \n");
 
         using var diagnosticGroups = TempDictionary.Create<string, ValueList<Diagnostic>>();
-        foreach (var diagnostic in result.Diagnostics)
+        foreach (var diagnostic in result)
         {
             if (diagnostic.Severity is not DiagnosticSeverity.Error) continue;
 
@@ -91,10 +99,14 @@ public static class ScriptCompiler
                 if (trees.TryGetValue(diagnostic.Location.SourceTree, out var path))
                     key = path.SourcePath;
 
-            if (!diagnosticGroups.TryGetValue(key, out var group))
+            ref var group = ref diagnosticGroups.GetValueRefOrNullRef(key);
+            if (Unsafe.IsNullRef(ref group))
             {
-                group = ValueList.Create<Diagnostic>();
-                diagnosticGroups.Add(key, group);
+                var localGroup = ValueList.Create<Diagnostic>();
+                localGroup.Add(diagnostic);
+
+                diagnosticGroups.Add(key, localGroup);
+                continue;
             }
 
             group.Add(diagnostic);

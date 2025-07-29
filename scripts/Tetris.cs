@@ -7,7 +7,7 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 
-internal class Tetris : StoryboardObjectGenerator
+class Tetris : StoryboardObjectGenerator
 {
     [Configurable] public float BeatDivisor = 1;
     [Configurable] public int BlockLength = 4;

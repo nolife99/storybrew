@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using Shaders;
+using BrewLib.Graphics.Shaders;
 
-internal static class PrimitiveStreamerUtil
+static class PrimitiveStreamerUtil
 {
     public static IPrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
         int minVert,

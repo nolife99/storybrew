@@ -7,18 +7,18 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Animations;
 using BrewLib.Util;
-using Mapset;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
-using Storyboarding;
-using Subtitles;
-using Subtitles.Parsers;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Mapset;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Subtitles;
+using StorybrewCommon.Subtitles.Parsers;
+using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
-using Util;
 using ZLinq;
 
 ///<summary> Defines a storyboard script to be generated. </summary>
@@ -29,7 +29,7 @@ public abstract class StoryboardObjectGenerator : Script
     readonly ConfigurableField[] configurableFields;
     GeneratorContext context;
 
-    ///<summary>Reserved</summary>
+    /// <summary> Reserved </summary>
     protected StoryboardObjectGenerator() => configurableFields = GetType()
         .GetFields()
         .AsValueEnumerable()
@@ -65,7 +65,7 @@ public abstract class StoryboardObjectGenerator : Script
     public string MapsetPath => context.MapsetPath;
 
     /// <summary> Creates or retrieves a layer. </summary>
-    /// <remarks> The identifier will be shown in the editor as <b>Effect name (<paramref name="name"/>)</b>. </remarks>
+    /// <remarks> The identifier will be shown in the editor as <b> Effect name (<paramref name="name"/>) </b>. </remarks>
     public StoryboardLayer GetLayer(string name) => context.GetLayer(name);
 
     ///<summary> Gets the beatmap with the specified difficulty name, or if not found, the default beatmap. </summary>
@@ -329,7 +329,7 @@ public abstract class StoryboardObjectGenerator : Script
 
     #region Configuration
 
-    /// <summary>Updates the configuration fields for the storyboard object generator using the provided effect configuration.</summary>
+    /// <summary> Updates the configuration fields for the storyboard object generator using the provided effect configuration. </summary>
     public void UpdateConfiguration(EffectConfig config)
     {
         if (context is not null) throw new InvalidOperationException();

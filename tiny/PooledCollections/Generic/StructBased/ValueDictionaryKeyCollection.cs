@@ -8,9 +8,7 @@ namespace Tiny.PooledCollections.Generic.StructBased;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
-[DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>)), DebuggerDisplay("Count = {Count}")]
 public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<TKey>, IReadOnlyCollection<TKey>
 {
     readonly ValueDictionary<TKey, TValue> _dictionary;
@@ -19,20 +17,20 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
 
     public Enumerator GetEnumerator() => new(_dictionary);
 
-    public void CopyTo(TKey[] array, int index)
+    public void CopyTo(TKey[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        if (index < 0 || index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+        if (arrayIndex < 0 || arrayIndex > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 
-        if (array.Length - index < _dictionary.Count)
+        if (array.Length - arrayIndex < _dictionary.Count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var count = _dictionary._count;
         var entries = _dictionary._entries;
         for (var i = 0; i < count; i++)
             if (entries![i].Next >= -1)
-                array[index++] = entries[i].Key;
+                array[arrayIndex++] = entries[i].Key;
     }
 
     public int Count => _dictionary.Count;

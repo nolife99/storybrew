@@ -6,11 +6,11 @@ using System.IO;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
-using Scripting;
 using StorybrewCommon.Scripting;
+using StorybrewEditor.Scripting;
+using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Util;
 
 public class ScriptedEffect : Effect
 {
@@ -173,7 +173,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
 
-                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms"); break;
+                default: Trace.WriteLine($"{Name}: {this.status} took {duration}ms"); break;
             }
 
         this.status = status;
@@ -210,7 +210,7 @@ public class ScriptedEffect : Effect
         {
             if (disposing)
             {
-                statusMessage.Dispose();
+                statusMessage?.Dispose();
                 dependencyWatcher?.Dispose();
                 scriptContainer.OnScriptChanged -= scriptContainer_OnScriptChanged;
             }

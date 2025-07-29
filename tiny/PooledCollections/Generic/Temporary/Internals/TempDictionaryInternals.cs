@@ -66,8 +66,8 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
 
 partial class TempCollectionInternals
 {
-    /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
-    /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
+    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
+    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(ref TempDictionary<TKey, TValue> source)
     {
         var internals = new TempDictionaryInternals<TKey, TValue>(source);
@@ -80,13 +80,14 @@ partial class TempCollectionInternals
     ///     Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/> or a ref
     ///     null if it does not exist in the <paramref name="dictionary"/>.
     /// </summary>
-    /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-    /// <param name="key">The key used for lookup.</param>
+    /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
+    /// <param name="key"> The key used for lookup. </param>
     /// <remarks>
     ///     Items should not be added or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
     ///     <typeparamref name="TValue"/> is in use. The ref null can be detected using <see cref="Unsafe.IsNullRef{T}"/>.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
+    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(
+        this scoped ref readonly TempDictionary<TKey, TValue> dictionary,
         TKey key) where TKey : notnull => ref dictionary.FindValue(key);
 }

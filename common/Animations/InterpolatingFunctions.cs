@@ -3,7 +3,7 @@
 using System;
 using System.Numerics;
 using BrewLib.Util;
-using Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 /// <summary> A static class providing interpolating functions. </summary>
 public static class InterpolatingFunctions

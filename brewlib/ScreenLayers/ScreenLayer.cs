@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
-using Graphics;
-using Input;
+using BrewLib.Graphics;
+using BrewLib.Input;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 

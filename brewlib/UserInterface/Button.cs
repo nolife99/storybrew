@@ -2,9 +2,9 @@
 
 using System;
 using System.Numerics;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Skinning.Styles;
-using Util;
 
 public class Button : Widget, Field
 {

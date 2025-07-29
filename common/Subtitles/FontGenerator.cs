@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
-using Scripting;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
@@ -16,7 +15,8 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Processors.Transforms;
-using Storyboarding;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Path = System.IO.Path;
 

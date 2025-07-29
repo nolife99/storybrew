@@ -12,7 +12,7 @@ public interface ILineRenderer : IRenderer, IDisposable
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 16)]
-internal struct LinePrimitive
+struct LinePrimitive
 {
     public Vector3 from;
     public Rgba32 color1;

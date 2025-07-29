@@ -10,7 +10,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-internal static class EnumerableHelpers
+static class EnumerableHelpers
 {
     public static T[] ToArray<T>(IEnumerable<T> source, T[] emptyArray, ArrayPool<T> pool, out int length)
     {

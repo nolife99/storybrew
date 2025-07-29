@@ -36,15 +36,15 @@ public readonly struct HashSetInternalsRefUnsafe<T>
 
 partial class CollectionInternalsUnsafe
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static HashSetInternalsRefUnsafe<T> GetRef<T>(PooledHashSet<T> source) => new(source);
 
-    /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Span{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<T>> AsSpan<T>(this PooledHashSet<T> source) => source._entries.AsSpan(0, source._count);
 
-    /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Memory{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<T>> AsMemory<T>(this PooledHashSet<T> source) => source._entries.AsMemory(0, source._count);
 
@@ -59,20 +59,20 @@ partial class CollectionInternalsUnsafe
     ///     Gets either a ref to a <typeparamref name="T"/> in the <see cref="PooledHashSet{T}"/> or a ref null if it does not
     ///     exist in the <paramref name="set"/>.
     /// </summary>
-    /// <param name="set">The set to get the ref to <typeparamref name="T"/> from.</param>
-    /// <param name="equalValue">The value to search for.</param>
+    /// <param name="set"> The set to get the ref to <typeparamref name="T"/> from. </param>
+    /// <param name="equalValue"> The value to search for. </param>
     /// <remarks>
-    ///     Items should not be added or removed from the <see cref="PooledHashSet{T}"/> while the ref <typeparamref name="T"/>
-    ///     is in use. The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
+    ///     Items should not be added or removed from the <see cref="PooledHashSet{T}"/> while the ref
+    ///     <typeparamref name="T"/> is in use. The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref T GetValueRefOrNullRef<T>(PooledHashSet<T> set, T equalValue) where T : notnull
         => ref set.FindValue(equalValue);
 
-    /// <summary>Adds the specified element to the set if it's not already contained.</summary>
-    /// <param name="value">The element to add to the set.</param>
-    /// <param name="location">The index into <see cref="_entries"/> of the element.</param>
-    /// <returns>true if the element is added to the <see cref="HashSet{T}"/> object; false if the element is already present.</returns>
+    /// <summary> Adds the specified element to the set if it's not already contained. </summary>
+    /// <param name="value"> The element to add to the set. </param>
+    /// <param name="location"> The index into <see cref="_entries"/> of the element. </param>
+    /// <returns> true if the element is added to the <see cref="HashSet{T}"/> object; false if the element is already present. </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool AddIfNotPresent<T>(PooledHashSet<T> set, T value, out int location)
         => set.AddIfNotPresent(value, out location);

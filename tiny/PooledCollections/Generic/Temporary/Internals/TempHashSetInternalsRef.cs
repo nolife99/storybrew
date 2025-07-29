@@ -39,16 +39,16 @@ public readonly ref struct TempHashSetInternalsRef<T>
 
 partial class TempCollectionInternals
 {
-    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly TempHashSet<T> source) => new(in source);
 
-    /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlySpan{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(this scoped ref readonly TempHashSet<T> source)
         => source._entries.AsSpan(0, source._count);
 
-    /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
+    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<Entry<T>> AsReadOnlyMemory<T>(this scoped ref readonly TempHashSet<T> source)
         => source._entries.AsMemory(0, source._count);

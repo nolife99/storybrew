@@ -1,7 +1,7 @@
 ﻿namespace Tiny.Formats;
 
 using System;
-using PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public ref struct ParseContext<TTokenType>
 {
