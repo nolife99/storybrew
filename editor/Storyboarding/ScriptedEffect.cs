@@ -2,15 +2,19 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
+using BrewLib.Util;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Scripting;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class ScriptedEffect : Effect
 {
@@ -118,7 +122,11 @@ public class ScriptedEffect : Effect
         }
         catch (Exception e)
         {
-            await changeStatus(EffectStatus.ExecutionFailed, getExecutionFailedMessage(e), context.Log);
+            ValueTask task;
+            using (var msg = getExecutionFailedMessage(e))
+                task = changeStatus(EffectStatus.ExecutionFailed, msg.AsReadOnlySpan(), context.Log);
+
+            await task;
             return;
         }
         finally
@@ -196,9 +204,10 @@ public class ScriptedEffect : Effect
         return task;
     }
 
-    string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
-        $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}" :
-        $"Uncaught error during {status}:\n{e}";
+    TempList<char> getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
+        StringHelper.Interpolate(CultureInfo.InvariantCulture,
+            $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}") :
+        StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Uncaught error during {status}:\n{e}");
 
     #region IDisposable Support
 

@@ -296,7 +296,7 @@ public partial class EffectList : Widget
     {
         button.Disabled = effect.StatusMessage.IsWhiteSpace();
 
-        using var tooltip = StringHelper.Interpolate($"{effect.Status}");
+        using var tooltip = TempList.Create(Enum.GetName(effect.Status));
         button.Tooltip = tooltip.AsReadOnlySpan();
 
         switch (effect.Status)
@@ -347,7 +347,7 @@ public partial class EffectList : Widget
 
         var path = Path.Combine(project.ScriptsPath, $"{name}.cs");
         var script = Manager.ScreenLayerManager.GetContext<Editor>()
-            .ResourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded);
+            .ResourceContainer.GetString("project/scripttemplate.csx", ResourceSource.Embedded);
 
         script = script.Replace("%CLASSNAME%", name);
 

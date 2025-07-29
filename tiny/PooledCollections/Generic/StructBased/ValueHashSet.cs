@@ -13,7 +13,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-[DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
 public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
 {
     /// <summary> Cutoff point for stackallocs. This corresponds to the number of ints. </summary>

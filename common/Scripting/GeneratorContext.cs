@@ -36,7 +36,7 @@ public abstract class GeneratorContext
     public abstract void AddDependency(string path);
 
     /// <summary> Appends a message to the log. </summary>
-    public abstract void AppendLog(string message);
+    public abstract void AppendLog(ReadOnlySpan<char> message);
 
     /// <summary> Gets the storyboard layer with the given identifier. </summary>
     /// <param name="identifier"> The identifier of the layer to get. </param>

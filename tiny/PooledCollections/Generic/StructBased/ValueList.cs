@@ -21,7 +21,6 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 // of the List is automatically increased as required by reallocating the
 // internal array.
 //
-[DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
 public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
 {
     internal const int DefaultCapacity = 4;

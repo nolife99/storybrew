@@ -5,7 +5,7 @@
         <RootNamespace>StorybrewEditor</RootNamespace>
         <AssemblyName>StorybrewEditor</AssemblyName>
         <Platforms>x86;x64</Platforms>
-        <Version>1.94</Version>
+        <Version>1.95</Version>
         <TargetFramework>net9.0-windows</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
         <UseWpf>true</UseWpf>
@@ -16,7 +16,7 @@
 
     <PropertyGroup>
         <StartupObject>StorybrewEditor.Program</StartupObject>
-        <ApplicationIcon>icon.ico</ApplicationIcon>
+        <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
         <Product>storybrew editor</Product>
         <Company>storybrew</Company>
         <Copyright>Copyright © Damnae 2016</Copyright>
@@ -36,8 +36,24 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="icon.ico"/>
-        <EmbeddedResource Include="Resources.zip"/>
+        <EmbeddedResource Include="Resources\Asap-Light.woff2"/>
+        <EmbeddedResource Include="Resources\Asap-Regular.woff2"/>
+        <EmbeddedResource Include="Resources\icon.ico"/>
+        <EmbeddedResource Include="Resources\MaterialIcons.ttf"/>
+        <EmbeddedResource Include="Resources\project\scripttemplate.csx"/>
+        <EmbeddedResource Include="Resources\skin.json"/>
+        <EmbeddedResource Include="Resources\skin_constants.json"/>
+        <EmbeddedResource Include="Resources\skin_drawables.json"/>
+        <EmbeddedResource Include="Resources\skin_drawables_debug.json"/>
+        <EmbeddedResource Include="Resources\skin_styles.json"/>
+        <EmbeddedResource Include="Resources\ui-line.png"/>
+        <EmbeddedResource Include="Resources\ui-line-opt.json"/>
+        <EmbeddedResource Include="Resources\ui-rounded-borders.png"/>
+        <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json"/>
+        <EmbeddedResource Include="Resources\ui-stripes.png"/>
+        <EmbeddedResource Include="Resources\ui-stripes-opt.json"/>
+        <EmbeddedResource Include="Resources\project\scripts.csproj"/>
+        <EmbeddedResource Include="Resources\project\storyboard.sln"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -68,5 +84,105 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
+
+    <UsingTask TaskName="CompressEmbeddedResources" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <Resources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+            <TempDir ParameterType="System.String" Required="true"/>
+            <CompressedResources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System"/>
+            <Using Namespace="System.IO"/>
+            <Using Namespace="System.IO.Compression"/>
+            <Using Namespace="Microsoft.Build.Framework"/>
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+if (!Directory.Exists(TempDir))
+    Directory.CreateDirectory(TempDir);
+
+var compressedItems = new List<ITaskItem>();
+foreach (var resource in Resources)
+{
+    var resourcePath = resource.GetMetadata("FullPath");
+    var filename = resource.GetMetadata("Filename") + resource.GetMetadata("Extension");
+
+    var logicalName = resource.GetMetadata("LogicalName");
+    var relativePath = resource.GetMetadata("RelativeDir");
+
+    if (string.IsNullOrEmpty(logicalName))
+    {
+        string resourceNamespace = "StorybrewEditor";
+        if (!string.IsNullOrEmpty(relativePath))
+        {
+            var subPath = relativePath.Replace('\\', '.').Replace('/', '.');
+            if (subPath.EndsWith("."))
+                subPath = subPath.Substring(0, subPath.Length - 1);
+
+            resourceNamespace = $"{resourceNamespace}.{subPath}";
+        }
+
+        logicalName = $"{resourceNamespace}.{filename}";
+    }
+
+    var compressedPath = Path.Combine(TempDir, filename + ".zz");
+
+    var originalBytes = File.ReadAllBytes(resourcePath);
+
+    using (var originalStream = File.OpenRead(resourcePath))
+    using (var brotliStream = new DeflateStream(File.Create(compressedPath), CompressionLevel.Optimal, false))
+        originalStream.CopyTo(brotliStream);
+
+    var item = new TaskItem(compressedPath);
+    item.SetMetadata("LogicalName", logicalName + ".zz");
+    compressedItems.Add(item);
+}
+
+CompressedResources = compressedItems.ToArray();
+]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <UsingTask TaskName="CleanTempDirectory" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <TempDir ParameterType="System.String" Required="true"/>
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System"/>
+            <Using Namespace="System.IO"/>
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+if (Directory.Exists(TempDir))
+{
+    Directory.Delete(TempDir, true);
+}
+]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <PropertyGroup>
+        <TempResourcesDir>$(IntermediateOutputPath)compressed_resources\</TempResourcesDir>
+    </PropertyGroup>
+
+    <Target Name="CompressResourcesBeforeBuild" BeforeTargets="BeforeBuild">
+        <ItemGroup>
+            <EmbeddedResourceToCompress Include="@(EmbeddedResource)"/>
+        </ItemGroup>
+
+        <CompressEmbeddedResources Resources="@(EmbeddedResourceToCompress)" TempDir="$(TempResourcesDir)">
+            <Output TaskParameter="CompressedResources" ItemName="CompressedEmbeddedResources"/>
+        </CompressEmbeddedResources>
+
+        <ItemGroup>
+            <EmbeddedResource Remove="@(EmbeddedResourceToCompress)"/>
+            <EmbeddedResource Include="@(CompressedEmbeddedResources)"/>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="CleanCompressedResources" AfterTargets="AfterBuild">
+        <CleanTempDirectory TempDir="$(TempResourcesDir)"/>
+    </Target>
 
 </Project>

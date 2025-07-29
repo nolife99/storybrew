@@ -14,8 +14,10 @@ using Tiny.PooledCollections.Generic;
 
 public sealed class TextureContainerAsync : TextureContainer
 {
+    static readonly TextureUploadQueue uploadQueue = new();
     readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
+
     readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures;
     readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
 
@@ -46,14 +48,13 @@ public sealed class TextureContainerAsync : TextureContainer
 
     public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
-        var found = texturesLookup.TryGetValue(filename, out var texture);
-        switch (found)
+        switch (texturesLookup.TryGetValue(filename, out var texture))
         {
             case true when texture.IsLoaded: return texture.Result;
 
             case false:
                 var str = filename.ToString();
-                textures[str] = TextureUploadQueue.Queue(str, resourceContainer, textureOptions);
+                textures[str] = uploadQueue.Enqueue(str, resourceContainer, textureOptions);
                 break;
         }
 
@@ -82,15 +83,17 @@ public sealed class TextureContainerAsync : TextureContainer
     #endregion
 }
 
-static class TextureUploadQueue
+sealed class TextureUploadQueue : IDisposable
 {
     const int UPLOAD_THREAD_COUNT = 2;
-    static readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
+    readonly PooledList<NativeWindow> contexts = new();
 
-    static readonly PooledList<Thread> threads = new();
-    static readonly PooledList<NativeWindow> contexts = new();
+    readonly object enqueueSignal = new();
+    readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
 
-    public static void Initialize()
+    readonly PooledList<Thread> threads = new();
+
+    public TextureUploadQueue()
     {
         Native.Window.Context.MakeNoneCurrent();
 
@@ -116,13 +119,14 @@ static class TextureUploadQueue
             {
                 ((IGLFWGraphicsContext)context)!.MakeCurrent();
 
-                Trace.WriteLine("Started texture upload thread");
+                var exiting = false;
+                Native.Window.Closing += _ => exiting = true;
 
-                while (!Native.Window.IsExiting)
+                while (!exiting)
                 {
                     if (!queuedUploads.TryDequeue(out var queued))
                     {
-                        Thread.Yield();
+                        lock (enqueueSignal) Monitor.Wait(enqueueSignal);
                         continue;
                     }
 
@@ -162,14 +166,18 @@ static class TextureUploadQueue
             threads.Add(thread);
 
             thread.UnsafeStart(window.Context);
+
+            Trace.WriteLine($"Started texture upload thread {i}");
         }
 
         Native.Window.Context.MakeCurrent();
     }
 
-    public static void Cleanup()
+    public void Dispose()
     {
         queuedUploads.Clear();
+
+        Signal();
 
         foreach (var thread in threads) thread.Join();
         foreach (var context in contexts) context.Dispose();
@@ -178,10 +186,18 @@ static class TextureUploadQueue
         contexts.Dispose();
     }
 
-    public static QueuedUpload Queue(string filename, ResourceContainer container, TextureOptions options)
+    void Signal()
+    {
+        lock (enqueueSignal) Monitor.PulseAll(enqueueSignal);
+    }
+
+    public QueuedUpload Enqueue(string filename, ResourceContainer container, TextureOptions options)
     {
         QueuedUpload toQueue = new(filename, container, options);
         queuedUploads.Enqueue(toQueue);
+
+        Signal();
+
         return toQueue;
     }
 

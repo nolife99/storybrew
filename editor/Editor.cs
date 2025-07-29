@@ -58,8 +58,9 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register(ResourceContainer, true);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
+
+        TextureContainerAtlas textureContainer = new(ResourceContainer);
+        drawContext.Register<TextureContainer>(textureContainer, true);
 
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
@@ -67,12 +68,12 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         var size = window.ClientSize;
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(ResourceContainer, drawContext.Get<TextureContainer>(), size.X, size.Y);
+        DrawState.Initialize(ResourceContainer, textureContainer, size.X, size.Y);
 
         try
         {
             var brewLibAssembly = typeof(Drawable).Assembly;
-            Skin = new(drawContext.Get<TextureContainer>())
+            Skin = new(textureContainer)
             {
                 ResolveDrawableType =
                     drawableTypeName => brewLibAssembly.GetType(
@@ -103,7 +104,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         catch (Exception e)
         {
             Trace.TraceError($"Loading skin: {e}");
-            Skin = new(drawContext.Get<TextureContainer>());
+            Skin = new(textureContainer);
         }
 
         InputDispatcher inputDispatcher = new();

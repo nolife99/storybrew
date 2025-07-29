@@ -9,14 +9,10 @@ using System.Text;
 using BrewLib.Util;
 
 public sealed class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
-    : ResourceContainer, IDisposable
+    : ResourceContainer
 {
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
-
-    ZipArchive archive;
-
-    public void Dispose() => archive?.Dispose();
 
     public Stream GetStream(string path, ResourceSource sources)
     {
@@ -40,22 +36,10 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
 
             if ((sources & ResourceSource.Embedded) != 0)
             {
-                var stream = assembly.GetManifestResourceStream($"{baseNamespace}.zip");
-                if (stream is not null)
-                {
-                    if (archive is null) archive = new(stream, ZipArchiveMode.Read, false);
-                    else stream.Dispose();
+                var stream = assembly.GetManifestResourceStream(
+                    $"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}.zz");
 
-                    var entry = archive.GetEntry(path);
-                    if (entry is not null) return entry.Open();
-                }
-                else
-                {
-                    stream = assembly.GetManifestResourceStream(
-                        $"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
-
-                    if (stream is not null) return stream;
-                }
+                if (stream is not null) return new DeflateStream(stream, CompressionMode.Decompress);
             }
         }
 

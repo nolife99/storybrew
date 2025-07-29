@@ -8,18 +8,21 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
 {
     readonly List<KeyValuePair<string, TinyToken>> items = [];
     readonly Dictionary<string, int> keyToIndexMap = [];
+    readonly Dictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> keyToIndexMapLookup;
+
+    public TinyObject() => keyToIndexMapLookup = keyToIndexMap.GetAlternateLookup<ReadOnlySpan<char>>();
 
     public override bool IsInline => false;
     public override bool IsEmpty => items.Count == 0;
     public override TinyTokenType Type => TinyTokenType.Object;
 
-    public TinyToken this[string key]
+    public TinyToken this[ReadOnlySpan<char> key]
     {
-        get => keyToIndexMap.TryGetValue(key, out var index) ? items[index].Value : null;
+        get => keyToIndexMapLookup.TryGetValue(key, out var index) ? items[index].Value : null;
         set
         {
-            if (keyToIndexMap.TryGetValue(key, out var index)) items[index] = new(key, value);
-            else Add(key, value);
+            if (keyToIndexMapLookup.TryGetValue(key, out var index)) items[index] = new(key.ToString(), value);
+            else Add(key.ToString(), value);
         }
     }
 
@@ -43,9 +46,7 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
     public void Add(KeyValuePair<string, TinyToken> item) => Add(item.Key, item.Value);
 
     public override T Value<T>(scoped ReadOnlySpan<char> key)
-        => keyToIndexMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out var index) ?
-            items[index].Value.Value<T>() :
-            default;
+        => keyToIndexMapLookup.TryGetValue(key, out var index) ? items[index].Value.Value<T>() : default;
 
     public override T Value<T>(object key) => key switch
     {

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp.Memory;
@@ -11,7 +12,7 @@ public sealed class DrawContext : IDisposable
 {
     readonly PooledList<IDisposable> disposables = new();
     FrozenDictionary<Type, object> frozenReferences;
-    PooledDictionary<Type, object> references = new();
+    Dictionary<Type, object> references = new();
 
     public DrawContext()
     {
@@ -35,8 +36,6 @@ public sealed class DrawContext : IDisposable
     public void Freeze()
     {
         frozenReferences = references.ToFrozenDictionary();
-
-        references.Dispose();
         references = null;
     }
 

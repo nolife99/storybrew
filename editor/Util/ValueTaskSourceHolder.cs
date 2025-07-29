@@ -9,36 +9,34 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
 {
     static readonly Pool<ValueTaskSourceHolder<TState>> Pool = new();
 
-    QueuedAction _queuedAction;
+    QueuedAction queuedAction;
 
-    public ValueTask Task => new(_queuedAction.TaskSource, _queuedAction.TaskSource.Version);
+    public ValueTask Task => queuedAction.TaskSource.VoidTask;
 
     public void Dispose()
     {
         try
         {
-            _queuedAction.Action(_queuedAction.State);
-            _queuedAction.TaskSource.SetResult(0);
+            queuedAction.Action(queuedAction.State);
+            queuedAction.TaskSource.SetResult(0);
         }
         catch (Exception e)
         {
-            _queuedAction.TaskSource.SetException(e);
+            queuedAction.TaskSource.SetException(e);
         }
 
-        ValueTaskSourcePool<byte>.Return(_queuedAction.TaskSource);
+        ValueTaskSourcePool<byte>.Return(queuedAction.TaskSource);
 
-        _queuedAction = default;
+        queuedAction = default;
         Pool.Release(this);
     }
 
     public static ValueTaskSourceHolder<TState> Get(Action<TState> action, TState state)
     {
         var holder = Pool.Retrieve();
-        holder._queuedAction = new(action, state, ValueTaskSourcePool<byte>.Get());
+        holder.queuedAction = new(action, state, ValueTaskSourcePool<byte>.Get());
         return holder;
     }
 
-    readonly record struct QueuedAction(Action<TState> Action,
-        TState State,
-        ManualResetValueTaskSourceCore<byte> TaskSource);
+    readonly record struct QueuedAction(Action<TState> Action, TState State, ValueTaskSource<byte> TaskSource);
 }

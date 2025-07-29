@@ -9,7 +9,6 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -74,7 +73,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
             _entries = s_emptyEntries;
         }
 
-        if (comparer is not null && comparer != EqualityComparer<TKey>.Default) _comparer = comparer;
+        if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default)) _comparer = comparer;
 
         if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
     }
@@ -110,13 +109,8 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
             if (source.Count == 0) return;
 
-            Debug.Assert(source._entries is not null);
-            Debug.Assert(_entries is not null);
-            Debug.Assert(_entries.Length >= source.Count);
-            Debug.Assert(_count == 0);
-
             var oldEntries = source._entries;
-            if (source._comparer == _comparer)
+            if (ReferenceEquals(source._comparer, _comparer))
             {
                 CopyEntries(oldEntries, source._count);
                 return;
@@ -169,18 +163,10 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
             throw new KeyNotFoundException(nameof(key));
         }
-        set
-        {
-            var modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-            Debug.Assert(modified);
-        }
+        set => TryInsert(key, value, InsertionBehavior.OverwriteExisting);
     }
 
-    public void Add(TKey key, TValue value)
-    {
-        var modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-        Debug.Assert(modified);
-    }
+    public void Add(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
 
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
         => Add(keyValuePair.Key, keyValuePair.Value);
@@ -208,18 +194,14 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     public void Clear()
     {
         var count = _count;
-        if (count > 0)
-        {
-            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            Debug.Assert(_entries is not null, "_entries should be non-null");
+        if (count <= 0) return;
 
-            Array.Clear(_buckets, 0, _buckets.Length);
+        Array.Clear(_buckets, 0, _buckets.Length);
 
-            _count = 0;
-            _freeList = -1;
-            _freeCount = 0;
-            Array.Clear(_entries, 0, count);
-        }
+        _count = 0;
+        _freeList = -1;
+        _freeCount = 0;
+        Array.Clear(_entries, 0, count);
     }
 
     public readonly bool ContainsKey(TKey key) => !Unsafe.IsNullRef(ref FindValue(key));
@@ -264,20 +246,19 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(in this, Enumerator.KeyValuePair);
+    public readonly Enumerator GetEnumerator() => new(this, Enumerator.KeyValuePair);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         => new Enumerator(this, Enumerator.KeyValuePair);
 
-    internal ref TValue FindValue(TKey key)
+    internal readonly ref TValue FindValue(TKey key)
     {
         ArgumentNullException.ThrowIfNull(key);
 
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
-        if (_buckets is not null)
+        if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "expected entries to be is not null");
             var comparer = _comparer;
             if (comparer is null)
             {
@@ -386,10 +367,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         ArgumentNullException.ThrowIfNull(key);
 
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        Debug.Assert(_buckets.IsNullOrEmpty() == false);
-
         var entries = _entries;
-        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
         var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
@@ -486,8 +464,6 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         if (_freeCount > 0)
         {
             index = _freeList;
-            Debug.Assert(StartOfFreeList - entries[_freeList].Next >= -1,
-                "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
             _freeCount--;
@@ -530,10 +506,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
             ArgumentNullException.ThrowIfNull(key);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
-            Debug.Assert(dictionary._buckets.IsNullOrEmpty() == false);
-
             var entries = dictionary._entries;
-            Debug.Assert(entries is not null, "expected entries to be non-null");
 
             var comparer = dictionary._comparer;
             var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
@@ -608,8 +581,6 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
             if (dictionary._freeCount > 0)
             {
                 index = dictionary._freeList;
-                Debug.Assert(StartOfFreeList - entries[dictionary._freeList].Next >= -1,
-                    "shouldn't overflow because `next` cannot underflow");
 
                 dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].Next;
                 dictionary._freeCount--;
@@ -644,11 +615,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
                 exists = false;
 
-                ref var value = ref dictionary.FindValue(key)!;
-
-                Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
-
-                return ref value;
+                return ref dictionary.FindValue(key);
             }
 
             exists = false;
@@ -661,10 +628,6 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
     void Resize(int newSize, bool forceNewHashCodes)
     {
-        Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
-        Debug.Assert(_entries is not null, "_entries should be non-null");
-        Debug.Assert(newSize >= _entries.Length);
-
         var count = _count;
         var entries = _entryPool.Rent(newSize);
         Array.Copy(_entries, entries, count);
@@ -702,45 +665,41 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets.IsNullOrEmpty()) return false;
+
+        uint collisionCount = 0;
+        var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
+        ref var bucket = ref GetBucket(hashCode);
+        var entries = _entries;
+        var last = -1;
+        var i = bucket - 1;
+
+        while (i >= 0)
         {
-            uint collisionCount = 0;
-            var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
-            ref var bucket = ref GetBucket(hashCode);
-            var entries = _entries;
-            var last = -1;
-            var i = bucket - 1;
-            while (i >= 0)
+            ref var entry = ref entries[i];
+
+            if (entry.HashCode == hashCode &&
+                (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
             {
-                ref var entry = ref entries[i];
+                if (last < 0) bucket = entry.Next + 1;
+                else entries[last].Next = entry.Next;
 
-                if (entry.HashCode == hashCode &&
-                    (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
-                {
-                    if (last < 0) bucket = entry.Next + 1;
-                    else entries[last].Next = entry.Next;
+                entry.Next = StartOfFreeList - _freeList;
 
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                if (s_isReferenceKey) entry.Key = default!;
 
-                    entry.Next = StartOfFreeList - _freeList;
+                if (s_isReferenceValue) entry.Value = default!;
 
-                    if (s_isReferenceKey) entry.Key = default!;
-
-                    if (s_isReferenceValue) entry.Value = default!;
-
-                    _freeList = i;
-                    _freeCount++;
-                    return true;
-                }
-
-                last = i;
-                i = entry.Next;
-
-                collisionCount++;
-                if (collisionCount > (uint)entries.Length)
-                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                _freeList = i;
+                _freeCount++;
+                return true;
             }
+
+            last = i;
+            i = entry.Next;
+
+            if (++collisionCount > (uint)entries.Length)
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
         }
 
         return false;
@@ -769,9 +728,6 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
                     else entries[last].Next = entry.Next;
 
                     value = entry.Value;
-
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
 
@@ -866,15 +822,14 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         for (var i = 0; i < count; i++)
         {
             var hashCode = entries[i].HashCode;
-            if (entries[i].Next >= -1)
-            {
-                ref var entry = ref newEntries[newCount];
-                entry = entries[i];
-                ref var bucket = ref GetBucket(hashCode);
-                entry.Next = bucket - 1;
-                bucket = newCount + 1;
-                newCount++;
-            }
+            if (entries[i].Next < -1) continue;
+
+            ref var entry = ref newEntries[newCount];
+            entry = entries[i];
+            ref var bucket = ref GetBucket(hashCode);
+            entry.Next = bucket - 1;
+            bucket = newCount + 1;
+            newCount++;
         }
 
         _count = newCount;
@@ -882,7 +837,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    ref int GetBucket(uint hashCode)
+    readonly ref int GetBucket(uint hashCode)
     {
         var buckets = _buckets!;
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -894,12 +849,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets is not null)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -917,7 +867,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         internal const int DictEntry = 1;
         internal const int KeyValuePair = 2;
 
-        public Enumerator(in ValueDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+        internal Enumerator(ValueDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
@@ -935,11 +885,10 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
             {
                 ref var entry = ref _dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    _current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                _current = new(entry.Key, entry.Value);
+                return true;
             }
 
             _index = _dictionary._count + 1;

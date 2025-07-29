@@ -3,7 +3,6 @@
 using System;
 using System.Buffers;
 using System.IO;
-using System.Text;
 using BrewLib.Audio;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
@@ -11,8 +10,6 @@ using StorybrewCommon.Storyboarding;
 using StorybrewEditor.Mapset;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 
@@ -24,10 +21,10 @@ public sealed class EditorGeneratorContext(Effect effect,
     scoped ReadOnlySpan<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
-    readonly StringBuilder log = new();
-    ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
+    ValueArray<Beatmap> beatmaps = getBeatmaps(beatmaps);
+    ValueList<char> log = ValueList.Create<char>();
 
-    public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => _editorLayers.AsReadOnlySpan();
+    public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => editorLayers.AsReadOnlySpan();
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;
 
@@ -49,21 +46,23 @@ public sealed class EditorGeneratorContext(Effect effect,
         get
         {
             BeatmapDependent = true;
-            return _beatmaps.AsReadOnlySpan();
+            return beatmaps.AsReadOnlySpan();
         }
     }
 
     public bool BeatmapDependent { get; private set; }
     public override bool Multithreaded { get; set; }
-    public string Log => log.ToString();
+    public ReadOnlySpan<char> Log => log.AsReadOnlySpan();
 
     public void Dispose()
     {
+        log.Dispose();
+
         foreach (var audioStream in fftAudioStreams.Values) audioStream.Dispose();
         fftAudioStreams.Dispose();
 
-        _beatmaps.Dispose();
-        _editorLayers.Dispose();
+        beatmaps.Dispose();
+        editorLayers.Dispose();
     }
 
     static ValueArray<Beatmap> getBeatmaps(scoped ReadOnlySpan<EditorBeatmap> beatmaps)
@@ -76,22 +75,27 @@ public sealed class EditorGeneratorContext(Effect effect,
 
     public override StoryboardLayer GetLayer(string identifier)
     {
-        foreach (var layer in _editorLayers)
+        foreach (var layer in editorLayers)
             if (identifier == layer.Name)
                 return layer;
 
         EditorStoryboardLayer newLayer = new(identifier, effect);
-        _editorLayers.Add(newLayer);
+        editorLayers.Add(newLayer);
         return newLayer;
     }
 
     public override void AddDependency(string path) => watcher.Watch(path);
-    public override void AppendLog(string message) => log.AppendLine(message);
+
+    public override void AppendLog(ReadOnlySpan<char> message)
+    {
+        log.AddRange(message);
+        log.Add('\n');
+    }
 
     #region Audio data
 
-    readonly PooledDictionary<string, FftStream> fftAudioStreams = new();
-    readonly PooledList<EditorStoryboardLayer> _editorLayers = new();
+    ValueDictionary<string, FftStream> fftAudioStreams = ValueDictionary.Create<string, FftStream>();
+    ValueList<EditorStoryboardLayer> editorLayers = ValueList.Create<EditorStoryboardLayer>();
 
     FftStream getFftStream(string path)
     {

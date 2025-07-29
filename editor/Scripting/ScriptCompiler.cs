@@ -35,7 +35,7 @@ public static class ScriptCompiler
     {
         var tokenSource = token?.Token ?? CancellationToken.None;
 
-        using var trees = ValueDictionary<SyntaxTree, (string SourcePath, SourceText SourceText)>.Create();
+        using var trees = ValueDictionary.Create<SyntaxTree, (string SourcePath, SourceText SourceText)>();
         foreach (var src in sourcePaths)
         {
             using var sourceStream = File.OpenRead(src);
@@ -51,7 +51,11 @@ public static class ScriptCompiler
             using var stream = File.OpenRead(asmPath);
             if (!Project.DefaultAssemblies.Contains(asmPath))
             {
-                context.LoadFromStream(stream);
+                using PoolingMemoryStream copyStream = new();
+                stream.CopyTo(copyStream, 65536);
+
+                InternalLoad(context, copyStream.WrittenSpan, default);
+
                 stream.Position = 0;
             }
 
@@ -76,13 +80,7 @@ public static class ScriptCompiler
                     options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
                     cancellationToken: tokenSource);
 
-            if (compilation.Success)
-            {
-                assemblyStream.Position = 0;
-                pdbStream.Position = 0;
-
-                return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
-            }
+            if (compilation.Success) return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
 
             result = compilation.Diagnostics;
         }

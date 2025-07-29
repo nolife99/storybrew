@@ -9,7 +9,7 @@ public class Clock : TimeSource
     bool playing;
     float timeFactor = 1, timeOrigin;
 
-    public float Current => timeOrigin + stopwatch.ElapsedTicks / (float)Stopwatch.Frequency * timeFactor;
+    public float Current => timeOrigin + stopwatch.ElapsedTicks * timeFactor / Stopwatch.Frequency;
 
     public float TimeFactor
     {
@@ -41,7 +41,7 @@ public class Clock : TimeSource
 
     public bool Seek(float time)
     {
-        timeOrigin = time - stopwatch.ElapsedTicks / (float)Stopwatch.Frequency * timeFactor;
+        timeOrigin = time - stopwatch.ElapsedTicks * timeFactor / Stopwatch.Frequency;
         return true;
     }
 }

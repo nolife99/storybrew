@@ -234,7 +234,10 @@ public sealed partial class Project : IDisposable
 
     public void QueueEffectUpdate(Effect effect)
     {
-        effectUpdateQueue.Queue(effect, effect.Path, effect.Update, effect.Multithreaded);
+        effectUpdateQueue.Queue(effect,
+            string.GetHashCode(effect.Path, StringComparison.OrdinalIgnoreCase),
+            effect.Update,
+            effect.Multithreaded);
 
         refreshEffectsStatus();
     }

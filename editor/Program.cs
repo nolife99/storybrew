@@ -82,7 +82,7 @@ public static class Program
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
                 editor.Initialize(displayDevice);
 
-                Native.SetWindowIcon(typeof(Editor), "icon.ico");
+                Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
 
                 using (AudioManager = createAudioManager())
                     runMainLoop(window,
@@ -245,10 +245,8 @@ public static class Program
         TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
 
         var domain = AppDomain.CurrentDomain;
-
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
-
-        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, true);
+        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
 
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
@@ -266,9 +264,7 @@ public static class Program
     {
         lock (errorHandlerLock)
         {
-            if (insideErrorHandler) return;
-
-            insideErrorHandler = true;
+            if (Interlocked.CompareExchange(ref insideErrorHandler, true, false)) return;
 
             using StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true);
             try
@@ -298,7 +294,7 @@ public static class Program
             }
             finally
             {
-                insideErrorHandler = false;
+                Interlocked.CompareExchange(ref insideErrorHandler, false, true);
             }
         }
     }

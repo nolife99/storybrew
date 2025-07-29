@@ -49,7 +49,7 @@ public class LineRendererBuffered : ILineRenderer
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
             int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)),
-            ReadOnlySpan<ushort>.Empty);
+            default);
 
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, combinedMatricesBuffer = GL.GenBuffer());
         GL.BufferStorage(BufferTarget.ShaderStorageBuffer,

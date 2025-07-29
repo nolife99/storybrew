@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -67,35 +68,36 @@ public static class DrawState
                     Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                     Encoding.UTF8.GetChars(bytes, chars);
 
-                    using var str = StringHelper.Interpolate($"[OpenGL] {chars} (Source: {source switch
+                    using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                        $"[OpenGL] {chars} (Source: {source switch
+                        {
+                            DebugSource.DebugSourceApi => "API",
+                            DebugSource.DebugSourceWindowSystem => "Window System",
+                            DebugSource.DebugSourceShaderCompiler => "Shader Compiler",
+                            DebugSource.DebugSourceThirdParty => "Third Party",
+                            DebugSource.DebugSourceApplication => "Application",
+                            DebugSource.DebugSourceOther => "Other",
+                            _ => ""
+                        }}, Type: {type switch
                     {
-                        DebugSource.DebugSourceApi => "API",
-                        DebugSource.DebugSourceWindowSystem => "Window System",
-                        DebugSource.DebugSourceShaderCompiler => "Shader Compiler",
-                        DebugSource.DebugSourceThirdParty => "Third Party",
-                        DebugSource.DebugSourceApplication => "Application",
-                        DebugSource.DebugSourceOther => "Other",
+                        DebugType.DebugTypeError => "Error",
+                        DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
+                        DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
+                        DebugType.DebugTypePortability => "Portability",
+                        DebugType.DebugTypePerformance => "Performance",
+                        DebugType.DebugTypeMarker => "Marker",
+                        DebugType.DebugTypePushGroup => "Push Group",
+                        DebugType.DebugTypePopGroup => "Pop Group",
+                        DebugType.DebugTypeOther => "Other",
                         _ => ""
-                    }}, Type: {type switch
+                    }}, Severity: {severity switch
                 {
-                    DebugType.DebugTypeError => "Error",
-                    DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
-                    DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
-                    DebugType.DebugTypePortability => "Portability",
-                    DebugType.DebugTypePerformance => "Performance",
-                    DebugType.DebugTypeMarker => "Marker",
-                    DebugType.DebugTypePushGroup => "Push Group",
-                    DebugType.DebugTypePopGroup => "Pop Group",
-                    DebugType.DebugTypeOther => "Other",
+                    DebugSeverity.DebugSeverityHigh => "High",
+                    DebugSeverity.DebugSeverityMedium => "Medium",
+                    DebugSeverity.DebugSeverityLow => "Low",
+                    DebugSeverity.DebugSeverityNotification => "Notification",
                     _ => ""
-                }}, Severity: {severity switch
-            {
-                DebugSeverity.DebugSeverityHigh => "High",
-                DebugSeverity.DebugSeverityMedium => "Medium",
-                DebugSeverity.DebugSeverityLow => "Low",
-                DebugSeverity.DebugSeverityNotification => "Notification",
-                _ => ""
-            }})\n");
+                }})\n");
 
                     Trace.Write(str.AsReadOnlySpan().ToString());
                     if (severity is DebugSeverity.DebugSeverityHigh)
@@ -149,8 +151,6 @@ public static class DrawState
         TextFontManager = new(textureContainer);
 
         Viewport = new(0, 0, width, height);
-
-        TextureUploadQueue.Initialize();
     }
 
     public static void Cleanup()
@@ -159,7 +159,6 @@ public static class DrawState
         TextFontManager.Dispose();
         TextGenerator.Dispose();
         capabilityCache.Dispose();
-        TextureUploadQueue.Cleanup();
     }
 
     public static int CompleteFrame()

@@ -223,9 +223,9 @@ public sealed class FontGenerator : IDisposable
             height = bounds.Height;
         }
 
-        string filename = null;
+        scoped Span<char> filename = default;
         var trimExist = false;
-        var trimmedText = description.TrimTransparency ? text.Trim() : null;
+        var trimmedText = description.TrimTransparency ? text.AsSpan().Trim() : default;
 
         if (description.TrimTransparency)
         {
@@ -240,19 +240,66 @@ public sealed class FontGenerator : IDisposable
             if (foundTrim is not null)
             {
                 trimExist = true;
-                filename = Path.GetFileName(cache[foundTrim].Path);
+
+                var cachedFile = Path.GetFileName(cache[foundTrim].Path.AsSpan());
+                filename = stackalloc char[cachedFile.Length];
+
+                cachedFile.CopyTo(filename);
             }
         }
 
-        filename ??= (trimmedText ?? text).Length == 1 ?
-            $"{(!PathHelper.IsValidFilename(text[0]) ?
-                ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).AsSpan().TrimStart('0') :
-                char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture).ToString() + '_' :
-                    [text[0]])}.png" :
-            $"_{cache.Keys.Count(l => l.AsSpan().Trim().Length > 1)
-                .ToString("x3", CultureInfo.InvariantCulture).AsSpan().TrimStart('0')}.png";
+        if (filename.IsEmpty)
+        {
+            var contentToUse = trimmedText.IsEmpty ? text : trimmedText;
 
-        var texturePath = Path.Combine(Directory, filename);
+            if (contentToUse.Length == 1)
+            {
+                var singleChar = text[0];
+                scoped Span<char> charRepresentation;
+
+                if (!PathHelper.IsValidFilename(singleChar))
+                {
+                    int charCode = singleChar;
+
+                    charRepresentation = stackalloc char[4];
+                    charCode.TryFormat(charRepresentation, out _, "x4", CultureInfo.InvariantCulture);
+
+                    charRepresentation = charRepresentation.TrimStart('0');
+                }
+                else if (char.IsUpper(singleChar))
+                {
+                    charRepresentation = stackalloc char[2];
+                    charRepresentation[0] = char.ToLower(singleChar, CultureInfo.InvariantCulture);
+                    charRepresentation[1] = '_';
+                }
+                else
+                {
+                    charRepresentation = stackalloc char[1];
+                    charRepresentation[0] = singleChar;
+                }
+
+                filename = stackalloc char[charRepresentation.Length + 4];
+                charRepresentation.CopyTo(filename);
+                ".png".CopyTo(filename[charRepresentation.Length..]);
+            }
+            else
+            {
+                Span<char> countHex = stackalloc char[3];
+
+                cache.Keys.Count(l => l.AsSpan().Trim().Length > 1)
+                    .TryFormat(countHex, out _, "x3", CultureInfo.InvariantCulture);
+
+                countHex = countHex.TrimStart('0');
+
+                filename = stackalloc char[countHex.Length + 5];
+                filename[0] = '_';
+
+                countHex.CopyTo(filename[1..]);
+                ".png".CopyTo(filename[(countHex.Length + 1)..]);
+            }
+        }
+
+        var texturePath = Path.Join(Directory, filename);
         PathHelper.WithStandardSeparatorsUnsafe(texturePath);
 
         if (trimExist)

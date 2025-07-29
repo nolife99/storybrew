@@ -16,17 +16,10 @@ public static class ScreenLayerManagerExtensions
         => screenLayer.AsyncLoading("Select a folder",
             async () =>
             {
-                var gc = Task.Run(async () =>
-                {
-                    await Task.Delay(1000);
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                });
-
                 var selectedPath = NFD.PickFolder(initialValue);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 if (!string.IsNullOrEmpty(selectedPath))
                     await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
-
-                await gc;
             });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
@@ -36,15 +29,9 @@ public static class ScreenLayerManagerExtensions
         Action<string> callback) => screenLayer.AsyncLoading("Select a file",
         async () =>
         {
-            var gc = Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-            });
-
             var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
-            await gc;
         });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
@@ -54,15 +41,9 @@ public static class ScreenLayerManagerExtensions
         Action<string> callback) => screenLayer.AsyncLoading("Select a location",
         async () =>
         {
-            var gc = Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-            });
-
             var fileName = NFD.SaveDialog(initialValue, extension, filter);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
-            await gc;
         });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer,

@@ -49,30 +49,23 @@ public sealed class MultiFileWatcher : IDisposable
         watchedFilenames.Add(filename);
         if (Directory.Exists(directoryPath))
         {
-            // The folder containing the file to watch exists,
-            // only watch that folder
+            if (folderWatchers.ContainsKey(directoryPath)) return;
 
-            if (!folderWatchers.ContainsKey(directoryPath))
+            var watcher = folderWatchers[directoryPath] = new()
             {
-                var watcher = folderWatchers[directoryPath] = new()
-                {
-                    Path = directoryPath,
-                    IncludeSubdirectories = false,
-                    NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
-                };
+                Path = directoryPath,
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
+            };
 
-                watcher.Created += watcher_Changed;
-                watcher.Changed += watcher_Changed;
-                watcher.Renamed += watcher_Changed;
-                watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
-                watcher.EnableRaisingEvents = true;
-            }
+            watcher.Created += watcher_Changed;
+            watcher.Changed += watcher_Changed;
+            watcher.Renamed += watcher_Changed;
+            watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
+            watcher.EnableRaisingEvents = true;
         }
         else
         {
-            // The folder containing the file to watch does not exist,
-            // find a parent to watch subfolders from
-
             var parentDirectory = Directory.GetParent(directoryPath);
             while (parentDirectory is not null && !parentDirectory.Exists)
                 parentDirectory = Directory.GetParent(parentDirectory.FullName);

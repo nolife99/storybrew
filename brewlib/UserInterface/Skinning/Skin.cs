@@ -264,7 +264,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     {
         while (fieldData?.Type is TinyTokenType.String)
         {
-            var fieldString = fieldData.Value<string>();
+            var fieldString = fieldData.Value<string>().AsSpan();
             if (fieldString.StartsWith('@'))
             {
                 fieldData = constants?[fieldString[1..]];
@@ -287,13 +287,13 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     static ReadOnlySpan<char> getStyleFlags(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
-        return index == -1 ? ReadOnlySpan<char>.Empty : styleName[(index + 1)..];
+        return index == -1 ? default : styleName[(index + 1)..];
     }
 
     static ReadOnlySpan<char> getImplicitParentStyleName(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
-        return index == -1 ? ReadOnlySpan<char>.Empty : styleName[..index];
+        return index == -1 ? default : styleName[..index];
     }
 
     static Func<TinyToken, TinyObject, Skin, object> getFieldParser(Type fieldType)

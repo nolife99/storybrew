@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using BrewLib.IO;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -18,9 +19,9 @@ public static class Native
 
     public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 
-    public static void SetWindowIcon(Type type, string iconPath)
+    public static void SetWindowIcon(ResourceContainer container, string iconPath)
     {
-        using var iconResource = type.Assembly.GetManifestResourceStream(type, iconPath);
+        using var iconResource = container.GetStream(iconPath, ResourceSource.Embedded);
         if (iconResource is null) return;
 
         using var image = Image.Load<Rgba32>(iconResource);

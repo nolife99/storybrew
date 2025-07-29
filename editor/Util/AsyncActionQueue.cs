@@ -35,10 +35,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, string uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
+    public void Queue(T target, int uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
     {
         for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
-            actionRunners[i]?.Value.EnsureThreadAlive();
+            actionRunners[i].Value.EnsureThreadAlive();
 
         if (!allowDuplicates)
             foreach (var runner in context.Queue)
@@ -53,20 +53,19 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         context.Queue.Clear();
         return stopThreads ?
-            Task.WhenAll(actionRunners.Where(runner => runner is not null && runner.IsValueCreated)
-                .Select(runner => runner.Value.JoinOrAbort())) :
+            Task.WhenAll(actionRunners.Where(runner => runner.IsValueCreated).Select(runner => runner.Value.JoinOrAbort())) :
             Task.CompletedTask;
     }
 
     sealed record ActionContainer(T Target,
-        string UniqueKey,
+        int UniqueKey,
         Func<CancellationTokenSource, ValueTask> Action,
         bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
         public readonly ConcurrentQueue<ActionContainer> Queue = [];
-        public readonly ConcurrentDictionary<string, bool> Running = [];
+        public readonly ConcurrentDictionary<int, bool> Running = [];
         bool enabled;
         public bool RunningLoneTask;
 
