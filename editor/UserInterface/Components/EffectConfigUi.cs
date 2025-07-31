@@ -104,15 +104,15 @@ public class EffectConfigUi : Widget
 
             if (effect is not null)
             {
-                effect.OnChanged -= Effect_OnChanged;
-                effect.OnConfigFieldsChanged -= Effect_OnConfigFieldsChanged;
+                effect.Changed -= EffectChanged;
+                effect.ConfigFieldsChanged -= EffectConfigFieldsChanged;
             }
 
             effect = value;
             if (effect is not null)
             {
-                effect.OnChanged += Effect_OnChanged;
-                effect.OnConfigFieldsChanged += Effect_OnConfigFieldsChanged;
+                effect.Changed += EffectChanged;
+                effect.ConfigFieldsChanged += EffectConfigFieldsChanged;
             }
 
             updateEffect();
@@ -132,8 +132,8 @@ public class EffectConfigUi : Widget
         layout.Size = Size;
     }
 
-    void Effect_OnChanged(object sender, EventArgs e) => updateEffect();
-    void Effect_OnConfigFieldsChanged(object sender, EventArgs e) => updateFields();
+    void EffectChanged(object sender, EventArgs e) => updateEffect();
+    void EffectConfigFieldsChanged(object sender, EventArgs e) => updateFields();
 
     void updateEffect()
     {

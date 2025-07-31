@@ -12,14 +12,14 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class ShaderBuilder
 {
+    public const int MinVersion = 330;
     public readonly ShaderContext Context = new();
     public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlFragCoord, GlDrawID;
     readonly ProgramScope ProgramScope = new();
 
     readonly List<string> requiredExt = [];
+    public readonly VertexDeclaration VertexDeclaration;
     readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
-    public int MinVersion = 110;
-    public VertexDeclaration VertexDeclaration;
 
     public ShaderSnippet VertexShader, FragmentShader;
 

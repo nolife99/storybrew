@@ -155,13 +155,11 @@ public sealed class Texture2d : Texture2dRegion
             color = new((byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio), color.A);
         }
 
-        var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
-
         var textureId = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, textureId);
         GL.TexStorage2D(TextureTarget2d.Texture2D,
             1,
-            sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8,
+            textureOptions.Srgb && DrawState.ColorCorrected ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8,
             width,
             height);
 
@@ -263,11 +261,11 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (disposing)
             {
+                GL.DeleteTexture(_textureId);
                 _textureId = 0;
                 bindlessId = -1;
             }
-
-            Native.MainThreadScheduler(id => GL.DeleteTexture((int)id), _textureId);
+            else Native.MainThreadScheduler(id => GL.DeleteTexture((int)id), _textureId);
         }
 
         base.Dispose(disposing);

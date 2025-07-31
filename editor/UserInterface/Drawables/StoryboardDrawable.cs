@@ -10,7 +10,7 @@ using StorybrewEditor.Storyboarding;
 
 public sealed class StoryboardDrawable(Project project) : Drawable
 {
-    readonly RenderStates linesRenderStates = new();
+    static readonly RenderStates linesRenderStates = new();
     public bool Clip = true, UpdateFrameStats;
 
     public float Time;

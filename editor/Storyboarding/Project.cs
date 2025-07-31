@@ -156,6 +156,9 @@ public sealed partial class Project : IDisposable
         }
     }
 
+    [GeneratedRegex(@"^(.+ - .+ \(.+\)) \[.+\].osu$")]
+    private static partial Regex OsuFileRegex();
+
     #region Audio and Display
 
     public static readonly OsbLayer[] OsbLayers =
@@ -213,6 +216,30 @@ public sealed partial class Project : IDisposable
         AudioContainer = new(Program.AudioManager);
     }
 
+    Task reloadTask;
+
+    void runReload() => reloadTask ??= Task.Factory.StartNew(async project =>
+        {
+            var p = (Project)project;
+            while (p.effectUpdateQueue.Running) await Task.Delay(200);
+
+            await Program.Schedule(proj =>
+                {
+                    if (proj.isReloadingTextures)
+                    {
+                        proj.reloadTextures();
+                        proj.isReloadingTextures = false;
+                    }
+                    else if (proj.isReloadingAudio)
+                    {
+                        proj.reloadAudio();
+                        proj.isReloadingAudio = false;
+                    }
+                },
+                (Project)project);
+        },
+        this);
+
     #endregion
 
     #region Effects
@@ -262,7 +289,7 @@ public sealed partial class Project : IDisposable
         effects.Add(effect);
         Changed = true;
 
-        effect.OnChanged += effect_OnChanged;
+        effect.Changed += EffectChanged;
         refreshEffectsStatus();
 
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
@@ -284,17 +311,17 @@ public sealed partial class Project : IDisposable
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    string GetUniqueEffectName(ReadOnlySpan<char> baseName)
+    string GetUniqueEffectName(scoped ReadOnlySpan<char> baseName)
     {
-        var count = 1;
+        var count = 0;
         string name;
-        do name = $"{baseName} {count++}";
+        do name = $"{baseName} {++count}";
         while (effects.Exists(e => e.Name.SequenceEqual(name)));
 
         return name;
     }
 
-    void effect_OnChanged(object sender, EventArgs e)
+    void EffectChanged(object sender, EventArgs e)
     {
         if (Disposed) return;
 
@@ -307,7 +334,7 @@ public sealed partial class Project : IDisposable
     void refreshEffectsStatus()
     {
         var previousStatus = EffectsStatus;
-        var isUpdating = effectUpdateQueue is not null && effectUpdateQueue.TaskCount != 0;
+        var isUpdating = effectUpdateQueue is not null && effectUpdateQueue.Running;
 
         var hasError = false;
 
@@ -427,14 +454,28 @@ public sealed partial class Project : IDisposable
         if (previousBeatmapName is not null) SelectBeatmap(previousBeatmapId, previousBeatmapName);
     }
 
+    bool isReloadingTextures, isReloadingAudio;
+
     void mapsetManager_OnFileChanged(object sender, FileSystemEventArgs e)
     {
-        switch (Path.GetExtension(e.Name))
+        if (Disposed) return;
+
+        switch (Path.GetExtension(e.Name.AsSpan()))
         {
-            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
-            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
-            case ".osu": refreshMapset(); break;
+            case ".png" or ".jpg" or ".jpeg" when isReloadingTextures:
+            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio: return;
+
+            case ".png" or ".jpg" or ".jpeg": isReloadingTextures = true; break;
+            case ".wav" or ".mp3" or ".ogg": isReloadingAudio = true; break;
+
+            case ".osu":
+                refreshMapset();
+                return;
+
+            default: return;
         }
+
+        runReload();
     }
 
     #endregion
@@ -463,16 +504,18 @@ public sealed partial class Project : IDisposable
     {
         if (Disposed) return;
 
-        Program.Schedule(state =>
-            {
-                var (proj, ev) = state;
-                switch (Path.GetExtension(ev.Name))
-                {
-                    case ".png" or ".jpg" or ".jpeg": proj.reloadTextures(); break;
-                    case ".wav" or ".mp3" or ".ogg": proj.reloadAudio(); break;
-                }
-            },
-            (this, e));
+        switch (Path.GetExtension(e.Name.AsSpan()))
+        {
+            case ".png" or ".jpg" or ".jpeg" when isReloadingTextures:
+            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio: return;
+
+            case ".png" or ".jpg" or ".jpeg": isReloadingTextures = true; break;
+            case ".wav" or ".mp3" or ".ogg": isReloadingAudio = true; break;
+
+            default: return;
+        }
+
+        runReload();
     }
 
     #endregion
@@ -482,8 +525,11 @@ public sealed partial class Project : IDisposable
     static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(
         RuntimeEnvironment.GetRuntimeDirectory(),
         "../../../packs/{0}",
-        RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
-        string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
+        Environment.Version.ToString(),
+        "ref"));
+
+    public static readonly string RuntimeRefDirectory =
+        string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref");
 
     public static readonly string[] DefaultAssemblies =
     [
@@ -494,12 +540,7 @@ public sealed partial class Project : IDisposable
         typeof(Script).Assembly.Location,
         typeof(ValueArray<>).Assembly.Location,
         typeof(Pool<>).Assembly.Location,
-        .. Directory
-            .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
-                "*.dll")
-            .Concat(Directory.EnumerateFiles(
-                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
-                "*.dll"))
+        .. Directory.EnumerateFiles(RuntimeRefDirectory, "*.dll", SearchOption.AllDirectories)
     ];
 
     readonly PooledList<string> importedAssemblies = [];
@@ -643,11 +684,17 @@ public sealed partial class Project : IDisposable
         {
             if (version < 8) r.ReadBytes(16);
             var effectBaseName = charBuffer[..r.Read7BitEncodedInt()];
-            r.Read(effectBaseName);
+
+            var read = r.Read(effectBaseName);
+            if (read != effectBaseName.Length)
+                throw new InvalidDataException($"Corrupted project: expected {effectBaseName.Length} characters got {read}");
 
             var effect = AddScriptedEffect(effectBaseName, r.ReadBoolean());
             var effectName = charBuffer[..r.Read7BitEncodedInt()];
-            r.Read(effectName);
+
+            read = r.Read(effectName);
+            if (read != effectName.Length)
+                throw new InvalidDataException($"Corrupted project: expected {effectName.Length} characters got {read}");
 
             using (var temp = TempArray.Create<char>(effectName)) effect.Name = temp.AsReadOnlySpan();
 
@@ -701,13 +748,14 @@ public sealed partial class Project : IDisposable
             await File.WriteAllTextAsync(path,
                 "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
-        var projectDirectory = Path.GetDirectoryName(path);
+        var projectDirectory = Path.GetDirectoryName(path.AsSpan());
 
-        var gitIgnorePath = Path.Combine(projectDirectory, ".gitignore");
+        var gitIgnorePath = Path.Join(projectDirectory, ".gitignore");
+        var targetDirectory = Path.Join(projectDirectory, DataFolder);
+
         if (!File.Exists(gitIgnorePath))
             await File.WriteAllTextAsync(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
 
-        var targetDirectory = Path.Combine(projectDirectory, DataFolder);
         using SafeDirectoryWriter directoryWriter = new(targetDirectory);
         TinyObject indexRoot = new()
         {
@@ -792,9 +840,9 @@ public sealed partial class Project : IDisposable
         Changed = false;
     }
 
-    void loadText(string path)
+    void loadText(scoped ReadOnlySpan<char> path)
     {
-        var targetDirectory = Path.Combine(Path.GetDirectoryName(path), DataFolder);
+        var targetDirectory = Path.Join(Path.GetDirectoryName(path), DataFolder);
 
         SafeDirectoryReader directoryReader = new(targetDirectory);
         var indexPath = directoryReader.GetPath("index.yaml");
@@ -896,7 +944,7 @@ public sealed partial class Project : IDisposable
         return project;
     }
 
-    static Project create(ReadOnlySpan<char> projectFolderName,
+    static Project create(scoped ReadOnlySpan<char> projectFolderName,
         string mapsetPath,
         bool withCommonScripts,
         ResourceContainer resourceContainer)
@@ -1017,17 +1065,15 @@ public sealed partial class Project : IDisposable
     #region IDisposable Support
 
     public bool Disposed { get; private set; }
-    public void Dispose() => Dispose(true);
 
-    void Dispose(bool disposing)
+    public void Dispose()
     {
         if (Disposed) return;
 
-        assetWatcher.Dispose();
-
-        if (!disposing) return;
+        reloadTask?.Wait();
 
         effectUpdateQueue.Dispose();
+        assetWatcher.Dispose();
 
         foreach (var effect in effects) effect.Dispose();
         effects.Clear();
@@ -1042,9 +1088,6 @@ public sealed partial class Project : IDisposable
 
         Disposed = true;
     }
-
-    [GeneratedRegex(@"^(.+ - .+ \(.+\)) \[.+\].osu$")]
-    private static partial Regex OsuFileRegex();
 
     #endregion
 }

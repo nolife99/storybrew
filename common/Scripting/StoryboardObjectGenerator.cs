@@ -281,7 +281,7 @@ public abstract class StoryboardObjectGenerator : Script
     public SubtitleSet LoadSubtitles(string path)
     {
         context.AddDependency(Path.Combine(context.ProjectPath, path));
-        return Path.GetExtension(path) switch
+        return Path.GetExtension(path.AsSpan()) switch
         {
             ".srt" => srt.Parse(path),
             ".ssa" or ".ass" => ass.Parse(path),

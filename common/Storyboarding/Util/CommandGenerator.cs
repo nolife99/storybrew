@@ -11,8 +11,6 @@ using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
@@ -35,7 +33,7 @@ public class CommandGenerator
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
 
-    PooledList<State> states = new();
+    readonly List<State> states = new();
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -66,11 +64,14 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State StartState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[0];
+    public ref State StartState
+        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref CollectionsMarshal.AsSpan(states)[0];
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[states.Count - 1];
+    public ref State EndState => ref states.Count == 0 ?
+        ref Unsafe.NullRef<State>() :
+        ref CollectionsMarshal.AsSpan(states)[states.Count - 1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -119,7 +120,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref var state in states.AsSpan())
+        foreach (ref var state in CollectionsMarshal.AsSpan(states))
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -288,22 +289,22 @@ public class CommandGenerator
 
     void clearKeyframes()
     {
-        positions.keyframes.Dispose();
-        scales.keyframes.Dispose();
-        rotations.keyframes.Dispose();
-        colors.keyframes.Dispose();
-        fades.keyframes.Dispose();
-        finalPositions.keyframes.Dispose();
-        finalScales.keyframes.Dispose();
-        finalRotations.keyframes.Dispose();
-        finalColors.keyframes.Dispose();
-        finalFades.keyframes.Dispose();
-        flipH.keyframes.Dispose();
-        flipV.keyframes.Dispose();
-        additive.keyframes.Dispose();
+        positions.Clear(true);
+        scales.Clear(true);
+        rotations.Clear(true);
+        colors.Clear(true);
+        fades.Clear(true);
+        finalPositions.Clear(true);
+        finalScales.Clear(true);
+        finalRotations.Clear(true);
+        finalColors.Clear(true);
+        finalFades.Clear(true);
+        flipH.Clear(true);
+        flipV.Clear(true);
+        additive.Clear(true);
 
-        states.Dispose();
-        states = new();
+        states.Clear();
+        states.TrimExcess();
     }
 
     internal static Vector2 BitmapDimensions(string path)

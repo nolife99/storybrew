@@ -198,7 +198,7 @@ public class LayerList : Widget
                 showHideButton.Checked = layer.Visible;
             };
 
-            effect.OnChanged += effectChangedHandler = (_, _) =>
+            effect.Changed += effectChangedHandler = (_, _) =>
             {
                 using var text = getLayerDetails(layer, layer.Effect);
                 detailsLabel.Text = text.AsReadOnlySpan();
@@ -229,7 +229,7 @@ public class LayerList : Widget
             {
                 layer.Highlight = false;
                 layer.OnChanged -= changedHandler;
-                layer.Effect.OnChanged -= effectChangedHandler;
+                layer.Effect.Changed -= effectChangedHandler;
             };
 
             diffSpecificButton.OnClick += (_, _) => layer.DiffSpecific = !layer.DiffSpecific;

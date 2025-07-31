@@ -82,7 +82,7 @@ public class Object3d
             Coloring.ValueAt(time) * (InheritsColor ? parentState.Color : CommandColor.White),
             Opacity.ValueAt(time) * (InheritsOpacity ? parentState.Opacity : 1));
 
-        GenerateStates(time, camState, state);
+        GenerateStates(time, camState, in state);
         foreach (var child in children) child.GenerateTreeStates(time, camState, in state);
     }
 

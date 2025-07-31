@@ -25,11 +25,12 @@ public class ThrottledActionScheduler
                 return;
 
         Task.Delay(Delay)
-            .ContinueWith(_ => Program.Schedule(_ =>
-                {
-                    lock (_lock) scheduled.Remove(key);
-                    if (!action(key)) Schedule(key, action);
-                },
-                false));
+            .ContinueWith((_, state) => Program.Schedule(scheduler =>
+                    {
+                        lock (scheduler._lock) scheduler.scheduled.Remove(key);
+                        if (!action(key)) scheduler.Schedule(key, action);
+                    },
+                    (ThrottledActionScheduler)state),
+                this);
     }
 }

@@ -23,8 +23,8 @@ public class QuadRendererBuffered : IQuadRenderer
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture",
         ClipUniformName = "u_clipRect";
 
-    static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
-        VertexAttribute.CreateDiffuseCoord(),
+    static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(false),
+        VertexAttribute.CreateDiffuseCoord(true),
         VertexAttribute.CreateColor(true));
 
     readonly PooledList<long> bindlessTextures;
@@ -45,7 +45,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 8192, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 16384, int primitiveBufferSize = 0)
     {
         this.maxQuadsPerBatch = maxQuadsPerBatch;
         if (shader is null)
@@ -222,7 +222,9 @@ public class QuadRendererBuffered : IQuadRenderer
     Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
+        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters",
+            "GL_ARB_shader_storage_buffer_object",
+            "GL_ARB_shading_language_packing");
 
         if (Texture2d.BindlessTexturesSupported) sb.AddRequiredExtension("GL_ARB_bindless_texture");
 
@@ -251,7 +253,7 @@ public class QuadRendererBuffered : IQuadRenderer
                 ()
                     => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                     }, 0, 1)"),
-            new Assign(color, () => $"{sb.VertexDeclaration.GetAttribute(AttributeUsage.Color).Name}"));
+            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)));
 
         var clipRect = sb.AddFragmentVariable(ActiveUniformType.FloatVec4);
 

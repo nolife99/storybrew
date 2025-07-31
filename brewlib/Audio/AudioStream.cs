@@ -16,7 +16,7 @@ public class AudioStream : AudioChannel
     {
         const BassFlags flags = BassFlags.Decode | BassFlags.Prescan;
 
-        decodeStream = Bass.CreateStream(path, 0, 0, flags);
+        decodeStream = Bass.CreateStream(path, 0, 0, flags | BassFlags.AsyncFile);
         if (decodeStream == 0 && !Path.IsPathRooted(path))
         {
             var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);

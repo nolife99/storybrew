@@ -13,33 +13,35 @@ public sealed class AudioManager : IDisposable
 
     public AudioManager()
     {
-        Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
-        if (Bass.Init())
-        {
-            Bass.PlaybackBufferLength = 6;
-            Bass.UpdatePeriod = 5;
-
-            return;
-        }
-
-        Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
-
         var initialized = false;
-        for (var i = 0; i < Bass.DeviceCount; ++i)
+        try
         {
-            var device = Bass.GetDeviceInfo(i);
-            if (device.Driver is null || device.IsDefault) continue;
-
-            if (Bass.Init(i))
+            Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
+            if (Bass.Init())
             {
-                Bass.PlaybackBufferLength = 6;
-                Bass.UpdatePeriod = 5;
-
                 initialized = true;
-                break;
+                return;
             }
 
-            Trace.WriteLine($"Failed to initialize audio with device {i}: {Bass.LastError}");
+            Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
+
+            for (var i = 0; i < Bass.DeviceCount; ++i)
+            {
+                var device = Bass.GetDeviceInfo(i);
+                if (device.Driver is null || device.IsDefault) continue;
+
+                if (Bass.Init(i))
+                {
+                    initialized = true;
+                    return;
+                }
+
+                Trace.WriteLine($"Failed to initialize audio with device {i}: {Bass.LastError}");
+            }
+        }
+        finally
+        {
+            if (initialized) Bass.UpdateThreads = 0;
         }
 
         if (!initialized) throw new BassException(Bass.LastError);
@@ -57,11 +59,14 @@ public sealed class AudioManager : IDisposable
         }
     }
 
-    public void Update()
+    public void Update(long targetFrame)
     {
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
+            if (!channel.Completed && channel.Playing)
+                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame * 2 / TimeSpan.TicksPerMillisecond));
+
             if (!channel.Temporary || !channel.Completed)
             {
                 if (channel.Playing &&

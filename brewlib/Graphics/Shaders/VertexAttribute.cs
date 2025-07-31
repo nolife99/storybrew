@@ -41,16 +41,39 @@ public class VertexAttribute
         Normalized,
         Usage);
 
-    public static VertexAttribute CreatePosition2d()
-        => new() { Name = PositionAttributeName, ComponentCount = 2, Usage = AttributeUsage.Position };
+    public static VertexAttribute CreatePosition2d(bool packed) => packed ?
+        new()
+        {
+            Name = PositionAttributeName,
+            ComponentCount = 2,
+            ComponentSize = 2,
+            Type = VertexAttribPointerType.HalfFloat,
+            Usage = AttributeUsage.Position
+        } :
+        new() { Name = PositionAttributeName, ComponentCount = 2, Usage = AttributeUsage.Position };
+
+    public static VertexAttribute CreatePosition2dPacked() => new()
+    {
+        Name = PositionAttributeName,
+        ComponentCount = 2,
+        ComponentSize = 2,
+        Type = VertexAttribPointerType.HalfFloat,
+        Usage = AttributeUsage.Position
+    };
 
     public static VertexAttribute CreatePosition3d()
         => new() { Name = PositionAttributeName, ComponentCount = 3, Usage = AttributeUsage.Position };
 
-    public static VertexAttribute CreateDiffuseCoord(int index = 0) => new()
-    {
-        Name = TextureCoordAttributeName + index, ComponentCount = 2, Usage = AttributeUsage.DiffuseMapCoord
-    };
+    public static VertexAttribute CreateDiffuseCoord(bool packed, int index = 0) => packed ?
+        new()
+        {
+            Name = TextureCoordAttributeName + index,
+            ComponentCount = 2,
+            ComponentSize = 2,
+            Type = VertexAttribPointerType.HalfFloat,
+            Usage = AttributeUsage.DiffuseMapCoord
+        } :
+        new() { Name = TextureCoordAttributeName + index, ComponentCount = 2, Usage = AttributeUsage.DiffuseMapCoord };
 
     public static VertexAttribute CreateColor(bool packed) => packed ?
         new()

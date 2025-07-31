@@ -124,7 +124,7 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
                 return;
             }
 
-            if (_size > 0) Array.Copy(_items, newItems, _size);
+            this.AsReadOnlySpan().CopyTo(newItems);
 
             ReturnArray(newItems);
         }

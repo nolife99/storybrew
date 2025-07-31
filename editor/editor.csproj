@@ -57,12 +57,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\brewlib\bass\$(Platform)\*.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\brewlib\brewlib.csproj"/>
         <ProjectReference Include="..\common\common.csproj"/>
         <ProjectReference Include="..\tiny\tiny.csproj"/>

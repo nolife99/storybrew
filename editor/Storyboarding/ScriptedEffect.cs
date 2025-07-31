@@ -88,7 +88,7 @@ public class ScriptedEffect : Effect
                         localScript.UpdateConfiguration(localEffect.Config);
                         localEffect.configScriptIdentifier = localScript.Identifier;
 
-                        localEffect.RaiseConfigFieldsChanged();
+                        localEffect.OnConfigFieldsChanged();
                     }
                     else localScript.ApplyConfiguration(localEffect.Config);
                 },
@@ -199,7 +199,7 @@ public class ScriptedEffect : Effect
             statusMessage.AddRange(log);
         }
 
-        var task = Program.Schedule(ef => ef.RaiseChanged(), this);
+        var task = Program.Schedule(ef => ef.OnChanged(), this);
         statusStopwatch = Environment.TickCount64;
         return task;
     }

@@ -1,8 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
+using System;
 using BrewLib.Graphics.Cameras;
 
-public interface IRenderer
+public interface IRenderer : IDisposable
 {
     ICamera Camera { get; set; }
 

@@ -1,20 +1,20 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic;
 
 public sealed class TextureMultiAtlas2d : IDisposable
 {
     static bool firstOversize = true;
 
-    readonly List<TextureAtlas2d> atlases = [];
+    readonly PooledList<TextureAtlas2d> atlases = [];
     readonly string description;
     readonly TextureOptions textureOptions;
     readonly int width, height, padding;
-    List<Texture2d> oversizeTextures;
+    PooledList<Texture2d> oversizeTextures;
 
     public TextureMultiAtlas2d(int width,
         int height,
@@ -69,10 +69,14 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (disposed) return;
 
-        foreach (var atlas in atlases) atlas.Dispose();
+        using (atlases)
+            foreach (var atlas in atlases)
+                atlas.Dispose();
+
         if (oversizeTextures is not null)
-            foreach (var texture in oversizeTextures)
-                texture.Dispose();
+            using (oversizeTextures)
+                foreach (var texture in oversizeTextures)
+                    texture.Dispose();
 
         disposed = true;
     }

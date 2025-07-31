@@ -197,7 +197,7 @@ public partial class EffectList : Widget
         updateStatusButton(statusButton, effect);
 
         EventHandler changedHandler;
-        effect.OnChanged += changedHandler = (_, _) =>
+        effect.Changed += changedHandler = (_, _) =>
         {
             nameLabel.Text = effect.Name;
 
@@ -226,7 +226,7 @@ public partial class EffectList : Widget
         effectWidget.OnDisposed += (_, _) =>
         {
             effect.Highlight = false;
-            effect.OnChanged -= changedHandler;
+            effect.Changed -= changedHandler;
         };
 
         statusButton.OnClick += (_, _) =>

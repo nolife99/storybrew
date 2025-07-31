@@ -3,11 +3,14 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;
@@ -86,8 +89,29 @@ public class StartMenu : UiScreenLayer
             ]
         });
 
-        newProjectButton.OnClick += (_, _) => Manager.Add(new NewProjectMenu());
-        openProjectButton.OnClick += (_, _) => Manager.ShowOpenProject();
+        var sdkPath = Project.RuntimeRefDirectory;
+        if (Directory.Exists(sdkPath))
+        {
+            newProjectButton.OnClick += (_, _) => Manager.Add(new NewProjectMenu());
+            openProjectButton.OnClick += (_, _) => Manager.ShowOpenProject();
+        }
+        else
+        {
+            newProjectButton.Disabled = true;
+            openProjectButton.Disabled = true;
+
+            Trace.WriteLine(
+                $".NET SDK {Environment.Version} not found at {sdkPath} from {RuntimeEnvironment.GetRuntimeDirectory()}");
+
+            Manager.ShowMessage(
+                $".NET SDK {Environment.Version} x64 (or more recent) is required, do you want to install it?",
+                () => Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://dotnet.microsoft.com/en-us/download/dotnet/9.0", UseShellExecute = true
+                }),
+                true);
+        }
+
         wikiButton.OnClick += (_, _) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
         discordButton.OnClick += (_, _) => NetHelper.OpenUrl(Program.DiscordUrl);
         closeButton.OnClick += (_, _) => Exit();

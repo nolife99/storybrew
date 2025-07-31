@@ -60,8 +60,9 @@ public sealed class TextureContainerAtlas : TextureContainer
         if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
 
         var str = filename.ToString();
-        return textures[str] = Add(Texture2d.LoadBitmap(str, resourceContainer),
-            textureOptions ?? Texture2d.LoadTextureOptions(str, resourceContainer));
+
+        using var bitmap = Texture2d.LoadBitmap(str, resourceContainer);
+        return textures[str] = Add(bitmap, textureOptions ?? Texture2d.LoadTextureOptions(str, resourceContainer));
     }
 
     public Texture2dRegion Add(Image<Rgba32> bitmap, TextureOptions options)

@@ -137,6 +137,7 @@ public static class DrawState
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
+        Trace.WriteLine($"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
 
         if (!Texture2d.BindlessTexturesSupported)
         {
@@ -156,6 +157,7 @@ public static class DrawState
     public static void Cleanup()
     {
         WhitePixel.Dispose();
+        TransparentPixel.Dispose();
         TextFontManager.Dispose();
         TextGenerator.Dispose();
         capabilityCache.Dispose();

@@ -101,6 +101,7 @@ public ref struct TempList<T>
 
     public int Capacity
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _items.Length;
         set
         {
@@ -145,8 +146,9 @@ public ref struct TempList<T>
 
     internal ref T _ref;
 
-    public ref T this[int index]
+    public readonly ref T this[int index]
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
@@ -160,10 +162,12 @@ public ref struct TempList<T>
         _version++;
         var array = _items;
         var size = _size;
+        ref var reference = ref _ref;
+
         if ((uint)size < (uint)array.Length)
         {
             _size = size + 1;
-            array[size] = item;
+            Unsafe.Add(ref reference, size) = item;
         }
         else
         {
@@ -258,15 +262,19 @@ public ref struct TempList<T>
 
     public readonly bool Exists(Predicate<T> match) => FindIndex(match) != -1;
 
-    public readonly T Find(Predicate<T> match)
+    public readonly T Find(Func<T, bool> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
-        var items = _items;
+        ref var start = ref _ref;
+        ref var end = ref Unsafe.Add(ref start, _size);
 
-        for (var i = 0; i < _size; i++)
-            if (match(items[i]))
-                return items[i];
+        while (Unsafe.IsAddressLessThan(ref start, ref end))
+        {
+            if (match(start)) return start;
+
+            start = ref Unsafe.Add(ref start, 1);
+        }
 
         return default;
     }
@@ -501,20 +509,20 @@ public ref struct TempList<T>
         ArgumentNullException.ThrowIfNull(match);
 
         var freeIndex = 0;
-        var items = _items;
+        ref var reference = ref _ref;
 
-        while (freeIndex < _size && !match(items[freeIndex])) freeIndex++;
+        while (freeIndex < _size && !match(Unsafe.Add(ref reference, freeIndex))) freeIndex++;
         if (freeIndex >= _size) return 0;
 
         var current = freeIndex + 1;
         while (current < _size)
         {
-            while (current < _size && match(items[current])) current++;
+            while (current < _size && match(Unsafe.Add(ref reference, current))) ++current;
 
-            if (current < _size) items[freeIndex++] = items[current++];
+            if (current < _size) Unsafe.Add(ref reference, freeIndex++) = Unsafe.Add(ref reference, current++);
         }
 
-        if (s_clearItems) Array.Clear(_items, freeIndex, _size - freeIndex);
+        if (s_clearItems) MemoryMarshal.CreateSpan(ref Unsafe.Add(ref reference, freeIndex), _size - freeIndex).Clear();
 
         var result = _size - freeIndex;
         _size = freeIndex;
@@ -527,7 +535,7 @@ public ref struct TempList<T>
         if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
         _size--;
         if (index < _size) Array.Copy(_items, index + 1, _items, index, _size - index);
-        if (s_clearItems) _items[_size] = default!;
+        if (s_clearItems) Unsafe.Add(ref _ref, _size) = default;
         _version++;
     }
 
@@ -631,7 +639,7 @@ public ref struct TempList<T>
         public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref _list._items[_index];
+            get => ref _list[_index];
         }
 
         T IEnumerator<T>.Current => Current;
@@ -674,7 +682,7 @@ public ref struct TempList<T>
         _size += count;
         _version++;
 
-        var output = _items.AsSpan(index, count);
+        var output = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref _ref, index), count);
 
         if (clearSpan && s_clearItems) output.Clear();
 
@@ -732,7 +740,7 @@ public ref struct TempList<T>
         src.Slice(index, count).CopyTo(dest.Slice(destIndex, count));
     }
 
-    public readonly void ConvertAll<TOut>(scoped ref TempList<TOut> output, Converter<T, TOut> converter)
+    public readonly void ConvertAll<TOut>(scoped ref TempList<TOut> output, Func<T, TOut> converter)
     {
         ArgumentNullException.ThrowIfNull(converter);
 
@@ -741,7 +749,7 @@ public ref struct TempList<T>
         for (var i = 0; i < _size; i++) output.Add(converter(items[i]));
     }
 
-    public readonly void FindAll(scoped ref TempList<T> output, Predicate<T> match)
+    public readonly void FindAll(scoped ref TempList<T> output, Func<T, bool> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -769,7 +777,7 @@ public ref struct TempList<T>
         return false;
     }
 
-    public readonly bool TryFindLast(Predicate<T> match, out T result)
+    public readonly bool TryFindLast(Func<T, bool> match, out T result)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -800,4 +808,40 @@ public ref struct TempList<T>
         _size = 0;
         _version++;
     }
+}
+
+public static class TempList
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>() => new(0, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(ArrayPool<T> pool) => new(0, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool)
+        => new(collection, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(T[] items) => new(new ReadOnlySpan<T>(items), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool)
+        => new(new ReadOnlySpan<T>(items), pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
+        => new(span, pool ?? ArrayPool<T>.Shared);
 }

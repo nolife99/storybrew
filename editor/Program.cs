@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
+using ManagedBass;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -71,12 +72,6 @@ public static class Program
         using (var window = createWindow(displayDevice))
         {
             using Editor editor = new(window);
-            window.Refresh += () =>
-            {
-                editor.Draw();
-                window.Context.SwapBuffers();
-            };
-
             using (NetHelper.Client = new())
             {
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
@@ -85,12 +80,21 @@ public static class Program
                 Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
 
                 using (AudioManager = createAudioManager())
+                {
+                    var frameRate = TimeSpan.TicksPerSecond /
+                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate);
+
+                    window.Move += _ => refresh();
+                    window.Resize += _ => refresh();
+
                     runMainLoop(window,
                         editor,
                         TimeSpan.TicksPerSecond /
                         (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
-                        TimeSpan.TicksPerSecond /
-                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
+                        frameRate);
+
+                    void refresh() => Bass.UpdateThreads = 1;
+                }
             }
         }
 
@@ -150,7 +154,7 @@ public static class Program
             var fixedUpdates = 0;
 
             GLFW.PollEvents();
-            AudioManager.Update();
+            AudioManager.Update(targetFrame);
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
             {
@@ -158,7 +162,8 @@ public static class Program
                 editor.Update(fixedRate / (float)TimeSpan.TicksPerSecond);
             }
 
-            if (exiting) return;
+            if (window.IsFocused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
+                editor.Update(cur / (float)TimeSpan.TicksPerSecond, false);
 
             var draws = editor.Draw();
             windowContext.SwapBuffers();
@@ -169,7 +174,12 @@ public static class Program
             var active = Stopwatch.GetTimestamp() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Thread.Sleep((int)(sleepTime / TimeSpan.TicksPerMillisecond));
+            if (sleepTime > 0)
+            {
+                Thread.Sleep((int)(sleepTime / TimeSpan.TicksPerMillisecond));
+                Bass.UpdateThreads = 0;
+            }
+            else Bass.UpdateThreads = 1;
 
             var frameTime = cur - prev;
             prev = cur;
@@ -228,7 +238,7 @@ public static class Program
     const string DefaultLogPath = "logs";
 
     static readonly Lock errorHandlerLock = new();
-    static volatile bool insideErrorHandler;
+    static bool insideErrorHandler;
 
     static void setupLogging(string logsPath = null, string commonLogFilename = null)
     {
@@ -249,7 +259,7 @@ public static class Program
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
 
         Trace.Listeners.Add(listener);
-        Trace.WriteLine($"{FullName}\n");
+        Trace.WriteLine(FullName);
 
         Timer timer = new(s => ((TraceListener)s)!.Flush(), listener, 5000, 1000);
 
@@ -264,7 +274,9 @@ public static class Program
     {
         lock (errorHandlerLock)
         {
-            if (Interlocked.CompareExchange(ref insideErrorHandler, true, false)) return;
+            if (insideErrorHandler) return;
+
+            insideErrorHandler = true;
 
             using StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true);
             try
@@ -294,7 +306,7 @@ public static class Program
             }
             finally
             {
-                Interlocked.CompareExchange(ref insideErrorHandler, false, true);
+                insideErrorHandler = false;
             }
         }
     }

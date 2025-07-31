@@ -4,9 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using StorybrewCommon.Scripting;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using System.Runtime.InteropServices;
 using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary> A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>. </summary>
@@ -16,7 +14,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 {
     readonly TValue _defaultValue;
     readonly Func<TValue, TValue, float, TValue> _interpolate;
-    internal PooledList<Keyframe<TValue>> keyframes = new();
+    internal List<Keyframe<TValue>> keyframes = [];
 
     /// <summary> A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>. </summary>
     /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
@@ -25,8 +23,6 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         _interpolate = interpolate;
         _defaultValue = defaultValue;
-
-        if (StoryboardObjectGenerator.Current is not null) StoryboardObjectGenerator.Current.disposables.Add(keyframes);
     }
 
     ///<summary> Returns the time of the first keyframe. </summary>
@@ -53,7 +49,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     IEnumerator<Keyframe<TValue>> IEnumerable<Keyframe<TValue>>.GetEnumerator() => keyframes.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
 
-    public PooledList<Keyframe<TValue>>.Enumerator GetEnumerator() => keyframes.GetEnumerator();
+    public List<Keyframe<TValue>>.Enumerator GetEnumerator() => keyframes.GetEnumerator();
 
     /// <summary> Adds a keyframe to the keyframed value. </summary>
     /// <param name="keyframe"> The keyframe to add. </param>
@@ -170,7 +166,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         if (keyframes.Count == 0) return;
 
-        var span = keyframes.AsReadOnlySpan();
+        var span = CollectionsMarshal.AsSpan(keyframes);
 
         var startTime = explicitStartTime ?? span[0].Time;
         var endTime = explicitEndTime ?? span[^1].Time;
@@ -350,7 +346,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         if (tolerance <= .00001f)
         {
-            PooledList<Keyframe<TValue>> unionKeyframes = new();
+            List<Keyframe<TValue>> unionKeyframes = new();
             var comparer = EqualityComparer<TValue>.Default;
 
             for (var i = 0; i < keyframes.Count; ++i)
@@ -373,7 +369,6 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
                 }
             }
 
-            keyframes.Dispose();
             keyframes = unionKeyframes;
             return;
         }
@@ -391,22 +386,15 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             return;
         }
 
-        PooledList<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
+        List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
         foreach (var t in keep) simplifiedKeyframes.Add(keyframes[t]);
         keep.Dispose();
 
-        if (StoryboardObjectGenerator.Current is not null)
-        {
-            StoryboardObjectGenerator.Current.disposables.Remove(keyframes);
-            StoryboardObjectGenerator.Current.disposables.Add(simplifiedKeyframes);
-        }
-
-        keyframes.Dispose();
         keyframes = simplifiedKeyframes;
     }
 
-    static void getSimplifiedKeyframeIndices<TState>(PooledList<Keyframe<TValue>> span,
+    static void getSimplifiedKeyframeIndices<TState>(List<Keyframe<TValue>> span,
         ref TempList<int> keep,
         int first,
         int last,
@@ -439,6 +427,8 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             stack.Push((first, indexFar));
             keep.Add(indexFar);
             stack.Push((indexFar, last));
+
+            if (stack.Count > 5000) throw new InvalidOperationException("Simplification stack overflow");
         }
     }
 

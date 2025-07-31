@@ -56,7 +56,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
-        var forceVisible = !sprite.InDisplayInterval(time) && Native.Window.IsKeyDown(Keys.LeftAlt);
+        var forceVisible = !sprite.InDisplayInterval(time) && Native.Window.KeyboardState.IsKeyDown(Keys.LeftAlt);
 
         var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
         if (forceVisible) fade = float.Max(fade, .5f);

@@ -323,6 +323,7 @@ public sealed class FontGenerator : IDisposable
                 });
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
+        StoryboardObjectGenerator.Current.disposables.Add(realText);
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }

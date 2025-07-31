@@ -51,7 +51,7 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
         {
             case ISpanFormattable:
                 buffer.GetUnsafe(out var array, out var count);
-                var bufferSize = buffer.Capacity - count;
+                var bufferSize = array.Length - count;
 
                 Span<char> write = new(array, count, bufferSize);
 
@@ -68,7 +68,9 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
                 void Grow(scoped ref TempList<char> buf, scoped ref Span<char> destBuf)
                 {
-                    bufferSize = buf.Capacity < Array.MaxLength ? bufferSize << 1 : throw new InsufficientMemoryException();
+                    bufferSize = buf.Capacity < Array.MaxLength ?
+                        int.Max(bufferSize << 1, 2) :
+                        throw new InsufficientMemoryException();
 
                     buf.EnsureCapacity(buf.Count + bufferSize);
                     buf.GetUnsafe(out array, out _);

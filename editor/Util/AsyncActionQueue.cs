@@ -27,6 +27,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
 
+    public bool Running => !context.Queue.IsEmpty || !context.Running.IsEmpty;
     public int TaskCount => context.Queue.Count + context.Running.Count;
 
     public event Action<T, Exception> OnActionFailed

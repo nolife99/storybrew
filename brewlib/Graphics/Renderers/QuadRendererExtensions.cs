@@ -1,5 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -60,14 +61,14 @@ public static class QuadRendererExtensions
             vec2 = Unsafe.Add(ref cornersRef, 1) + xy,
             vec3 = Unsafe.Add(ref cornersRef, 2) + xy,
             vec4 = Unsafe.Add(ref cornersRef, 3) + xy,
-            u1 = textureU0U1.X,
-            u2 = textureU0U1.X,
-            u3 = textureU0U1.Y,
-            u4 = textureU0U1.Y,
-            v1 = textureV0V1.X,
-            v2 = textureV0V1.Y,
-            v3 = textureV0V1.Y,
-            v4 = textureV0V1.X,
+            u1 = (Half)textureU0U1.X,
+            u2 = (Half)textureU0U1.X,
+            u3 = (Half)textureU0U1.Y,
+            u4 = (Half)textureU0U1.Y,
+            v1 = (Half)textureV0V1.X,
+            v2 = (Half)textureV0V1.Y,
+            v3 = (Half)textureV0V1.Y,
+            v4 = (Half)textureV0V1.X,
             color1 = rgba,
             color2 = rgba,
             color3 = rgba,

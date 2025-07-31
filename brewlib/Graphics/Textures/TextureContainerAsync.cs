@@ -72,9 +72,8 @@ public sealed class TextureContainerAsync : TextureContainer
     {
         if (disposed) return;
 
-        foreach (var texture in textures.Values)
-            if (texture.IsLoaded)
-                texture.Result.Dispose();
+        uploadQueue.Clear();
+        foreach (var texture in textures.Values) texture.Result?.Dispose();
 
         textures.Dispose();
         disposed = true;
@@ -161,13 +160,13 @@ sealed class TextureUploadQueue : IDisposable
 
                     queued.IsLoaded = true;
                 }
-            }) { IsBackground = true };
+            });
 
             threads.Add(thread);
 
             thread.UnsafeStart(window.Context);
 
-            Trace.WriteLine($"Started texture upload thread {i}");
+            Trace.WriteLine($"Started texture upload thread {i + 1}");
         }
 
         Native.Window.Context.MakeCurrent();
@@ -185,6 +184,8 @@ sealed class TextureUploadQueue : IDisposable
         threads.Dispose();
         contexts.Dispose();
     }
+
+    public void Clear() => queuedUploads.Clear();
 
     void Signal()
     {

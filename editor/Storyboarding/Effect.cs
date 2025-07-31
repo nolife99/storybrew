@@ -17,6 +17,8 @@ public abstract class Effect : IDisposable
     ValueArray<char> name = ValueArray.Create<char>("Unnamed Effect");
     EditorStoryboardLayer placeHolderLayer;
 
+    bool willRefresh;
+
     public Effect(Project project)
     {
         Project = project;
@@ -43,7 +45,7 @@ public abstract class Effect : IDisposable
             name.Dispose();
             name = ValueArray.Create(value);
 
-            RaiseChanged();
+            OnChanged();
             refreshLayerNames();
         }
     }
@@ -77,10 +79,10 @@ public abstract class Effect : IDisposable
         }
     }
 
-    public event EventHandler OnChanged, OnConfigFieldsChanged;
+    public event EventHandler Changed, ConfigFieldsChanged;
 
-    protected void RaiseChanged() => OnChanged?.Invoke(this, EventArgs.Empty);
-    protected void RaiseConfigFieldsChanged() => OnConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
+    protected void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
+    protected void OnConfigFieldsChanged() => ConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
 
     public void AddPlaceholder(EditorStoryboardLayer layer)
     {
@@ -112,14 +114,42 @@ public abstract class Effect : IDisposable
         refreshLayerNames();
 
         EstimatedSize = layers.Sum(layer => layer.EstimatedSize);
-        RaiseChanged();
+        OnChanged();
     }
 
     public void Refresh()
     {
-        if (Project.Disposed) return;
+        if (Project.Disposed || willRefresh) return;
 
-        Project.QueueEffectUpdate(this);
+        if (Status is EffectStatus.Ready
+            or EffectStatus.UpdateCanceled
+            or EffectStatus.CompilationFailed
+            or EffectStatus.LoadingFailed
+            or EffectStatus.ExecutionFailed) Project.QueueEffectUpdate(this);
+        else QueueStatusCheckForUpdate();
+    }
+
+    void QueueStatusCheckForUpdate()
+    {
+        willRefresh = true;
+        Changed += OnStatusChangedForQueuedUpdate;
+
+        return;
+
+        void OnStatusChangedForQueuedUpdate(object sender, EventArgs e)
+        {
+            var ef = (Effect)sender;
+            if (ef.Status is not (EffectStatus.Ready
+                or EffectStatus.UpdateCanceled
+                or EffectStatus.CompilationFailed
+                or EffectStatus.LoadingFailed
+                or EffectStatus.ExecutionFailed)) return;
+
+            ef.Changed -= OnStatusChangedForQueuedUpdate;
+            ef.Project.QueueEffectUpdate(ef);
+
+            willRefresh = false;
+        }
     }
 
     public abstract ValueTask Update(CancellationTokenSource cts);
