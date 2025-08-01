@@ -3,24 +3,24 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct TempArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
-    [NonSerialized] public readonly bool ClearValues;
+    public readonly bool ClearEntries, ClearValues;
 
-    [NonSerialized] public readonly ArrayEntry<TKey>[] Entries;
-    [NonSerialized] public readonly TValue[] Values;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<TKey>[] Entries;
+    public readonly TValue[] Values;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
+    public readonly ArrayPool<TValue> ValuePool;
+    public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayDictionaryInternalsRefUnsafe(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -40,52 +40,45 @@ public readonly struct TempArrayDictionaryInternalsRefUnsafe<TKey, TValue>
     }
 }
 
-partial class TempCollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(
+    public static TempArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
         this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out Span<ArrayEntry<TKey>> keys,
         out Span<TValue> values)
     {
-        keys = source._entries.AsSpan(0, source.Count);
-        values = source._values.AsSpan(0, source.Count);
+        keys = KeysAsSpan(in source);
+        values = ValuesAsSpan(in source);
     }
 
-    /// <summary> Returns the internal Keys array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<TKey>> KeysAsSpan<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._freeEntryIndex);
 
-    /// <summary> Returns the internal Values array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<TValue> ValuesAsSpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
-        => source._values.AsSpan(0, source.Count);
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsMemory<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out Memory<ArrayEntry<TKey>> keys,
         out Memory<TValue> values)
     {
-        keys = source._entries.AsMemory(0, source.Count);
-        values = source._values.AsMemory(0, source.Count);
+        keys = KeysAsMemory(in source);
+        values = ValuesAsMemory(in source);
     }
 
-    /// <summary> Returns the internal Keys array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<TKey>> KeysAsMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._entries, 0, source.Count);
 
-    /// <summary> Returns the internal Values array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<TValue> ValuesAsMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._values.AsMemory(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._values, 0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,

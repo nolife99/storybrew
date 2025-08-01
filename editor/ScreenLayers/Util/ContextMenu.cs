@@ -6,8 +6,8 @@ using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class ContextMenu<T> : UiScreenLayer
 {

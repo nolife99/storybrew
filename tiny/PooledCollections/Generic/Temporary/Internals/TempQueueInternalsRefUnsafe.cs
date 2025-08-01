@@ -2,16 +2,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct TempQueueInternalsRefUnsafe<T>
 {
-    [NonSerialized] public readonly int Head;
-    [NonSerialized] public readonly int Tail;
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
+    public readonly int Head, Tail, Size, Version;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempQueueInternalsRefUnsafe(scoped ref readonly TempQueue<T> source)
     {
         Head = source._head;
@@ -23,28 +22,25 @@ public readonly struct TempQueueInternalsRefUnsafe<T>
     }
 }
 
-partial class TempCollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempQueueInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempQueue<T> source) => new(in source);
+    public static TempQueueInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly TempQueue<T> source)
+        => new(in source);
 
-    /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
-        return source._array.AsSpan(0, source._size);
+        return MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
     }
 
-    /// <summary> Returns the internal array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
-        return source._array.AsMemory(0, source._size);
+        return new(source._array, 0, source._size);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

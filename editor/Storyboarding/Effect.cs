@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public abstract class Effect : IDisposable
 {

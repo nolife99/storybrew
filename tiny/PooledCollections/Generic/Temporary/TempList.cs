@@ -13,6 +13,42 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
+public static class TempList
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>() => new(0, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(ArrayPool<T> pool) => new(0, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool)
+        => new(collection, pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(T[] items) => new(new ReadOnlySpan<T>(items), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool)
+        => new(new ReadOnlySpan<T>(items), pool ?? ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
+    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
+        => new(span, pool ?? ArrayPool<T>.Shared);
+}
+
 public ref struct TempList<T>
 {
     const int DefaultCapacity = 4;
@@ -616,6 +652,7 @@ public ref struct TempList<T>
         int _index;
         readonly int _version;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Enumerator(scoped ref readonly TempList<T> list)
         {
             _list = list;
@@ -639,7 +676,7 @@ public ref struct TempList<T>
         public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref _list[_index];
+            get => ref Unsafe.Add(ref _list._ref, _index);
         }
 
         T IEnumerator<T>.Current => Current;
@@ -808,40 +845,4 @@ public ref struct TempList<T>
         _size = 0;
         _version++;
     }
-}
-
-public static class TempList
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>() => new(0, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(ArrayPool<T> pool) => new(0, pool ?? ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool ?? ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool)
-        => new(collection, pool ?? ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(T[] items) => new(new ReadOnlySpan<T>(items), ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool)
-        => new(new ReadOnlySpan<T>(items), pool ?? ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
-    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
-    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
-        => new(span, pool ?? ArrayPool<T>.Shared);
 }

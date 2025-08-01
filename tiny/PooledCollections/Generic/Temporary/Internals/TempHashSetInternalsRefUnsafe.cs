@@ -3,23 +3,22 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct TempHashSetInternalsRefUnsafe<T>
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<T>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<T> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<T>[] Entries;
+    public readonly IEqualityComparer<T> Comparer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempHashSetInternalsRefUnsafe(scoped ref readonly TempHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -37,22 +36,18 @@ public readonly struct TempHashSetInternalsRefUnsafe<T>
     }
 }
 
-partial class TempCollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSetInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempHashSet<T> source)
+    public static TempHashSetInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly TempHashSet<T> source)
         => new(in source);
 
-    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<T>> AsSpan<T>(this scoped ref readonly TempHashSet<T> source)
-        => source._entries.AsSpan(0, source._count);
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._count);
 
-    /// <summary> Returns the internal <see cref="Entry{T}"/> array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<T>> AsMemory<T>(this scoped ref readonly TempHashSet<T> source)
-        => source._entries.AsMemory(0, source._count);
+        => new(source._entries, 0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly TempHashSet<T> source, out Entry<T>[] entries, out int count)
@@ -61,24 +56,10 @@ partial class TempCollectionInternalsUnsafe
         count = source._count;
     }
 
-    /// <summary>
-    ///     Gets either a ref to a <typeparamref name="T"/> in the <see cref="TempHashSet{T}"/> or a ref null if it does not
-    ///     exist in the <paramref name="set"/>.
-    /// </summary>
-    /// <param name="set"> The set to get the ref to <typeparamref name="T"/> from. </param>
-    /// <param name="equalValue"> The value to search for. </param>
-    /// <remarks>
-    ///     Items should not be added or removed from the <see cref="TempHashSet{T}"/> while the ref <typeparamref name="T"/>
-    ///     is in use. The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
-    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref T GetValueRefOrNullRef<T>(this scoped ref TempHashSet<T> set, T equalValue) where T : notnull
+    public static ref T GetValueRefOrNullRef<T>(this scoped ref readonly TempHashSet<T> set, T equalValue) where T : notnull
         => ref set.FindValue(equalValue);
 
-    /// <summary> Adds the specified element to the set if it's not already contained. </summary>
-    /// <param name="value"> The element to add to the set. </param>
-    /// <param name="location"> The index into <see cref="_entries"/> of the element. </param>
-    /// <returns> true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present. </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool AddIfNotPresent<T>(this scoped ref TempHashSet<T> set, T value, out int location)
         => set.AddIfNotPresent(value, out location);

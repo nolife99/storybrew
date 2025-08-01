@@ -2,10 +2,10 @@
 
 using System;
 using System.Numerics;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 /// <summary> Represents a bézier curve defined by a set of control points. </summary>
 public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve

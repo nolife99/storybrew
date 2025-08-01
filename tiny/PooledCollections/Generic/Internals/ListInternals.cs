@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct ListInternals<T> : IDisposable
 {
@@ -10,6 +11,7 @@ public readonly struct ListInternals<T> : IDisposable
     public readonly T[] Items;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ListInternals(PooledList<T> source)
     {
         Size = source._size;
@@ -27,11 +29,9 @@ public readonly struct ListInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static ListInternals<T> TransferOwner<T>(PooledList<T> source)
+    public static ListInternals<T> TransferOwner<T>(this PooledList<T> source)
     {
-        var internals = new ListInternals<T>(source);
+        ListInternals<T> internals = new(source);
 
         source._items = null;
         source.Dispose();

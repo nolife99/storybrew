@@ -3,6 +3,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 {
@@ -19,6 +20,7 @@ public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
     public readonly ArrayPool<TValue> ValuePool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ArrayDictionaryInternalsRefUnsafe(ArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -38,52 +40,44 @@ public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
     }
 }
 
-partial class CollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(ArrayDictionary<TKey, TValue> source)
-        => new(source);
+    public static ArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
+        this ArrayDictionary<TKey, TValue> source) => new(source);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,
         out Span<ArrayEntry<TKey>> keys,
         out Span<TValue> values)
     {
-        keys = source._entries.AsSpan(0, source.Count);
-        values = source._values.AsSpan(0, source.Count);
+        keys = KeysAsSpan(source);
+        values = ValuesAsSpan(source);
     }
 
-    /// <summary> Returns the internal Keys array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<TKey>> KeysAsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
-        => source._entries.AsSpan(0, source.Count);
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._freeEntryIndex);
 
-    /// <summary> Returns the internal Values array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<TValue> ValuesAsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
-        => source._values.AsSpan(0, source.Count);
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,
         out Memory<ArrayEntry<TKey>> keys,
         out Memory<TValue> values)
     {
-        keys = source._entries.AsMemory(0, source.Count);
-        values = source._values.AsMemory(0, source.Count);
+        keys = KeysAsMemory(source);
+        values = ValuesAsMemory(source);
     }
 
-    /// <summary> Returns the internal Keys array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<TKey>> KeysAsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
-        => source._entries.AsMemory(0, source.Count);
+        => new(source._entries, 0, source.Count);
 
-    /// <summary> Returns the internal Values array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<TValue> ValuesAsMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
-        => source._values.AsMemory(0, source.Count);
+        => new(source._values, 0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,

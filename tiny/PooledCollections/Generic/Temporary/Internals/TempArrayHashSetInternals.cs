@@ -2,22 +2,23 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct TempArrayHashSetInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly ArrayEntry<T>[] Entries;
-    [NonSerialized] public readonly int[] Buckets;
+    public readonly ArrayEntry<T>[] Entries;
+    public readonly int[] Buckets;
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<ArrayEntry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
 
-    internal TempArrayHashSetInternals(in TempArrayHashSet<T> source)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal TempArrayHashSetInternals(scoped ref readonly TempArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -34,30 +35,20 @@ public readonly struct TempArrayHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets is not null)
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (Entries is not null)
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static TempArrayHashSetInternals<T> TransferOwner<T>(ref TempArrayHashSet<T> source)
+    public static TempArrayHashSetInternals<T> TransferOwner<T>(this scoped ref TempArrayHashSet<T> source)
     {
-        var internals = new TempArrayHashSetInternals<T>(source);
+        TempArrayHashSetInternals<T> internals = new(ref source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempArrayHashSet<T>>();
 
         return internals;
     }

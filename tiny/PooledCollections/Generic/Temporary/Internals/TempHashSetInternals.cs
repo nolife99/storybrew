@@ -3,26 +3,25 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public readonly struct TempHashSetInternals<T> : IDisposable
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<T>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<T> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<T>[] Entries;
+    public readonly IEqualityComparer<T> Comparer;
 
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
-    [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<Entry<T>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempHashSetInternals(scoped ref readonly TempHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -43,30 +42,20 @@ public readonly struct TempHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets is not null)
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (Entries is not null)
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempHashSetInternals<T> TransferOwner<T>(this scoped ref TempHashSet<T> source)
     {
-        var internals = new TempHashSetInternals<T>(in source);
+        TempHashSetInternals<T> internals = new(in source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempHashSet<T>>();
 
         return internals;
     }

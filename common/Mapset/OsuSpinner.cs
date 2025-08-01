@@ -2,9 +2,9 @@
 
 using System.Globalization;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 /// <summary> Represents an osu! spinner. </summary>
 public record OsuSpinner : OsuHitObject

@@ -3,7 +3,7 @@
 using System;
 using System.Globalization;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 ///<summary> Represents a control point in an osu! beatmap. </summary>
 public record ControlPoint : IComparable<ControlPoint>

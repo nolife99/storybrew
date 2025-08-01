@@ -119,7 +119,11 @@ sealed class TextureUploadQueue : IDisposable
                 ((IGLFWGraphicsContext)context)!.MakeCurrent();
 
                 var exiting = false;
-                Native.Window.Closing += _ => exiting = true;
+                Native.Window.Closing += _ =>
+                {
+                    exiting = true;
+                    Signal();
+                };
 
                 while (!exiting)
                 {

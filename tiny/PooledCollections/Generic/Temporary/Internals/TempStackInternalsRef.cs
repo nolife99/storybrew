@@ -19,7 +19,7 @@ public readonly ref struct TempStackInternalsRef<T>
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
     /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

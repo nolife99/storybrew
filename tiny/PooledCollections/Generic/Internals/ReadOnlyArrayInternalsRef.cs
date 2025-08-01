@@ -2,46 +2,48 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 partial class CollectionInternals
 {
-    /// <summary> Returns the internal array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source) => source._array.AsSpan();
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source)
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source, int start)
-        => source._array.AsSpan(start);
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, int start)
+        => AsReadOnlySpan(in source)[start..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source, int start, int length)
-        => source._array.AsSpan(start, length);
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, int start, int length)
+        => AsReadOnlySpan(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source, Index startIndex)
-        => source._array.AsSpan(startIndex);
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, Index startIndex)
+        => AsReadOnlySpan(in source)[startIndex..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ReadOnlyArray<T> source, Range range)
-        => source._array.AsSpan(range);
-
-    /// <summary> Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source) => source._array.AsMemory();
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, Range range)
+        => AsReadOnlySpan(in source)[range];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source, int start)
-        => source._array.AsMemory(start);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source)
+        => new(source._array);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source, int start, int length)
-        => source._array.AsMemory(start, length);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source, int start)
+        => new(source._array, start, source._array.Length - start);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source, Index startIndex)
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source,
+        int start,
+        int length) => new(source._array, start, length);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source, Index startIndex)
         => source._array.AsMemory(startIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ReadOnlyArray<T> source, Range range)
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source, Range range)
         => source._array.AsMemory(range);
 }

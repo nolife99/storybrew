@@ -5,10 +5,10 @@ using System.Globalization;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class Vector3Picker : Widget, Field
 {

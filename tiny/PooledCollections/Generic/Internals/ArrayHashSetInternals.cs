@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct ArrayHashSetInternals<T> : IDisposable
 {
@@ -16,6 +17,7 @@ public readonly struct ArrayHashSetInternals<T> : IDisposable
     public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ArrayHashSetInternals(ArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -41,11 +43,9 @@ public readonly struct ArrayHashSetInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static ArrayHashSetInternals<T> TransferOwner<T>(ArrayHashSet<T> source)
+    public static ArrayHashSetInternals<T> TransferOwner<T>(this ArrayHashSet<T> source)
     {
-        var internals = new ArrayHashSetInternals<T>(source);
+        ArrayHashSetInternals<T> internals = new(source);
 
         source._buckets = null;
         source._entries = null;

@@ -3,6 +3,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public readonly struct HashSetInternals<T> : IDisposable
 {
@@ -20,6 +21,7 @@ public readonly struct HashSetInternals<T> : IDisposable
     public readonly ArrayPool<int> BucketPool;
     public readonly ArrayPool<Entry<T>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal HashSetInternals(PooledHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -48,9 +50,9 @@ public readonly struct HashSetInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    public static HashSetInternals<T> TransferOwner<T>(PooledHashSet<T> source)
+    public static HashSetInternals<T> TransferOwner<T>(this PooledHashSet<T> source)
     {
-        var internals = new HashSetInternals<T>(source);
+        HashSetInternals<T> internals = new(source);
 
         source._buckets = null;
         source._entries = null;

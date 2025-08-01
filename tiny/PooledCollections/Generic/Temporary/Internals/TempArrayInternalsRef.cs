@@ -6,10 +6,11 @@ using System.Runtime.InteropServices;
 
 public readonly ref struct TempArrayInternalsRef<T>
 {
-    public int Length { get; }
-    public bool ClearArray { get; }
-    public ReadOnlySpan<T> Array { get; }
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly ReadOnlySpan<T> Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayInternalsRef(scoped ref readonly TempArray<T> source)
     {
         Length = source._length;
@@ -18,9 +19,8 @@ public readonly ref struct TempArrayInternalsRef<T>
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayInternalsRef<T> GetRef<T>(this scoped ref readonly TempArray<T> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,13 +53,13 @@ partial class TempCollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempArray<T> source, int start, int length)
-        => source._array.AsMemory(start, length);
+        => AsReadOnlyMemory(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempArray<T> source, Index startIndex)
-        => source._array.AsMemory(startIndex);
+        => AsReadOnlyMemory(in source)[startIndex..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempArray<T> source, Range range)
-        => source._array.AsMemory(range);
+        => AsReadOnlyMemory(in source)[range];
 }

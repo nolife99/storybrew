@@ -4,8 +4,8 @@ using System;
 using System.Numerics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class TextLayout : IDisposable
 {

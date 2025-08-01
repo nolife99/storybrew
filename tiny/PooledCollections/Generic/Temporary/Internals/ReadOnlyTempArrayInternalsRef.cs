@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyTempArray<T> source)

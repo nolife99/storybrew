@@ -5,10 +5,10 @@ using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
 using StorybrewCommon.Curves;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 /// <summary> Represents an osu! slider. </summary>
 public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHitObject

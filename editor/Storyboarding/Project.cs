@@ -32,9 +32,9 @@ using StorybrewEditor.Util;
 using Tiny;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
 using ZLinq;
 using Path = System.IO.Path;
 
@@ -218,27 +218,32 @@ public sealed partial class Project : IDisposable
 
     Task reloadTask;
 
-    void runReload() => reloadTask ??= Task.Factory.StartNew(async project =>
-        {
-            var p = (Project)project;
-            while (p.effectUpdateQueue.Running) await Task.Delay(200);
+    void runReload()
+    {
+        if (reloadTask is not null && !reloadTask.IsCompleted) return;
 
-            await Program.Schedule(proj =>
-                {
-                    if (proj.isReloadingTextures)
+        reloadTask = Task.Factory.StartNew(async project =>
+            {
+                var p = (Project)project;
+                while (p.effectUpdateQueue.Running) await Task.Delay(200);
+
+                await Program.Schedule(proj =>
                     {
-                        proj.reloadTextures();
-                        proj.isReloadingTextures = false;
-                    }
-                    else if (proj.isReloadingAudio)
-                    {
-                        proj.reloadAudio();
-                        proj.isReloadingAudio = false;
-                    }
-                },
-                (Project)project);
-        },
-        this);
+                        if (proj.isReloadingTextures)
+                        {
+                            proj.reloadTextures();
+                            proj.isReloadingTextures = false;
+                        }
+                        else if (proj.isReloadingAudio)
+                        {
+                            proj.reloadAudio();
+                            proj.isReloadingAudio = false;
+                        }
+                    },
+                    (Project)project);
+            },
+            this);
+    }
 
     #endregion
 

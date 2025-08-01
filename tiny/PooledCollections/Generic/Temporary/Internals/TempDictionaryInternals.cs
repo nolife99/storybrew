@@ -8,24 +8,20 @@ using System.Runtime.CompilerServices;
 public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
 {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-    [NonSerialized] public readonly ulong FastModMultiplier;
+    public readonly ulong FastModMultiplier;
 #endif
 
-    [NonSerialized] public readonly int Count;
-    [NonSerialized] public readonly int FreeList;
-    [NonSerialized] public readonly int FreeCount;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool IsReferenceKey;
-    [NonSerialized] public readonly bool IsReferenceValue;
-    [NonSerialized] public readonly bool ClearEntries;
+    public readonly int Count, FreeList, FreeCount, Version;
+    public readonly bool IsReferenceKey, IsReferenceValue, ClearEntries;
 
-    [NonSerialized] public readonly int[] Buckets;
-    [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
-    [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
+    public readonly int[] Buckets;
+    public readonly Entry<TKey, TValue>[] Entries;
+    public readonly IEqualityComparer<TKey> Comparer;
 
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
-    [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
+    public readonly ArrayPool<int> BucketPool;
+    public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempDictionaryInternals(in TempDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -48,44 +44,25 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets is not null)
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (Entries is not null)
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static TempDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(ref TempDictionary<TKey, TValue> source)
+    public static TempDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
+        this scoped ref TempDictionary<TKey, TValue> source)
     {
-        var internals = new TempDictionaryInternals<TKey, TValue>(source);
+        TempDictionaryInternals<TKey, TValue> internals = new(source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempDictionary<TKey, TValue>>();
 
         return internals;
     }
 
-    /// <summary>
-    ///     Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/> or a ref
-    ///     null if it does not exist in the <paramref name="dictionary"/>.
-    /// </summary>
-    /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
-    /// <param name="key"> The key used for lookup. </param>
-    /// <remarks>
-    ///     Items should not be added or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
-    ///     <typeparamref name="TValue"/> is in use. The ref null can be detected using <see cref="Unsafe.IsNullRef{T}"/>.
-    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref TValue GetValueRefOrNullRef<TKey, TValue>(
         this scoped ref readonly TempDictionary<TKey, TValue> dictionary,

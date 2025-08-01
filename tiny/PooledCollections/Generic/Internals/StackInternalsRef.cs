@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct StackInternalsRef<T>
 {
@@ -9,6 +10,7 @@ public readonly ref struct StackInternalsRef<T>
     public readonly bool ClearArray;
     public readonly ReadOnlySpan<T> Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal StackInternalsRef(PooledStack<T> source)
     {
         Size = source._size;
@@ -20,16 +22,13 @@ public readonly ref struct StackInternalsRef<T>
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static StackInternalsRef<T> GetRef<T>(PooledStack<T> source) => new(source);
+    public static StackInternalsRef<T> GetRef<T>(this PooledStack<T> source) => new(source);
 
-    /// <summary> Returns the internal array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this PooledStack<T> source) => source._array.AsSpan(0, source._size);
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this PooledStack<T> source)
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
 
-    /// <summary> Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this PooledStack<T> source)
-        => source._array.AsMemory(0, source._size);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this PooledStack<T> source) => new(source._array, 0, source._size);
 }

@@ -10,8 +10,8 @@ using StorybrewCommon.Storyboarding;
 using StorybrewEditor.Mapset;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class EditorGeneratorContext(Effect effect,
     string projectPath,

@@ -3,8 +3,8 @@
 using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class PromptBox(scoped ReadOnlySpan<char> title,
     scoped ReadOnlySpan<char> description,

@@ -6,10 +6,11 @@ using System.Runtime.InteropServices;
 
 public readonly struct TempArrayInternalsRefUnsafe<T>
 {
-    public int Length { get; }
-    public bool ClearArray { get; }
-    public T[] Array { get; }
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayInternalsRefUnsafe(scoped ref readonly TempArray<T> source)
     {
         Length = source._length;
@@ -18,13 +19,12 @@ public readonly struct TempArrayInternalsRefUnsafe<T>
     }
 }
 
-partial class TempCollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArrayInternalsRefUnsafe<T> GetRef<T>(scoped ref readonly TempArray<T> source) => new(in source);
+    public static TempArrayInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly TempArray<T> source)
+        => new(in source);
 
-    /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source)
         => MemoryMarshal.CreateSpan(ref source._ref, source._length);
@@ -43,26 +43,25 @@ partial class TempCollectionInternalsUnsafe
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, Range range) => AsSpan(in source)[range];
 
-    /// <summary> Returns the internal array as a <see cref="Memory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source)
-        => source._array.AsMemory(0, source._length);
+        => new(source._array, 0, source._length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source, int start)
-        => source._array.AsMemory(start);
+        => new(source._array, start, source._length - start);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source, int start, int length)
-        => source._array.AsMemory(start, length);
+        => AsMemory(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source, Index startIndex)
-        => source._array.AsMemory(startIndex);
+        => AsMemory(in source)[startIndex..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source, Range range)
-        => source._array.AsMemory(range);
+        => AsMemory(in source)[range];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly TempArray<T> source, out T[] array, out int length)

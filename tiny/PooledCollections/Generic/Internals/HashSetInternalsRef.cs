@@ -17,6 +17,7 @@ public readonly ref struct HashSetInternalsRef<T>
     public readonly ReadOnlySpan<Entry<T>> Entries;
     public readonly IEqualityComparer<T> Comparer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal HashSetInternalsRef(PooledHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -36,8 +37,7 @@ public readonly ref struct HashSetInternalsRef<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static HashSetInternalsRef<T> GetRef<T>(PooledHashSet<T> source) => new(source);
+    public static HashSetInternalsRef<T> GetRef<T>(this PooledHashSet<T> source) => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(this PooledHashSet<T> source)

@@ -222,9 +222,7 @@ public class QuadRendererBuffered : IQuadRenderer
     Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters",
-            "GL_ARB_shader_storage_buffer_object",
-            "GL_ARB_shading_language_packing");
+        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
 
         if (Texture2d.BindlessTexturesSupported) sb.AddRequiredExtension("GL_ARB_bindless_texture");
 

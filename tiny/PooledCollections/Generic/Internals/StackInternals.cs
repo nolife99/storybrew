@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct StackInternals<T> : IDisposable
 {
@@ -10,6 +11,7 @@ public readonly struct StackInternals<T> : IDisposable
     public readonly T[] Array;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal StackInternals(PooledStack<T> source)
     {
         Size = source._size;
@@ -27,11 +29,9 @@ public readonly struct StackInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static StackInternals<T> TransferOwner<T>(PooledStack<T> source)
+    public static StackInternals<T> TransferOwner<T>(this PooledStack<T> source)
     {
-        var internals = new StackInternals<T>(source);
+        StackInternals<T> internals = new(source);
 
         source._array = null;
         source.Dispose();

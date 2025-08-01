@@ -7,9 +7,9 @@ using System.Text.RegularExpressions;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed partial class Shader : IDisposable
 {

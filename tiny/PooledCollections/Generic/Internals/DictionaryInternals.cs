@@ -3,6 +3,7 @@ namespace Tiny.PooledCollections.Generic.Internals;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 {
@@ -20,6 +21,7 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
     public readonly ArrayPool<int> BucketPool;
     public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal DictionaryInternals(PooledDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -50,9 +52,9 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
 partial class CollectionInternals
 {
-    public static DictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(PooledDictionary<TKey, TValue> source)
+    public static DictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
     {
-        var internals = new DictionaryInternals<TKey, TValue>(source);
+        DictionaryInternals<TKey, TValue> internals = new(source);
 
         source._buckets = null;
         source._entries = null;

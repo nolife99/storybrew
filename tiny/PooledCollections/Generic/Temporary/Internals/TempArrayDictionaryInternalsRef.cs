@@ -3,11 +3,11 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct TempArrayDictionaryInternalsRef<TKey, TValue>
 {
-    public readonly int FreeEntryIndex;
-    public readonly int Collisions;
+    public readonly int FreeEntryIndex, Collisions;
     public readonly ulong FastModBucketsMultiplier;
 
     public readonly bool ClearEntries;
@@ -21,6 +21,7 @@ public readonly ref struct TempArrayDictionaryInternalsRef<TKey, TValue>
     public readonly ArrayPool<TValue> ValuePool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayDictionaryInternalsRef(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -40,43 +41,46 @@ public readonly ref struct TempArrayDictionaryInternalsRef<TKey, TValue>
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
-        scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsReadOnlySpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out ReadOnlySpan<ArrayEntry<TKey>> keys,
         out ReadOnlySpan<TValue> values)
     {
-        keys = source._entries.AsSpan(0, source.Count);
-        values = source._values.AsSpan(0, source.Count);
+        keys = KeysAsReadOnlySpan(in source);
+        values = ValuesAsReadOnlySpan(in source);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<ArrayEntry<TKey>> KeysAsReadOnlySpan<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries),
+            source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<TValue> ValuesAsReadOnlySpan<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._values.AsSpan(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsReadOnlyMemory<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out ReadOnlyMemory<ArrayEntry<TKey>> keys,
         out ReadOnlyMemory<TValue> values)
     {
-        keys = source._entries.AsMemory(0, source.Count);
-        values = source._values.AsMemory(0, source.Count);
+        keys = KeysAsReadOnlyMemory(in source);
+        values = ValuesAsReadOnlyMemory(in source);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<ArrayEntry<TKey>> KeysAsReadOnlyMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._entries, 0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<TValue> ValuesAsReadOnlyMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._values.AsMemory(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._values, 0, source._freeEntryIndex);
 }

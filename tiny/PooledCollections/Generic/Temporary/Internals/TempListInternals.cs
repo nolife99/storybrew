@@ -2,15 +2,16 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct TempListInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly T[] Items;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Size, Version;
+    public readonly bool ClearItems;
+    public readonly T[] Items;
+    public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempListInternals(scoped ref readonly TempList<T> source)
     {
         Size = source._size;
@@ -26,22 +27,23 @@ public readonly struct TempListInternals<T> : IDisposable
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempListInternals<T> TransferOwner<T>(this scoped ref TempList<T> source)
     {
-        var internals = new TempListInternals<T>(in source);
+        TempListInternals<T> internals = new(in source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempList<T>>();
 
         return internals;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> ToTempArray<T>(this scoped ref TempList<T> source)
     {
         var internals = TransferOwner(ref source);
 
-        return new TempArray<T> { _array = internals.Items, _length = internals.Size, _pool = internals.Pool };
+        return new() { _array = internals.Items, _length = internals.Size, _pool = internals.Pool };
     }
 }

@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct QueueInternals<T> : IDisposable
 {
@@ -10,6 +11,7 @@ public readonly struct QueueInternals<T> : IDisposable
     public readonly T[] Array;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal QueueInternals(PooledQueue<T> source)
     {
         Head = source._head;
@@ -29,11 +31,9 @@ public readonly struct QueueInternals<T> : IDisposable
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static QueueInternals<T> TransferOwner<T>(PooledQueue<T> source)
+    public static QueueInternals<T> TransferOwner<T>(this PooledQueue<T> source)
     {
-        var internals = new QueueInternals<T>(source);
+        QueueInternals<T> internals = new(source);
 
         source._array = null;
         source.Dispose();

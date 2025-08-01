@@ -3,6 +3,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ArrayHashSetInternalsRef<T>
 {
@@ -17,6 +18,7 @@ public readonly ref struct ArrayHashSetInternalsRef<T>
     public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ArrayHashSetInternalsRef(ArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -35,17 +37,14 @@ public readonly ref struct ArrayHashSetInternalsRef<T>
 
 partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ArrayHashSetInternalsRef<T> GetRef<T>(ArrayHashSet<T> source) => new(source);
+    public static ArrayHashSetInternalsRef<T> GetRef<T>(this ArrayHashSet<T> source) => new(source);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<ArrayEntry<T>> AsReadOnlySpan<T>(this ArrayHashSet<T> source)
-        => source._entries.AsSpan(0, source.Count);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries),
+            source._freeEntryIndex);
 
-    /// <summary> Returns the internal Keys and Values arrays as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(this ArrayHashSet<T> source)
-        => source._entries.AsMemory(0, source.Count);
+        => new(source._entries, 0, source.Count);
 }

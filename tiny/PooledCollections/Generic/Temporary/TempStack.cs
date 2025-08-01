@@ -20,7 +20,40 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-public ref partial struct TempStack<T>
+public static class TempStack
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>() => new(0, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(ArrayPool<T> pool) => new(0, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool) => new(collection, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(T[] items) => new(items.AsSpan(), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(T[] items, ArrayPool<T> pool) => new(items.AsSpan(), pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempStack<T> Create<T>(ReadOnlySpan<T> span, ArrayPool<T> pool) => new(span, pool);
+}
+
+public ref struct TempStack<T>
 {
     internal T[] _array; // Storage for stack elements. Do not rename (binary serialization)
     internal int _size; // Number of items in the stack. Do not rename (binary serialization)
@@ -51,13 +84,13 @@ public ref partial struct TempStack<T>
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
     }
 
-    public int Count
+    public readonly int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _size;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array is not null;
@@ -71,7 +104,7 @@ public ref partial struct TempStack<T>
         _version++;
     }
 
-    public bool Contains(T item) =>
+    public readonly bool Contains(T item) =>
 
         // Compare items using the default equality comparer
         // PERF: Internally Array.LastIndexOf calls
@@ -84,12 +117,12 @@ public ref partial struct TempStack<T>
         _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest) => CopyTo(dest, 0, _size);
+    public readonly void CopyTo(T[] dest) => CopyTo(dest, 0, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(dest, destIndex, _size);
+    public readonly void CopyTo(T[] dest, int destIndex) => CopyTo(dest, destIndex, _size);
 
-    public void CopyTo(T[] dest, int destIndex, int count)
+    public readonly void CopyTo(T[] dest, int destIndex, int count)
     {
         ArgumentNullException.ThrowIfNull(dest);
 
@@ -98,7 +131,7 @@ public ref partial struct TempStack<T>
 
     // Returns an IEnumerator for this Stack.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public readonly Enumerator GetEnumerator() => new(in this);
 
     public void TrimExcess()
     {
@@ -259,7 +292,7 @@ public ref partial struct TempStack<T>
     }
 
     // Copies the Stack to an array, in the same order Pop would return the items.
-    public T[] ToArray()
+    public readonly T[] ToArray()
     {
         if (_size == 0) return s_emptyArray;
 
@@ -286,7 +319,7 @@ public ref partial struct TempStack<T>
         _array = replaceWith ?? s_emptyArray;
     }
 
-    void ThrowForEmptyStack()
+    readonly void ThrowForEmptyStack()
     {
         Debug.Assert(_size == 0);
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
@@ -299,7 +332,7 @@ public ref partial struct TempStack<T>
         int _index;
         T _currentElement;
 
-        public Enumerator(TempStack<T> stack)
+        internal Enumerator(scoped ref readonly TempStack<T> stack)
         {
             _stack = stack;
             _version = stack._version;
@@ -334,7 +367,7 @@ public ref partial struct TempStack<T>
             return retval;
         }
 
-        public T Current
+        public readonly T Current
         {
             get
             {
@@ -343,12 +376,61 @@ public ref partial struct TempStack<T>
             }
         }
 
-        void ThrowEnumerationNotStartedOrEnded()
+        readonly void ThrowEnumerationNotStartedOrEnded()
         {
             Debug.Assert(_index == -1 || _index == -2);
 
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }
+    }
+
+    internal TempStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    {
+        _size = 0;
+        _version = 0;
+        _pool = pool ?? ArrayPool<T>.Shared;
+
+        var count = span.Length;
+
+        if (count == 0) _array = s_emptyArray;
+        else
+        {
+            _array = _pool.Rent(count);
+            span.CopyTo(_array);
+            _size = count;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CopyTo(scoped Span<T> dest) => CopyTo(dest, 0, _size);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(dest, destIndex, _size);
+
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowArrayIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (dest.Length - destIndex < count || _size < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+        var src = _array.AsSpan(0, _size);
+
+        if (src.Length == 0) return;
+
+        var srcIndex = 0;
+        var dstIndex = destIndex + count;
+        while (srcIndex < count) dest[--dstIndex] = src[srcIndex++];
+    }
+
+    public void Dispose()
+    {
+        ReturnArray(s_emptyArray);
+        _size = 0;
+        _version++;
     }
 }

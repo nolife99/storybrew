@@ -10,6 +10,7 @@ public readonly struct ListInternalsRefUnsafe<T>
     public readonly bool ClearItems;
     public readonly T[] Items;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ListInternalsRefUnsafe(PooledList<T> source)
     {
         Size = source._size;
@@ -19,17 +20,16 @@ public readonly struct ListInternalsRefUnsafe<T>
     }
 }
 
-partial class CollectionInternalsUnsafe
+partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ListInternalsRefUnsafe<T> GetRef<T>(PooledList<T> source) => new(source);
+    public static ListInternalsRefUnsafe<T> GetUnsafeRef<T>(this PooledList<T> source) => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this PooledList<T> source)
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._items), source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(this PooledList<T> source) => source._items.AsMemory(0, source._size);
+    public static Memory<T> AsMemory<T>(this PooledList<T> source) => new(source._items, 0, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this PooledList<T> source, out T[] items, out int count)

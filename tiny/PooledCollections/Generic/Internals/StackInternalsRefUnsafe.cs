@@ -18,11 +18,11 @@ public readonly struct StackInternalsRefUnsafe<T>
     }
 }
 
-partial class CollectionInternalsUnsafe
+partial class CollectionInternals
 {
     /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static StackInternalsRefUnsafe<T> GetRef<T>(PooledStack<T> source) => new(source);
+    public static StackInternalsRefUnsafe<T> GetUnsafeRef<T>(PooledStack<T> source) => new(source);
 
     /// <summary> Returns the internal array as a <see cref="Span{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

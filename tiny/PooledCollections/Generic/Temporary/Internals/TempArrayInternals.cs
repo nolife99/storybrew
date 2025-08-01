@@ -6,11 +6,12 @@ using System.Runtime.CompilerServices;
 
 public readonly struct TempArrayInternals<T> : IDisposable
 {
-    [NonSerialized] public readonly int Length;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly T[] Array;
-    [NonSerialized] public readonly ArrayPool<T> Pool;
+    public readonly int Length;
+    public readonly bool ClearArray;
+    public readonly T[] Array;
+    public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayInternals(scoped ref readonly TempArray<T> source)
     {
         Length = source._length;
@@ -25,11 +26,9 @@ public readonly struct TempArrayInternals<T> : IDisposable
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
-    public static TempArrayInternals<T> TransferOwner<T>(scoped ref TempArray<T> source)
+    public static TempArrayInternals<T> TransferOwner<T>(this scoped ref TempArray<T> source)
     {
         TempArrayInternals<T> internals = new(in source);
         source.Dispose();

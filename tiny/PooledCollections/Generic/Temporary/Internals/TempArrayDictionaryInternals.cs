@@ -6,21 +6,20 @@ using System.Runtime.CompilerServices;
 
 public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
 {
-    public int FreeEntryIndex { get; }
-    public int Collisions { get; }
-    public ulong FastModBucketsMultiplier { get; }
+    public readonly int FreeEntryIndex, Collisions;
+    public readonly ulong FastModBucketsMultiplier;
 
-    public bool ClearEntries { get; }
-    public bool ClearValues { get; }
+    public readonly bool ClearEntries, ClearValues;
 
-    public ArrayEntry<TKey>[] Entries { get; }
-    public TValue[] Values { get; }
-    public int[] Buckets { get; }
+    public readonly ArrayEntry<TKey>[] Entries;
+    public readonly TValue[] Values;
+    public readonly int[] Buckets;
 
-    public ArrayPool<ArrayEntry<TKey>> EntryPool { get; }
-    public ArrayPool<TValue> ValuePool { get; }
-    public ArrayPool<int> BucketPool { get; }
+    public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
+    public readonly ArrayPool<TValue> ValuePool;
+    public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempArrayDictionaryInternals(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -47,10 +46,8 @@ public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds ownership of internal fields of <paramref name="source"/>. </summary>
-    /// <remarks> Afterward <paramref name="source"/> will be disposed. </remarks>
     public static TempArrayDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
         this scoped ref TempArrayDictionary<TKey, TValue> source)
     {

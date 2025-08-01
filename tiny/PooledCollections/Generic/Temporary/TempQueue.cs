@@ -20,7 +20,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-public ref partial struct TempQueue<T>
+public ref struct TempQueue<T>
 {
     internal T[] _array;
     internal int _head; // The index from which to dequeue if the queue isn't empty.
@@ -396,4 +396,95 @@ public ref partial struct TempQueue<T>
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
         }
     }
+
+    internal TempQueue(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    {
+        _head = 0;
+        _tail = 0;
+        _size = 0;
+        _version = 0;
+        _pool = pool ?? ArrayPool<T>.Shared;
+
+        var count = span.Length;
+
+        if (count == 0) _array = s_emptyArray;
+        else
+        {
+            _array = _pool.Rent(count);
+            span.CopyTo(_array);
+            _size = count;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<T> dest) => CopyTo(dest, 0, _size);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, _size);
+
+    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (dest.Length - destIndex < count || _size < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+        var numToCopy = count;
+        var src = _array.AsSpan(0, _size);
+
+        if (src.Length == 0 || numToCopy == 0) return;
+
+        var firstPart = Math.Min(src.Length - _head, numToCopy);
+        src.Slice(_head, firstPart).CopyTo(dest.Slice(destIndex, firstPart));
+
+        numToCopy -= firstPart;
+        if (numToCopy > 0)
+        {
+            destIndex += src.Length - _head;
+            src[..numToCopy].CopyTo(dest.Slice(destIndex, numToCopy));
+        }
+    }
+
+    public void Dispose()
+    {
+        ReturnArray(s_emptyArray);
+        _head = _tail = _size = 0;
+        _version++;
+    }
+}
+
+public static class TempQueue
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>() => new(0, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(ArrayPool<T> pool) => new(0, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool) => new(collection, pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(T[] items) => new(items.AsSpan(), ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(T[] items, ArrayPool<T> pool) => new(items.AsSpan(), pool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TempQueue<T> Create<T>(ReadOnlySpan<T> span, ArrayPool<T> pool) => new(span, pool);
 }

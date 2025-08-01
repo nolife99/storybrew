@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 
 public readonly ref struct TempListInternalsRef<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearItems;
-    [NonSerialized] public readonly ReadOnlySpan<T> Items;
+    public readonly int Size, Version;
+    public readonly bool ClearItems;
+    public readonly ReadOnlySpan<T> Items;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal TempListInternalsRef(scoped ref readonly TempList<T> source)
     {
         Size = source._size;
@@ -20,18 +20,14 @@ public readonly ref struct TempListInternalsRef<T>
     }
 }
 
-partial class TempCollectionInternals
+partial class CollectionInternals
 {
-    /// <summary> Returns a structure that holds references to internal fields of <paramref name="source"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempListInternalsRef<T> GetRef<T>(this scoped ref readonly TempList<T> source) => new(in source);
 
-    /// <summary> Returns the internal array as a <see cref="ReadOnlySpan{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempList<T> source)
         => MemoryMarshal.CreateReadOnlySpan(ref source._ref, source._size);
 
-    /// <summary> Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempList<T> source)
         => new(source._items, 0, source._size);
