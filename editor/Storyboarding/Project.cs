@@ -234,7 +234,8 @@ public sealed partial class Project : IDisposable
                             proj.reloadTextures();
                             proj.isReloadingTextures = false;
                         }
-                        else if (proj.isReloadingAudio)
+
+                        if (proj.isReloadingAudio)
                         {
                             proj.reloadAudio();
                             proj.isReloadingAudio = false;

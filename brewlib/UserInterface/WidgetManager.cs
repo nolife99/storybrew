@@ -378,13 +378,13 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     {
         if (widget == HoveredWidget) return;
 
-        if (HoveredWidget is not null)
+        if (HoveredWidget is not null && !HoveredWidget.IsDisposed)
             fire((w, evt, _) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget, 0);
 
         var previousWidget = HoveredWidget;
         HoveredWidget = widget;
 
-        if (HoveredWidget is not null)
+        if (HoveredWidget is not null && !HoveredWidget.IsDisposed)
             fire((w, evt, _) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget, 0);
     }
 

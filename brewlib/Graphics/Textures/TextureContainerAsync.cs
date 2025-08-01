@@ -94,6 +94,13 @@ sealed class TextureUploadQueue : IDisposable
 
     public TextureUploadQueue()
     {
+        var exiting = false;
+        Native.Window.Closing += _ =>
+        {
+            exiting = true;
+            Dispose();
+        };
+
         Native.Window.Context.MakeNoneCurrent();
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
@@ -117,13 +124,6 @@ sealed class TextureUploadQueue : IDisposable
             Thread thread = new(context =>
             {
                 ((IGLFWGraphicsContext)context)!.MakeCurrent();
-
-                var exiting = false;
-                Native.Window.Closing += _ =>
-                {
-                    exiting = true;
-                    Signal();
-                };
 
                 while (!exiting)
                 {
