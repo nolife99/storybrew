@@ -11,14 +11,14 @@ public class EditorOsbAnimation : OsbAnimation, IDisplayable, IPostProcessable
         ICamera camera,
         RectangleF bounds,
         float opacity,
-        StoryboardTransform transform,
+        scoped ref readonly StoryboardTransform transform,
         Project project,
         FrameStats frameStats) => EditorOsbSprite.Draw(
         drawContext,
         camera,
         bounds,
         opacity,
-        ref transform,
+        in transform,
         project,
         frameStats,
         this);

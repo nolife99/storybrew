@@ -120,7 +120,7 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] pooledArray = null;
         BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
                 stackalloc int[intArrayLength] :
-                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         for (int i = 0, len = other.Length; i < len; i++)
@@ -170,13 +170,13 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] itemsToRemoveArray = null;
         BitHelper itemsToRemove = new(intArrayLength <= StackAllocThreshold / 2 ?
                 stackalloc int[intArrayLength] :
-                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         int[] itemsAddedFromOtherArray = null;
         BitHelper itemsAddedFromOther = new(itemsToRemoveArray is null ?
                 stackalloc int[intArrayLength] :
-                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         for (int i = 0, len = other.Length; i < len; i++)
@@ -240,7 +240,7 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] pooledArray = null;
         BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
                 stackalloc int[intArrayLength] :
-                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         var unfoundCount = 0;
@@ -1256,7 +1256,7 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] pooledArray = null;
         BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
                 stackalloc int[intArrayLength] :
-                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         foreach (var item in other)
@@ -1303,13 +1303,13 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] itemsToRemoveArray = null;
         BitHelper itemsToRemove = new(intArrayLength <= StackAllocThreshold / 2 ?
                 stackalloc int[intArrayLength] :
-                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         int[] itemsAddedFromOtherArray = null;
         BitHelper itemsAddedFromOther = new(itemsToRemoveArray is null ?
                 stackalloc int[intArrayLength] :
-                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         foreach (var item in other)
@@ -1349,7 +1349,7 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         int[] pooledArray = null;
         BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
                 stackalloc int[intArrayLength] :
-                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, intArrayLength),
             true);
 
         var unfoundCount = 0;

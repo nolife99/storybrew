@@ -151,7 +151,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
         if (Visible)
-            segment.Draw(drawContext, camera, bounds, opacity, StoryboardTransform.Identity, Effect.Project, frameStats);
+            segment.Draw(drawContext, camera, bounds, opacity, in StoryboardTransform.Identity, Effect.Project, frameStats);
     }
 
     public void PostProcess()

@@ -5,9 +5,7 @@
 namespace Tiny.PooledCollections;
 
 using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 static class HashHelpers
 {
@@ -93,30 +91,6 @@ static class HashHelpers
         7199369
     ];
 
-    public static int GetNonRandomizedHashCode(ReadOnlySpan<char> chars)
-    {
-        ref var src = ref MemoryMarshal.GetReference(chars);
-
-        uint hash1 = (5381 << 16) + 5381;
-        var hash2 = hash1;
-
-        ref var ptr = ref Unsafe.As<char, uint>(ref src);
-        var length = chars.Length;
-
-        while (length > 2)
-        {
-            length -= 4;
-
-            hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ ptr;
-            hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ Unsafe.Add(ref ptr, 1);
-            ptr = ref Unsafe.AddByteOffset(ref ptr, 2);
-        }
-
-        if (length > 0) hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ptr;
-
-        return (int)(hash1 + hash2 * 1566083941);
-    }
-
     public static bool IsPrime(int candidate)
     {
         if ((candidate & 1) != 0)
@@ -159,12 +133,10 @@ static class HashHelpers
         return GetPrime(newSize);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong GetFastModMultiplier(uint divisor) => ulong.MaxValue / divisor + 1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint FastMod(uint value, uint divisor, ulong multiplier)
-    {
-        var highbits = (uint)(((multiplier * value >> 32) + 1) * divisor >> 32);
-        return highbits;
-    }
+        => (uint)(((multiplier * value >> 32) + 1) * divisor >> 32);
 }

@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Threading;
@@ -45,7 +46,7 @@ public static class ScriptCompiler
                 (src, sourceText));
         }
 
-        using var assemblies = ValueList.Create<MetadataReference>();
+        using var assemblies = ValueList.Create<AssemblyMetadata>();
         foreach (var asmPath in referencedAssemblies)
         {
             using var stream = File.OpenRead(asmPath);
@@ -59,7 +60,7 @@ public static class ScriptCompiler
                 stream.Position = 0;
             }
 
-            assemblies.Add(MetadataReference.CreateFromStream(stream));
+            assemblies.Add(AssemblyMetadata.CreateFromStream(stream, PEStreamOptions.PrefetchMetadata));
         }
 
         ImmutableArray<Diagnostic> result;
@@ -70,22 +71,25 @@ public static class ScriptCompiler
             var compilation = CSharpCompilation
                 .Create(asmName,
                     trees.Keys,
-                    assemblies,
+                    assemblies.Select(s => s.GetReference()),
                     new(OutputKind.DynamicallyLinkedLibrary,
                         allowUnsafe: true,
-                        optimizationLevel: OptimizationLevel.Release))
+                        optimizationLevel: OptimizationLevel.Release,
+                        concurrentBuild: false))
                 .Emit(assemblyStream,
                     pdbStream,
                     embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
                     options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
                     cancellationToken: tokenSource);
 
+            foreach (var ass in assemblies) ass.Dispose();
+
             if (compilation.Success) return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
 
             result = compilation.Diagnostics;
         }
 
-        using var error = TempList.Create("Compilation error\n \n");
+        using var error = TempList.Create("Compilation error\n");
 
         using var diagnosticGroups = TempDictionary.Create<string, ValueList<Diagnostic>>();
         foreach (var diagnostic in result)

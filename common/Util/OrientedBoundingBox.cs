@@ -40,15 +40,16 @@ public readonly struct OrientedBoundingBox
         float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)),
         float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
 
-    bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
+    bool Intersects(scoped ref readonly OrientedBoundingBox other)
+        => intersects1Way(in other) && other.intersects1Way(in this);
 
-    public bool Intersects(ref readonly RectangleF other)
+    public bool Intersects(scoped ref readonly RectangleF other)
     {
         OrientedBoundingBox otherBox = new(new Vector2(other.X, other.Y), Vector2.Zero, other.Width, other.Height, 0);
         return Intersects(in otherBox);
     }
 
-    bool intersects1Way(ref readonly OrientedBoundingBox other)
+    bool intersects1Way(scoped ref readonly OrientedBoundingBox other)
     {
         {
             var axis = axis0;

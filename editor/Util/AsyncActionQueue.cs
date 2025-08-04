@@ -10,7 +10,7 @@ using Tiny.PooledCollections.Generic;
 
 public sealed class AsyncActionQueue<T> : IDisposable
 {
-    readonly PooledList<Lazy<ActionRunner>> actionRunners;
+    readonly PooledList<ActionRunner> actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
@@ -22,7 +22,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context = new();
 
         actionRunners = new(runnerCount);
-        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(() => new(context)));
+        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(null);
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -39,7 +39,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     public void Queue(T target, int uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
     {
         for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
-            actionRunners[i].Value.EnsureThreadAlive();
+            (actionRunners[i] ??= new(context)).EnsureThreadAlive();
 
         if (!allowDuplicates)
             foreach (var runner in context.Queue)
@@ -54,7 +54,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         context.Queue.Clear();
         return stopThreads ?
-            Task.WhenAll(actionRunners.Where(runner => runner.IsValueCreated).Select(runner => runner.Value.JoinOrAbort())) :
+            Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.JoinOrAbort())) :
             Task.CompletedTask;
     }
 

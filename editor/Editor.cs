@@ -59,8 +59,11 @@ public sealed class Editor(NativeWindow window) : IDisposable
         drawContext = new();
         drawContext.Register(this);
 
-        TextureContainerAtlas textureContainer = new(ResourceContainer);
-        drawContext.Register<TextureContainer>(textureContainer, true);
+        TextureContainer textureContainer = Texture2d.BindlessTexturesSupported ?
+            new TextureContainerSeparate(ResourceContainer) :
+            new TextureContainerAtlas(ResourceContainer);
+
+        drawContext.Register(textureContainer, true);
 
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);

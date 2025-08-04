@@ -86,6 +86,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     {
         appDomain?.Unload();
         referencedAssemblies?.Dispose();
+
+        scriptType = null;
     }
 
     public event EventHandler OnScriptChanged;

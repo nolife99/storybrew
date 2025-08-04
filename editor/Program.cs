@@ -1,7 +1,7 @@
 namespace StorybrewEditor;
 
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -16,6 +16,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using StorybrewEditor.Util;
+using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Vector = System.Numerics.Vector;
 
@@ -101,6 +102,8 @@ public static class Program
         Settings.Save();
     }
 
+    static readonly Dictionary<nint, byte[]> memoryOwners = new();
+
     static NativeWindow createWindow(MonitorInfo displayDevice)
     {
         const ContextFlags debugContext =
@@ -168,8 +171,17 @@ public static class Program
             var draws = editor.Draw();
             windowContext.SwapBuffers();
 
-            window.IsVisible = true;
-            while (scheduledActions.TryDequeue(out var action)) action.Dispose();
+            if (!exiting) window.IsVisible = true;
+            using (var snapshot = TempList.Create<IDisposable>())
+            {
+                lock (schedulerLock)
+                {
+                    snapshot.AddRange(scheduledActions);
+                    scheduledActions.Clear();
+                }
+
+                foreach (var action in snapshot) action.Dispose();
+            }
 
             var active = Stopwatch.GetTimestamp() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
@@ -213,20 +225,19 @@ public static class Program
 
     #region Scheduling
 
-    static readonly ConcurrentQueue<IDisposable> scheduledActions = [];
-
-    static readonly int mainThreadId = Environment.CurrentManagedThreadId;
+    static readonly Lock schedulerLock = new();
+    static readonly List<IDisposable> scheduledActions = [];
 
     public static ValueTask Schedule<TState>(Action<TState> action, TState state = default)
     {
-        if (Environment.CurrentManagedThreadId == mainThreadId)
+        if (GLFWProvider.IsOnMainThread)
         {
             action(state);
             return ValueTask.CompletedTask;
         }
 
         var tcs = ValueTaskSourceHolder<TState>.Get(action, state);
-        scheduledActions.Enqueue(tcs);
+        lock (schedulerLock) scheduledActions.Add(tcs);
 
         return tcs.Task;
     }

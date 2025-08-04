@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -16,6 +17,7 @@ using Image = SixLabors.ImageSharp.Image;
 
 public sealed class Texture2d : Texture2dRegion
 {
+    const int StackAllocThreshold = 1024;
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
 
     public static readonly bool BindlessTexturesSupported = GLFW.ExtensionSupported("GL_ARB_bindless_texture");
@@ -73,8 +75,16 @@ public sealed class Texture2d : Texture2dRegion
                 ref color);
         else
         {
-            using var spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
-            var span = spanOwner.Memory.Span;
+            IMemoryOwner<Rgba32> spanOwner = null;
+            scoped Span<Rgba32> span;
+
+            var area = width * height;
+            if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
+            else
+            {
+                spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
+                span = spanOwner.Memory.Span;
+            }
 
             span.Fill(color);
 
@@ -88,6 +98,8 @@ public sealed class Texture2d : Texture2dRegion
                 PixelFormat.Rgba,
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(span));
+
+            spanOwner?.Dispose();
         }
     }
 
@@ -166,8 +178,16 @@ public sealed class Texture2d : Texture2dRegion
         if (useGlClearTex) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
         else
         {
-            using var spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
-            var span = spanOwner.Memory.Span;
+            IMemoryOwner<Rgba32> spanOwner = null;
+            scoped Span<Rgba32> span;
+
+            var area = width * height;
+            if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
+            else
+            {
+                spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
+                span = spanOwner.Memory.Span;
+            }
 
             span.Fill(color);
             GL.TexSubImage2D(TextureTarget.Texture2D,
@@ -179,6 +199,8 @@ public sealed class Texture2d : Texture2dRegion
                 PixelFormat.Rgba,
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(span));
+
+            spanOwner?.Dispose();
         }
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);

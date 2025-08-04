@@ -1,24 +1,8 @@
 ﻿namespace BrewLib.Util;
 
 using System;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
-
-public static class ValueTaskSourcePool<T>
-{
-    static readonly ConcurrentQueue<ValueTaskSource<T>> queue = new();
-
-    public static ValueTaskSource<T> Get()
-    {
-        if (!queue.TryDequeue(out var item)) return new(true);
-
-        item.Reset();
-        return item;
-    }
-
-    public static void Return(ValueTaskSource<T> obj) => queue.Enqueue(obj);
-}
 
 public class ValueTaskSource<T>(bool runContinuationsAsynchronously) : IValueTaskSource<T>, IValueTaskSource
 {

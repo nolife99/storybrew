@@ -19,6 +19,7 @@ public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
     public readonly ArrayPool<TValue> ValuePool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayDictionaryInternals(scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;

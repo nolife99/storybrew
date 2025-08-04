@@ -8,9 +8,12 @@ using System.Threading;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
+using Image = SixLabors.ImageSharp.Image;
+using Monitor = System.Threading.Monitor;
 
 public sealed class TextureContainerAsync : TextureContainer
 {
@@ -105,15 +108,21 @@ sealed class TextureUploadQueue : IDisposable
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
+            GLFW.WindowHint(WindowHintBool.DoubleBuffer, false);
             NativeWindow window = new(new()
             {
                 Title = "storybrew texture loader",
                 Flags = Native.Window.Flags,
                 StartVisible = false,
+                StartFocused = false,
                 SharedContext = Native.Window.Context,
-                IsEventDriven = true,
+                AutoLoadBindings = false,
+                ClientSize = new(1),
                 DepthBits = 0,
                 StencilBits = 0,
+                RedBits = 0,
+                GreenBits = 0,
+                BlueBits = 0,
                 AlphaBits = 0
             });
 
@@ -178,8 +187,7 @@ sealed class TextureUploadQueue : IDisposable
 
     public void Dispose()
     {
-        queuedUploads.Clear();
-
+        Clear();
         Signal();
 
         foreach (var thread in threads) thread.Join();
@@ -189,7 +197,11 @@ sealed class TextureUploadQueue : IDisposable
         contexts.Dispose();
     }
 
-    public void Clear() => queuedUploads.Clear();
+    public void Clear()
+    {
+        queuedUploads.Clear();
+        Signal();
+    }
 
     void Signal()
     {

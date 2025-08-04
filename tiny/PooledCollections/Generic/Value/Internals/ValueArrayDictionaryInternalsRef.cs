@@ -20,6 +20,7 @@ public readonly ref struct ValueArrayDictionaryInternalsRef<TKey, TValue>
     public readonly ArrayPool<TValue> ValuePool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayDictionaryInternalsRef(scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -41,7 +42,6 @@ public readonly ref struct ValueArrayDictionaryInternalsRef<TKey, TValue>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
         this scoped ref readonly ValueArrayDictionary<TKey, TValue> source) => new(in source);
 

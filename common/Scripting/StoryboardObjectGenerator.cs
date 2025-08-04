@@ -243,12 +243,20 @@ public abstract class StoryboardObjectGenerator : Script
         OsbEasing easing = OsbEasing.None,
         float frequencyCutOff = 0)
     {
-        var fft = GetFft(time, path);
-        if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
+        if (path is not null) AddDependency(path);
+
+        var fft = context.GetFft(time, path);
+        var fftSpan = fft.Memory.Span;
+
+        if (magnitudes == fftSpan.Length && easing is OsbEasing.None)
+        {
+            disposables.Add(fft);
+            return fftSpan;
+        }
 
         var usedFftLength = frequencyCutOff > 0 ?
-            (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
-            fft.Length;
+            (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fftSpan.Length) :
+            fftSpan.Length;
 
         var resultFft = MemoryAllocator.Default.Allocate<float>(magnitudes);
         disposables.Add(resultFft);
@@ -261,10 +269,11 @@ public abstract class StoryboardObjectGenerator : Script
             var progress = easing.Ease((float)i / magnitudes);
             var index = int.Min((int)float.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
-            resultSpan[i] = fft[index];
+            resultSpan[i] = fftSpan[index];
             baseIndex = index;
         }
 
+        fft.Dispose();
         return resultSpan;
     }
 

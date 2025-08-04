@@ -38,7 +38,7 @@ public abstract class StoryboardSegment : StoryboardObject
     ///<summary> Reverses the order of sprites, with newer sprites being placed at the bottom of the list. </summary>
     public abstract bool ReverseDepth { get; set; }
 
-    ///<summary> Gets an enumerable collection of storyboard segments with identifiers. </summary>
+    ///<summary> Gets a collection of storyboard segments with identifiers. </summary>
     public abstract IEnumerable<StoryboardSegment> NamedSegments { get; }
 
     ///<summary> Creates a new storyboard segment. </summary>

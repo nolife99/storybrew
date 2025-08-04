@@ -14,7 +14,7 @@ public interface IDisplayable
         ICamera camera,
         RectangleF bounds,
         float opacity,
-        StoryboardTransform transform,
+        scoped ref readonly StoryboardTransform transform,
         Project project,
         FrameStats frameStats);
 }

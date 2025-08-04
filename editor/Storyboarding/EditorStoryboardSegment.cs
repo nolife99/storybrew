@@ -43,7 +43,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         ICamera camera,
         RectangleF bounds,
         float opacity,
-        StoryboardTransform transform,
+        scoped ref readonly StoryboardTransform transform,
         Project project,
         FrameStats frameStats)
     {
@@ -53,14 +53,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         if (layer.Highlight || effect.Highlight)
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
+        StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
         foreach (var o in displayableObjects)
-            o.Draw(drawContext,
-                camera,
-                bounds,
-                opacity,
-                new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY),
-                project,
-                frameStats);
+            o.Draw(drawContext, camera, bounds, opacity, ref newTransform, project, frameStats);
     }
 
     public void PostProcess()
@@ -71,15 +66,13 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             displayableObjects.Reverse();
         }
 
-        foreach (var sbo in storyboardObjects)
-            if (sbo is IPostProcessable p)
-                p.PostProcess();
-
         startTime = float.MaxValue;
         endTime = float.MinValue;
 
         foreach (var sbo in storyboardObjects)
         {
+            if (sbo is IPostProcessable p) p.PostProcess();
+
             startTime = float.Min(startTime, sbo.StartTime);
             endTime = float.Max(endTime, sbo.EndTime);
         }

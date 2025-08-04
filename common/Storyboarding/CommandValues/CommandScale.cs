@@ -58,5 +58,5 @@ using Tiny.PooledCollections.Generic.Temporary;
     public static implicit operator CommandPosition(CommandScale obj) => obj.internalVec;
 
     public static implicit operator CommandScale(Vector2 obj) => new(obj.X, obj.Y);
-    public static implicit operator Vector2(CommandScale obj) => new(obj.X, obj.Y);
+    public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
 }

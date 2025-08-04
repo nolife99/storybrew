@@ -69,7 +69,7 @@ public static class PathHelper
             chars.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
 
         chars.Replace('\\', StandardDirectorySeparator);
-        return chars.ToString();
+        return chars.SequenceEqual(path) ? path : string.Intern(chars.ToString());
     }
 
     public static void WithStandardSeparatorsUnsafe(scoped ReadOnlySpan<char> path)

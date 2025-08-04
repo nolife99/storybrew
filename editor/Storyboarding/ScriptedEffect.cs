@@ -109,9 +109,16 @@ public class ScriptedEffect : Effect
         }
         catch (ScriptLoadingException e)
         {
-            await changeStatus(EffectStatus.LoadingFailed,
-                e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message,
-                context.Log);
+            if (e.InnerException is null) await changeStatus(EffectStatus.LoadingFailed, e.Message, context.Log);
+            else
+            {
+                ValueTask task;
+                using (var msg = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                    $"{e.Message}: {e.InnerException.Message}"))
+                    task = changeStatus(EffectStatus.LoadingFailed, msg.AsReadOnlySpan(), context.Log);
+
+                await task;
+            }
 
             return;
         }
