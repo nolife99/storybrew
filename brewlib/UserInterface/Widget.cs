@@ -310,9 +310,9 @@ public class Widget(WidgetManager manager) : IDisposable
         }
     }
 
-    public float Width { get => Size.X; set => Size = Size with { X = value }; }
+    public float Width { get => Size.X; set => Size = new(value, Size.Y); }
 
-    public float Height { get => Size.Y; set => Size = Size with { Y = value }; }
+    public float Height { get => Size.Y; set => Size = new(Size.X, value); }
 
     public Vector2 AbsolutePosition
     {

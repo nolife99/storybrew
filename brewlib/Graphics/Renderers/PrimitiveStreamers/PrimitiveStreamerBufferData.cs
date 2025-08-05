@@ -14,7 +14,7 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     readonly nint primitiveBuffer = Marshal.AllocHGlobal(Unsafe.SizeOf<TPrimitive>() * maxPrimitivesPerBatch);
     int primitiveBufferOffset;
 
-    protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
+    protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
         => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitiveBuffer), primitiveBufferOffset++) =
             primitive;
 

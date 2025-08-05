@@ -1,17 +1,15 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
-using System.Runtime.InteropServices;
 using Tiny.PooledCollections.Generic.Temporary;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandDecimal : ICommandValue, ISpanFormattable
+public readonly record struct CommandDecimal : ICommandValue, ISpanFormattable
 {
-    readonly float value;
-
     const int FloatG7MaxChars = 16;
+    readonly double value;
 
-    CommandDecimal(float value) => this.value = value;
+    CommandDecimal(double value) => this.value = value;
 
     TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
     {
@@ -42,11 +40,11 @@ using Tiny.PooledCollections.Generic.Temporary;
     public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => new(left.value / right.value);
 
     public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
-    public static CommandDecimal operator +(CommandDecimal value) => new(float.Abs(value.value));
+    public static CommandDecimal operator +(CommandDecimal value) => new(double.Abs(value.value));
 
-    public static implicit operator CommandDecimal(double value) => new((float)value);
+    public static implicit operator CommandDecimal(double value) => new(value);
     public static implicit operator double(CommandDecimal obj) => obj.value;
-    public static implicit operator float(CommandDecimal obj) => obj.value;
+    public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 
     string IFormattable.ToString(string format, IFormatProvider formatProvider)
         => value.ToString(string.IsNullOrWhiteSpace(format) ? "G7" : format, formatProvider);

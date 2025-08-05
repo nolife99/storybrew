@@ -73,7 +73,7 @@ sealed class GpuCommandSync : IDisposable
         var unblockedIndex = -1;
         while (left <= right)
         {
-            var index = (left + right) / 2;
+            var index = right + left >> 1;
             if (syncRanges[index].Wait(false)) right = index - 1;
             else
             {
@@ -126,7 +126,7 @@ sealed class GpuCommandSync : IDisposable
 
                     case WaitSyncStatus.TimeoutExpired:
                         blocked = true;
-                        timeout = ulong.MaxValue;
+                        timeout = 1000000000L;
                         break;
 
                     case WaitSyncStatus.WaitFailed: throw new InvalidOperationException("ClientWaitSync failed");

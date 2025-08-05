@@ -15,7 +15,9 @@ public static class ColorExtensions
     public static Color WithOpacity(this Color color, float opacity)
     {
         var rgba = color.ToScaledVector4();
-        return Color.FromScaledVector(rgba with { W = rgba.W * opacity });
+        rgba.W *= opacity;
+
+        return Color.FromScaledVector(rgba);
     }
 
     public static Vector4 FromHsb(Vector4 hsba)

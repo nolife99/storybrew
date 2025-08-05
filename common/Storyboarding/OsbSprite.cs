@@ -944,12 +944,12 @@ public class OsbSprite : StoryboardObject
     {
         OsbOrigin.TopLeft => Vector2.Zero,
         OsbOrigin.TopCentre => new(size.X * .5f, 0),
-        OsbOrigin.TopRight => size with { Y = 0 },
+        OsbOrigin.TopRight => new(size.X, 0),
         OsbOrigin.CentreLeft => new(0, size.Y * .5f),
-        OsbOrigin.Centre => new(size.X * .5f, size.Y * .5f),
-        OsbOrigin.CentreRight => size with { Y = size.Y * .5f },
-        OsbOrigin.BottomLeft => size with { X = 0 },
-        OsbOrigin.BottomCentre => size with { X = size.X * .5f },
+        OsbOrigin.Centre => size * .5f,
+        OsbOrigin.CentreRight => new(size.X, size.Y * .5f),
+        OsbOrigin.BottomLeft => new(0, size.Y),
+        OsbOrigin.BottomCentre => new(size.X * .5f, size.Y),
         OsbOrigin.BottomRight => size,
         _ => throw new NotSupportedException(Enum.GetName(origin))
     };

@@ -221,16 +221,16 @@ public class Textbox : Widget, Field
 
     int SelectionLength => int.Abs(cursorPosition - selectionStart);
 
-    public override Vector2 MinSize => PreferredSize with { X = 0 };
+    public override Vector2 MinSize => new(0, PreferredSize.Y);
 
-    public override Vector2 MaxSize => PreferredSize with { X = 0 };
+    public override Vector2 MaxSize => new(0, PreferredSize.Y);
 
     public override Vector2 PreferredSize
     {
         get
         {
             var contentSize = content.PreferredSize;
-            if (label.Text.IsWhiteSpace()) return contentSize with { X = float.Max(contentSize.X, DefaultSize.X) };
+            if (label.Text.IsWhiteSpace()) return new(float.Max(contentSize.X, DefaultSize.X), contentSize.Y);
 
             var labelSize = label.PreferredSize;
             return new(float.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);

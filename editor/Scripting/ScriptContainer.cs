@@ -12,10 +12,14 @@ using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using ZLinq;
 
+file static class ScriptContainerShared
+{
+    internal static int nextId;
+}
+
 public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
-    static int nextId;
-    public readonly int Id = nextId++;
+    public readonly int Id = ScriptContainerShared.nextId++;
 
     AssemblyLoadContext appDomain;
 

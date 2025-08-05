@@ -18,6 +18,7 @@ public readonly struct ValueHashSetInternalsRefUnsafe<T>
     public readonly Entry<T>[] Entries;
     public readonly IEqualityComparer<T> Comparer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueHashSetInternalsRefUnsafe(scoped ref readonly ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -37,7 +38,6 @@ public readonly struct ValueHashSetInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueHashSetInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueHashSet<T> source)
         => new(in source);
 

@@ -13,11 +13,14 @@ public sealed record RotateCommand : Command<CommandDecimal>
 
     private protected override string Identifier => "R";
 
+    /// <inheritdoc/>
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToRotation(StartValue);
 
+    /// <inheritdoc/>
     protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToRotation(EndValue);
 
+    /// <inheritdoc/>
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

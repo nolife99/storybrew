@@ -19,7 +19,7 @@ public record OsuHitObject
         (StoryboardSize.Height - PlayfieldSize.Height) * .75f - 16);
 
     ///<summary> Represents the widescreen storyboard size in osu!. </summary>
-    public static readonly SizeF WidescreenStoryboardSize = StoryboardSize with { Width = StoryboardSize.Width * 4 / 3 };
+    public static readonly SizeF WidescreenStoryboardSize = new(StoryboardSize.Width * 4 / 3, StoryboardSize.Height);
 
     ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
     public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;

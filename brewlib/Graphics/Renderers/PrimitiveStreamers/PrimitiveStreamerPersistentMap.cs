@@ -20,7 +20,7 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
     protected override void internalQueueRender(ref int baseIndex) => baseIndex += baseVertex;
 
-    protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
+    protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
     {
         if (sync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer();
         Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset),

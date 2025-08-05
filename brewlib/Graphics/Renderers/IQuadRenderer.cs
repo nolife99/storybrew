@@ -8,7 +8,7 @@ using SixLabors.ImageSharp.PixelFormats;
 
 public interface IQuadRenderer : IRenderer
 {
-    internal void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture);
+    internal void Draw(scoped ref readonly QuadPrimitive quad, Texture2dRegion texture);
 }
 
 [StructLayout(LayoutKind.Sequential)] struct QuadPrimitive

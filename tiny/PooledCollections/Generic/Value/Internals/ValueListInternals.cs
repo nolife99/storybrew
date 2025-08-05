@@ -11,6 +11,7 @@ public readonly struct ValueListInternals<T> : IDisposable
     public readonly T[] Items;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueListInternals(ValueList<T> source)
     {
         Size = source._size;
@@ -38,6 +39,7 @@ partial class CollectionInternals
         return internals;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArray<T> ToValueArray<T>(scoped ref ValueList<T> source)
     {
         var internals = TransferOwner(ref source);

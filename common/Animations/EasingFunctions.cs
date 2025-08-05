@@ -13,7 +13,7 @@ public static class EasingFunctions
     public static float Linear(float x) => x;
 
     ///<summary> An easing function that represents an easing-in progression. </summary>
-    public static float In(float x) => float.Pow(x, 1.5f);
+    public static float In(float x) => x * x;
 
     ///<summary> An easing function that represents an easing-out progression. </summary>
     public static float Out(float x) => Reverse(In, x);
@@ -189,7 +189,42 @@ public static class EasingFunctions
         => (value < .5f ? func(2 * value) : 2 - func(2 - 2 * value)) * .5f;
 
     /// <summary> Applies the specified <see cref="OsbEasing"/> to the progress (<paramref name="value"/>). </summary>
-    public static float Ease(this OsbEasing easing, float value) => ToEasingFunction(easing)(value);
+    public static float Ease(this OsbEasing easing, float value) => easing switch
+    {
+        OsbEasing.In or OsbEasing.InQuad => QuadIn(value),
+        OsbEasing.Out or OsbEasing.OutQuad => QuadOut(value),
+        OsbEasing.InOutQuad => QuadInOut(value),
+        OsbEasing.InCubic => CubicIn(value),
+        OsbEasing.OutCubic => CubicOut(value),
+        OsbEasing.InOutCubic => CubicInOut(value),
+        OsbEasing.InQuart => QuartIn(value),
+        OsbEasing.OutQuart => QuartOut(value),
+        OsbEasing.InOutQuart => QuartInOut(value),
+        OsbEasing.InQuint => QuintIn(value),
+        OsbEasing.OutQuint => QuintOut(value),
+        OsbEasing.InOutQuint => QuintInOut(value),
+        OsbEasing.InSine => SineIn(value),
+        OsbEasing.OutSine => SineOut(value),
+        OsbEasing.InOutSine => SineInOut(value),
+        OsbEasing.InExpo => ExpoIn(value),
+        OsbEasing.OutExpo => ExpoOut(value),
+        OsbEasing.InOutExpo => ExpoInOut(value),
+        OsbEasing.InCirc => CircIn(value),
+        OsbEasing.OutCirc => CircOut(value),
+        OsbEasing.InOutCirc => CircInOut(value),
+        OsbEasing.InElastic => ElasticIn(value),
+        OsbEasing.OutElastic => ElasticOut(value),
+        OsbEasing.OutElasticHalf => ElasticOutHalf(value),
+        OsbEasing.OutElasticQuarter => ElasticOutQuarter(value),
+        OsbEasing.InOutElastic => ElasticInOut(value),
+        OsbEasing.InBack => BackIn(value),
+        OsbEasing.OutBack => BackOut(value),
+        OsbEasing.InOutBack => BackInOut(value),
+        OsbEasing.InBounce => BounceIn(value),
+        OsbEasing.OutBounce => BounceOut(value),
+        OsbEasing.InOutBounce => BounceInOut(value),
+        _ => Linear(value)
+    };
 
     /// <summary> Converts an <see cref="OsbEasing"/> to one of the corresponding <see cref="EasingFunctions"/>. </summary>
     public static Func<float, float> ToEasingFunction(OsbEasing easing) => easing switch

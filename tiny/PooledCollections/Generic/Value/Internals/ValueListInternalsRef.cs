@@ -10,6 +10,7 @@ public readonly ref struct ValueListInternalsRef<T>
     public readonly bool ClearItems;
     public readonly ReadOnlySpan<T> Items;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueListInternalsRef(scoped ref readonly ValueList<T> source)
     {
         Size = source._size;
@@ -21,7 +22,6 @@ public readonly ref struct ValueListInternalsRef<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueListInternalsRef<T> GetRef<T>(this scoped ref readonly ValueList<T> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

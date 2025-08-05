@@ -46,7 +46,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     protected int PrimitiveSize { get; }
     protected int MaxPrimitivesPerBatch { get; set; }
 
-    public void AddPrimitive(ref readonly TPrimitive primitive)
+    public void AddPrimitive(scoped ref readonly TPrimitive primitive)
     {
         if (totalQueuedPrimitives == MaxPrimitivesPerBatch) DrawState.FlushRenderer(true);
         internalAddPrimitive(in primitive);
@@ -136,7 +136,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     protected virtual void internalBind() { }
     protected virtual void internalQueueRender(ref int baseIndex) { }
 
-    protected abstract void internalAddPrimitive(ref readonly TPrimitive primitive);
+    protected abstract void internalAddPrimitive(scoped ref readonly TPrimitive primitive);
 
     protected abstract void internalRender(PrimitiveType type, int vertexCount);
 

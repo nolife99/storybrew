@@ -18,6 +18,7 @@ public readonly ref struct ValueArrayHashSetInternalsRef<T>
     public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayHashSetInternalsRef(scoped ref readonly ValueArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
@@ -36,7 +37,6 @@ public readonly ref struct ValueArrayHashSetInternalsRef<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly ValueArrayHashSet<T> source)
         => new(in source);
 

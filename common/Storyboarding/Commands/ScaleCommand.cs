@@ -12,12 +12,15 @@ public sealed record ScaleCommand : Command<CommandDecimal>
 
     public override bool IsFragmentableAt(float time) => base.IsFragmentableAt(time) && StartValue >= 0 && EndValue >= 0;
 
+    /// <inheritdoc/>
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToScale(StartValue);
 
+    /// <inheritdoc/>
     protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToScale(EndValue);
 
+    /// <inheritdoc/>
     public override CommandDecimal ValueAtProgress(float progress)
         => float.Max(0, StartValue + (EndValue - StartValue) * progress);
 }
@@ -29,11 +32,14 @@ public sealed record VScaleCommand : Command<CommandScale>
 
     private protected override string Identifier => "V";
 
+    /// <inheritdoc/>
     protected override CommandScale GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToScale(StartValue);
 
+    /// <inheritdoc/>
     protected override CommandScale GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToScale(EndValue);
 
+    /// <inheritdoc/>
     public override CommandScale ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

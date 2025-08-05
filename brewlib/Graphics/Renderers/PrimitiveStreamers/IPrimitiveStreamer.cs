@@ -8,7 +8,7 @@ interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : struct
 {
     int QueuedRenders { get; }
     int PrimitivesInBatch { get; }
-    void AddPrimitive(ref readonly TPrimitive primitive);
+    void AddPrimitive(scoped ref readonly TPrimitive primitive);
 
     void Bind(Shader shader);
     void Unbind();

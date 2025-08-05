@@ -10,6 +10,7 @@ public readonly struct ValueQueueInternalsRefUnsafe<T>
     public readonly bool ClearArray;
     public readonly T[] Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueQueueInternalsRefUnsafe(scoped ref readonly ValueQueue<T> source)
     {
         Head = source._head;
@@ -23,12 +24,11 @@ public readonly struct ValueQueueInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueQueueInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueQueue<T> source)
         => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(in this ValueQueue<T> source, out int head, out int tail)
+    public static Span<T> AsSpan<T>(this scoped ref readonly ValueQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
@@ -36,7 +36,7 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(in this ValueQueue<T> source, out int head, out int tail)
+    public static Memory<T> AsMemory<T>(this scoped ref readonly ValueQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
@@ -44,7 +44,11 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this ValueQueue<T> source, out T[] array, out int count, out int head, out int tail)
+    public static void GetUnsafe<T>(this scoped ref readonly ValueQueue<T> source,
+        out T[] array,
+        out int count,
+        out int head,
+        out int tail)
     {
         array = source._array;
         count = source._size;

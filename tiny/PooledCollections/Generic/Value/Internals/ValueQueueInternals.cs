@@ -11,6 +11,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
     public readonly T[] Array;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueQueueInternals(scoped ref readonly ValueQueue<T> source)
     {
         Head = source._head;

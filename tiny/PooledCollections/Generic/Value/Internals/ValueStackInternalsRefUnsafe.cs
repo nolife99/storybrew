@@ -10,6 +10,7 @@ public readonly struct ValueStackInternalsRefUnsafe<T>
     public readonly bool ClearArray;
     public readonly T[] Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueStackInternalsRefUnsafe(scoped ref readonly ValueStack<T> source)
     {
         Size = source._size;
@@ -21,7 +22,6 @@ public readonly struct ValueStackInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueStackInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueStack<T> source)
         => new(in source);
 

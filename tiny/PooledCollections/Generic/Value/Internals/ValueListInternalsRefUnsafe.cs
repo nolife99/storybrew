@@ -10,6 +10,7 @@ public readonly struct ValueListInternalsRefUnsafe<T>
     public readonly bool ClearItems;
     public readonly T[] Items;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueListInternalsRefUnsafe(scoped ref readonly ValueList<T> source)
     {
         Size = source._size;
@@ -21,7 +22,6 @@ public readonly struct ValueListInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueListInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueList<T> source)
         => new(in source);
 

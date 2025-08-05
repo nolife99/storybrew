@@ -20,6 +20,7 @@ public sealed class TriggerCommand : CommandGroup
     public string TriggerName { get; }
     public int Group { get; }
 
+    /// <inheritdoc/>
     public override bool IsFragmentableAt(float time) => false;
 
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings) => StringHelper.Interpolate(

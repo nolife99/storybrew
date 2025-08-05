@@ -192,24 +192,24 @@ public class TimelineSlider : Slider
             if (RepeatStart != RepeatEnd)
             {
                 drawLine(drawContext,
-                    offset with { X = timeToXTop(RepeatStart) - pixelSize },
+                    new(timeToXTop(RepeatStart) - pixelSize, offset.Y),
                     lineSize,
                     Color.White,
                     actualOpacity);
 
-                drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White, actualOpacity);
+                drawLine(drawContext, new(x, offset.Y), lineSize * .6f, Color.White, actualOpacity);
 
                 drawLine(drawContext,
-                    offset with { X = timeToXTop(RepeatEnd) + pixelSize },
+                    new(timeToXTop(RepeatEnd) + pixelSize, offset.Y),
                     lineSize,
                     Color.White,
                     actualOpacity);
             }
             else
             {
-                drawLine(drawContext, offset with { X = x - pixelSize }, lineSize, Color.White, actualOpacity);
+                drawLine(drawContext, new(x - pixelSize, offset.Y), lineSize, Color.White, actualOpacity);
 
-                drawLine(drawContext, offset with { X = x + pixelSize }, lineSize, Color.White, actualOpacity);
+                drawLine(drawContext, new(x + pixelSize, offset.Y), lineSize, Color.White, actualOpacity);
             }
 
             // Current time (bottom)
@@ -321,9 +321,11 @@ public class TimelineSlider : Slider
                         beatCount % timingPoint.BeatPerMeasure != 0) lineSize.Y *= .5f;
 
                     var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);
-                    var tickOpacity = tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity;
-
-                    drawLine(drawContext, new(tickX, offset.Y + lineBottomY), lineSize, tickColor, tickOpacity);
+                    drawLine(drawContext,
+                        new(tickX, offset.Y + lineBottomY),
+                        lineSize,
+                        tickColor,
+                        tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity);
                 }
 
                 if (tickCount % SnapDivisor == 0) ++beatCount;

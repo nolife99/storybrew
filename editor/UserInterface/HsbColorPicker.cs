@@ -59,11 +59,11 @@ public class HsbColorPicker : Widget, Field
         updateWidgets();
     }
 
-    public override Vector2 MinSize => layout.MinSize with { Y = layout.MinSize.Y + previewHeight };
+    public override Vector2 MinSize => new(layout.MinSize.X, layout.MinSize.Y + previewHeight);
 
     public override Vector2 MaxSize => Vector2.Zero;
 
-    public override Vector2 PreferredSize => layout.PreferredSize with { Y = layout.PreferredSize.Y + previewHeight };
+    public override Vector2 PreferredSize => new(layout.PreferredSize.X, layout.PreferredSize.Y + previewHeight);
 
     public Rgba32 Value
     {

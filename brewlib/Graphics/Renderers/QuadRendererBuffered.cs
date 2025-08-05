@@ -13,8 +13,6 @@ using BrewLib.Graphics.Textures;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
 public class QuadRendererBuffered : IQuadRenderer
 {
@@ -27,15 +25,12 @@ public class QuadRendererBuffered : IQuadRenderer
         VertexAttribute.CreateDiffuseCoord(true),
         VertexAttribute.CreateColor(true));
 
-    readonly PooledList<long> bindlessTextures;
-    readonly PooledList<Vector4> clipRegions;
-    readonly PooledList<Matrix4x4> combinedMatrices;
-
+    readonly nint bindlessTextures, clipRegions, combinedMatrices;
     readonly bool ownsShader;
 
     readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
-    readonly int ssbo, maxQuadsPerBatch, textureUniformLocation;
+    readonly int ssbo, maxQuadsPerBatch, textureUniformLocation, ssboSize;
 
     ICamera camera;
     int currentTexture, currentSamplerUnit;
@@ -56,12 +51,8 @@ public class QuadRendererBuffered : IQuadRenderer
 
         this.shader = shader;
 
-        var ssboSize = (Unsafe.SizeOf<Matrix4x4>() + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch;
-        if (Texture2d.BindlessTexturesSupported)
-        {
-            ssboSize += sizeof(long) * maxQuadsPerBatch;
-            bindlessTextures = new();
-        }
+        ssboSize = (Unsafe.SizeOf<Matrix4x4>() + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch;
+        if (Texture2d.BindlessTexturesSupported) ssboSize += sizeof(long) * maxQuadsPerBatch;
         else textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
         var indicesCount = maxQuadsPerBatch * IndexPerQuad;
@@ -87,10 +78,17 @@ public class QuadRendererBuffered : IQuadRenderer
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
         GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferStorageFlags.DynamicStorageBit);
 
-        combinedMatrices = new();
-        clipRegions = new();
-
         Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
+
+        combinedMatrices = Marshal.AllocHGlobal(ssboSize);
+        var nextSlice = combinedMatrices + Unsafe.SizeOf<Matrix4x4>() * maxQuadsPerBatch;
+
+        if (Texture2d.BindlessTexturesSupported)
+        {
+            bindlessTextures = nextSlice;
+            clipRegions = bindlessTextures + sizeof(long) * maxQuadsPerBatch;
+        }
+        else clipRegions = nextSlice;
     }
 
     public Matrix4x4 TransformMatrix
@@ -98,7 +96,7 @@ public class QuadRendererBuffered : IQuadRenderer
         get => transformMatrix;
         set
         {
-            if (transformMatrix.Equals(value)) return;
+            if (transformMatrix == value) return;
 
             DrawState.FlushRenderer();
             transformMatrix = value;
@@ -138,38 +136,28 @@ public class QuadRendererBuffered : IQuadRenderer
 
     void IRenderer.Flush(bool canBuffer)
     {
+        var queuedRenders = primitiveStreamer.QueuedRenders;
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
-            combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
-            if (Texture2d.BindlessTexturesSupported) bindlessTextures.Add(currentTextureHandle);
+            WriteToBuffer(combinedMatrices, Matrix4x4.Multiply(transformMatrix, camera.ProjectionView), queuedRenders);
+            if (Texture2d.BindlessTexturesSupported) WriteToBuffer(bindlessTextures, currentTextureHandle, queuedRenders);
 
             var clipRegion = Rectangle.Intersect(DrawState.ClipRegion ?? Rectangle.Empty, DrawState.Viewport);
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
 
-            clipRegions.Add(clipRegion);
+            WriteToBuffer(clipRegions, (Vector4)clipRegion, queuedRenders);
             primitiveStreamer.QueueRender(IndexPerQuad, VertexPerQuad);
         }
 
-        var queuedRenders = primitiveStreamer.QueuedRenders;
+        queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             0,
-            queuedRenders * Unsafe.SizeOf<Matrix4x4>(),
-            ref MemoryMarshal.GetReference(combinedMatrices.AsReadOnlySpan()));
+            ssboSize - Unsafe.SizeOf<Vector4>() * (maxQuadsPerBatch - queuedRenders),
+            combinedMatrices);
 
-        combinedMatrices.Clear();
-
-        if (Texture2d.BindlessTexturesSupported)
-        {
-            GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-                maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
-                queuedRenders * sizeof(long),
-                ref MemoryMarshal.GetReference(bindlessTextures.AsReadOnlySpan()));
-
-            bindlessTextures.Clear();
-        }
-        else
+        if (!Texture2d.BindlessTexturesSupported)
         {
             var samplerUnit = DrawState.BindTexture(currentTexture);
             if (currentSamplerUnit != samplerUnit)
@@ -179,17 +167,10 @@ public class QuadRendererBuffered : IQuadRenderer
             }
         }
 
-        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            maxQuadsPerBatch * ((Texture2d.BindlessTexturesSupported ? sizeof(long) : 0) + Unsafe.SizeOf<Matrix4x4>()),
-            queuedRenders * Unsafe.SizeOf<Vector4>(),
-            ref MemoryMarshal.GetReference(clipRegions.AsReadOnlySpan()));
-
-        clipRegions.Clear();
-
         primitiveStreamer.Render(PrimitiveType.Triangles, VertexPerQuad);
     }
 
-    void IQuadRenderer.Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
+    void IQuadRenderer.Draw(scoped ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
         if (Texture2d.BindlessTexturesSupported)
         {
@@ -218,6 +199,10 @@ public class QuadRendererBuffered : IQuadRenderer
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static void WriteToBuffer<T>(nint buffer, T value, int index)
+        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), buffer), index) = value;
 
     Shader CreateDefaultShader()
     {
@@ -279,9 +264,7 @@ public class QuadRendererBuffered : IQuadRenderer
         if (rendering) ((IRenderer)this).EndRendering();
         GL.DeleteBuffer(ssbo);
 
-        combinedMatrices.Dispose();
-        if (Texture2d.BindlessTexturesSupported) bindlessTextures.Dispose();
-        clipRegions.Dispose();
+        Marshal.FreeHGlobal(combinedMatrices);
 
         if (!disposing) return;
 

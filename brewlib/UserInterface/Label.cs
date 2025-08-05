@@ -13,7 +13,7 @@ public class Label(WidgetManager manager) : Widget(manager)
 {
     readonly TextDrawable textDrawable = new();
 
-    public override Vector2 MinSize => PreferredSize with { X = 0 };
+    public override Vector2 MinSize => new(0, PreferredSize.Y);
 
     public override Vector2 PreferredSize => textDrawable.Size;
 

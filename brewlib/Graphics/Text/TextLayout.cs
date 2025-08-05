@@ -191,7 +191,7 @@ public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Gly
         get
         {
             var linePosition = Line.Position;
-            return linePosition with { X = linePosition.X + X };
+            return new(linePosition.X + X, linePosition.Y);
         }
     }
 }

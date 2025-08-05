@@ -17,6 +17,7 @@ public sealed class LoopCommand : CommandGroup
 
     public int LoopCount { get; private set; }
 
+    /// <inheritdoc/>
     public override float EndTime
     {
         get => StartTime + CommandsEndTime * LoopCount;

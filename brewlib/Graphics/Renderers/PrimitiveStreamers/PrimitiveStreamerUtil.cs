@@ -9,11 +9,11 @@ static class PrimitiveStreamerUtil
         int minVert,
         scoped ReadOnlySpan<ushort> indices) where TPrimitive : struct
     {
-        if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices);
-
         if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities())
             return new PrimitiveStreamerPersistentMap<TPrimitive>(vertDec, minVert, indices);
+
+        if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
+            return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices);
 
         throw new NotSupportedException();
     }

@@ -18,6 +18,7 @@ public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
     public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
     public readonly IEqualityComparer<TKey> Comparer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueDictionaryInternalsRef(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -39,7 +40,6 @@ public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
         this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
 

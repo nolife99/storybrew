@@ -9,5 +9,7 @@ public sealed record FadeCommand : Command<CommandDecimal>
         : base(easing, startTime, endTime, startValue, endValue) { }
 
     private protected override string Identifier => "F";
+
+    /// <inheritdoc/>
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

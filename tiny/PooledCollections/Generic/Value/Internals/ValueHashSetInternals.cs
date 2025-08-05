@@ -21,6 +21,7 @@ public readonly struct ValueHashSetInternals<T> : IDisposable
     public readonly ArrayPool<int> BucketPool;
     public readonly ArrayPool<Entry<T>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueHashSetInternals(scoped ref readonly ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64

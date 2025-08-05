@@ -24,50 +24,50 @@ public static class QuadRendererExtensions
         var fx = -origin * scale * flip;
         var fx2 = (texture1 - texture0 - origin) * scale * flip;
 
-        ref var cornersRef = ref MemoryMarshal.GetReference(stackalloc Vector2[4]);
+        ref var corner0 = ref MemoryMarshal.GetReference(stackalloc Vector2[4]);
         if (rotation != 0)
         {
             var rotationMatrix = Matrix3x2.CreateRotation(rotation);
 
-            cornersRef = Vector2.Transform(fx, rotationMatrix);
-            ref var temp1 = ref Unsafe.Add(ref cornersRef, 1);
-            ref var temp2 = ref Unsafe.Add(ref cornersRef, 2);
+            corner0 = Vector2.Transform(fx, rotationMatrix);
+            ref var corner1 = ref Unsafe.Add(ref corner0, 1);
+            ref var corner2 = ref Unsafe.Add(ref corner0, 2);
 
-            temp1 = Vector2.Transform(fx with { Y = fx2.Y }, rotationMatrix);
-            temp2 = Vector2.Transform(fx2, rotationMatrix);
-            Unsafe.Add(ref cornersRef, 3) = temp2 - temp1 + cornersRef;
+            corner1 = Vector2.Transform(new(fx.X, fx2.Y), rotationMatrix);
+            corner2 = Vector2.Transform(fx2, rotationMatrix);
+            Unsafe.Add(ref corner0, 3) = corner2 - corner1 + corner0;
         }
         else
         {
-            cornersRef = fx;
-            Unsafe.Add(ref cornersRef, 1) = fx with { Y = fx2.Y };
-            Unsafe.Add(ref cornersRef, 2) = fx2;
-            Unsafe.Add(ref cornersRef, 3) = fx2 with { Y = fx.Y };
+            corner0 = fx;
+            Unsafe.Add(ref corner0, 1) = new(fx.X, fx2.Y);
+            Unsafe.Add(ref corner0, 2) = fx2;
+            Unsafe.Add(ref corner0, 3) = new(fx2.X, fx.Y);
         }
 
         var textureUvOrigin = texture.UvOrigin;
         var textureUvRatio = texture.UvRatio;
 
-        var textureU0V0 = Vector2.FusedMultiplyAdd(texture0, textureUvRatio, textureUvOrigin);
-        var textureU1V1 = Vector2.FusedMultiplyAdd(texture1, textureUvRatio, textureUvOrigin);
+        var textureU0V0 = Vector2.MultiplyAddEstimate(texture0, textureUvRatio, textureUvOrigin);
+        var textureU1V1 = Vector2.MultiplyAddEstimate(texture1, textureUvRatio, textureUvOrigin);
 
-        var textureU0U1 = flip.X > 0 ? textureU0V0 with { Y = textureU1V1.X } : textureU1V1 with { Y = textureU0V0.X };
-        var textureV0V1 = flip.Y > 0 ? textureU1V1 with { X = textureU0V0.Y } : textureU0V0 with { X = textureU1V1.Y };
+        Vector2 textureU0U1 = flip.X > 0 ? new(textureU0V0.X, textureU1V1.X) : new(textureU1V1.X, textureU0V0.X);
+        Vector2 textureV0V1 = flip.Y > 0 ? new(textureU0V0.Y, textureU1V1.Y) : new(textureU1V1.Y, textureU0V0.Y);
 
         var rgba = color.ToPixel<Rgba32>();
         QuadPrimitive primitive = new()
         {
-            vec1 = cornersRef + xy,
-            vec2 = Unsafe.Add(ref cornersRef, 1) + xy,
-            vec3 = Unsafe.Add(ref cornersRef, 2) + xy,
-            vec4 = Unsafe.Add(ref cornersRef, 3) + xy,
+            vec1 = corner0 + xy,
+            vec2 = Unsafe.Add(ref corner0, 1) + xy,
+            vec3 = Unsafe.Add(ref corner0, 2) + xy,
+            vec4 = Unsafe.Add(ref corner0, 3) + xy,
             u1 = (Half)textureU0U1.X,
-            u2 = (Half)textureU0U1.X,
-            u3 = (Half)textureU0U1.Y,
-            u4 = (Half)textureU0U1.Y,
             v1 = (Half)textureV0V1.X,
+            u2 = (Half)textureU0U1.X,
             v2 = (Half)textureV0V1.Y,
+            u3 = (Half)textureU0U1.Y,
             v3 = (Half)textureV0V1.Y,
+            u4 = (Half)textureU0U1.Y,
             v4 = (Half)textureV0V1.X,
             color1 = rgba,
             color2 = rgba,

@@ -11,6 +11,7 @@ public readonly struct ValueArrayInternals<T> : IDisposable
     public readonly T[] Array;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayInternals(scoped ref readonly ValueArray<T> source)
     {
         Length = source._length;

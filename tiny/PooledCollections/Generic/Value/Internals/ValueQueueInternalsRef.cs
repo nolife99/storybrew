@@ -10,6 +10,7 @@ public readonly ref struct ValueQueueInternalsRef<T>
     public readonly bool ClearArray;
     public readonly ReadOnlySpan<T> Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueQueueInternalsRef(scoped ref readonly ValueQueue<T> source)
     {
         Head = source._head;
@@ -23,7 +24,6 @@ public readonly ref struct ValueQueueInternalsRef<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueQueueInternalsRef<T> GetRef<T>(this scoped ref readonly ValueQueue<T> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

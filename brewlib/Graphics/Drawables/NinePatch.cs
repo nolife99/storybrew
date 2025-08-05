@@ -50,7 +50,7 @@ public sealed class NinePatch : Drawable
         // Sides
         if (scale.Y > 0)
         {
-            var unitX = scale with { X = 1 };
+            Vector2 unitX = new(1, scale.Y);
             renderer.Draw(Texture,
                 new(vec0.X, vec1.Y),
                 Vector2.Zero,
@@ -72,7 +72,7 @@ public sealed class NinePatch : Drawable
 
         if (scale.X > 0)
         {
-            var unitY = scale with { Y = 1 };
+            Vector2 unitY = new(scale.X, 1);
             renderer.Draw(Texture,
                 new(vec1.X, vec0.Y),
                 Vector2.Zero,

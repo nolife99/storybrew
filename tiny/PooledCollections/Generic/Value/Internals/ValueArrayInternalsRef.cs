@@ -10,6 +10,7 @@ public readonly ref struct ValueArrayInternalsRef<T>
     public readonly bool ClearArray;
     public readonly ReadOnlySpan<T> Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayInternalsRef(scoped ref readonly ValueArray<T> source)
     {
         Length = source._length;
@@ -20,7 +21,6 @@ public readonly ref struct ValueArrayInternalsRef<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayInternalsRef<T> GetRef<T>(this scoped ref readonly ValueArray<T> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

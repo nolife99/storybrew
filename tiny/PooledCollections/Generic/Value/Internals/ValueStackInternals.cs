@@ -11,6 +11,7 @@ public readonly struct ValueStackInternals<T> : IDisposable
     public readonly T[] Array;
     public readonly ArrayPool<T> Pool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueStackInternals(scoped ref readonly ValueStack<T> source)
     {
         Size = source._size;

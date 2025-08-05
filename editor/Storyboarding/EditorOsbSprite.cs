@@ -158,7 +158,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,
                 new Vector2(bounds.X + bounds.Width * .5f, bounds.Y) +
-                position with { X = position.X - 320 } * boundsScaling,
+                new Vector2(position.X - 320, position.Y) * boundsScaling,
                 origin,
                 scale,
                 rotation,

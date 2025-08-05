@@ -53,9 +53,13 @@ public abstract class CommandGroup : ICommand
         }
     }
 
+    /// <inheritdoc/>
     public float StartTime { get; protected set; }
+
+    /// <inheritdoc/>
     public virtual float EndTime { get; protected set; }
 
+    /// <inheritdoc/>
     public int CompareTo(ICommand other)
     {
         var result = StartTime.CompareTo(other.StartTime);
@@ -73,6 +77,7 @@ public abstract class CommandGroup : ICommand
         foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
 
+    /// <inheritdoc/>
     public abstract bool IsFragmentableAt(float time);
 
     public bool Add(ICommand command)
@@ -98,10 +103,4 @@ public abstract class CommandGroup : ICommand
 
     public virtual void EndGroup() { }
     protected abstract TempList<char> GetCommandGroupHeader(ExportSettings exportSettings);
-
-    public override string ToString()
-    {
-        using var header = GetCommandGroupHeader(ExportSettings.Default);
-        return $"{header.AsReadOnlySpan()} ({commands.Count} commands)";
-    }
 }

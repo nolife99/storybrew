@@ -10,7 +10,8 @@ using StorybrewCommon.Storyboarding.Display;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-#pragma warning disable CS1591
+/// <summary> A command that can be given to an <see cref="OsbSprite"/> to change its properties over time. </summary>
+/// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
 public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable where TValue : struct, ICommandValue
 {
     private protected Command(OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
@@ -26,24 +27,38 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
     private protected abstract string Identifier { get; }
 
+    /// <summary> The easing function used to interpolate between the start and end times. </summary>
     public OsbEasing Easing { get; }
-    protected virtual bool MaintainValue => true;
-    protected virtual bool ExportEndValue => true;
 
+    private protected virtual bool MaintainValue => true;
+    private protected virtual bool ExportEndValue => true;
+
+    /// <summary> Offsets the start and end times of the command by the given value. </summary>
     public void Offset(float offset)
     {
         StartTime += offset;
         EndTime += offset;
     }
 
+    /// <inheritdoc/>
     public virtual bool IsFragmentableAt(float time) => Easing == OsbEasing.None;
+
+    /// <inheritdoc/>
     public CommandResult<TValue> AsResult(float timeOffset) => new(this, timeOffset);
 
+    /// <inheritdoc/>
     public float StartTime { get; private set; }
+
+    /// <inheritdoc/>
     public float EndTime { get; private set; }
+
+    /// <inheritdoc/>
     public TValue StartValue { get; }
+
+    /// <inheritdoc/>
     public TValue EndValue { get; }
 
+    /// <inheritdoc/>
     public TValue ValueAtTime(float time)
     {
         if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
@@ -53,6 +68,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
     }
 
+    /// <inheritdoc/>
     public int CompareTo(ICommand other)
     {
         var result = StartTime.CompareTo(other.StartTime);
@@ -69,8 +85,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
                 1;
     }
 
-    public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
-
+    /// <inheritdoc/>
     public virtual void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         StoryboardTransform transform,
@@ -82,8 +97,15 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         writer.WriteLine(str.AsReadOnlySpan());
     }
 
+    /// <summary> Gets the transformed start value of the command. </summary>
+    /// <param name="transform"> The transform to apply to the command's start value. </param>
     protected virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
+
+    /// <summary> Gets the transformed end value of the command. </summary>
+    /// <param name="transform"> The transform to apply to the command's end value. </param>
     protected virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
+
+    /// <summary> Gets the value of the command at the given progress. </summary>
     public abstract TValue ValueAtProgress(float progress);
 
     TempList<char> ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
@@ -114,6 +136,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         return result;
     }
 
+    /// <inheritdoc/>
     public override string ToString()
     {
         using var str = ToOsbString(ExportSettings.Default, StoryboardTransform.Identity);

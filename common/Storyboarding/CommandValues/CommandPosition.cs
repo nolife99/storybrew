@@ -1,35 +1,37 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.Numerics;
-using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary> Base structure for movement commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandPosition
+public readonly record struct CommandPosition
     : ICommandValue, IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
         ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
         IMultiplyOperators<CommandPosition, CommandPosition, CommandPosition>,
         IDivisionOperators<CommandPosition, CommandPosition, CommandPosition>,
         IUnaryNegationOperators<CommandPosition, CommandPosition>
 {
-    internal readonly Vector2 internalVec;
-
-    ///<summary> Gets the X value of this instance. </summary>
-    public CommandDecimal X => internalVec.X;
-
-    ///<summary> Gets the Y value of this instance. </summary>
-    public CommandDecimal Y => internalVec.Y;
+    internal readonly Vector128<double> internalVec;
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from an X and Y value. </summary>
-    public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
+    public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = Vector128.Create(x, y);
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from a value. </summary>
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
-    public CommandPosition(Vector2 vector) => internalVec = vector;
+    public CommandPosition(Vector2 vector) => internalVec = Vector128.Create(vector.X, vector.Y);
+
+    internal CommandPosition(Vector128<double> vec) => internalVec = vec;
+
+    ///<summary> Gets the X value of this instance. </summary>
+    public CommandDecimal X => internalVec.GetLower().ToScalar();
+
+    ///<summary> Gets the Y value of this instance. </summary>
+    public CommandDecimal Y => internalVec.GetUpper().ToScalar();
 
     TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings) => StringHelper.Interpolate(
         exportSettings.NumberFormat,
@@ -37,23 +39,23 @@ using Tiny.PooledCollections.Generic.Temporary;
 
 #pragma warning disable CS1591
     public static CommandPosition operator +(CommandPosition left, CommandPosition right)
-        => left.internalVec + right.internalVec;
+        => new(left.internalVec + right.internalVec);
 
     public static CommandPosition operator -(CommandPosition left, CommandPosition right)
-        => left.internalVec - right.internalVec;
+        => new(left.internalVec - right.internalVec);
 
-    public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
+    public static CommandPosition operator -(CommandPosition pos) => new(-pos.internalVec);
 
     public static CommandPosition operator *(CommandPosition left, CommandPosition right)
-        => left.internalVec * right.internalVec;
+        => new(left.internalVec * right.internalVec);
 
-    public static CommandPosition operator *(CommandPosition left, CommandDecimal right) => left.internalVec * right;
-    public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => right.internalVec * left;
+    public static CommandPosition operator *(CommandPosition left, CommandDecimal right) => new(left.internalVec * right);
+    public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => new(right.internalVec * left);
 
     public static CommandPosition operator /(CommandPosition left, CommandPosition right)
-        => left.internalVec / right.internalVec;
+        => new(left.internalVec / right.internalVec);
 
-    public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => left.internalVec / right;
+    public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => new(left.internalVec / right);
 
     public static implicit operator CommandPosition(OpenTK.Mathematics.Vector2 obj) => new(obj.X, obj.Y);
     public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition obj) => new(obj.X, obj.Y);

@@ -9,5 +9,7 @@ public sealed record ColorCommand : Command<CommandColor>
         base(easing, startTime, endTime, startValue, endValue) { }
 
     private protected override string Identifier => "C";
+
+    /// <inheritdoc/>
     public override CommandColor ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

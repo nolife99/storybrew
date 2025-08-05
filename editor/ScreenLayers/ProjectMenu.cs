@@ -777,7 +777,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
         else storyboardContainer.Offset = Vector2.Zero;
 
-        storyboardContainer.Size = fitB.Checked ? parentSize with { Y = parentSize.X * 9 / 16 } : parentSize;
+        storyboardContainer.Size = fitB.Checked ? new(parentSize.X, parentSize.X * 9 / 16) : parentSize;
     }
 
     void resizeTimeline()

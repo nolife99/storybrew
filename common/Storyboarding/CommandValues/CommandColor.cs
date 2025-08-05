@@ -3,16 +3,14 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.IO;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic.Temporary;
 using Vector3 = System.Numerics.Vector3;
-using Vector4 = System.Numerics.Vector4;
 
 ///<summary> Base struct for coloring commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandColor : ICommandValue
+public readonly record struct CommandColor : ICommandValue
 {
     /// <summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);
@@ -31,15 +29,6 @@ using Vector4 = System.Numerics.Vector4;
 
     readonly Vector3 internalVec;
 
-    ///<summary> Gets the red value of this instance. </summary>
-    public byte R => toByte(internalVec.X);
-
-    ///<summary> Gets the green value of this instance. </summary>
-    public byte G => toByte(internalVec.Y);
-
-    ///<summary> Gets the blue value of this instance. </summary>
-    public byte B => toByte(internalVec.Z);
-
     /// <summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
     public CommandColor(double r = 1, double g = 1, double b = 1)
     {
@@ -49,12 +38,14 @@ using Vector4 = System.Numerics.Vector4;
         internalVec = new((float)r, (float)g, (float)b);
     }
 
-    /// <summary> Returns whether this instance and <paramref name="other"/> are equal to each other. </summary>
-    public bool Equals(CommandColor other) => internalVec == other.internalVec;
+    ///<summary> Gets the red value of this instance. </summary>
+    public byte R => toByte(internalVec.X);
 
-    /// <summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
-    /// <remarks> Some color information could be lost. </remarks>
-    public override int GetHashCode() => 0 | B << 16 | G << 8 | R;
+    ///<summary> Gets the green value of this instance. </summary>
+    public byte G => toByte(internalVec.Y);
+
+    ///<summary> Gets the blue value of this instance. </summary>
+    public byte B => toByte(internalVec.Z);
 
     TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
     {
@@ -74,6 +65,13 @@ using Vector4 = System.Numerics.Vector4;
 
         return list;
     }
+
+    /// <summary> Returns whether this instance and <paramref name="other"/> are equal to each other. </summary>
+    public bool Equals(CommandColor other) => internalVec == other.internalVec;
+
+    /// <summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
+    /// <remarks> Some color information could be lost. </remarks>
+    public override int GetHashCode() => 0 | B << 16 | G << 8 | R;
 
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
@@ -103,8 +101,7 @@ using Vector4 = System.Numerics.Vector4;
     }
 
     /// <summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
-    public static CommandColor FromHtml(string htmlColor)
-        => Color.ParseHex(htmlColor.StartsWith('#') ? htmlColor : '#' + htmlColor);
+    public static CommandColor FromHtml(string htmlColor) => Color.ParseHex(htmlColor);
 
     static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
@@ -115,7 +112,7 @@ using Vector4 = System.Numerics.Vector4;
     public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
     public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
     public static implicit operator CommandColor(Rgba32 obj) => obj.ToVector4().AsVector3();
-    public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new Vector4(obj.internalVec, 1));
+    public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new(obj.internalVec, 1));
 
     public static implicit operator CommandColor(Color obj) => obj.ToScaledVector4().AsVector3();
 

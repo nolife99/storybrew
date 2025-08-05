@@ -17,6 +17,7 @@ public readonly struct ValueArrayHashSetInternals<T> : IDisposable
     public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     public readonly ArrayPool<int> BucketPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayHashSetInternals(scoped ref readonly ValueArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;

@@ -18,6 +18,7 @@ public readonly struct ValueDictionaryInternalsRefUnsafe<TKey, TValue>
     public readonly Entry<TKey, TValue>[] Entries;
     public readonly IEqualityComparer<TKey> Comparer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueDictionaryInternalsRefUnsafe(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -39,7 +40,6 @@ public readonly struct ValueDictionaryInternalsRefUnsafe<TKey, TValue>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
         this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
 
@@ -66,7 +66,7 @@ partial class CollectionInternals
         TKey key) where TKey : notnull => ref dictionary.FindValue(key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(scoped ref ValueDictionary<TKey, TValue> dictionary,
+    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
         TKey key,
         out bool exists) where TKey : notnull
         => ref ValueDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(ref dictionary,
@@ -74,7 +74,7 @@ partial class CollectionInternals
             out exists);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryInsert<TKey, TValue>(ref ValueDictionary<TKey, TValue> dictionary,
+    public static bool TryInsert<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
         TKey key,
         TValue value,
         InsertionBehavior behavior) => dictionary.TryInsert(key, value, behavior);

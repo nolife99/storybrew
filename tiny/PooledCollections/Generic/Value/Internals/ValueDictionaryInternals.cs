@@ -21,6 +21,7 @@ public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
     public readonly ArrayPool<int> BucketPool;
     public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueDictionaryInternals(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64

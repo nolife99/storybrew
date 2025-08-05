@@ -10,6 +10,7 @@ public readonly struct ValueArrayInternalsRefUnsafe<T>
     public readonly bool ClearArray;
     public readonly T[] Array;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ValueArrayInternalsRefUnsafe(scoped ref readonly ValueArray<T> source)
     {
         Length = source._length;
@@ -20,7 +21,6 @@ public readonly struct ValueArrayInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly ValueArray<T> source)
         => new(in source);
 
