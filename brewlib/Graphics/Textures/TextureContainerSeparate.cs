@@ -57,7 +57,7 @@ public sealed class TextureContainerSeparate : TextureContainer
     {
         if (disposed) return;
 
-        foreach (var texture in textures.Values) texture.Dispose();
+        foreach (var texture in textures.Values) texture?.Dispose();
         textures.Dispose();
         disposed = true;
     }

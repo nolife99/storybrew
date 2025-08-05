@@ -3,26 +3,16 @@
 using System;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 
 sealed class GpuCommandSync : IDisposable
 {
-    static readonly PooledStack<SyncRange> syncRangePool = new();
-
     readonly PooledList<SyncRange> syncRanges = new();
 
     public void Dispose()
     {
-        foreach (var range in syncRanges) ReturnRange(range);
+        foreach (var range in syncRanges) range.Dispose();
         syncRanges.Dispose();
-    }
-
-    static void ReturnRange(SyncRange syncRange)
-    {
-        GL.DeleteSync(syncRange.Fence);
-        syncRange.Fence = 0;
-        syncRange.Expired = false;
-
-        syncRangePool.Push(syncRange);
     }
 
     public bool WaitForAll()
@@ -31,7 +21,7 @@ sealed class GpuCommandSync : IDisposable
 
         var blocked = syncRanges[^1].Wait(true);
 
-        foreach (var range in syncRanges) ReturnRange(range);
+        foreach (var range in syncRanges) range.Dispose();
         syncRanges.Clear();
 
         return blocked;
@@ -40,9 +30,11 @@ sealed class GpuCommandSync : IDisposable
     public bool WaitForRange(nint index, int length)
     {
         trimExpiredRanges();
-        for (var i = syncRanges.Count - 1; i >= 0; --i)
+
+        var syncRangeSpan = syncRanges.AsSpan();
+        for (var i = syncRangeSpan.Length - 1; i >= 0; --i)
         {
-            var syncRange = syncRanges[i];
+            ref var syncRange = ref syncRangeSpan[i];
             if (index >= syncRange.Index + syncRange.Length || syncRange.Index >= index + length) continue;
 
             var blocked = syncRange.Wait(true);
@@ -55,9 +47,8 @@ sealed class GpuCommandSync : IDisposable
 
     public void LockRange(nint index, int length)
     {
-        if (!syncRangePool.TryPop(out var item)) item = new();
+        SyncRange item = new() { Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None) };
 
-        item.Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         GL.Flush();
 
         item.Index = index;
@@ -67,14 +58,16 @@ sealed class GpuCommandSync : IDisposable
 
     void trimExpiredRanges()
     {
+        var syncRangeSpan = syncRanges.AsSpan();
+
         var left = 0;
-        var right = syncRanges.Count - 1;
+        var right = syncRangeSpan.Length - 1;
 
         var unblockedIndex = -1;
         while (left <= right)
         {
             var index = right + left >> 1;
-            if (syncRanges[index].Wait(false)) right = index - 1;
+            if (syncRangeSpan[index].Wait(false)) right = index - 1;
             else
             {
                 left = index + 1;
@@ -87,11 +80,11 @@ sealed class GpuCommandSync : IDisposable
 
     void clearToIndex(int index)
     {
-        for (var i = 0; i <= index; ++i) ReturnRange(syncRanges[i]);
+        for (var i = 0; i <= index; ++i) syncRanges[i].Dispose();
         syncRanges.RemoveRange(0, index + 1);
     }
 
-    sealed class SyncRange
+    struct SyncRange : IDisposable
     {
         public bool Expired;
         public nint Fence, Index;
@@ -132,5 +125,7 @@ sealed class GpuCommandSync : IDisposable
                     case WaitSyncStatus.WaitFailed: throw new InvalidOperationException("ClientWaitSync failed");
                 }
         }
+
+        public void Dispose() => GL.DeleteSync(Fence);
     }
 }

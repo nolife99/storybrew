@@ -37,7 +37,7 @@ public class LineRendererBuffered : ILineRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 512, int primitiveBufferSize = 0)
+    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 128, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {

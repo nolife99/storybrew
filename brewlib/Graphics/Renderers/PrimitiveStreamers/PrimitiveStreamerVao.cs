@@ -202,6 +202,5 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
         GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object") &&
-        GLFW.ExtensionSupported("GL_ARB_draw_indirect") &&
         GLFW.ExtensionSupported("GL_ARB_multi_draw_indirect");
 }
