@@ -12,7 +12,124 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
+public static class ValueDictionary
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>()
+        => new(0, null, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
+        null,
+        ArrayPool<int>.Shared,
+        ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> comparer)
+        => new(0, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary) => new(dictionary,
+        null,
+        ArrayPool<int>.Shared,
+        ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        => new(collection, null, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(int capacity, IEqualityComparer<TKey> comparer)
+        => new(capacity, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary,
+        IEqualityComparer<TKey> comparer)
+        => new(dictionary, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection,
+        IEqualityComparer<TKey> comparer)
+        => new(collection, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(0, null, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(capacity, null, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(0, comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(dictionary, null, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(collection, null, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(capacity, comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(dictionary, comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(collection, comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>((TKey Key, TValue Value)[] array,
+        IEqualityComparer<TKey> comparer)
+        => new(array.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>((TKey Key, TValue Value)[] array,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(KeyValuePair<TKey, TValue>[] array,
+        IEqualityComparer<TKey> comparer)
+        => new(array.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(KeyValuePair<TKey, TValue>[] array,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<(TKey Key, TValue Value)> span,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueDictionary<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);
+}
+
+public struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDisposable
     where TKey : notnull
 {
     static readonly int[] s_emptyBuckets = [];
@@ -33,7 +150,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
 
     internal readonly ArrayPool<int> _bucketPool;
 
-    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+    static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
     internal readonly ArrayPool<Entry<TKey, TValue>> _entryPool;
 
@@ -246,11 +363,11 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Enumerator GetEnumerator() => new(this, Enumerator.KeyValuePair);
+    public readonly Enumerator GetEnumerator() => new(in this, Enumerator.KeyValuePair);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-        => new Enumerator(this, Enumerator.KeyValuePair);
+        => new Enumerator(in this, Enumerator.KeyValuePair);
 
     internal readonly ref TValue FindValue(TKey key)
     {
@@ -774,7 +891,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         => CopyTo(array, index);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this, Enumerator.KeyValuePair);
 
     public int EnsureCapacity(int capacity)
     {
@@ -856,6 +973,76 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         _buckets = buckets;
     }
 
+    internal ValueDictionary(ReadOnlySpan<(TKey Key, TValue Value)> span,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
+    {
+        foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
+    }
+
+    internal ValueDictionary(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
+        IEqualityComparer<TKey> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
+    {
+        foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex)
+        => CopyTo(dest, destIndex, Count);
+
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+
+        var src = _entries.AsSpan(0, _count);
+
+        if (src.Length == 0) return;
+
+        for (int i = 0, len = src.Length; i < len && count > 0; i++)
+        {
+            ref var entry = ref src[i];
+            if (entry.Next < -1) continue;
+
+            dest[destIndex++] = new(entry.Key, entry.Value);
+            count--;
+        }
+    }
+
+    void ReturnBuckets(int[] replaceWith)
+    {
+        if (_buckets is not null) _bucketPool.Return(_buckets);
+
+        _buckets = replaceWith ?? s_emptyBuckets;
+    }
+
+    void ReturnEntries(Entry<TKey, TValue>[] replaceWith)
+    {
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
+
+        _entries = replaceWith ?? s_emptyEntries;
+    }
+
+    public void Dispose()
+    {
+        ReturnBuckets(s_emptyBuckets);
+        ReturnEntries(s_emptyEntries);
+        _count = 0;
+        _freeList = -1;
+        _freeCount = 0;
+        _version++;
+    }
+
     public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
     {
         readonly ValueDictionary<TKey, TValue> _dictionary;
@@ -864,10 +1051,10 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         KeyValuePair<TKey, TValue> _current;
         readonly int _getEnumeratorRetType;
 
-        internal const int DictEntry = 1;
+        const int DictEntry = 1;
         internal const int KeyValuePair = 2;
 
-        internal Enumerator(ValueDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+        internal Enumerator(scoped ref readonly ValueDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
         {
             _dictionary = dictionary;
             _version = dictionary._version;

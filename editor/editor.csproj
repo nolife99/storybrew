@@ -26,13 +26,16 @@
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
         <Optimize>True</Optimize>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <Optimize>True</Optimize>
         <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
         <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -158,6 +161,10 @@ if (Directory.Exists(TempDir))
 
     <PropertyGroup>
         <TempResourcesDir>$(IntermediateOutputPath)compressed_resources\</TempResourcesDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <Target Name="CompressResourcesBeforeBuild" BeforeTargets="BeforeBuild">

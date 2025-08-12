@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -34,7 +33,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
 
     public ReadOnlySpan<ICommand> Commands => defaultChannel is null ?
         default :
-        Unsafe.BitCast<ReadOnlySpan<ITypedCommand<TValue>>, ReadOnlySpan<ICommand>>(defaultChannel.Commands);
+        ReadOnlySpan<ICommand>.CastUp(defaultChannel.Commands);
 
     public bool HasCommands => channels is not null && channels.Count > 0;
 

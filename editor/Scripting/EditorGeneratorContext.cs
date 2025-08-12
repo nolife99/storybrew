@@ -21,7 +21,7 @@ public sealed class EditorGeneratorContext(Effect effect,
     scoped ReadOnlySpan<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
-    ValueArray<Beatmap> beatmaps = getBeatmaps(beatmaps);
+    ValueArray<EditorBeatmap> beatmaps = ValueArray.Create(beatmaps);
     ValueList<char> log = ValueList.Create<char>();
 
     public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => editorLayers.AsReadOnlySpan();
@@ -46,7 +46,7 @@ public sealed class EditorGeneratorContext(Effect effect,
         get
         {
             BeatmapDependent = true;
-            return beatmaps.AsReadOnlySpan();
+            return ReadOnlySpan<Beatmap>.CastUp(beatmaps.AsReadOnlySpan());
         }
     }
 
@@ -63,14 +63,6 @@ public sealed class EditorGeneratorContext(Effect effect,
 
         beatmaps.Dispose();
         editorLayers.Dispose();
-    }
-
-    static ValueArray<Beatmap> getBeatmaps(scoped ReadOnlySpan<EditorBeatmap> beatmaps)
-    {
-        var result = ValueArray.Create<Beatmap>(beatmaps.Length);
-        for (var i = 0; i < beatmaps.Length; ++i) result[i] = beatmaps[i];
-
-        return result;
     }
 
     public override StoryboardLayer GetLayer(string identifier)

@@ -85,8 +85,8 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "TryFormatUnconstrained")]
-    static extern bool TryFormatUnconstrained<TEnum>(Enum c,
-        TEnum value,
+    static extern bool TryFormatUnconstrained<T>(Enum c,
+        T value,
         Span<char> destination,
         out int charsWritten,
         ReadOnlySpan<char> format = default);

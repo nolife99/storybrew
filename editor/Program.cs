@@ -102,8 +102,6 @@ public static class Program
         Settings.Save();
     }
 
-    static readonly Dictionary<nint, byte[]> memoryOwners = new();
-
     static NativeWindow createWindow(MonitorInfo displayDevice)
     {
         const ContextFlags debugContext =
@@ -151,6 +149,9 @@ public static class Program
         var exiting = false;
         window.Closing += _ => exiting = true;
 
+        window.IsVisible = true;
+        window.Focus();
+
         while (!exiting)
         {
             var cur = Stopwatch.GetTimestamp();
@@ -171,7 +172,6 @@ public static class Program
             var draws = editor.Draw();
             windowContext.SwapBuffers();
 
-            if (!exiting) window.IsVisible = true;
             using (var snapshot = TempList.Create<IDisposable>())
             {
                 lock (schedulerLock)
@@ -188,7 +188,7 @@ public static class Program
 
             if (sleepTime > 0)
             {
-                Thread.Sleep((int)(sleepTime / TimeSpan.TicksPerMillisecond));
+                Native.AccurateSleep(sleepTime);
                 Bass.UpdateThreads = 0;
             }
             else Bass.UpdateThreads = 1;

@@ -23,8 +23,6 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     AssemblyLoadContext appDomain;
 
-    Action<TScript> ctor;
-
     volatile int currentVersion, targetVersion = 1;
 
     PooledList<string> referencedAssemblies;

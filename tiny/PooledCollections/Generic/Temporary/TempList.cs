@@ -7,7 +7,6 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 
 using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -412,7 +411,7 @@ public ref struct TempList<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Enumerator GetEnumerator() => new(in this);
+    public readonly ReadOnlySpan<T>.Enumerator GetEnumerator() => this.AsReadOnlySpan().GetEnumerator();
 
     public readonly TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
@@ -646,44 +645,6 @@ public ref struct TempList<T>
         return true;
     }
 
-    public ref struct Enumerator : IEnumerator<T>
-    {
-        readonly TempList<T> _list;
-        int _index;
-        readonly int _version;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Enumerator(scoped ref readonly TempList<T> list)
-        {
-            _list = list;
-            _index = -1;
-            _version = list._version;
-        }
-
-        public bool MoveNext()
-        {
-            if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
-            var index = _index + 1;
-            if (index >= _list._size) return false;
-
-            _index = index;
-            return true;
-        }
-
-        public void Reset() => _index = -1;
-
-        public ref T Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref Unsafe.Add(ref _list._ref, _index);
-        }
-
-        T IEnumerator<T>.Current => Current;
-        object IEnumerator.Current => Current;
-        void IDisposable.Dispose() { }
-    }
-
     internal TempList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
         _pool = pool ?? ArrayPool<T>.Shared;
@@ -706,9 +667,6 @@ public ref struct TempList<T>
 
         _version = 0;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
 
     internal Span<T> GetInsertSpan(int index, int count, bool clearSpan)
     {

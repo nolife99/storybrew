@@ -36,6 +36,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue
             index < commands.Count && commands[index].StartTime < command.EndTime;
 
         commands.Insert(index, command);
+
         return true;
     }
 
@@ -77,7 +78,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue
         var left = 0;
         var right = commands.Count - 1;
 
-        ref var first = ref MemoryMarshal.GetReference(Commands);
+        ref var first = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(commands));
         while (left <= right)
         {
             index = right + left >> 1;

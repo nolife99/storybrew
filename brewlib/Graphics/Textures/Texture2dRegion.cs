@@ -14,7 +14,7 @@ public class Texture2dRegion : IDisposable
     protected Texture2dRegion(Texture2d texture, Rectangle bounds)
     {
         texture ??= this as Texture2d;
-        BindableTexture = texture;
+        BindableTexture = texture!;
 
         this.bounds = bounds;
 

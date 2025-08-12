@@ -61,24 +61,26 @@ public class Sprite3d : Node3d, HasOsbSprites
         => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
+    public override void GenerateStates(float time,
+        scoped ref readonly CameraState cameraState,
+        scoped ref readonly Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
-        var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);
+        var screenPosition = CameraState.ToScreen(in wvp, Vector3.Zero);
 
         var angle = 0f;
         switch (RotationMode)
         {
             case RotationMode.UnitX:
             {
-                var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
+                var delta = CameraState.ToScreen(in wvp, Vector3.UnitX) - screenPosition;
                 angle += float.Atan2(delta.Y, delta.X);
                 break;
             }
 
             case RotationMode.UnitY:
             {
-                var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
+                var delta = CameraState.ToScreen(in wvp, Vector3.UnitY) - screenPosition;
                 angle += float.Atan2(delta.Y, delta.X) - float.Pi * .5f;
                 break;
             }

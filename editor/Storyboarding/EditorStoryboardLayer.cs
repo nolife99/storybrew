@@ -11,7 +11,7 @@ using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 
-public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboardLayer>
+public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboardLayer>
 {
     public readonly Effect Effect;
 
@@ -114,7 +114,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
         => segment.CreateSprite(path, origin, initialPosition);
 
-    public override OsbSprite CreateSprite(string path, OsbOrigin origin)
+    public override OsbSprite CreateSprite(string path, OsbOrigin origin = OsbOrigin.Centre)
         => segment.CreateSprite(path, origin, new(320, 240));
 
     public override OsbAnimation CreateAnimation(string path,
@@ -133,10 +133,10 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override OsbAnimation CreateAnimation(string path,
         int frameCount,
         float frameDelay,
-        OsbLoopType loopType,
+        OsbLoopType loopType = OsbLoopType.LoopForever,
         OsbOrigin origin = OsbOrigin.Centre) => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin);
 
-    public override OsbSample CreateSample(string path, float time, float volume)
+    public override OsbSample CreateSample(string path, float time, float volume = 100)
         => segment.CreateSample(path, time, volume);
 
     public override StoryboardSegment CreateSegment(string identifier = null) => segment.CreateSegment(identifier);
@@ -171,12 +171,12 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         writer,
         exportSettings,
         osbLayer,
-        StoryboardTransform.Identity);
+        in StoryboardTransform.Identity);
 
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
-        StoryboardTransform transform) => segment.WriteOsb(writer, exportSettings, layer, transform);
+        scoped ref readonly StoryboardTransform transform) => segment.WriteOsb(writer, exportSettings, layer, in transform);
 
     public void CopySettings(EditorStoryboardLayer other)
     {

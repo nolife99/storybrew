@@ -16,7 +16,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
+public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
     : StoryboardSegment, IDisplayable, IPostProcessable
 {
     readonly List<IDisplayable> displayableObjects = [];
@@ -229,10 +229,10 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
-        StoryboardTransform transform)
+        scoped ref readonly StoryboardTransform transform)
     {
-        foreach (var sbo in storyboardObjects)
-            sbo.WriteOsb(writer, exportSettings, layer, new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY));
+        StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
+        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, layer, in newTransform);
     }
 
     public int CalculateSize(OsbLayer osbLayer)

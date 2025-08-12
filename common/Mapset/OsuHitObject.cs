@@ -89,7 +89,7 @@ public record OsuHitObject
     ///<returns> Whether or not this hit object is a new combo. </returns>
     public bool NewCombo => (Flags & HitObjectFlag.NewCombo) > 0;
 
-    ///<summary> Represents this hit object's combo color number. </summary>
+    ///<summary> Represents this hit object's combo number. </summary>
     public int ComboOffset => (int)Flags >> 4 & 7;
 
     /// <returns> This hit object's position at <paramref name="time"/>. </returns>
@@ -104,7 +104,7 @@ public record OsuHitObject
     ///<summary> Parses a hit object from a given beatmap and line. </summary>
     public static OsuHitObject Parse(Beatmap beatmap, scoped ReadOnlySpan<char> line)
     {
-        using var values = line.Split([',']);
+        using var values = line.SplitSlow([',']);
 
         var x = int.Parse(values[0].AsReadOnlySpan(), CultureInfo.InvariantCulture);
         var y = int.Parse(values[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);

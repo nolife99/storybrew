@@ -27,30 +27,14 @@ public class EditorBeatmap(string path) : Beatmap
     readonly List<OsuBreak> breaks = [];
     readonly List<Color> comboColors = [..defaultComboColors];
     readonly List<OsuHitObject> hitObjects = [];
-    public readonly string Path = path;
 
-    float approachRate = 5;
-    string audioFilename = "audio.mp3";
+    float approachRate = 5, circleSize = 5, hpDrainRate = 5, overallDifficulty = 5, sliderMultiplier = 1.4f,
+        sliderTickRate = 1, stackLeniency = .7f;
 
-    string backgroundPath;
-
-    float circleSize = 5;
-
+    string audioFilename = "audio.mp3", backgroundPath, name = "";
     bool hitObjectsPostProcessed;
-
-    float hpDrainRate = 5;
-
     long id;
-
-    string name = "";
-
-    float overallDifficulty = 5;
-
-    float sliderMultiplier = 1.4f;
-
-    float sliderTickRate = 1;
-
-    float stackLeniency = .7f;
+    public string Path => path;
 
     public override string AudioFilename => audioFilename;
     public override string Name => name;

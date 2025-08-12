@@ -71,7 +71,7 @@ public class CommandGenerator
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
     public ref State EndState => ref states.Count == 0 ?
         ref Unsafe.NullRef<State>() :
-        ref CollectionsMarshal.AsSpan(states)[states.Count - 1];
+        ref CollectionsMarshal.AsSpan(states)[^1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -326,7 +326,7 @@ public class CommandGenerator
 /// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
 public record struct State
 {
-    internal static readonly Comparer<State> Comparer = Comparer<State>.Create((a, b) => float.Sign(a.Time - b.Time));
+    internal static readonly Comparer<State> Comparer = Comparer<State>.Create((a, b) => a.Time.CompareTo(b.Time));
 
     ///<summary> Represents the color, in RGB values, of this state. </summary>
     public CommandColor Color;
@@ -387,8 +387,8 @@ public record struct State
             scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
-                noGen ? Position.Y : float.Round(Position.Y, generator.PositionDecimals)),
+            new(noGen ? Position.X : double.Round(Position.X, generator.PositionDecimals),
+                noGen ? Position.Y : double.Round(Position.Y, generator.PositionDecimals)),
             imageSize * scale,
             noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals),
             origin);

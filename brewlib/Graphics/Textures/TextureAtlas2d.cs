@@ -57,15 +57,7 @@ public sealed class TextureAtlas2d(int width,
     {
         if (disposed) return;
 
-        var width = region.Width;
-        var height = region.Height;
-
-        texture.Update(Color.Transparent.ToPixel<Rgba32>(), region.X, region.Y, width, height);
-
-        width += padding;
-        height += padding;
-
-        freeRegions.Add(new(region.X, region.Y, width, height));
+        freeRegions.Add(new(region.X, region.Y, region.Width + padding, region.Height + padding));
         wasMerged = false;
     }
 

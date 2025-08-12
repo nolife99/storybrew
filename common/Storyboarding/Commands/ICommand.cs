@@ -20,5 +20,8 @@ public interface ICommand : IComparable<ICommand>
     /// <param name="exportSettings"> The export settings to use when writing the command. </param>
     /// <param name="transform"> The transform to apply to the command when writing it. </param>
     /// <param name="indentation"> The number of spaces to indent the command with. </param>
-    void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation);
+    void WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        scoped ref readonly StoryboardTransform transform,
+        int indentation);
 }

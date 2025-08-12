@@ -45,10 +45,11 @@ public static class InterpolatingFunctions
 
     /// <summary> Interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static CommandPosition Position(CommandPosition from, CommandPosition to, float progress)
-        => Vector2(from, to, progress);
+        => System.Numerics.Vector2.Lerp(from, to, progress);
 
     /// <summary> Interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
-    public static CommandScale Scale(CommandScale from, CommandScale to, float progress) => Vector2(from, to, progress);
+    public static CommandScale Scale(CommandScale from, CommandScale to, float progress)
+        => System.Numerics.Vector2.Lerp(from, to, progress);
 
     /// <summary> Interpolates between 2 <see cref="Storyboarding.CommandValues.CommandColor"/> RGB values. </summary>
     public static CommandColor CommandColor(CommandColor from, CommandColor to, float progress)

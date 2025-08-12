@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
 {
@@ -16,7 +16,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     readonly VertexDeclaration vertexDeclaration;
     bool Bound;
 
-    PooledList<byte> commandBuffer;
+    ValueList<byte> commandBuffer;
 
     protected int totalQueuedPrimitives, queuedRenders;
     int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
@@ -161,7 +161,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         commandBufferId = GL.GenBuffer();
         commandBufferSize = minRenderableVertexCount * commandSize;
 
-        commandBuffer = new(minRenderableVertexCount);
+        commandBuffer = ValueList.Create<byte>();
 
         GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId);
         GL.BufferStorage(BufferTarget.DrawIndirectBuffer, commandBufferSize, 0, BufferStorageFlags.DynamicStorageBit);

@@ -893,14 +893,14 @@ public class OsbSprite : StoryboardObject
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
-        StoryboardTransform transform)
+        scoped ref readonly StoryboardTransform transform)
     {
         if (CommandCost == 0) return;
 
         WriteHeader(writer, exportSettings, layer, transform);
         foreach (var command in commandGroups.AsValueEnumerable()
             .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
-            command.WriteOsb(writer, exportSettings, transform, 1);
+            command.WriteOsb(writer, exportSettings, in transform, 1);
     }
 
     private protected virtual void WriteHeader(TextWriter writer,

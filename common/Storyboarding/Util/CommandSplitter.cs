@@ -55,7 +55,7 @@ public static class CommandSplitter
             .Order()
             .ToArrayPool();
 
-        var idealSegmentCount = Math.Min((int)Math.Ceiling((float)sprite.CommandCost / commandSplitThreshold),
+        var idealSegmentCount = int.Min((int)float.Ceiling((float)sprite.CommandCost / commandSplitThreshold),
             distinctFragTimes.Size + 1);
 
         if (idealSegmentCount < 2)
@@ -113,7 +113,7 @@ public static class CommandSplitter
         for (var i = 1; i < idealSegmentCount; i++)
         {
             var idealTime = startTime + i * idealSegmentDuration;
-            var time = candidates.AsValueEnumerable().MinBy(candidate => Math.Abs(candidate - idealTime));
+            var time = candidates.AsValueEnumerable().MinBy(candidate => float.Abs(candidate - idealTime));
             if (times.Add(time)) result.Add(time);
         }
 
@@ -127,8 +127,8 @@ public static class CommandSplitter
         {
             if (segmentEnd <= command.StartTime || command.EndTime <= segmentStart) continue;
 
-            var startTime = Math.Clamp(command.StartTime, segmentStart, segmentEnd);
-            var endTime = Math.Clamp(command.EndTime, segmentStart, segmentEnd);
+            var startTime = float.Clamp(command.StartTime, segmentStart, segmentEnd);
+            var endTime = float.Clamp(command.EndTime, segmentStart, segmentEnd);
 
             switch (command)
             {
@@ -196,7 +196,7 @@ public static class CommandSplitter
                     {
                         var loopStartIndex = (startTime - loopCommand.StartTime) / loopCommand.CommandsDuration;
                         var loopEndIndex = (endTime - loopCommand.StartTime) / loopCommand.CommandsDuration;
-                        var loopCount = (int)Math.Round(loopEndIndex - loopStartIndex);
+                        var loopCount = (int)float.Round(loopEndIndex - loopStartIndex);
 
                         var loopSegmentStartTime = loopCommand.StartTime + loopCommand.CommandsDuration * loopStartIndex;
 
@@ -250,7 +250,6 @@ public static class CommandSplitter
         else
         {
             var spriteStartScale = sprite.ScaleAt(segmentStart);
-            Debug.Assert(spriteStartScale.X == spriteStartScale.Y);
             if (segmentSprite.ScaleAt(segmentStart) != spriteStartScale)
                 segmentSprite.Scale(segmentStart, spriteStartScale.X);
         }
@@ -336,11 +335,8 @@ public static class CommandSplitter
         {
             set.Add(command.StartTime);
             if (command is LoopCommand loopCommand)
-            {
-                Debug.Assert(loopCommand.CommandsStartTime == 0);
                 for (var i = 1; i < loopCommand.LoopCount - 1; i++)
                     set.Add(command.StartTime + i * loopCommand.CommandsEndTime);
-            }
 
             set.Add(command.EndTime);
         }

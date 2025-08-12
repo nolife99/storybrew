@@ -59,11 +59,13 @@ public class Line3d : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
+    public override void GenerateStates(float time,
+        scoped ref readonly CameraState cameraState,
+        scoped ref readonly Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
-        var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
-        var endVector = CameraState.ToScreen(wvp, EndPosition.ValueAt(time));
+        var startVector = CameraState.ToScreen(in wvp, StartPosition.ValueAt(time));
+        var endVector = CameraState.ToScreen(in wvp, EndPosition.ValueAt(time));
 
         Vector2 delta = new(endVector.X - startVector.X, endVector.Y - startVector.Y);
         if (delta.LengthSquared() == 0) return;
@@ -199,11 +201,13 @@ public class Line3dEx : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
+    public override void GenerateStates(float time,
+        scoped ref readonly CameraState cameraState,
+        scoped ref readonly Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
-        var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
-        var endVector = CameraState.ToScreen(wvp, EndPosition.ValueAt(time));
+        var startVector = CameraState.ToScreen(in wvp, StartPosition.ValueAt(time));
+        var endVector = CameraState.ToScreen(in wvp, EndPosition.ValueAt(time));
 
         Vector2 delta = new(endVector.X - startVector.X, endVector.Y - startVector.Y);
         if (delta.LengthSquared() == 0) return;

@@ -378,7 +378,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         var lastPoint = keyframes.Count - 1;
 
         var keep = TempList.Create([0, lastPoint]);
-        getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq, state);
+        getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq, ref state);
 
         if (keep.Count == keyframes.Count)
         {
@@ -395,18 +395,15 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     }
 
     static void getSimplifiedKeyframeIndices<TState>(List<Keyframe<TValue>> span,
-        ref TempList<int> keep,
+        scoped ref TempList<int> keep,
         int first,
         int last,
         float epsilonSq,
         Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistance,
-        TState state)
+        scoped ref TState state)
     {
-        using var stack = TempStack.Create([(first, last)]);
-        while (stack.Count > 0)
+        while (true)
         {
-            (first, last) = stack.Pop();
-
             var start = span[first];
             var end = span[last];
 
@@ -422,13 +419,11 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
                 indexFar = i;
             }
 
-            if (maxDistSq < epsilonSq || indexFar <= 0) continue;
+            if (maxDistSq < epsilonSq || indexFar <= 0) return;
 
-            stack.Push((first, indexFar));
+            getSimplifiedKeyframeIndices(span, ref keep, first, indexFar, epsilonSq, getDistance, ref state);
             keep.Add(indexFar);
-            stack.Push((indexFar, last));
-
-            if (stack.Count > 5000) throw new InvalidOperationException("Simplification stack overflow");
+            first = indexFar;
         }
     }
 

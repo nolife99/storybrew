@@ -14,7 +14,7 @@ public record OsuSpinner : OsuHitObject
     /// <inheritdoc/>
     public override float EndTime => endTime;
 
-    internal static OsuSpinner Parse(TempList<ValueList<char>> values,
+    internal static OsuSpinner Parse(TempList<ValueArray<char>> values,
         int x,
         int y,
         int startTime,
@@ -30,25 +30,21 @@ public record OsuSpinner : OsuHitObject
         var samplePath = "";
         if (values.Count > 6)
         {
-            var special = values[6];
-            using var specialValues = special.AsReadOnlySpan().Split([':']);
+            var special = values[6].AsReadOnlySpan();
+            using var specialValues = special.Split([':']);
 
-            var objectSampleSet = (SampleSet)int.Parse(specialValues[0].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+            var objectSampleSet = (SampleSet)int.Parse(special[specialValues[0]], CultureInfo.InvariantCulture);
 
-            var objectAdditionsSampleSet =
-                (SampleSet)int.Parse(specialValues[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+            var objectAdditionsSampleSet = (SampleSet)int.Parse(special[specialValues[1]], CultureInfo.InvariantCulture);
 
             var objectCustomSampleSet = 0;
             if (specialValues.Count > 2)
-                objectCustomSampleSet = int.Parse(specialValues[2].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                objectCustomSampleSet = int.Parse(special[specialValues[2]], CultureInfo.InvariantCulture);
 
             var objectVolume = 0f;
-            if (specialValues.Count > 3)
-                objectVolume = int.Parse(specialValues[3].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+            if (specialValues.Count > 3) objectVolume = int.Parse(special[specialValues[3]], CultureInfo.InvariantCulture);
 
-            if (specialValues.Count > 4) samplePath = specialValues[4].AsReadOnlySpan().ToString();
-
-            foreach (var value in specialValues) value.Dispose();
+            if (specialValues.Count > 4) samplePath = special[specialValues[4]].ToString();
 
             if (objectSampleSet != 0)
             {

@@ -46,4 +46,12 @@ partial class CollectionInternals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> GetInsertSpan<T>(this scoped ref ValueList<T> source, int index, int count, bool clearSpan)
         => source.GetInsertSpan(index, count, clearSpan);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> GetAddSpan<T>(this scoped ref ValueList<T> source, int count)
+        => source.GetInsertSpan(source._size, count, true);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> GetAddSpan<T>(this scoped ref ValueList<T> source, int count, bool clearSpan)
+        => source.GetInsertSpan(source._size, count, clearSpan);
 }

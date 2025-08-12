@@ -76,7 +76,9 @@ public class Object3d
     ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
     ///     the given <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
-    public void GenerateTreeStates(float time, CameraState camState, in Object3dState parentState)
+    public void GenerateTreeStates(float time,
+        scoped ref readonly CameraState camState,
+        scoped ref readonly Object3dState parentState)
     {
         Object3dState state = new(Matrix4x4.Multiply(WorldTransformAt(time), parentState.WorldTransform),
             Coloring.ValueAt(time) * (InheritsColor ? parentState.Color : CommandColor.White),
@@ -146,7 +148,9 @@ public class Object3d
     ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> at <paramref name="time"/> based on the given
     ///     <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
-    public virtual void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState) { }
+    public virtual void GenerateStates(float time,
+        scoped ref readonly CameraState cameraState,
+        scoped ref readonly Object3dState object3dState) { }
 
     /// <summary> Generates commands on this <see cref="Object3d"/>'s sprites based on its queued <see cref="State"/>s. </summary>
     /// <param name="action"> Runs an action on this object's sprites. </param>

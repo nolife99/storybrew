@@ -48,8 +48,7 @@ class ImportOsb : StoryboardObjectGenerator
     void parseVariables(StreamReader reader) => reader.ParseSectionLines((line, state) =>
         {
             using var v = line.Split(['=']);
-            if (v.Count == 2)
-                state.vars[ValueArray.Create(v[0].AsReadOnlySpan())] = ValueArray.Create(v[1].AsReadOnlySpan());
+            if (v.Count == 2) state.vars[ValueArray.Create(line[v[0]])] = ValueArray.Create(line[v[1]]);
         },
         this);
 
@@ -65,8 +64,10 @@ class ImportOsb : StoryboardObjectGenerator
                 var depth = 0;
                 while (line[depth..].StartsWith(' ')) ++depth;
 
-                using var trim = state.applyVariables(line.Trim());
-                using var v = trim.AsReadOnlySpan().Split([',']);
+                using var trimStr = state.applyVariables(line.Trim());
+
+                var trim = trimStr.AsReadOnlySpan();
+                using var v = trim.Split([',']);
 
                 if (loopable && depth < 2)
                 {
@@ -74,53 +75,52 @@ class ImportOsb : StoryboardObjectGenerator
                     loopable = false;
                 }
 
-                switch (v[0].AsReadOnlySpan())
+                switch (trim[v[0]])
                 {
                     case "Sprite":
                     {
-                        var origin = Enum.Parse<OsbOrigin>(v[2].AsReadOnlySpan());
-                        var path = removeQuotes(v[3].AsReadOnlySpan());
-                        var x = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var y = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        sprite = state.GetLayer(v[1].AsReadOnlySpan().ToString())
-                            .CreateSprite(path.ToString(), origin, new(x, y));
+                        var origin = Enum.Parse<OsbOrigin>(trim[v[2]]);
+                        var path = removeQuotes(trim[v[3]]);
+                        var x = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
+                        var y = float.Parse(trim[v[5]], CultureInfo.InvariantCulture);
+                        sprite = state.GetLayer(trim[v[1]].ToString()).CreateSprite(path.ToString(), origin, new(x, y));
 
                         break;
                     }
 
                     case "Animation":
                     {
-                        var origin = Enum.Parse<OsbOrigin>(v[2].AsReadOnlySpan());
-                        var path = removeQuotes(v[3].AsReadOnlySpan());
-                        var x = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var y = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var frameCount = int.Parse(v[6].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var frameDelay = float.Parse(v[7].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var loopType = Enum.Parse<OsbLoopType>(v[8].AsReadOnlySpan());
-                        sprite = state.GetLayer(v[1].AsReadOnlySpan().ToString())
+                        var origin = Enum.Parse<OsbOrigin>(trim[v[2]]);
+                        var path = removeQuotes(trim[v[3]]);
+                        var x = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
+                        var y = float.Parse(trim[v[5]], CultureInfo.InvariantCulture);
+                        var frameCount = int.Parse(trim[v[6]], CultureInfo.InvariantCulture);
+                        var frameDelay = float.Parse(trim[v[7]], CultureInfo.InvariantCulture);
+                        var loopType = Enum.Parse<OsbLoopType>(trim[v[8]]);
+                        sprite = state.GetLayer(trim[v[1]].ToString())
                             .CreateAnimation(path.ToString(), frameCount, frameDelay, loopType, origin, new Vector2(x, y));
 
                         break;
                     }
 
                     case "Sample":
-                        state.GetLayer(v[2].AsReadOnlySpan().ToString())
-                            .CreateSample(removeQuotes(v[3].AsReadOnlySpan()).ToString(),
-                                int.Parse(v[1].AsReadOnlySpan(), CultureInfo.InvariantCulture),
-                                float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture)); break;
+                        state.GetLayer(trim[v[2]].ToString())
+                            .CreateSample(removeQuotes(trim[v[3]]).ToString(),
+                                int.Parse(trim[v[1]], CultureInfo.InvariantCulture),
+                                float.Parse(trim[v[4]], CultureInfo.InvariantCulture)); break;
 
                     case "T":
-                        sprite.StartTriggerGroup(v[1].AsReadOnlySpan().ToString(),
-                            int.Parse(v[2].AsReadOnlySpan(), CultureInfo.InvariantCulture),
-                            int.Parse(v[3].AsReadOnlySpan(), CultureInfo.InvariantCulture),
-                            v.Count > 4 ? int.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture) : 0);
+                        sprite.StartTriggerGroup(trim[v[1]].ToString(),
+                            int.Parse(trim[v[2]], CultureInfo.InvariantCulture),
+                            int.Parse(trim[v[3]], CultureInfo.InvariantCulture),
+                            v.Count > 4 ? int.Parse(trim[v[4]], CultureInfo.InvariantCulture) : 0);
 
                         loopable = true;
                         break;
 
                     case "L":
-                        sprite.StartLoopGroup(int.Parse(v[1].AsReadOnlySpan(), CultureInfo.InvariantCulture),
-                            int.Parse(v[2].AsReadOnlySpan(), CultureInfo.InvariantCulture));
+                        sprite.StartLoopGroup(int.Parse(trim[v[1]], CultureInfo.InvariantCulture),
+                            int.Parse(trim[v[2]], CultureInfo.InvariantCulture));
 
                         loopable = true;
                         break;
@@ -128,19 +128,17 @@ class ImportOsb : StoryboardObjectGenerator
                     default:
                     {
                         var command = v[0];
-                        var easing = (OsbEasing)int.Parse(v[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var startTime = int.Parse(v[2].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        var endTime = v[3].AsReadOnlySpan().IsEmpty ?
-                            startTime :
-                            int.Parse(v[3].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                        var easing = (OsbEasing)int.Parse(trim[v[1]], CultureInfo.InvariantCulture);
+                        var startTime = int.Parse(trim[v[2]], CultureInfo.InvariantCulture);
+                        var endTime = trim[v[3]].IsEmpty ? startTime : int.Parse(trim[v[3]], CultureInfo.InvariantCulture);
 
-                        switch (command.AsReadOnlySpan())
+                        switch (trim[command])
                         {
                             case "F":
                             {
-                                var startValue = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                                var startValue = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
                                 var endValue = v.Count > 5 ?
-                                    float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                                    float.Parse(trim[v[5]], CultureInfo.InvariantCulture) :
                                     startValue;
 
                                 sprite.Fade(easing, startTime, endTime, startValue, endValue);
@@ -149,9 +147,9 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "S":
                             {
-                                var startValue = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                                var startValue = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
                                 var endValue = v.Count > 5 ?
-                                    float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                                    float.Parse(trim[v[5]], CultureInfo.InvariantCulture) :
                                     startValue;
 
                                 sprite.Scale(easing, startTime, endTime, startValue, endValue);
@@ -160,15 +158,11 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "V":
                             {
-                                var startX = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                                var startY = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                                var endX = v.Count > 6 ?
-                                    float.Parse(v[6].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
-                                    startX;
+                                var startX = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
+                                var startY = float.Parse(trim[v[5]], CultureInfo.InvariantCulture);
+                                var endX = v.Count > 6 ? float.Parse(trim[v[6]], CultureInfo.InvariantCulture) : startX;
 
-                                var endY = v.Count > 7 ?
-                                    float.Parse(v[7].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
-                                    startY;
+                                var endY = v.Count > 7 ? float.Parse(trim[v[7]], CultureInfo.InvariantCulture) : startY;
 
                                 sprite.ScaleVec(easing, startTime, endTime, startX, startY, endX, endY);
                                 break;
@@ -176,9 +170,9 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "R":
                             {
-                                var startValue = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                                var startValue = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
                                 var endValue = v.Count > 5 ?
-                                    float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                                    float.Parse(trim[v[5]], CultureInfo.InvariantCulture) :
                                     startValue;
 
                                 sprite.Rotate(easing, startTime, endTime, startValue, endValue);
@@ -187,15 +181,11 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "M":
                             {
-                                var startX = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                                var startY = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                                var endX = v.Count > 6 ?
-                                    float.Parse(v[6].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
-                                    startX;
+                                var startX = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
+                                var startY = float.Parse(trim[v[5]], CultureInfo.InvariantCulture);
+                                var endX = v.Count > 6 ? float.Parse(trim[v[6]], CultureInfo.InvariantCulture) : startX;
 
-                                var endY = v.Count > 7 ?
-                                    float.Parse(v[7].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
-                                    startY;
+                                var endY = v.Count > 7 ? float.Parse(trim[v[7]], CultureInfo.InvariantCulture) : startY;
 
                                 sprite.Move(easing, startTime, endTime, startX, startY, endX, endY);
                                 break;
@@ -203,9 +193,9 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "MX":
                             {
-                                var startValue = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                                var startValue = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
                                 var endValue = v.Count > 5 ?
-                                    float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                                    float.Parse(trim[v[5]], CultureInfo.InvariantCulture) :
                                     startValue;
 
                                 sprite.MoveX(easing, startTime, endTime, startValue, endValue);
@@ -214,9 +204,9 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "MY":
                             {
-                                var startValue = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+                                var startValue = float.Parse(trim[v[4]], CultureInfo.InvariantCulture);
                                 var endValue = v.Count > 5 ?
-                                    float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                                    float.Parse(trim[v[5]], CultureInfo.InvariantCulture) :
                                     startValue;
 
                                 sprite.MoveY(easing, startTime, endTime, startValue, endValue);
@@ -225,19 +215,19 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "C":
                             {
-                                var startX = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255;
-                                var startY = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255;
-                                var startZ = float.Parse(v[6].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255;
+                                var startX = float.Parse(trim[v[4]], CultureInfo.InvariantCulture) / 255;
+                                var startY = float.Parse(trim[v[5]], CultureInfo.InvariantCulture) / 255;
+                                var startZ = float.Parse(trim[v[6]], CultureInfo.InvariantCulture) / 255;
                                 var endX = v.Count > 7 ?
-                                    float.Parse(v[7].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255 :
+                                    float.Parse(trim[v[7]], CultureInfo.InvariantCulture) / 255 :
                                     startX;
 
                                 var endY = v.Count > 8 ?
-                                    float.Parse(v[8].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255 :
+                                    float.Parse(trim[v[8]], CultureInfo.InvariantCulture) / 255 :
                                     startY;
 
                                 var endZ = v.Count > 9 ?
-                                    float.Parse(v[9].AsReadOnlySpan(), CultureInfo.InvariantCulture) / 255 :
+                                    float.Parse(trim[v[9]], CultureInfo.InvariantCulture) / 255 :
                                     startZ;
 
                                 sprite.Color(easing, startTime, endTime, startX, startY, startZ, endX, endY, endZ);
@@ -246,7 +236,7 @@ class ImportOsb : StoryboardObjectGenerator
 
                             case "P":
                             {
-                                switch (v[4].AsReadOnlySpan())
+                                switch (trim[v[4]])
                                 {
                                     case "A": sprite.Additive(startTime, endTime); break;
                                     case "H": sprite.FlipH(startTime, endTime); break;
@@ -260,8 +250,6 @@ class ImportOsb : StoryboardObjectGenerator
 
                         break;
                 }
-
-                foreach (var value in v) value.Dispose();
             },
             this,
             false);

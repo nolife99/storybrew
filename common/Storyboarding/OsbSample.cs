@@ -1,6 +1,8 @@
 ﻿namespace StorybrewCommon.Storyboarding;
 
 using System.IO;
+using BrewLib.Util;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary> A type of <see cref="StoryboardObject"/> that plays an audio file. </summary>
 public class OsbSample : StoryboardObject
@@ -35,7 +37,11 @@ public class OsbSample : StoryboardObject
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
-        StoryboardTransform transform) => writer.WriteLine(
-        $"Sample,{((int)Time).ToString(exportSettings.NumberFormat)},{layer},\"{AudioPath.Trim()
-        }\",{((int)Volume).ToString(exportSettings.NumberFormat)}");
+        scoped ref readonly StoryboardTransform transform)
+    {
+        using var str = StringHelper.Interpolate(exportSettings.NumberFormat,
+            $"Sample,{(int)Time},{layer},\"{AudioPath.Trim()}\",{(int)Volume}");
+
+        writer.WriteLine(str.AsReadOnlySpan());
+    }
 }

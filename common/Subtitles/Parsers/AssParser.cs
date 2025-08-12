@@ -35,7 +35,7 @@ public record AssParser : SubtitleParser
                                     {
                                         case "Dialogue":
                                         {
-                                            using var arguments = value.Split([',']);
+                                            using var arguments = value.SplitSlow([',']);
 
                                             string text;
                                             using (var argsArr = arguments.AsReadOnlySpan()[9..]

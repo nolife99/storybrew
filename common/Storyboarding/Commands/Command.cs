@@ -88,12 +88,12 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
     /// <inheritdoc/>
     public virtual void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
-        StoryboardTransform transform,
+        scoped ref readonly StoryboardTransform transform,
         int indentation)
     {
         for (var i = 0; i < indentation; ++i) writer.Write(' ');
 
-        using var str = ToOsbString(exportSettings, transform);
+        using var str = ToOsbString(exportSettings, in transform);
         writer.WriteLine(str.AsReadOnlySpan());
     }
 
@@ -108,7 +108,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
     /// <summary> Gets the value of the command at the given progress. </summary>
     public abstract TValue ValueAtProgress(float progress);
 
-    TempList<char> ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
+    TempList<char> ToOsbString(ExportSettings exportSettings, scoped ref readonly StoryboardTransform transform)
     {
         using var startTimeString =
             (exportSettings.UseFloatForTime ? StartTime : (int)float.Round(StartTime)).ToCharArray(
@@ -139,7 +139,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
     /// <inheritdoc/>
     public override string ToString()
     {
-        using var str = ToOsbString(ExportSettings.Default, StoryboardTransform.Identity);
+        using var str = ToOsbString(ExportSettings.Default, in StoryboardTransform.Identity);
         return str.AsReadOnlySpan().ToString();
     }
 }

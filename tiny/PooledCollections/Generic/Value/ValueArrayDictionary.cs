@@ -8,6 +8,27 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+public static class ValueArrayDictionary
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>() => new(0,
+        ArrayPool<ArrayEntry<TKey>>.Shared,
+        ArrayPool<TValue>.Shared,
+        ArrayPool<int>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
+        ArrayPool<ArrayEntry<TKey>>.Shared,
+        ArrayPool<TValue>.Shared,
+        ArrayPool<int>.Shared);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
+        ArrayPool<ArrayEntry<TKey>> entryPool,
+        ArrayPool<TValue> valuePool,
+        ArrayPool<int> bucketPool) => new(capacity, entryPool, valuePool, bucketPool);
+}
+
 public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue>, IDisposable where TKey : notnull
 {
     internal ArrayEntry<TKey>[] _entries;
@@ -82,16 +103,16 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
         get => _entries is not null && _values is not null && _buckets is not null;
     }
 
-    public ValueArrayDictionaryKeyCollection<TKey, TValue> Keys
+    public ValueArrayDictionaryKeyCollection Keys
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(this);
+        get => new(in this);
     }
 
-    public ValueArrayDictionaryValueCollection<TKey, TValue> Values
+    public ValueArrayDictionaryValueCollection Values
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(this);
+        get => new(in this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -618,25 +639,25 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
     ICollection<TKey> IDictionary<TKey, TValue>.Keys
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new ValueArrayDictionaryKeyCollection<TKey, TValue>(this);
+        get => new ValueArrayDictionaryKeyCollection(in this);
     }
 
     ICollection<TValue> IDictionary<TKey, TValue>.Values
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new ValueArrayDictionaryValueCollection<TKey, TValue>(this);
+        get => new ValueArrayDictionaryValueCollection(in this);
     }
 
     IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new ValueArrayDictionaryKeyCollection<TKey, TValue>(this);
+        get => new ValueArrayDictionaryKeyCollection(in this);
     }
 
     IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new ValueArrayDictionaryValueCollection<TKey, TValue>(this);
+        get => new ValueArrayDictionaryValueCollection(in this);
     }
 
     bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
@@ -849,11 +870,11 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
         public void Dispose() { }
     }
 
-    public readonly struct ValueArrayDictionaryKeyCollection<TKey, TValue> : ICollection<TKey>
+    public readonly struct ValueArrayDictionaryKeyCollection : ICollection<TKey>
     {
         readonly ValueArrayDictionary<TKey, TValue> _dictionary;
 
-        internal ValueArrayDictionaryKeyCollection(ValueArrayDictionary<TKey, TValue> dictionary)
+        internal ValueArrayDictionaryKeyCollection(scoped ref readonly ValueArrayDictionary<TKey, TValue> dictionary)
             => _dictionary = dictionary;
 
         public int Count
@@ -883,13 +904,13 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator() => new(_dictionary);
+        public Enumerator GetEnumerator() => new(in _dictionary);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+        IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(in _dictionary);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in _dictionary);
 
         void ICollection<TKey>.Add(TKey item)
             => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
@@ -910,7 +931,7 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
 
             int _index;
 
-            internal Enumerator(ValueArrayDictionary<TKey, TValue> dictionary)
+            internal Enumerator(scoped ref readonly ValueArrayDictionary<TKey, TValue> dictionary)
             {
                 _dictionary = dictionary;
                 _index = -1;
@@ -942,25 +963,91 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
             object IEnumerator.Current => Current;
         }
     }
-}
 
-public static class ValueArrayDictionary
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>() => new(0,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
+    public readonly struct ValueArrayDictionaryValueCollection : ICollection<TValue>
+    {
+        readonly ValueArrayDictionary<TKey, TValue> _dictionary;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
+        internal ValueArrayDictionaryValueCollection(scoped ref readonly ValueArrayDictionary<TKey, TValue> dictionary)
+            => _dictionary = dictionary;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
-        ArrayPool<ArrayEntry<TKey>> entryPool,
-        ArrayPool<TValue> valuePool,
-        ArrayPool<int> bucketPool) => new(capacity, entryPool, valuePool, bucketPool);
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _dictionary.Count;
+        }
+
+        public bool IsReadOnly => true;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(TValue item) => _dictionary.ContainsValue(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CopyTo(TValue[] array, int arrayIndex)
+            => _dictionary._values.AsSpan(0, _dictionary.Count).CopyTo(array.AsSpan(arrayIndex));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator() => new(_dictionary);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+
+        void ICollection<TValue>.Add(TValue item)
+            => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
+
+        void ICollection<TValue>.Clear()
+            => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
+
+        bool ICollection<TValue>.Remove(TValue item)
+        {
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
+            return false;
+        }
+
+        public struct Enumerator : IEnumerator<TValue>
+        {
+            readonly ValueArrayDictionary<TKey, TValue> _dictionary;
+            readonly int _count;
+
+            int _index;
+
+            internal Enumerator(ValueArrayDictionary<TKey, TValue> dictionary)
+            {
+                _dictionary = dictionary;
+                _index = -1;
+                _count = dictionary.Count;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+#if DEBUG
+                if (_count != _dictionary.Count) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+                if (_index >= _count - 1) return false;
+
+                ++_index;
+                return true;
+            }
+
+            public TValue Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _dictionary._values[_index];
+            }
+
+            public void Reset() => _index = -1;
+
+            public void Dispose() { }
+
+            object IEnumerator.Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _dictionary._values[_index];
+            }
+        }
+    }
 }

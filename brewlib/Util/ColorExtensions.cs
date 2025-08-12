@@ -5,14 +5,14 @@ using SixLabors.ImageSharp;
 
 public static class ColorExtensions
 {
-    public static Color LerpColor(this Color color, ref readonly Color otherColor, float blend)
+    public static Color LerpColor(this scoped ref readonly Color color, scoped ref readonly Color otherColor, float blend)
     {
         var rgba = color.ToScaledVector4();
         return Color.FromScaledVector(new(rgba.AsVector3() * (1 - blend) + otherColor.ToScaledVector4().AsVector3() * blend,
             rgba.W));
     }
 
-    public static Color WithOpacity(this Color color, float opacity)
+    public static Color WithOpacity(this scoped ref readonly Color color, float opacity)
     {
         var rgba = color.ToScaledVector4();
         rgba.W *= opacity;

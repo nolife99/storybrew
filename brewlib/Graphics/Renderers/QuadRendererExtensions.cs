@@ -4,6 +4,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using BrewLib.Graphics.Textures;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -45,6 +46,20 @@ public static class QuadRendererExtensions
             Unsafe.Add(ref corner0, 3) = new(fx2.X, fx.Y);
         }
 
+        if (Vector256.IsHardwareAccelerated)
+        {
+            ref var cornersAsFloat = ref Unsafe.As<Vector2, float>(ref corner0);
+            (Vector256.LoadUnsafe(ref cornersAsFloat) + Vector256.Create(Unsafe.As<Vector2, long>(ref xy)).AsSingle())
+                .StoreUnsafe(ref cornersAsFloat);
+        }
+        else
+        {
+            corner0 += xy;
+            Unsafe.Add(ref corner0, 1) += xy;
+            Unsafe.Add(ref corner0, 2) += xy;
+            Unsafe.Add(ref corner0, 3) += xy;
+        }
+
         var textureUvOrigin = texture.UvOrigin;
         var textureUvRatio = texture.UvRatio;
 
@@ -57,10 +72,10 @@ public static class QuadRendererExtensions
         var rgba = color.ToPixel<Rgba32>();
         QuadPrimitive primitive = new()
         {
-            vec1 = corner0 + xy,
-            vec2 = Unsafe.Add(ref corner0, 1) + xy,
-            vec3 = Unsafe.Add(ref corner0, 2) + xy,
-            vec4 = Unsafe.Add(ref corner0, 3) + xy,
+            vec1 = corner0,
+            vec2 = Unsafe.Add(ref corner0, 1),
+            vec3 = Unsafe.Add(ref corner0, 2),
+            vec4 = Unsafe.Add(ref corner0, 3),
             u1 = (Half)textureU0U1.X,
             v1 = (Half)textureV0V1.X,
             u2 = (Half)textureU0U1.X,

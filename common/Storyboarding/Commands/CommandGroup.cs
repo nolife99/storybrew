@@ -18,7 +18,7 @@ public abstract class CommandGroup : ICommand
         get
         {
             var commandsStartTime = float.MaxValue;
-            foreach (var command in commands) commandsStartTime = float.Min(commandsStartTime, command.StartTime);
+            foreach (var command in Commands) commandsStartTime = float.Min(commandsStartTime, command.StartTime);
 
             return commandsStartTime;
         }
@@ -29,7 +29,7 @@ public abstract class CommandGroup : ICommand
         get
         {
             var commandsEndTime = float.MinValue;
-            foreach (var command in commands) commandsEndTime = float.Max(commandsEndTime, command.EndTime);
+            foreach (var command in Commands) commandsEndTime = float.Max(commandsEndTime, command.EndTime);
 
             return commandsEndTime;
         }
@@ -42,7 +42,7 @@ public abstract class CommandGroup : ICommand
             var commandsStartTime = float.MaxValue;
             var commandsEndTime = float.MinValue;
 
-            foreach (var command in commands)
+            foreach (var command in Commands)
             {
                 commandsStartTime = float.Min(commandsStartTime, command.StartTime);
 
@@ -66,7 +66,10 @@ public abstract class CommandGroup : ICommand
         return result != 0 ? result : EndTime.CompareTo(other.EndTime);
     }
 
-    void ICommand.WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
+    void ICommand.WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        scoped ref readonly StoryboardTransform transform,
+        int indentation)
     {
         if (commands.Count <= 0) return;
 
@@ -74,7 +77,7 @@ public abstract class CommandGroup : ICommand
 
         using (var header = GetCommandGroupHeader(ExportSettings.Default)) writer.WriteLine(header.AsReadOnlySpan());
 
-        foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
+        foreach (var command in Commands) command.WriteOsb(writer, exportSettings, in transform, indentation + 1);
     }
 
     /// <inheritdoc/>

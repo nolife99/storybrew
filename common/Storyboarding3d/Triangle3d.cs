@@ -80,7 +80,9 @@ public class Triangle3d : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
+    public override void GenerateStates(float time,
+        scoped ref readonly CameraState cameraState,
+        scoped ref readonly Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
 
@@ -91,25 +93,25 @@ public class Triangle3d : Node3d, HasOsbSprites
         {
             case 0:
             {
-                vector0 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector1 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector2 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                vector0 = CameraState.ToScreen(in wvp, Position0.ValueAt(time));
+                vector1 = CameraState.ToScreen(in wvp, Position1.ValueAt(time));
+                vector2 = CameraState.ToScreen(in wvp, Position2.ValueAt(time));
                 break;
             }
 
             case 1:
             {
-                vector2 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector0 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector1 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                vector2 = CameraState.ToScreen(in wvp, Position0.ValueAt(time));
+                vector0 = CameraState.ToScreen(in wvp, Position1.ValueAt(time));
+                vector1 = CameraState.ToScreen(in wvp, Position2.ValueAt(time));
                 break;
             }
 
             case 2:
             {
-                vector1 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector2 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector0 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                vector1 = CameraState.ToScreen(in wvp, Position0.ValueAt(time));
+                vector2 = CameraState.ToScreen(in wvp, Position1.ValueAt(time));
+                vector0 = CameraState.ToScreen(in wvp, Position2.ValueAt(time));
                 break;
             }
 

@@ -14,8 +14,7 @@ public abstract class Camera
     public abstract CameraState StateAt(float time);
 }
 
-public record CameraState(Matrix4x4 ViewProjection,
-    float AspectRatio,
+public readonly record struct CameraState(Matrix4x4 ViewProjection,
     float FocusDistance,
     float ResolutionScale,
     float NearClip,
@@ -23,10 +22,10 @@ public record CameraState(Matrix4x4 ViewProjection,
     float FarFade,
     float FarClip)
 {
-    public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
+    public static Vector4 ToScreen(scoped ref readonly Matrix4x4 transform, Vector3 point)
     {
         var transformed = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (new Vector2(transformed.X, transformed.Y) / float.Abs(transformed.W) + Vector2.One) /
+        var screenPosition = (transformed.AsVector2() / float.Abs(transformed.W) + Vector2.One) /
             2 *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
@@ -88,26 +87,19 @@ public class PerspectiveCamera : Camera
         Vector3 cameraPosition = new(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
         var targetPosition = TargetPosition.ValueAt(time);
 
-        float fovY;
-        if (HorizontalFov.Count > 0)
-            fovY = 2 * float.Atan(float.Tan(float.DegreesToRadians(HorizontalFov.ValueAt(time)) * .5f) / aspectRatio);
-        else
-            fovY = VerticalFov.Count > 0 ?
-                float.DegreesToRadians(VerticalFov.ValueAt(time)) :
+        var fovY = HorizontalFov.Count > 0 ?
+            2 * float.Atan(float.Tan(float.DegreesToRadians(HorizontalFov.ValueAt(time)) * .5f) / aspectRatio) :
+            VerticalFov.Count > 0 ? float.DegreesToRadians(VerticalFov.ValueAt(time)) :
                 2 * float.Atan(Resolution.Y * .5f / float.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
         var focusDistance = Resolution.Y * .5f / float.Tan(fovY * .5f);
         var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : float.Min(focusDistance * .5f, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 
-        var view = Matrix4x4.CreateLookAt(cameraPosition,
-            targetPosition,
-            Up.ValueAt(time) * (1 / Up.ValueAt(time).Length()));
-
-        var projection = Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip);
-
-        return new(Matrix4x4.Multiply(view, projection),
-            aspectRatio,
+        return new(
+            Matrix4x4.Multiply(
+                Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length())),
+                Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip)),
             focusDistance,
             ResolutionScale,
             nearClip,

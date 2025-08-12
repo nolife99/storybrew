@@ -145,9 +145,6 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 frameStats.LastBlendingMode = additive;
                 ++frameStats.Batches;
             }
-
-            if (!spriteBox.Intersects(in OsuHitObject.WidescreenStoryboardBounds) &&
-                !Native.Window.KeyboardState.IsKeyDown(Keys.LeftAlt)) return;
         }
 
         var boundsScaling = bounds.Height / 480;

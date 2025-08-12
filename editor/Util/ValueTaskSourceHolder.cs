@@ -1,14 +1,15 @@
 ﻿namespace StorybrewEditor.Util;
 
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using BrewLib.Memory;
 using BrewLib.Util;
 
 sealed class ValueTaskSourceHolder<TState> : IDisposable
 {
-    static readonly Pool<ValueTaskSourceHolder<TState>> Pool = new();
+    static readonly Queue<ValueTaskSourceHolder<TState>> Pool = new();
+    static readonly Lock PoolLock = new();
 
     QueuedAction queuedAction;
 
@@ -26,18 +27,26 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
             queuedAction.TaskSource.SetException(e);
         }
 
-        ValueTaskSourceHolderShared.TaskSourcePool.Enqueue(queuedAction.TaskSource);
+        lock (ValueTaskSourceHolderShared.PoolLock)
+            ValueTaskSourceHolderShared.TaskSourcePool.Enqueue(queuedAction.TaskSource);
 
         queuedAction = default;
-        Pool.Release(this);
+        lock (PoolLock) Pool.Enqueue(this);
     }
 
     public static ValueTaskSourceHolder<TState> Get(Action<TState> action, TState state)
     {
+        ValueTaskSourceHolderShared.PoolLock.Enter();
+
         if (!ValueTaskSourceHolderShared.TaskSourcePool.TryDequeue(out var taskSource)) taskSource = new(true);
         else taskSource.Reset();
 
-        var holder = Pool.Retrieve();
+        ValueTaskSourceHolderShared.PoolLock.Exit();
+
+        PoolLock.Enter();
+        if (!Pool.TryDequeue(out var holder)) holder = new();
+        PoolLock.Exit();
+
         holder.queuedAction = new(action, state, taskSource);
         return holder;
     }
@@ -47,5 +56,6 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
 
 static class ValueTaskSourceHolderShared
 {
-    public static readonly ConcurrentQueue<ValueTaskSource<bool>> TaskSourcePool = new();
+    public static readonly Queue<ValueTaskSource<bool>> TaskSourcePool = new([new(true)]);
+    public static readonly Lock PoolLock = new();
 }

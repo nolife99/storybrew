@@ -129,15 +129,26 @@ public static class StringHelper
             }
         }
 
-        return (int)float.Log10(float.CreateChecked(value)) + result;
+        return (int)double.Log10(double.CreateChecked(value)) + result;
     }
 
-    public static TempList<ValueList<char>> Split(this scoped ReadOnlySpan<char> value, scoped ReadOnlySpan<char> separator)
+    public static TempList<ValueArray<char>> SplitSlow(this scoped ReadOnlySpan<char> source,
+        scoped ReadOnlySpan<char> separator)
     {
-        var enumerator = MemoryExtensions.Split(value, separator);
-        var list = TempList.Create<ValueList<char>>();
+        var enumerator = MemoryExtensions.Split(source, separator);
+        var list = TempList.Create<ValueArray<char>>();
 
-        foreach (var s in enumerator) list.Add(ValueList.Create(value[s]));
+        foreach (var s in enumerator) list.Add(ValueArray.Create(source[s]));
+
+        return list;
+    }
+
+    public static TempList<Range> Split(this scoped ReadOnlySpan<char> source, scoped ReadOnlySpan<char> separator)
+    {
+        var enumerator = MemoryExtensions.Split(source, separator);
+        var list = TempList.Create<Range>();
+
+        foreach (var s in enumerator) list.Add(s);
 
         return list;
     }

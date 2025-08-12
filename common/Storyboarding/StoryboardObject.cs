@@ -14,5 +14,5 @@ public abstract class StoryboardObject
     public abstract void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
-        StoryboardTransform transform);
+        scoped ref readonly StoryboardTransform transform);
 }

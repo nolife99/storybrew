@@ -9,7 +9,6 @@ using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed partial class Shader : IDisposable
 {
@@ -188,7 +187,9 @@ public sealed partial class Shader : IDisposable
     static string addLineExtracts(string log, string code)
     {
         var errorRegex = ErrRegex();
-        using var splitCode = code.Replace("\r\n", "\n").AsSpan().Split(['\n']);
+
+        var toSplit = code.Replace("\r\n", "\n").AsSpan();
+        using var splitCode = toSplit.Split(['\n']);
 
         using var sb = TempList.Create<char>();
 
@@ -204,8 +205,8 @@ public sealed partial class Shader : IDisposable
 
             if (int.TryParse(match.Groups[2].ValueSpan, CultureInfo.InvariantCulture, out var lineNumber)) --lineNumber;
 
-            if (lineNumber > 0) sb.Append($"  {splitCode[lineNumber - 1].AsReadOnlySpan()}\n");
-            sb.Append($"> {splitCode[lineNumber].AsReadOnlySpan()}");
+            if (lineNumber > 0) sb.Append($"  {toSplit[splitCode[lineNumber - 1]]}\n");
+            sb.Append($"> {toSplit[splitCode[lineNumber]]}");
 
             if (int.TryParse(match.Groups[1].ValueSpan, CultureInfo.InvariantCulture, out var character))
                 for (var i = 0; i < character + 2; ++i)
@@ -213,8 +214,6 @@ public sealed partial class Shader : IDisposable
 
             sb.AddRange("^\n");
         }
-
-        foreach (var s in splitCode) s.Dispose();
 
         return sb.AsReadOnlySpan().ToString();
     }
