@@ -7,12 +7,14 @@ using BrewLib.UserInterface.Skinning.Styles;
 using StorybrewCommon.Util;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.UserInterface.Skinning.Styles;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class Selectbox : Widget, Field
 {
     readonly Button button;
 
-    NamedValue[] options;
+    ValueList<NamedValue> options = ValueList.Create<NamedValue>();
 
     object value;
 
@@ -21,12 +23,10 @@ public class Selectbox : Widget, Field
         Add(button = new(manager));
         button.OnClick += (_, _) =>
         {
-            if (options is null) return;
-
-            if (options.Length > 2)
+            if (options.Count > 2)
                 Manager.ScreenLayerManager.ShowContextMenu("Select a value",
                     optionValue => Value = optionValue.Value,
-                    options);
+                    options.AsReadOnlySpan());
             else
             {
                 var optionFound = false;
@@ -48,14 +48,15 @@ public class Selectbox : Widget, Field
     public override Vector2 MaxSize => button.MaxSize;
     public override Vector2 PreferredSize => button.PreferredSize;
 
-    public NamedValue[] Options
+    public ReadOnlySpan<NamedValue> Options
     {
-        get => options;
+        get => options.AsReadOnlySpan();
         set
         {
-            if (options == value) return;
+            if (options.AsReadOnlySpan().SequenceEqual(value)) return;
 
-            options = value;
+            options.Clear();
+            options.AddRange(value);
 
             button.Text = findValueName(this.value);
         }
@@ -97,12 +98,18 @@ public class Selectbox : Widget, Field
 
     string findValueName(object value)
     {
-        if (options is null) return "";
+        if (options.Count == 0) return "";
 
         foreach (var option in options)
             if (option.Value.Equals(value))
                 return option.Name;
 
         return "";
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) options.Dispose();
+        base.Dispose(disposing);
     }
 }

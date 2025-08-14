@@ -34,7 +34,7 @@ partial class CollectionInternals
         ValueStackInternals<T> internals = new(ref source);
         source.Dispose();
 
-        source = Unsafe.NullRef<ValueStack<T>>();
+        source = ref Unsafe.NullRef<ValueStack<T>>();
 
         return internals;
     }

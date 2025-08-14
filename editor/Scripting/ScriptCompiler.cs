@@ -2,7 +2,6 @@ namespace StorybrewEditor.Scripting;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -63,36 +62,39 @@ public static class ScriptCompiler
             assemblies.Add(AssemblyMetadata.CreateFromStream(stream, PEStreamOptions.PrefetchMetadata));
         }
 
-        ImmutableArray<Diagnostic> result;
+        EmitResult compilation;
 
         using (PoolingMemoryStream assemblyStream = new())
         using (PoolingMemoryStream pdbStream = new())
         {
-            var compilation = CSharpCompilation
-                .Create(asmName,
-                    trees.Keys,
-                    assemblies.Select(s => s.GetReference()),
-                    new(OutputKind.DynamicallyLinkedLibrary,
-                        allowUnsafe: true,
-                        optimizationLevel: OptimizationLevel.Release,
-                        concurrentBuild: false))
-                .Emit(assemblyStream,
-                    pdbStream,
-                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                    options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
-                    cancellationToken: tokenSource);
-
-            foreach (var ass in assemblies) ass.Dispose();
+            try
+            {
+                compilation = CSharpCompilation
+                    .Create(asmName,
+                        trees.Keys,
+                        assemblies.Select(s => s.GetReference()),
+                        new(OutputKind.DynamicallyLinkedLibrary,
+                            allowUnsafe: true,
+                            optimizationLevel: OptimizationLevel.Release,
+                            concurrentBuild: false))
+                    .Emit(assemblyStream,
+                        pdbStream,
+                        embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
+                        options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
+                        cancellationToken: tokenSource);
+            }
+            finally
+            {
+                foreach (var ass in assemblies) ass.Dispose();
+            }
 
             if (compilation.Success) return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
-
-            result = compilation.Diagnostics;
         }
 
         using var error = TempList.Create("Compilation error\n");
 
         using var diagnosticGroups = TempDictionary.Create<string, ValueList<Diagnostic>>();
-        foreach (var diagnostic in result)
+        foreach (var diagnostic in compilation.Diagnostics)
         {
             if (diagnostic.Severity is not DiagnosticSeverity.Error) continue;
 
@@ -121,6 +123,8 @@ public static class ScriptCompiler
             using var diagnostics = kvp.Value;
             foreach (var diagnostic in diagnostics) error.Append($"--{diagnostic}\n");
         }
+
+        tokenSource.ThrowIfCancellationRequested();
 
         throw new ScriptCompilationException(error.AsReadOnlySpan().ToString());
     }

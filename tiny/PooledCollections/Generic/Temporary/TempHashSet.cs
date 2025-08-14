@@ -1305,12 +1305,12 @@ public ref struct TempHashSet<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> span) => CopyTo(span, 0, Count);
+    public void CopyTo(scoped Span<T> span) => CopyTo(span, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
-    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();

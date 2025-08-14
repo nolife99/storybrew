@@ -9,7 +9,7 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
-        if (Commands.Length == 0)
+        if (commands.Count == 0)
         {
             result = default;
             return false;
@@ -17,14 +17,14 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
 
         if (time < LoopStartTime)
         {
-            result = Commands[0].AsResult(LoopStartTime);
+            result = commands[0].WithOffset(LoopStartTime);
             return true;
         }
 
         var loopTime = time - LoopStartTime;
         if (loopTime >= LoopCount * LoopDuration)
         {
-            result = Commands[^1].AsResult(LoopStartTime + (LoopCount - 1) * LoopDuration);
+            result = commands[^1].WithOffset(LoopStartTime + (LoopCount - 1) * LoopDuration);
             return true;
         }
 
@@ -37,9 +37,9 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
         var loopNumber = (int)(loopTime / LoopDuration);
         loopTime %= LoopDuration;
 
-        if (loopTime <= Commands[0].StartTime)
+        if (loopTime <= commands[0].StartTime)
         {
-            result = Commands[^1].AsResult(LoopStartTime + (loopNumber - 1) * LoopDuration);
+            result = commands[^1].WithOffset(LoopStartTime + (loopNumber - 1) * LoopDuration);
             return true;
         }
 

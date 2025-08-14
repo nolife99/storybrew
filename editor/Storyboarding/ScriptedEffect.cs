@@ -96,7 +96,7 @@ public class ScriptedEffect : Effect
 
             await changeStatus(EffectStatus.Updating);
 
-            ControlledExecution.Run(() => script.Generate(context), cts.Token);
+            script.Generate(context, ControlledExecution.Run, cts.Token);
 
             foreach (var layer in context.EditorLayers) layer.PostProcess();
 

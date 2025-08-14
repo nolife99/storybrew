@@ -4,19 +4,19 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 
 sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : struct
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
     readonly nint primitiveBuffer = Marshal.AllocHGlobal(Unsafe.SizeOf<TPrimitive>() * maxPrimitivesPerBatch);
     int primitiveBufferOffset;
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
-        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitiveBuffer), primitiveBufferOffset++) =
-            primitive;
+        => Unsafe.Add(ref primitiveBuffer.AsRef<TPrimitive>(), primitiveBufferOffset++) = primitive;
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {

@@ -34,7 +34,7 @@ partial class CollectionInternals
         ValueListInternals<T> internals = new(source);
         source.Dispose();
 
-        source = Unsafe.NullRef<ValueList<T>>();
+        source = ref Unsafe.NullRef<ValueList<T>>();
 
         return internals;
     }

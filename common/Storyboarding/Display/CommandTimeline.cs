@@ -2,16 +2,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 
-public interface CommandTimeline
+public interface ICommandTimeline
 {
     bool HasCommands { get; }
     bool HasOverlap { get; }
 
-    ReadOnlySpan<ICommand> Commands { get; }
+    IEnumerable<ICommand> Commands { get; }
 
     internal bool Add(ICommand command);
     internal void StartGroup(LoopCommand loop);
@@ -19,43 +20,29 @@ public interface CommandTimeline
     internal void EndGroup();
 }
 
-public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, ICommandValue
+public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : struct, ICommandValue
 {
     List<CommandChannel<TValue>> channels;
 
     CommandChannel<TValue> defaultChannel, currentChannel;
-    public TValue DefaultValue;
     Action<CommandChannel<TValue>, object> groupEndAction;
     object groupEndActionState;
 
     internal CommandTimeline() { }
     internal CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
+    public TValue DefaultValue { get; internal set; }
 
-    public ReadOnlySpan<ICommand> Commands => defaultChannel is null ?
-        default :
-        ReadOnlySpan<ICommand>.CastUp(defaultChannel.Commands);
+    public IEnumerable<ICommand> Commands => defaultChannel is null ? [] : defaultChannel.Commands.Select(c => c.Command);
 
     public bool HasCommands => channels is not null && channels.Count > 0;
 
-    public bool HasOverlap
+    public bool HasOverlap => HasCommands && channels.Any(channel => channel.HasOverlap);
+
+    bool ICommandTimeline.Add(ICommand command) => Add(command as Command<TValue>);
+
+    void ICommandTimeline.StartGroup(LoopCommand loop)
     {
-        get
-        {
-            if (!HasCommands) return false;
-
-            foreach (var channel in channels)
-                if (channel.HasOverlap)
-                    return true;
-
-            return false;
-        }
-    }
-
-    bool CommandTimeline.Add(ICommand command) => Add(command as Command<TValue>);
-
-    void CommandTimeline.StartGroup(LoopCommand loop)
-    {
-        if (groupEndAction is not null) ((CommandTimeline)this).EndGroup();
+        if (groupEndAction is not null) ((ICommandTimeline)this).EndGroup();
 
         CommandChannelLoop<TValue> loopChannel = new();
         currentChannel = loopChannel;
@@ -72,18 +59,18 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         };
     }
 
-    void CommandTimeline.StartGroup(TriggerCommand trigger)
+    void ICommandTimeline.StartGroup(TriggerCommand trigger)
     {
-        if (groupEndAction is not null) ((CommandTimeline)this).EndGroup();
+        if (groupEndAction is not null) ((ICommandTimeline)this).EndGroup();
 
         currentChannel = new CommandChannelTrigger<TValue>();
     }
 
-    void CommandTimeline.EndGroup()
+    void ICommandTimeline.EndGroup()
     {
         if (groupEndAction is null) return;
 
-        if (currentChannel.Commands.Length > 0)
+        if (currentChannel.Commands.Count > 0)
         {
             groupEndAction(currentChannel, groupEndActionState);
 
@@ -97,7 +84,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         groupEndActionState = null;
     }
 
-    bool Add(ITypedCommand<TValue> command)
+    bool Add(Command<TValue> command)
     {
         if (command is null) return false;
 
@@ -162,7 +149,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         return currentState switch { ResultState.NoCommand => DefaultValue, _ => currentResult.ValueAtTime(time) };
     }
 
-    public bool FindStartEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float startEdge)
+    internal bool FindStartEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float startEdge)
     {
         startEdge = float.MaxValue;
 
@@ -183,7 +170,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         return false;
     }
 
-    public bool FindEndEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float endEdge)
+    internal bool FindEndEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float endEdge)
     {
         endEdge = float.MinValue;
 
@@ -213,21 +200,22 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
                 case CommandChannelTrigger<TValue> trigger:
                     if (!trigger.Active) continue;
 
-                    foreach (var command in channel.Commands) result.Add(command.AsResult(trigger.TriggerTime));
+                    var commands = channel.Commands;
+                    for (var i = 0; i < commands.Count; i++) result.Add(commands[i].WithOffset(trigger.TriggerTime));
 
                     break;
 
                 case CommandChannelLoop<TValue> loop:
                     for (var loopIndex = 0; loopIndex < loop.LoopCount; ++loopIndex)
-                        foreach (var command in channel.Commands)
-                            result.Add(command.AsResult(loop.LoopStartTime + loopIndex * loop.LoopDuration));
+                    {
+                        commands = channel.Commands;
+                        for (var i = 0; i < commands.Count; i++)
+                            result.Add(commands[i].WithOffset(loop.LoopStartTime + loopIndex * loop.LoopDuration));
+                    }
 
                     break;
 
-                default:
-                    foreach (var command in channel.Commands) result.Add(command.AsResult());
-
-                    break;
+                default: result.AddRange(channel.Commands); break;
             }
 
         result.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));

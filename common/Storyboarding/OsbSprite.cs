@@ -174,9 +174,9 @@ public class OsbSprite : StoryboardObject
 
             if (ScaleVecTimeline.HasCommands)
             {
-                Func<CommandScale, bool> isZero = static value => value.X == 0 || value.Y == 0;
+                Func<CommandScale, bool> isZero = static value => value == default;
                 Func<CommandScale, CommandScale, bool> isNoOp = static (startValue, endValue)
-                    => startValue.X == .0 && endValue.X == .0 || startValue.Y == .0 && endValue.Y == .0;
+                    => startValue == default && endValue == default;
 
                 if (ScaleVecTimeline.FindStartEdge(isZero, isNoOp, out var startEdge))
                     displayStartTime = float.Max(displayStartTime, startEdge);
@@ -956,7 +956,7 @@ public class OsbSprite : StoryboardObject
 
     #region Display
 
-    internal readonly (Func<ICommand, bool>, CommandTimeline)[] displayValueBuilders;
+    internal readonly (Func<ICommand, bool>, ICommandTimeline)[] displayValueBuilders;
     public readonly CommandTimeline<CommandPosition> MoveTimeline = new();
 
     public readonly CommandTimeline<CommandDecimal> MoveXTimeline = new(), MoveYTimeline = new(), ScaleTimeline = new(1),

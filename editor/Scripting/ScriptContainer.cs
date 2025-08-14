@@ -97,6 +97,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     public TScript CreateScript(CancellationTokenSource token)
     {
         var localTargetVersion = targetVersion;
+        var localCurrentVersion = currentVersion;
+
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
@@ -115,10 +117,20 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
             catch (Exception e)
             {
                 scriptDomain.Unload();
-                if (e is ScriptCompilationException or OperationCanceledException) throw;
 
                 var details = "";
-                if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";
+                switch (e)
+                {
+                    case ScriptCompilationException: throw;
+
+                    case OperationCanceledException:
+                        currentVersion = localCurrentVersion;
+                        throw;
+
+                    case TypeLoadException:
+                        details = "Make sure the script's class name is the same as the file name.\n"; break;
+                }
+
                 throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
             }
 

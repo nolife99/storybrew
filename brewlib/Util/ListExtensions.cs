@@ -1,6 +1,9 @@
 namespace BrewLib.Util;
 
+using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public static class ListExtensions
 {
@@ -17,5 +20,18 @@ public static class ListExtensions
                 list[i] = list[i - 1];
 
         list[to] = item;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> GetSpanUnsafe<T>(this List<T> list)
+    {
+        var debugView = Unsafe.As<ListDebugView<T>>(list);
+        return MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(debugView._items), debugView._size);
+    }
+
+    class ListDebugView<T>
+    {
+        public T[] _items;
+        public int _size;
     }
 }

@@ -2,9 +2,8 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BrewLib.IO;
+using BrewLib.Util;
 using ManagedBass;
 using ManagedBass.Fx;
 
@@ -26,9 +25,7 @@ public class AudioStream : AudioChannel
                     flags,
                     new()
                     {
-                        Read = (buffer, _, _) => resourceStream.Read(
-                            MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), buffer),
-                                (int)resourceStream.Length)),
+                        Read = (buffer, _, _) => resourceStream.Read(buffer.AsSpan<byte>((int)resourceStream.Length)),
                         Length = _ => resourceStream.Length,
                         Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
                         Close = _ => resourceStream.Dispose()

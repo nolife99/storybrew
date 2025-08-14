@@ -322,8 +322,9 @@ public sealed class FontGenerator : IDisposable
                     TransparentColorMode = TransparentColorMode.Clear
                 });
 
-        StoryboardObjectGenerator.Current.bitmaps[path] = realText;
-        StoryboardObjectGenerator.Current.disposables.Add(realText);
+        var current = StoryboardObjectGenerator.Current;
+        current.bitmaps[path] = realText;
+        current.disposables.Add(realText);
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }

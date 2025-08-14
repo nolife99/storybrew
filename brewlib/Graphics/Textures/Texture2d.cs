@@ -250,13 +250,13 @@ public sealed class Texture2d : Texture2dRegion
             var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
             GL.BufferStorage(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferStorageFlags.MapWriteBit);
 
-            ref var addr = ref Unsafe.AddByteOffset(ref Unsafe.NullRef<Rgba32>(),
-                GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
+            ref var addr = ref GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
                     0,
                     dataSize,
                     MapBufferAccessMask.MapWriteBit |
                     MapBufferAccessMask.MapInvalidateBufferBit |
-                    MapBufferAccessMask.MapUnsynchronizedBit));
+                    MapBufferAccessMask.MapUnsynchronizedBit)
+                .AsRef<Rgba32>();
 
             for (var i = 0; i < height; ++i)
                 buffer.DangerousGetRowSpan(i)[..width]

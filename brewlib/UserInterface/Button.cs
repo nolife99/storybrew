@@ -80,7 +80,7 @@ public class Button : Widget, Field
     public object FieldValue { get => Checked; set => Checked = (bool)value; }
 
     public event EventHandler OnValueChanged;
-    public event EventHandler<MouseButton> OnClick;
+    public event Action<Button, MouseButton> OnClick;
 
     public void Click(MouseButton button = MouseButton.Left)
     {

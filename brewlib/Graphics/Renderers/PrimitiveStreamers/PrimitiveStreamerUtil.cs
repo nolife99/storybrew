@@ -7,7 +7,7 @@ static class PrimitiveStreamerUtil
 {
     public static IPrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
         int minVert,
-        scoped ReadOnlySpan<ushort> indices) where TPrimitive : struct
+        scoped ReadOnlySpan<ushort> indices) where TPrimitive : unmanaged
     {
         if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
             return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices);

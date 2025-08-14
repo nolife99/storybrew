@@ -4,11 +4,11 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using BrewLib.Memory;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using SixLabors.ImageSharp.PixelFormats;
@@ -22,7 +22,6 @@ using Color4 = OpenTK.Mathematics.Color4;
 
 public class EffectConfigUi : Widget
 {
-    const string effectConfigFormat = "storybrewEffectConfig";
     readonly LinearLayout layout, configFieldsLayout;
 
     readonly Label titleLabel;
@@ -115,14 +114,19 @@ public class EffectConfigUi : Widget
                 effect.ConfigFieldsChanged += EffectConfigFieldsChanged;
             }
 
-            updateEffect();
+            EffectChanged(effect);
             updateFields();
         }
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) Effect = null;
+        if (disposing)
+        {
+            (ClipboardHelper.GetData() as IDisposable)?.Dispose();
+            Effect = null;
+        }
+
         base.Dispose(disposing);
     }
 
@@ -132,15 +136,15 @@ public class EffectConfigUi : Widget
         layout.Size = Size;
     }
 
-    void EffectChanged(object sender, EventArgs e) => updateEffect();
-    void EffectConfigFieldsChanged(object sender, EventArgs e) => updateFields();
-
-    void updateEffect()
+    void EffectChanged(Effect sender)
     {
-        if (effect is null) return;
+        if (sender is null) return;
 
-        titleLabel.Text = $"Configuration: {effect.Name} ({effect.BaseName})";
+        using var text = StringHelper.Interpolate($"Configuration: {sender.Name} ({sender.BaseName})");
+        titleLabel.Text = text.AsReadOnlySpan();
     }
+
+    void EffectConfigFieldsChanged(Effect sender) => updateFields();
 
     void updateFields()
     {
@@ -165,8 +169,12 @@ public class EffectConfigUi : Widget
             var displayName = field.DisplayName;
             if (currentGroup is not null) displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
 
-            var description = $"Variable: {field.Name} ({field.Type.Name})";
-            if (!string.IsNullOrWhiteSpace(field.Description)) description = "  " + description + "\n" + field.Description;
+            using var description = StringHelper.Interpolate($"Variable: {field.Name} ({field.Type.Name})");
+            if (!string.IsNullOrWhiteSpace(field.Description))
+            {
+                description.InsertRange(0, "  ");
+                description.Append($"\n{field.Description}");
+            }
 
             configFieldsLayout.Add(new LinearLayout(Manager)
             {
@@ -182,7 +190,7 @@ public class EffectConfigUi : Widget
                         Text = displayName,
                         AnchorFrom = BoxAlignment.TopLeft,
                         AnchorTo = BoxAlignment.TopLeft,
-                        Tooltip = description
+                        Tooltip = description.AsReadOnlySpan()
                     },
                     buildFieldEditor(field)
                 ]
@@ -309,11 +317,12 @@ public class EffectConfigUi : Widget
             return widget;
         }
 
+        using var text = StringHelper.Interpolate($"Values of type {field.Type.Name} cannot be edited");
         return new Label(Manager)
         {
             StyleName = "listItem",
             Text = field.Value.ToString(),
-            Tooltip = $"Values of type {field.Type.Name} cannot be edited",
+            Tooltip = text.AsReadOnlySpan(),
             AnchorFrom = BoxAlignment.Right,
             AnchorTo = BoxAlignment.Right,
             CanGrow = false
@@ -432,16 +441,25 @@ public class EffectConfigUi : Widget
 
     void copyConfiguration()
     {
-        MemoryStream memory = new();
-        using BinaryWriter writer = new(memory, Encoding.UTF8, true);
-
-        writer.Write(effect.Config.FieldCount);
-        foreach (var field in effect.Config.Fields)
+        PoolingMemoryStream memory = new();
+        try
         {
-            writer.Write(field.Name);
-            ObjectSerializer.Write(writer, field.Value);
+            using BinaryWriter writer = new(memory, Encoding.UTF8, true);
+
+            writer.Write(effect.Config.Fields.Count);
+            foreach (var field in effect.Config.Fields)
+            {
+                writer.Write(field.Name);
+                ObjectSerializer.Write(writer, field.Value);
+            }
+        }
+        catch (Exception e)
+        {
+            memory.Dispose();
+            Trace.WriteLine($"Cannot copy clipboard data: {e}");
         }
 
+        (ClipboardHelper.GetData() as IDisposable)?.Dispose();
         ClipboardHelper.SetData(memory);
     }
 
@@ -451,6 +469,7 @@ public class EffectConfigUi : Widget
         try
         {
             using BinaryReader reader = new((Stream)ClipboardHelper.GetData(), Encoding.UTF8, true);
+            reader.BaseStream.Position = 0;
 
             var fieldCount = reader.ReadInt32();
             for (var i = 0; i < fieldCount; ++i)
@@ -459,9 +478,14 @@ public class EffectConfigUi : Widget
                 var value = ObjectSerializer.Read(reader);
                 try
                 {
-                    if (effect.Config.Fields.First(f => f.Name == name).Value.Equals(value)) continue;
+                    foreach (var f in effect.Config.Fields)
+                        if (f.Name == name)
+                        {
+                            if (f.Value.Equals(value)) break;
 
-                    changed |= effect.Config.SetValue(name, value);
+                            changed |= effect.Config.SetValue(name, value);
+                            break;
+                        }
                 }
                 catch (Exception ex)
                 {

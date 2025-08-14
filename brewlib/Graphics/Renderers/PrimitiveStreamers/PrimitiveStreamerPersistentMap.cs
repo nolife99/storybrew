@@ -3,9 +3,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using BrewLib.Graphics.Shaders;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 
-sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : struct
+sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : unmanaged
 {
     readonly int maxBatchSize;
 
@@ -22,9 +23,8 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
     {
-        if (sync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer();
-        Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset),
-            totalQueuedPrimitives) = primitive;
+        if (sync.WaitForRange(bufferOffset + totalQueuedPrimitives * PrimitiveSize, PrimitiveSize)) expandVertexBuffer();
+        Unsafe.Add(ref (bufferAddr + bufferOffset).AsRef<TPrimitive>(), totalQueuedPrimitives) = primitive;
     }
 
     protected override void internalRender(PrimitiveType type, int vertexCount)

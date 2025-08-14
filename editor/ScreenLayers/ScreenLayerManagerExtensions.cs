@@ -17,7 +17,7 @@ public static class ScreenLayerManagerExtensions
             async () =>
             {
                 var selectedPath = NFD.PickFolder(initialValue);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
                 if (!string.IsNullOrEmpty(selectedPath))
                     await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
             });
@@ -30,7 +30,7 @@ public static class ScreenLayerManagerExtensions
         async () =>
         {
             var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
         });
 
@@ -42,7 +42,7 @@ public static class ScreenLayerManagerExtensions
         async () =>
         {
             var fileName = NFD.SaveDialog(initialValue, extension, filter);
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
         });
 

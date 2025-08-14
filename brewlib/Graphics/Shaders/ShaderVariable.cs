@@ -45,7 +45,10 @@ public class ShaderVariable
 
     public class Reference(ShaderVariable variable)
     {
+        readonly ShaderVariable variable = variable;
+
         public virtual string this[ReadOnlySpan<char> index] => $"{variable.Name}[{index}]";
+        public string this[Reference index] => this[index.variable.Name];
 
         public override string ToString() => variable.Name;
     }

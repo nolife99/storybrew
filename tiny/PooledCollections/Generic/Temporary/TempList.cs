@@ -691,7 +691,7 @@ public ref struct TempList<T>
         InsertRange(index, new ReadOnlySpan<T>(array));
     }
 
-    public void InsertRange(int index, scoped ReadOnlySpan<T> span)
+    [OverloadResolutionPriority(1)] public void InsertRange(int index, scoped ReadOnlySpan<T> span)
     {
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 

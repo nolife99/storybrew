@@ -1,46 +1,48 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 class CommandChannel<TValue> where TValue : struct, ICommandValue
 {
-    readonly List<ITypedCommand<TValue>> commands = [];
+    protected readonly List<CommandResult<TValue>> commands = [];
 
-    public ReadOnlySpan<ITypedCommand<TValue>> Commands => CollectionsMarshal.AsSpan(commands);
+    public IReadOnlyList<CommandResult<TValue>> Commands => commands;
 
     public bool HasOverlap { get; private set; }
 
-    public bool Add(ITypedCommand<TValue> command)
+    public bool Add(Command<TValue> command)
     {
-        var index = commands.BinarySearch(command);
+        var result = command.AsResult();
+
+        var index = commands.BinarySearch(result);
         if (index >= 0)
         {
-            commands[index] = command;
+            commands[index] = result;
             return false;
         }
 
         index = ~index;
         while (index < commands.Count)
         {
-            if (commands[index].CompareTo(command) > 0) break;
+            if (commands[index].Command.CompareTo(command) > 0) break;
 
             ++index;
         }
 
-        HasOverlap |= index > 0 && command.StartTime < commands[index - 1].EndTime ||
-            index < commands.Count && commands[index].StartTime < command.EndTime;
+        HasOverlap |= index > 0 && result.StartTime < commands[index - 1].EndTime ||
+            index < commands.Count && commands[index].StartTime < result.EndTime;
 
-        commands.Insert(index, command);
+        commands.Insert(index, result);
 
         return true;
     }
 
-    protected ITypedCommand<TValue> CommandAtTime(float time)
+    protected Command<TValue> CommandAtTime(float time)
     {
         if (commands.Count == 0) return null;
 
@@ -57,7 +59,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue
         }
         else if (index > 0 && time == commands[index - 1].EndTime) --index;
 
-        return commands[index];
+        return commands[index].Command;
     }
 
     public virtual bool ResultAtTime(float time, out CommandResult<TValue> result)
@@ -75,18 +77,24 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue
 
     bool findCommandIndex(float time, out int index)
     {
-        var left = 0;
-        var right = commands.Count - 1;
+        var c = commands.GetSpanUnsafe();
 
-        ref var first = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(commands));
+        var left = 0;
+        var right = c.Length - 1;
+
+        ref var first = ref MemoryMarshal.GetReference(c);
         while (left <= right)
         {
-            index = right + left >> 1;
-            var commandTime = Unsafe.Add(ref first, index).StartTime;
-            if (commandTime == time) return true;
+            var currentIndex = right + left >> 1;
+            var commandTime = Unsafe.Add(ref first, currentIndex).StartTime;
 
-            if (commandTime < time) left = index + 1;
-            else right = index - 1;
+            if (commandTime > time) right = currentIndex - 1;
+            else if (commandTime < time) left = currentIndex + 1;
+            else
+            {
+                index = currentIndex;
+                return true;
+            }
         }
 
         index = left;

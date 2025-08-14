@@ -33,7 +33,7 @@ partial class CollectionInternals
         TempArrayInternals<T> internals = new(in source);
         source.Dispose();
 
-        source = Unsafe.NullRef<TempArray<T>>();
+        source = ref Unsafe.NullRef<TempArray<T>>();
 
         return internals;
     }

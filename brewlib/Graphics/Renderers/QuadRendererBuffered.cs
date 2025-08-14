@@ -10,11 +10,12 @@ using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 
-public class QuadRendererBuffered : IQuadRenderer
+public sealed class QuadRendererBuffered : IQuadRenderer
 {
     const int IndexPerQuad = 6, VertexPerQuad = 4;
 
@@ -201,8 +202,8 @@ public class QuadRendererBuffered : IQuadRenderer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static void WriteToBuffer<T>(nint buffer, T value, int index)
-        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), buffer), index) = value;
+    static void WriteToBuffer<T>(nint buffer, T value, int index) where T : unmanaged
+        => Unsafe.Add(ref buffer.AsRef<T>(), index) = value;
 
     Shader CreateDefaultShader()
     {
@@ -240,12 +241,12 @@ public class QuadRendererBuffered : IQuadRenderer
 
         var clipRect = sb.AddFragmentVariable(ActiveUniformType.FloatVec4);
 
-        sb.FragmentShader = new Sequence(new Assign(clipRect, () => $"{clipRects.Ref[drawId.Ref.ToString()]}"),
+        sb.FragmentShader = new Sequence(new Assign(clipRect, () => $"{clipRects.Ref[drawId.Ref]}"),
             new Assign(sb.GlFragColor,
                 () =>
                 {
                     var texRef = Texture2d.BindlessTexturesSupported ?
-                        $"sampler2D({texture.Ref[drawId.Ref.ToString()]})" :
+                        $"sampler2D({texture.Ref[drawId.Ref]})" :
                         texture.Ref.ToString();
 
                     return

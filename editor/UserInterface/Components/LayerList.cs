@@ -182,7 +182,7 @@ public class LayerList : Widget
             });
 
             Action<object, ChangedEventArgs> changedHandler;
-            EventHandler effectChangedHandler;
+            Action<Effect> effectChangedHandler;
 
             layer.OnChanged += changedHandler = (_, _) =>
             {
@@ -198,7 +198,7 @@ public class LayerList : Widget
                 showHideButton.Checked = layer.Visible;
             };
 
-            effect.Changed += effectChangedHandler = (_, _) =>
+            effect.Changed += effectChangedHandler = _ =>
             {
                 using var text = getLayerDetails(layer, layer.Effect);
                 detailsLabel.Text = text.AsReadOnlySpan();

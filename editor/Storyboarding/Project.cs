@@ -98,11 +98,11 @@ public sealed partial class Project : IDisposable
             => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
-        OnMainBeatmapChanged += (_, _) =>
+        OnMainBeatmapChanged += sender =>
         {
-            foreach (var effect in effects)
+            foreach (var effect in sender.effects)
                 if (effect.BeatmapDependent)
-                    QueueEffectUpdate(effect);
+                    sender.QueueEffectUpdate(effect);
         };
     }
 
@@ -172,22 +172,7 @@ public sealed partial class Project : IDisposable
     public TextureContainer TextureContainer { get; private set; }
     public AudioSampleContainer AudioContainer { get; private set; }
 
-    public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
-
-    static readonly Pool<FrameStats> frameStatsPool = new(obj =>
-    {
-        obj.LoadedPaths.Clear();
-        obj.OverlappedSprites.Clear();
-        obj.IncompatibleSprites.Clear();
-        obj.ProlongedSprites.Clear();
-
-        obj.GpuPixelsFrame = 0;
-        obj.LastBlendingMode = false;
-
-        obj.LastTexture = null;
-        obj.ScreenFill = 0;
-        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
-    });
+    public readonly FrameStats FrameStats = new();
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -195,13 +180,23 @@ public sealed partial class Project : IDisposable
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
 
-        var newFrameStats = updateFrameStats ? frameStatsPool.Retrieve() : null;
-        LayerManager.Draw(drawContext, camera, bounds, opacity, newFrameStats);
+        var newStats = updateFrameStats ? FrameStats : null;
+        if (updateFrameStats)
+        {
+            newStats.LoadedPaths.Clear();
+            newStats.OverlappedSprites.Clear();
+            newStats.IncompatibleSprites.Clear();
+            newStats.ProlongedSprites.Clear();
 
-        if (newFrameStats is null) return;
+            newStats.GpuPixelsFrame = 0;
+            newStats.LastBlendingMode = false;
 
-        frameStatsPool.Release(FrameStats);
-        FrameStats = newFrameStats;
+            newStats.LastTexture = null;
+            newStats.ScreenFill = 0;
+            newStats.SpriteCount = newStats.Batches = newStats.CommandCount = newStats.EffectiveCommandCount = 0;
+        }
+
+        LayerManager.Draw(drawContext, camera, bounds, opacity, newStats);
     }
 
     void reloadTextures()
@@ -327,7 +322,7 @@ public sealed partial class Project : IDisposable
         return name;
     }
 
-    void EffectChanged(object sender, EventArgs e)
+    void EffectChanged(Effect sender)
     {
         if (Disposed) return;
 
@@ -410,11 +405,11 @@ public sealed partial class Project : IDisposable
             mainBeatmap = value;
             Changed = true;
 
-            OnMainBeatmapChanged?.Invoke(this, EventArgs.Empty);
+            OnMainBeatmapChanged?.Invoke(this);
         }
     }
 
-    public event EventHandler OnMainBeatmapChanged;
+    public event Action<Project> OnMainBeatmapChanged;
 
     public void SwitchMainBeatmap()
     {
@@ -632,7 +627,7 @@ public sealed partial class Project : IDisposable
             w.Write7BitEncodedInt(effect.Name.Length);
             w.Write(effect.Name);
 
-            w.Write(effect.Config.FieldCount);
+            w.Write(effect.Config.Fields.Count);
             foreach (var field in effect.Config.SortedFields)
             {
                 w.Write(field.Name);

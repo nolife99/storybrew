@@ -56,7 +56,7 @@ partial class CollectionInternals
         ValueArrayDictionaryInternals<TKey, TValue> internals = new(ref source);
         source.Dispose();
 
-        source = Unsafe.NullRef<ValueArrayDictionary<TKey, TValue>>();
+        source = ref Unsafe.NullRef<ValueArrayDictionary<TKey, TValue>>();
 
         return internals;
     }

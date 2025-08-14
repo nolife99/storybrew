@@ -98,7 +98,7 @@ public abstract class StoryboardObjectGenerator : Script
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
-    public void Generate(GeneratorContext context)
+    public void Generate(GeneratorContext context, Action<Action, CancellationToken> scriptWrapper, CancellationToken token)
     {
         if (instance.Value is not null) throw new InvalidOperationException("A script is already running in this thread");
 
@@ -108,7 +108,7 @@ public abstract class StoryboardObjectGenerator : Script
             rnd = new(RandomSeed);
             instance.Value = this;
 
-            Generate();
+            scriptWrapper(Generate, token);
             context.Multithreaded = Multithreaded;
         }
         finally

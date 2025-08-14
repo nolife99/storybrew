@@ -2,8 +2,7 @@
 
 using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using BrewLib.Util;
 using ManagedBass;
 using SixLabors.ImageSharp.Memory;
 
@@ -37,10 +36,7 @@ public class FftStream : IDisposable
 
         var data = MemoryAllocator.Default.Allocate<float>(size);
         using (data.Memory.Pin())
-            if (Bass.ChannelGetData(stream,
-                    Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
-                    (int)flags) ==
-                -1)
+            if (Bass.ChannelGetData(stream, data.Memory.Span.AsPointer(), (int)flags) == -1)
                 throw new BassException(Bass.LastError);
 
         return data;

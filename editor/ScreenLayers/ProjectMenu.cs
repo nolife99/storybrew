@@ -287,7 +287,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         resizeTimeline();
         timeline.OnValueChanged += (_, _) => pendingSeek = timeline.Value;
-        timeline.OnValueCommited += (_, _) => timeline.Snap();
+        timeline.OnValueCommited += (sender, _) => ((TimelineSlider)sender).Snap();
         timeline.OnHovered += (_, e) => previewContainer.Displayed = e.Hovered;
 
         mapB.OnClick += (_, _) =>
@@ -797,7 +797,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 await Task.Delay(5000);
 
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
             });
     });
 

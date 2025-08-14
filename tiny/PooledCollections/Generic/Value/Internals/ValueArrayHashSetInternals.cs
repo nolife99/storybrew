@@ -48,7 +48,7 @@ partial class CollectionInternals
         ValueArrayHashSetInternals<T> internals = new(ref source);
         source.Dispose();
 
-        source = Unsafe.NullRef<ValueArrayHashSet<T>>();
+        source = ref Unsafe.NullRef<ValueArrayHashSet<T>>();
 
         return internals;
     }

@@ -1,10 +1,9 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BrewLib.IO;
 using BrewLib.Memory;
+using BrewLib.Util;
 using ManagedBass;
 
 public class AudioSample : IDisposable
@@ -30,14 +29,11 @@ public class AudioSample : IDisposable
         stream.CopyTo(copyStream, 65536);
 
         using (copyStream.WrittenMemory.Pin())
-        {
-            var span = copyStream.WrittenSpan;
-            sample = Bass.SampleLoad(Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
+            sample = Bass.SampleLoad(copyStream.WrittenSpan.AsPointer(),
                 0,
                 (int)stream.Length,
                 MaxSimultaneousPlayBacks,
                 BassFlags.SampleOverrideLongestPlaying);
-        }
 
         if (sample != 0) return;
 

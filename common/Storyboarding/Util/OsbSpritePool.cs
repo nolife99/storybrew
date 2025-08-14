@@ -25,32 +25,32 @@ public class OsbSpritePool : IDisposable
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="origin"> The origin point for the sprites within the pool. </param>
-    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
+    /// <param name="finalizer"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null) : this(segment, path, origin, default, attributes) { }
+        Action<OsbSprite, float, float> finalizer = null) : this(segment, path, origin, default, finalizer) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="position"> The initial position of the sprites in the pool. </param>
-    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
+    /// <param name="finalizer"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null) : this(segment, path, OsbOrigin.Centre, position, attributes) { }
+        Action<OsbSprite, float, float> finalizer = null) : this(segment, path, OsbOrigin.Centre, position, finalizer) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
-    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> attributes = null) : this(
+    /// <param name="finalizer"> The actions to be applied to each sprite in the pool. </param>
+    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> finalizer = null) : this(
         segment,
         path,
         OsbOrigin.Centre,
         default,
-        attributes) { }
+        finalizer) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -98,18 +98,18 @@ public class OsbSpritePool : IDisposable
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="origin"> The origin point for the sprites within the pool. </param>
     /// <param name="position"> The initial position of the sprites in the pool. </param>
-    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
+    /// <param name="finalizer"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null)
+        Action<OsbSprite, float, float> finalizer = null)
     {
         _segment = segment;
         _path = path;
         _origin = origin;
         _position = position;
-        _attributes = attributes;
+        _attributes = finalizer;
     }
 
     ///<summary> The maximum duration for a sprite to be pooled. </summary>
@@ -167,7 +167,7 @@ public class OsbSpritePool : IDisposable
         pooled.Add(new(sprite, startTime, endTime));
     }
 
-    internal virtual OsbSprite CreateSprite(StoryboardSegment segment,
+    private protected virtual OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         CommandPosition position) => segment.CreateSprite(path, origin, position);
@@ -231,55 +231,55 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the sprite. </param>
     /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
     /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime,
         float endTime,
         string path,
         OsbOrigin origin,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => getPool(path, origin, position, attributes, group).Get(startTime, endTime);
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => getPool(path, origin, position, finalizer, group).Get(startTime, endTime);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
     /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime,
         float endTime,
         string path,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, position, attributes, group);
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, position, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
     /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime,
         float endTime,
         string path,
         OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => Get(startTime, endTime, path, origin, default, attributes, group);
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => Get(startTime, endTime, path, origin, default, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime,
         float endTime,
         string path,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, default, attributes, group);
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, default, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -347,7 +347,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
     /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
     /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbAnimation Get(float startTime,
         float endTime,
@@ -357,8 +357,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         OsbOrigin origin,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, attributes, group)
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, finalizer, group)
         .Get(startTime, endTime);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -369,7 +369,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
     /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbAnimation Get(float startTime,
         float endTime,
@@ -378,9 +378,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null,
-        int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, attributes, group);
+        Action<OsbSprite, float, float> finalizer = null,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, finalizer, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -390,7 +389,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
     /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbAnimation Get(float startTime,
         float endTime,
@@ -399,7 +398,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null,
+        Action<OsbSprite, float, float> finalizer = null,
         int group = 0) => Get(startTime,
         endTime,
         path,
@@ -408,7 +407,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         loopType,
         OsbOrigin.Centre,
         position,
-        attributes,
+        finalizer,
         group);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -418,7 +417,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbAnimation Get(float startTime,
         float endTime,
@@ -426,7 +425,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
-        Action<OsbSprite, float, float> attributes = null,
+        Action<OsbSprite, float, float> finalizer = null,
         int group = 0) => Get(startTime,
         endTime,
         path,
@@ -435,7 +434,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         loopType,
         OsbOrigin.Centre,
         default,
-        attributes,
+        finalizer,
         group);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -550,15 +549,15 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="sprite"> The sprite to modify. </param>
     /// <param name="startTime"> The new start time for the sprite. </param>
     /// <param name="endTime"> The new end time for the sprite. </param>
-    /// <param name="attributes"> The original delegate that was provided when the sprite was pooled. </param>
+    /// <param name="finalizer"> The original delegate that was provided when the sprite was pooled. </param>
     /// <param name="group"> The original group for the pooled sprite. </param>
     public void EditPoolDuration(OsbSprite sprite,
         float startTime,
         float endTime,
-        Action<OsbSprite, float, float> attributes,
+        Action<OsbSprite, float, float> finalizer,
         int group)
     {
-        var pool = getPool(sprite.TexturePath, sprite.Origin, sprite.InitialPosition, attributes, group);
+        var pool = getPool(sprite.TexturePath, sprite.Origin, sprite.InitialPosition, finalizer, group);
         foreach (var pooledSprite in pool.pooled)
             if (pooledSprite.Sprite == sprite)
             {
@@ -574,12 +573,12 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     OsbSpritePool getPool(string path,
         OsbOrigin origin,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes,
+        Action<OsbSprite, float, float> finalizer,
         int group)
     {
-        var key = getKey(path, origin, attributes, group);
+        var key = getKey(path, origin, finalizer, group);
         if (!pools.TryGetValue(key, out var pool))
-            pools[key] = pool = new(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
+            pools[key] = pool = new(segment, path, origin, position, finalizer) { MaxPoolDuration = maxPoolDuration };
 
         return pool;
     }
@@ -590,13 +589,13 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         OsbOrigin origin,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes,
+        Action<OsbSprite, float, float> finalizer,
         int group)
     {
-        var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
+        var key = getKey(path, frameCount, frameDelay, loopType, origin, finalizer, group);
         if (!animationPools.TryGetValue(key, out var pool))
             animationPools[key] =
-                pool = new(segment, path, frameCount, frameDelay, loopType, origin, position, attributes)
+                pool = new(segment, path, frameCount, frameDelay, loopType, origin, position, finalizer)
                 {
                     MaxPoolDuration = maxPoolDuration
                 };
@@ -650,7 +649,7 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     OsbLoopType loopType,
     OsbOrigin origin,
     CommandPosition position,
-    Action<OsbSprite, float, float> attributes = null) : OsbSpritePool(segment, path, origin, position, attributes)
+    Action<OsbSprite, float, float> finalizer = null) : OsbSpritePool(segment, path, origin, position, finalizer)
 {
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -659,21 +658,21 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
     /// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
-    /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each animation in the pool. </param>
     public OsbAnimationPool(StoryboardSegment segment,
         string path,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
         OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        Action<OsbSprite, float, float> finalizer = null) : this(segment,
         path,
         frameCount,
         frameDelay,
         loopType,
         origin,
         default,
-        attributes) { }
+        finalizer) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -682,21 +681,21 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
     /// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
-    /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each animation in the pool. </param>
     public OsbAnimationPool(StoryboardSegment segment,
         string path,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        Action<OsbSprite, float, float> finalizer = null) : this(segment,
         path,
         frameCount,
         frameDelay,
         loopType,
         OsbOrigin.Centre,
         position,
-        attributes) { }
+        finalizer) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -704,20 +703,20 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
     /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
     /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
-    /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
+    /// <param name="finalizer"> Commands to be run on each animation in the pool. </param>
     public OsbAnimationPool(StoryboardSegment segment,
         string path,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
-        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        Action<OsbSprite, float, float> finalizer = null) : this(segment,
         path,
         frameCount,
         frameDelay,
         loopType,
         OsbOrigin.Centre,
         default,
-        attributes) { }
+        finalizer) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -790,7 +789,7 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         OsbLoopType loopType,
         bool additive) : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive) { }
 
-    internal override OsbSprite CreateSprite(StoryboardSegment segment,
+    private protected override OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         CommandPosition position) => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);

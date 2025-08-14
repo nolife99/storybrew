@@ -8,7 +8,6 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -193,15 +192,8 @@ public ref struct TempDictionary<TKey, TValue>
             _entries = s_emptyEntries;
         }
 
-        if (comparer is not null &&
-            comparer !=
-            EqualityComparer<TKey>
-                .Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
-            _comparer = comparer;
+        if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default)) _comparer = comparer;
 
-        // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-        // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-        // hash buckets become unbalanced.
         if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
     }
 
@@ -231,37 +223,23 @@ public ref struct TempDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
     {
-        // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
         foreach (var pair in collection) Add(pair.Key, pair.Value);
     }
 
     public void AddRange(TempDictionary<TKey, TValue> collection)
     {
-        if (collection.Count == 0)
-
-            // Nothing to copy, all done
-            return;
-
-        // This is not currently a true .AddRange as it needs to be an initialized dictionary
-        // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
-        Debug.Assert(collection._entries is not null);
-        Debug.Assert(_entries is not null);
-        Debug.Assert(_entries.Length >= collection.Count);
-        Debug.Assert(_count == 0);
+        if (collection.Count == 0) return;
 
         var oldEntries = collection._entries;
-        if (collection._comparer == _comparer)
+        if (ReferenceEquals(collection._comparer, _comparer))
         {
-            // If comparers are the same, we can copy _entries without rehashing.
             CopyEntries(oldEntries, collection._count);
             return;
         }
 
-        // Comparers differ need to rehash all the entires via Add
         var count = collection._count;
         for (var i = 0; i < count; i++)
 
-            // Only copy if an entry
             if (oldEntries[i].Next >= -1)
                 Add(oldEntries[i].Key, oldEntries[i].Value);
     }
@@ -296,14 +274,12 @@ public ref struct TempDictionary<TKey, TValue>
         set
         {
             var modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-            Debug.Assert(modified);
         }
     }
 
     public void Add(TKey key, TValue value)
     {
         var modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-        Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
     }
 
     public void Clear()
@@ -311,9 +287,6 @@ public ref struct TempDictionary<TKey, TValue>
         var count = _count;
         if (count > 0)
         {
-            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            Debug.Assert(_entries is not null, "_entries should be non-null");
-
             Array.Clear(_buckets, 0, _buckets.Length);
 
             _count = 0;
@@ -336,16 +309,12 @@ public ref struct TempDictionary<TKey, TValue>
         }
         else if (typeof(TValue).IsValueType)
         {
-            // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value))
                     return true;
         }
         else
         {
-            // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-            // https://github.com/dotnet/runtime/issues/10050
-            // So cache in a local rather than get EqualityComparer per loop iteration
             var defaultComparer = EqualityComparer<TValue>.Default;
             for (var i = 0; i < _count; i++)
                 if (entries![i].Next >= -1 && defaultComparer.Equals(entries[i].Value, value))
@@ -369,7 +338,7 @@ public ref struct TempDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Enumerator GetEnumerator() => new(in this, Enumerator.KeyValuePair);
+    public readonly Enumerator GetEnumerator() => new(in this);
 
     internal readonly ref TValue FindValue(TKey key)
     {
@@ -378,7 +347,6 @@ public ref struct TempDictionary<TKey, TValue>
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
         if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "expected entries to be is not null");
             var comparer = _comparer;
             if (comparer is null)
             {
@@ -388,13 +356,9 @@ public ref struct TempDictionary<TKey, TValue>
                 uint collisionCount = 0;
                 if (typeof(TKey).IsValueType)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                    i--;
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                         entry = ref entries[i];
@@ -407,21 +371,14 @@ public ref struct TempDictionary<TKey, TValue>
                     }
                     while (collisionCount <= (uint)entries.Length);
 
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     goto ConcurrentOperation;
                 }
 
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
 
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -433,8 +390,6 @@ public ref struct TempDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
             else
@@ -443,11 +398,9 @@ public ref struct TempDictionary<TKey, TValue>
                 var i = GetBucket(hashCode);
                 var entries = _entries;
                 uint collisionCount = 0;
-                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                i--;
                 do
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test in if to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
                     entry = ref entries[i];
@@ -459,8 +412,6 @@ public ref struct TempDictionary<TKey, TValue>
                 }
                 while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
                 goto ConcurrentOperation;
             }
         }
@@ -485,7 +436,6 @@ public ref struct TempDictionary<TKey, TValue>
         var buckets = _bucketPool.Rent(size);
         var entries = _entryPool.Rent(size);
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         _freeList = -1;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -502,33 +452,25 @@ public ref struct TempDictionary<TKey, TValue>
 
     internal bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
     {
-        // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
-        // If you make any changes here, make sure to keep that version in sync as well.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        Debug.Assert(_buckets.IsNullOrEmpty() == false);
 
         var entries = _entries;
-        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
         var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
         uint collisionCount = 0;
         ref var bucket = ref GetBucket(hashCode);
-        var i = bucket - 1; // Value in _buckets is 1-based
+        var i = bucket - 1;
 
         if (comparer is null)
         {
             if (typeof(TKey).IsValueType)
 
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
@@ -549,21 +491,13 @@ public ref struct TempDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             else
             {
-                // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                // https://github.com/dotnet/runtime/issues/10050
-                // So cache in a local rather than get EqualityComparer per loop iteration
                 var defaultComparer = EqualityComparer<TKey>.Default;
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
@@ -584,9 +518,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             }
@@ -594,8 +525,6 @@ public ref struct TempDictionary<TKey, TValue>
         else
             while (true)
             {
-                // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                // Test uint in if rather than loop condition to drop range check for following array access
                 if ((uint)i >= (uint)entries.Length) break;
 
                 if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
@@ -616,9 +545,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
 
@@ -626,8 +552,6 @@ public ref struct TempDictionary<TKey, TValue>
         if (_freeCount > 0)
         {
             index = _freeList;
-            Debug.Assert(StartOfFreeList - entries[_freeList].Next >= -1,
-                "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
             _freeCount--;
@@ -648,73 +572,44 @@ public ref struct TempDictionary<TKey, TValue>
 
         ref var entry = ref entries![index];
         entry.HashCode = hashCode;
-        entry.Next = bucket - 1; // Value in _buckets is 1-based
+        entry.Next = bucket - 1;
         entry.Key = key;
         entry.Value = value;
-        bucket = index + 1; // Value in _buckets is 1-based
+        bucket = index + 1;
         _version++;
 
-        // Value types never rehash
         if (!typeof(TKey).IsValueType &&
-                collisionCount > HashHelpers.HashCollisionThreshold &&
-                ReferenceEquals(comparer, _stringComparer))
-
-            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // i.e. EqualityComparer<string>.Default.
-            Resize(entries.Length, true);
+            collisionCount > HashHelpers.HashCollisionThreshold &&
+            ReferenceEquals(comparer, _stringComparer)) Resize(entries.Length, true);
 
         return true;
     }
 
-    /// <summary>
-    ///     A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>. These
-    ///     methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids the
-    ///     additional overhead on each <see cref="TempDictionary{TKey, TValue}"/> instantiation, especially in AOT scenarios.
-    /// </summary>
     internal static class CollectionsMarshalHelper
     {
-        /// <summary>
-        ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="TempDictionary{TKey, TValue}"/>, adding a new
-        ///     entry with a default value if it does not exist in the <paramref name="dictionary"/>.
-        /// </summary>
-        /// <param name="dictionary"> The dictionary to get the ref to <typeparamref name="TValue"/> from. </param>
-        /// <param name="key"> The key used for lookup. </param>
-        /// <param name="exists"> Whether or not a new entry for the given key was added to the dictionary. </param>
-        /// <remarks>
-        ///     Items should not be added to or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
-        ///     <typeparamref name="TValue"/> is in use.
-        /// </remarks>
         public static ref TValue GetValueRefOrAddDefault(scoped ref TempDictionary<TKey, TValue> dictionary,
             TKey key,
             out bool exists)
         {
-            // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
-            // If you make any changes here, make sure to keep that version in sync as well.
-
             ArgumentNullException.ThrowIfNull(key);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
-            Debug.Assert(dictionary._buckets.IsNullOrEmpty() == false);
 
             var entries = dictionary._entries;
-            Debug.Assert(entries is not null, "expected entries to be non-null");
 
             var comparer = dictionary._comparer;
             var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
             uint collisionCount = 0;
             ref var bucket = ref dictionary.GetBucket(hashCode);
-            var i = bucket - 1; // Value in _buckets is 1-based
+            var i = bucket - 1;
 
             if (comparer is null)
             {
                 if (typeof(TKey).IsValueType)
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
@@ -728,21 +623,13 @@ public ref struct TempDictionary<TKey, TValue>
 
                         collisionCount++;
                         if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 else
                 {
-                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/runtime/issues/10050
-                    // So cache in a local rather than get EqualityComparer per loop iteration
                     var defaultComparer = EqualityComparer<TKey>.Default;
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length) break;
 
                         if (entries[i].HashCode == hashCode && defaultComparer.Equals(entries[i].Key, key))
@@ -756,9 +643,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                         collisionCount++;
                         if (collisionCount > (uint)entries.Length)
-
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
                             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 }
@@ -766,8 +650,6 @@ public ref struct TempDictionary<TKey, TValue>
             else
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length) break;
 
                     if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
@@ -781,9 +663,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                     collisionCount++;
                     if (collisionCount > (uint)entries.Length)
-
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
                         ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
 
@@ -791,8 +670,6 @@ public ref struct TempDictionary<TKey, TValue>
             if (dictionary._freeCount > 0)
             {
                 index = dictionary._freeList;
-                Debug.Assert(StartOfFreeList - entries[dictionary._freeList].Next >= -1,
-                    "shouldn't overflow because `next` cannot underflow");
 
                 dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].Next;
                 dictionary._freeCount--;
@@ -813,29 +690,21 @@ public ref struct TempDictionary<TKey, TValue>
 
             ref var entry = ref entries![index];
             entry.HashCode = hashCode;
-            entry.Next = bucket - 1; // Value in _buckets is 1-based
+            entry.Next = bucket - 1;
             entry.Key = key;
             entry.Value = default!;
-            bucket = index + 1; // Value in _buckets is 1-based
+            bucket = index + 1;
             dictionary._version++;
 
-            // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
                 ReferenceEquals(comparer, _stringComparer))
             {
-                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                // i.e. EqualityComparer<string>.Default.
                 dictionary.Resize(entries.Length, true);
 
                 exists = false;
 
-                // At this point the entries array has been resized, so the current reference we have is no longer valid.
-                // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
-                // lookup is guaranteed to always find a value though and it will never return a null reference here.
                 ref var value = ref dictionary.FindValue(key)!;
-
-                Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
 
                 return ref value;
             }
@@ -850,11 +719,6 @@ public ref struct TempDictionary<TKey, TValue>
 
     void Resize(int newSize, bool forceNewHashCodes)
     {
-        // Value types never rehash
-        Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
-        Debug.Assert(_entries is not null, "_entries should be non-null");
-        Debug.Assert(newSize >= _entries.Length);
-
         var count = _count;
         var entries = _entryPool.Rent(newSize);
         Array.Copy(_entries, entries, count);
@@ -870,7 +734,6 @@ public ref struct TempDictionary<TKey, TValue>
             if (ReferenceEquals(_comparer, EqualityComparer<TKey>.Default)) _comparer = null;
         }
 
-        // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
         RenewBuckets(newSize);
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
@@ -881,7 +744,7 @@ public ref struct TempDictionary<TKey, TValue>
             if (entries[i].Next >= -1)
             {
                 ref var bucket = ref GetBucket(entries[i].HashCode);
-                entries[i].Next = bucket - 1; // Value in _buckets is 1-based
+                entries[i].Next = bucket - 1;
                 bucket = i + 1;
             }
 
@@ -891,21 +754,16 @@ public ref struct TempDictionary<TKey, TValue>
 
     public bool Remove(TKey key)
     {
-        // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
             var entries = _entries;
             var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
+            var i = bucket - 1;
             while (i >= 0)
             {
                 ref var entry = ref entries[i];
@@ -913,11 +771,8 @@ public ref struct TempDictionary<TKey, TValue>
                 if (entry.HashCode == hashCode &&
                     (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
+                    if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
-
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
 
@@ -935,9 +790,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
         }
@@ -947,21 +799,16 @@ public ref struct TempDictionary<TKey, TValue>
 
     public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
-        // This overload is a copy of the overload Remove(TKey key) with one additional
-        // statement to copy the value for entry being removed into the output parameter.
-        // Code has been intentionally duplicated for performance reasons.
-
         ArgumentNullException.ThrowIfNull(key);
 
         if (!_buckets.IsNullOrEmpty())
         {
-            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
             var entries = _entries;
             var last = -1;
-            var i = bucket - 1; // Value in buckets is 1-based
+            var i = bucket - 1;
             while (i >= 0)
             {
                 ref var entry = ref entries[i];
@@ -969,13 +816,10 @@ public ref struct TempDictionary<TKey, TValue>
                 if (entry.HashCode == hashCode &&
                     (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
-                    if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
+                    if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
 
                     value = entry.Value;
-
-                    Debug.Assert(StartOfFreeList - _freeList < 0,
-                        "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
 
@@ -993,9 +837,6 @@ public ref struct TempDictionary<TKey, TValue>
 
                 collisionCount++;
                 if (collisionCount > (uint)entries.Length)
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
         }
@@ -1020,7 +861,6 @@ public ref struct TempDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
-    /// <summary> Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage </summary>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -1037,22 +877,9 @@ public ref struct TempDictionary<TKey, TValue>
         return newSize;
     }
 
-    /// <summary>
-    ///     Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its
-    ///     entries
-    /// </summary>
-    /// <remarks>
-    ///     This method can be used to minimize the memory overhead once it is known that no new elements will be added. To
-    ///     allocate minimum size storage array, execute the following statements: dictionary.Clear(); dictionary.TrimExcess();
-    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrimExcess() => TrimExcess(Count);
 
-    /// <summary>
-    ///     Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing
-    ///     storage
-    /// </summary>
-    /// <remarks> This method can be used to minimize the memory overhead once it is known that no new elements will be added. </remarks>
     public void TrimExcess(int capacity)
     {
         if (capacity < Count) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
@@ -1068,8 +895,6 @@ public ref struct TempDictionary<TKey, TValue>
         _version++;
         Initialize(newSize);
 
-        Debug.Assert(oldEntries is not null);
-
         CopyEntries(oldEntries, oldCount);
 
         _bucketPool.Return(oldBuckets);
@@ -1078,22 +903,19 @@ public ref struct TempDictionary<TKey, TValue>
 
     void CopyEntries(Entry<TKey, TValue>[] entries, int count)
     {
-        Debug.Assert(_entries is not null);
-
         var newEntries = _entries;
         var newCount = 0;
         for (var i = 0; i < count; i++)
         {
             var hashCode = entries[i].HashCode;
-            if (entries[i].Next >= -1)
-            {
-                ref var entry = ref newEntries[newCount];
-                entry = entries[i];
-                ref var bucket = ref GetBucket(hashCode);
-                entry.Next = bucket - 1; // Value in _buckets is 1-based
-                bucket = newCount + 1;
-                newCount++;
-            }
+            if (entries[i].Next < -1) continue;
+
+            ref var entry = ref newEntries[newCount];
+            entry = entries[i];
+            ref var bucket = ref GetBucket(hashCode);
+            entry.Next = bucket - 1;
+            bucket = newCount + 1;
+            newCount++;
         }
 
         _count = newCount;
@@ -1125,17 +947,14 @@ public ref struct TempDictionary<TKey, TValue>
         readonly TempDictionary<TKey, TValue> _dictionary;
         readonly int _version;
         int _index;
-        readonly int _getEnumeratorRetType; // What should Enumerator.Current return?
 
-        internal const int DictEntry = 1;
         internal const int KeyValuePair = 2;
 
-        internal Enumerator(scoped ref readonly TempDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+        internal Enumerator(scoped ref readonly TempDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
             _index = 0;
-            _getEnumeratorRetType = getEnumeratorRetType;
             Current = default;
         }
 
@@ -1144,17 +963,14 @@ public ref struct TempDictionary<TKey, TValue>
             if (_version != _dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-            // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
             while ((uint)_index < (uint)_dictionary._count)
             {
                 ref var entry = ref _dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    Current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                Current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+                return true;
             }
 
             _index = _dictionary._count + 1;
@@ -1273,7 +1089,7 @@ public readonly ref struct TempDictionaryKeyCollection<TKey, TValue>
         int _index;
         readonly int _version;
 
-        public Enumerator(TempDictionary<TKey, TValue> dictionary)
+        internal Enumerator(TempDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
@@ -1292,11 +1108,10 @@ public readonly ref struct TempDictionaryKeyCollection<TKey, TValue>
             {
                 ref var entry = ref _dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    Current = entry.Key;
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                Current = entry.Key;
+                return true;
             }
 
             _index = _dictionary._count + 1;
@@ -1340,7 +1155,7 @@ public readonly ref struct TempDictionaryValueCollection<TKey, TValue>
         int _index;
         readonly int _version;
 
-        public Enumerator(TempDictionary<TKey, TValue> dictionary)
+        internal Enumerator(TempDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
@@ -1359,11 +1174,10 @@ public readonly ref struct TempDictionaryValueCollection<TKey, TValue>
             {
                 ref var entry = ref _dictionary._entries![_index++];
 
-                if (entry.Next >= -1)
-                {
-                    Current = entry.Value;
-                    return true;
-                }
+                if (entry.Next < -1) continue;
+
+                Current = entry.Value;
+                return true;
             }
 
             _index = _dictionary._count + 1;

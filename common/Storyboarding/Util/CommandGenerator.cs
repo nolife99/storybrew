@@ -15,7 +15,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
-    static readonly Dictionary<int, Vector2> dimensions = [];
+    static readonly ConditionalWeakTable<StoryboardObjectGenerator, Dictionary<int, Vector2>> dimensionTable = [];
 
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
@@ -33,7 +33,7 @@ public class CommandGenerator
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
 
-    readonly List<State> states = new();
+    readonly List<State> states = [];
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -309,14 +309,15 @@ public class CommandGenerator
 
     internal static Vector2 BitmapDimensions(string path)
     {
-        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(dimensions,
-            Path.GetFullPath(Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, path))
-                .GetHashCode(StringComparison.OrdinalIgnoreCase),
+        var currentGen = StoryboardObjectGenerator.Current;
+
+        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(dimensionTable.GetOrCreateValue(currentGen),
+            Path.GetFullPath(Path.Combine(currentGen.MapsetPath, path)).GetHashCode(StringComparison.OrdinalIgnoreCase),
             out var exists);
 
         if (exists) return dimension;
 
-        using var stream = StoryboardObjectGenerator.Current.OpenMapsetFile(path, false);
+        using var stream = currentGen.OpenMapsetFile(path, false);
         var info = Image.Identify(stream);
 
         return dimension = new(info.Width, info.Height);

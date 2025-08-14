@@ -12,8 +12,14 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary> A command that can be given to an <see cref="OsbSprite"/> to change its properties over time. </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
-public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable where TValue : struct, ICommandValue
+public abstract record Command<TValue> : ICommand, IOffsetable where TValue : struct, ICommandValue
 {
+    /// <summary> The end value of the command. </summary>
+    public readonly TValue EndValue;
+
+    /// <summary> The start value of the command. </summary>
+    public readonly TValue StartValue;
+
     private protected Command(OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
     {
         Easing = easing;
@@ -33,18 +39,8 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
     private protected virtual bool MaintainValue => true;
     private protected virtual bool ExportEndValue => true;
 
-    /// <summary> Offsets the start and end times of the command by the given value. </summary>
-    public void Offset(float offset)
-    {
-        StartTime += offset;
-        EndTime += offset;
-    }
-
     /// <inheritdoc/>
     public virtual bool IsFragmentableAt(float time) => Easing == OsbEasing.None;
-
-    /// <inheritdoc/>
-    public CommandResult<TValue> AsResult(float timeOffset) => new(this, timeOffset);
 
     /// <inheritdoc/>
     public float StartTime { get; private set; }
@@ -53,31 +49,15 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
     public float EndTime { get; private set; }
 
     /// <inheritdoc/>
-    public TValue StartValue { get; }
-
-    /// <inheritdoc/>
-    public TValue EndValue { get; }
-
-    /// <inheritdoc/>
-    public TValue ValueAtTime(float time)
-    {
-        if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
-        if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
-
-        var duration = EndTime - StartTime;
-        return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
-    }
-
-    /// <inheritdoc/>
     public int CompareTo(ICommand other)
     {
-        var result = StartTime.CompareTo(other.StartTime);
-        if (result != 0) return result;
+        var result = StartTime - other.StartTime;
+        if (result != 0) return Math.Sign(result);
 
-        result = EndTime.CompareTo(other.EndTime);
-        if (result != 0) return result;
+        result = EndTime - other.EndTime;
+        if (result != 0) return Math.Sign(result);
 
-        if (other is not ITypedCommand<TValue> typedOther) return 1;
+        if (other is not Command<TValue> typedOther) return 1;
 
         return EqualityComparer<TValue>.Default.Equals(StartValue, typedOther.StartValue) &&
             EqualityComparer<TValue>.Default.Equals(EndValue, typedOther.EndValue) ?
@@ -95,6 +75,26 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
         using var str = ToOsbString(exportSettings, in transform);
         writer.WriteLine(str.AsReadOnlySpan());
+    }
+
+    /// <summary> Offsets the start and end times of the command by the given value. </summary>
+    public void Offset(float offset)
+    {
+        StartTime += offset;
+        EndTime += offset;
+    }
+
+    /// <summary> Converts the command to a <see cref="CommandResult{TValue}"/> with the given time offset. </summary>
+    public CommandResult<TValue> AsResult(float timeOffset = 0) => new(this, timeOffset);
+
+    /// <summary> Gets the value of the command at the given time. </summary>
+    public TValue ValueAtTime(float time)
+    {
+        if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
+        if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
+
+        var duration = EndTime - StartTime;
+        return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
     }
 
     /// <summary> Gets the transformed start value of the command. </summary>

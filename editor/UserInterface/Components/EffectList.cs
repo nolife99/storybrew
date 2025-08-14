@@ -196,14 +196,14 @@ public partial class EffectList : Widget
 
         updateStatusButton(statusButton, effect);
 
-        EventHandler changedHandler;
-        effect.Changed += changedHandler = (_, _) =>
+        Action<Effect> changedHandler;
+        effect.Changed += changedHandler = ef =>
         {
-            nameLabel.Text = effect.Name;
+            nameLabel.Text = ef.Name;
 
-            using var text = getEffectDetails(effect);
+            using var text = getEffectDetails(ef);
             detailsLabel.Text = text.AsReadOnlySpan();
-            updateStatusButton(statusButton, effect);
+            updateStatusButton(statusButton, ef);
         };
 
         effectWidget.OnHovered += (_, e) =>
@@ -229,7 +229,7 @@ public partial class EffectList : Widget
             effect.Changed -= changedHandler;
         };
 
-        statusButton.OnClick += (_, _) =>
+        statusButton.OnClick += (b, _) =>
         {
             switch (effect.Status)
             {
@@ -237,14 +237,14 @@ public partial class EffectList : Widget
                 case EffectStatus.Configuring:
                 case EffectStatus.Updating:
                     effect.CancelUpdate();
-                    statusButton.Tooltip = "Cancelling";
-                    statusButton.Disabled = true;
+                    b.Tooltip = "Cancelling";
+                    b.Disabled = true;
                     break;
 
                 case EffectStatus.UpdateCanceled:
-                    effect.Refresh();
-                    statusButton.Tooltip = "Refreshing";
-                    statusButton.Disabled = true;
+                    project.QueueEffectUpdate(effect);
+                    b.Tooltip = "Refreshing";
+                    b.Disabled = true;
                     break;
 
                 default:

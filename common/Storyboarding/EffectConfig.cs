@@ -11,8 +11,7 @@ using StorybrewCommon.Util;
 public partial class EffectConfig
 {
     readonly Dictionary<string, ConfigField> fields = [];
-    public int FieldCount => fields.Count;
-    public ICollection<ConfigField> Fields => fields.Values;
+    public Dictionary<string, ConfigField>.ValueCollection Fields => fields.Values;
     public IEnumerable<ConfigField> SortedFields => fields.Values.OrderBy(field => field.Order);
     public ICollection<string> FieldNames => fields.Keys;
 

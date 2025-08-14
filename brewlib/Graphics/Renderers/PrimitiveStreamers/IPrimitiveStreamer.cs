@@ -4,7 +4,7 @@ using System;
 using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
 
-interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : struct
+interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmanaged
 {
     int QueuedRenders { get; }
     int PrimitivesInBatch { get; }

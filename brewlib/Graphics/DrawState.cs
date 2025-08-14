@@ -4,8 +4,6 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -62,8 +60,7 @@ public static class DrawState
             GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.Khr.DebugMessageCallback((source, type, _, severity, length, message, _) =>
                 {
-                    var bytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.NullRef<byte>(), message),
-                        length);
+                    var bytes = message.AsReadOnlySpan<byte>(length);
 
                     Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                     Encoding.UTF8.GetChars(bytes, chars);

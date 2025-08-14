@@ -15,11 +15,8 @@ using SixLabors.ImageSharp.Processing;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public static partial class Native
+public static class Native
 {
-    static readonly bool SupportsHighResTimer = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14393);
-
-    [ThreadStatic] static SafeWaitHandle perThreadTimer;
     public static NativeWindow Window { get; private set; }
 
     public static Func<Action<object>, object, ValueTask> MainThreadScheduler { get; set; }
@@ -41,24 +38,27 @@ public static partial class Native
         Window.Icon = new(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array));
     }
 
-    [LibraryImport("kernel32.dll", SetLastError = true), SuppressGCTransition,
-     MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static partial SafeWaitHandle CreateWaitableTimerExW(nint lpTimerAttributes,
-        nint lpTimerName,
-        uint dwFlags,
-        uint dwDesiredAccess);
+    #region Win32
 
-    [LibraryImport("kernel32.dll", SetLastError = true), SuppressGCTransition,
-     MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static partial int SetWaitableTimer(SafeWaitHandle hTimer,
+    static readonly bool SupportsHighResTimer = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14393);
+
+    [ThreadStatic] static SafeWaitHandle perThreadTimer;
+
+    const string KERNEL32 = "kernel32.dll";
+
+    [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
+    static extern nint CreateWaitableTimerExW(nint lpTimerAttributes, nint lpTimerName, uint dwFlags, uint dwDesiredAccess);
+
+    [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
+    static extern int SetWaitableTimer(nint hTimer,
         nint pDueTime,
         int lPeriod,
         nint pfnCompletionRoutine,
         nint lpArgToCompletionRoutine,
         int fResume);
 
-    [LibraryImport("kernel32.dll", SetLastError = true), MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static partial uint WaitForSingleObject(SafeWaitHandle hHandle, uint dwMilliseconds);
+    [DllImport(KERNEL32, SetLastError = true)]
+    static extern uint WaitForSingleObject(nint hHandle, uint dwMilliseconds);
 
     public static void AccurateSleep(long ticks)
     {
@@ -74,16 +74,23 @@ public static partial class Native
             const uint CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002,
                 TIMER_ALL_ACCESS = 0x1F0003;
 
-            timer = perThreadTimer = CreateWaitableTimerExW(0,
+            var handle = CreateWaitableTimerExW(0,
                 0,
                 CREATE_WAITABLE_TIMER_MANUAL_RESET | CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                 TIMER_ALL_ACCESS);
 
-            if (timer.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            timer = perThreadTimer = new(handle, true);
         }
 
-        ticks = -ticks + TimeSpan.TicksPerMillisecond / 2;
-        if (SetWaitableTimer(timer, Unsafe.ByteOffset(in Unsafe.NullRef<long>(), in ticks), 0, 0, 0, 0) == 0 ||
-            WaitForSingleObject(timer, uint.MaxValue) == 0xFFFFFFFF) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var relativeTicks = -ticks + TimeSpan.TicksPerMillisecond / 2;
+        var timerHandle = timer.DangerousGetHandle();
+
+        if (SetWaitableTimer(timerHandle, relativeTicks.AsPointer(), 0, 0, 0, 0) == 0 ||
+            WaitForSingleObject(timerHandle, uint.MaxValue) == 0xFFFFFFFF)
+            throw new Win32Exception(Marshal.GetLastWin32Error());
     }
+
+    #endregion
 }

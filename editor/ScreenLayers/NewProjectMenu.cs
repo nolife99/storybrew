@@ -65,16 +65,17 @@ public class NewProjectMenu : UiScreenLayer
         });
 
         projectNameTextbox.OnValueChanged += (_, _) => updateButtonsState();
-        projectNameTextbox.OnValueCommited += (_, _) =>
+        projectNameTextbox.OnValueCommited += (sender, _) =>
         {
+            var textbox = (Textbox)sender;
             var invalidChars = Path.GetInvalidFileNameChars();
 
-            using var charArray = TempArray.Create(projectNameTextbox.Value);
+            using var charArray = TempArray.Create(textbox.Value);
             foreach (ref var c in charArray)
                 if (invalidChars.Contains(c))
                     c = '_';
 
-            projectNameTextbox.Value = charArray.AsReadOnlySpan();
+            textbox.Value = charArray.AsReadOnlySpan();
         };
 
         mapsetPathSelector.OnValueChanged += (_, _) => updateButtonsState();

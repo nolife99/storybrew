@@ -15,7 +15,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 
-public class LineRendererBuffered : ILineRenderer
+public sealed class LineRendererBuffered : ILineRenderer
 {
     const int VertexPerLine = 2;
     const string CombinedMatrixUniformName = "u_combinedMatrix";

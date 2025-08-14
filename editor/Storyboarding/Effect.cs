@@ -79,10 +79,10 @@ public abstract class Effect : IDisposable
         }
     }
 
-    public event EventHandler Changed, ConfigFieldsChanged;
+    public event Action<Effect> Changed, ConfigFieldsChanged;
 
-    protected void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
-    protected void OnConfigFieldsChanged() => ConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
+    protected void OnChanged() => Changed?.Invoke(this);
+    protected void OnConfigFieldsChanged() => ConfigFieldsChanged?.Invoke(this);
 
     public void AddPlaceholder(EditorStoryboardLayer layer)
     {
@@ -136,17 +136,16 @@ public abstract class Effect : IDisposable
 
         return;
 
-        void OnStatusChangedForQueuedUpdate(object sender, EventArgs e)
+        void OnStatusChangedForQueuedUpdate(Effect sender)
         {
-            var ef = (Effect)sender;
-            if (ef.Status is not (EffectStatus.Ready
+            if (sender.Status is not (EffectStatus.Ready
                 or EffectStatus.UpdateCanceled
                 or EffectStatus.CompilationFailed
                 or EffectStatus.LoadingFailed
                 or EffectStatus.ExecutionFailed)) return;
 
-            ef.Changed -= OnStatusChangedForQueuedUpdate;
-            ef.Project.QueueEffectUpdate(ef);
+            sender.Changed -= OnStatusChangedForQueuedUpdate;
+            sender.Project.QueueEffectUpdate(sender);
 
             willRefresh = false;
         }

@@ -1,6 +1,5 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
-using System;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -63,7 +62,7 @@ public class TimelineSlider : Slider
 
     public void ClearHighlight() => highlightStart = highlightEnd = 0;
 
-    void project_OnMainBeatmapChanged(object sender, EventArgs e) => beatmapLabel.Text = project.MainBeatmap.Name;
+    void project_OnMainBeatmapChanged(Project sender) => beatmapLabel.Text = sender.MainBeatmap.Name;
 
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {

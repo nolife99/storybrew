@@ -36,7 +36,7 @@ partial class CollectionInternals
         TempQueueInternals<T> internals = new(ref source);
         source.Dispose();
 
-        source = Unsafe.NullRef<TempQueue<T>>();
+        source = ref Unsafe.NullRef<TempQueue<T>>();
 
         return internals;
     }
