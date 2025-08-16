@@ -44,7 +44,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<ArrayEntry<T>> AsMemory<T>(this ArrayHashSet<T> source) => new(source._entries, 0, source.Count);
+    public static Memory<ArrayEntry<T>> AsMemory<T>(this ArrayHashSet<T> source)
+        => new(source._entries, 0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this ArrayHashSet<T> source, out ArrayEntry<T>[] entries, out int count)

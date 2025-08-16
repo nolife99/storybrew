@@ -20,15 +20,15 @@ public sealed record MoveCommand : Command<CommandPosition>
     /// <inheritdoc/>
     protected override CommandPosition GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPosition(EndValue);
-
-    /// <inheritdoc/>
-    public override CommandPosition ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }
 
 public sealed record MoveXCommand : Command<CommandDecimal>
 {
-    public MoveXCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
-        : base(easing, startTime, endTime, startValue, endValue) { }
+    public MoveXCommand(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandDecimal startValue,
+        CommandDecimal endValue) : base(easing, startTime, endTime, startValue, endValue) { }
 
     private protected override string Identifier => "MX";
 
@@ -39,15 +39,15 @@ public sealed record MoveXCommand : Command<CommandDecimal>
     /// <inheritdoc/>
     protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPositionX(EndValue);
-
-    /// <inheritdoc/>
-    public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }
 
 public sealed record MoveYCommand : Command<CommandDecimal>
 {
-    public MoveYCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
-        : base(easing, startTime, endTime, startValue, endValue) { }
+    public MoveYCommand(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandDecimal startValue,
+        CommandDecimal endValue) : base(easing, startTime, endTime, startValue, endValue) { }
 
     private protected override string Identifier => "MY";
 
@@ -58,7 +58,4 @@ public sealed record MoveYCommand : Command<CommandDecimal>
     /// <inheritdoc/>
     protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPositionY(EndValue);
-
-    /// <inheritdoc/>
-    public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

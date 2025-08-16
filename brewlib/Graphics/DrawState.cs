@@ -199,8 +199,8 @@ public static class DrawState
     static int[] samplerTextureIds;
     static TextureTarget[] samplerTexturingModes;
 
-    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits,
-        maxCombinedTextureImageUnits;
+    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits,
+        maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
 
     static void SetTexturingMode(int samplerIndex, TextureTarget mode)
     {
@@ -247,8 +247,7 @@ public static class DrawState
 
             var first = true;
             var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-            for (var samplerIndex = samplerStartIndex;
-                first || samplerIndex != samplerStartIndex;
+            for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
                 samplerIndex = (samplerIndex + 1) % samplerCount)
             {
                 first = false;

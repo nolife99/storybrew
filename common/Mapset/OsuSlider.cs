@@ -119,14 +119,17 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
             case SliderCurveType.Perfect:
                 if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
-                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0], controlPoints[1]))
+                if (controlPoints.Length < 2 ||
+                    !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0], controlPoints[1]))
                     goto case SliderCurveType.Linear;
 
                 curve = new CircleCurve(PlayfieldPosition, controlPoints[0], controlPoints[1]);
                 break;
 
             case SliderCurveType.Linear:
-            default: curve = generateLinearCurve(); break;
+            default:
+                curve = generateLinearCurve();
+                break;
         }
 
         playfieldTipPosition = curve.PositionAtDistance(Length);
@@ -245,8 +248,8 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             using var sliderAdditionValues = sliderAddition.Split(['|']);
 
             for (var i = 0; i < sliderNodes.Length; ++i)
-                sliderNodes[i].Additions =
-                    (HitSoundAddition)int.Parse(sliderAddition[sliderAdditionValues[i]], CultureInfo.InvariantCulture);
+                sliderNodes[i].Additions = (HitSoundAddition)int.Parse(sliderAddition[sliderAdditionValues[i]],
+                    CultureInfo.InvariantCulture);
         }
 
         if (values.Count > 9)

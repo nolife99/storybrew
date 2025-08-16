@@ -12,7 +12,7 @@ public interface ICommandTimeline
     bool HasCommands { get; }
     bool HasOverlap { get; }
 
-    IEnumerable<ICommand> Commands { get; }
+    ReadOnlySpan<ICommand> Commands { get; }
 
     internal bool Add(ICommand command);
     internal void StartGroup(LoopCommand loop);
@@ -20,7 +20,7 @@ public interface ICommandTimeline
     internal void EndGroup();
 }
 
-public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : struct, ICommandValue
+public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : struct, ICommandValue<TValue>
 {
     List<CommandChannel<TValue>> channels;
 
@@ -32,7 +32,8 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
     internal CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
     public TValue DefaultValue { get; internal set; }
 
-    public IEnumerable<ICommand> Commands => defaultChannel is null ? [] : defaultChannel.Commands.Select(c => c.Command);
+    public ReadOnlySpan<ICommand> Commands
+        => defaultChannel is null ? [] : ReadOnlySpan<ICommand>.CastUp(defaultChannel.Commands);
 
     public bool HasCommands => channels is not null && channels.Count > 0;
 
@@ -70,7 +71,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
     {
         if (groupEndAction is null) return;
 
-        if (currentChannel.Commands.Count > 0)
+        if (currentChannel.Commands.Length > 0)
         {
             groupEndAction(currentChannel, groupEndActionState);
 
@@ -200,29 +201,28 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
                 case CommandChannelTrigger<TValue> trigger:
                     if (!trigger.Active) continue;
 
-                    var commands = channel.Commands;
-                    for (var i = 0; i < commands.Count; i++) result.Add(commands[i].WithOffset(trigger.TriggerTime));
+                    foreach (var c in channel.Commands) result.Add(new(c, trigger.TriggerTime));
 
                     break;
 
                 case CommandChannelLoop<TValue> loop:
                     for (var loopIndex = 0; loopIndex < loop.LoopCount; ++loopIndex)
-                    {
-                        commands = channel.Commands;
-                        for (var i = 0; i < commands.Count; i++)
-                            result.Add(commands[i].WithOffset(loop.LoopStartTime + loopIndex * loop.LoopDuration));
-                    }
+                        foreach (var c in channel.Commands)
+                            result.Add(new(c, loop.LoopStartTime + loopIndex * loop.LoopDuration));
 
                     break;
 
-                default: result.AddRange(channel.Commands); break;
+                default:
+                    foreach (var c in channel.Commands) result.Add(new(c));
+
+                    break;
             }
 
         result.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
         return result;
     }
 
-    enum ResultState
+    enum ResultState : byte
     {
         NoCommand, CommandInPresent, CommandInFuture, CommandInPast
     }

@@ -261,16 +261,17 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
     // It does a linear, O(n) search.  Equality is determined by calling
     // EqualityComparer<T>.Default.Equals().
     //
-    public bool Contains(T item) =>
+    public bool Contains(T item)
+        =>
 
-        // PERF: IndexOf calls Array.IndexOf, which internally
-        // calls EqualityComparer<T>.Default.IndexOf, which
-        // is specialized for different types. This
-        // boosts performance since instead of making a
-        // virtual method call each iteration of the loop,
-        // via EqualityComparer<T>.Default.Equals, we
-        // only make one virtual call to EqualityComparer.IndexOf.
-        _size != 0 && IndexOf(item) >= 0;
+            // PERF: IndexOf calls Array.IndexOf, which internally
+            // calls EqualityComparer<T>.Default.IndexOf, which
+            // is specialized for different types. This
+            // boosts performance since instead of making a
+            // virtual method call each iteration of the loop,
+            // via EqualityComparer<T>.Default.Equals, we
+            // only make one virtual call to EqualityComparer.IndexOf.
+            _size != 0 && IndexOf(item) >= 0;
 
     public ValueList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
     {
@@ -381,7 +382,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         if ((uint)startIndex > (uint)_size)
             ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex > _size - count)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         ArgumentNullException.ThrowIfNull(match);
 
@@ -429,7 +431,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         }
 
         // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
-        if (count < 0 || startIndex - count + 1 < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex - count + 1 < 0)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         var endIndex = startIndex - count;
         for (var i = startIndex; i > endIndex; i--)
@@ -848,7 +851,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
 
         public bool MoveNext()
         {
-            if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _list._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             var index = _index + 1;
             if (index >= _list._size) return false;

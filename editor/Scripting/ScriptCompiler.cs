@@ -22,7 +22,7 @@ using Tiny.PooledCollections.Generic.Value;
 
 public static class ScriptCompiler
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InternalLoad")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method)]
     static extern Assembly InternalLoad(AssemblyLoadContext c,
         ReadOnlySpan<byte> arrAssembly,
         ReadOnlySpan<byte> arrSymbols);
@@ -41,7 +41,9 @@ public static class ScriptCompiler
             using var sourceStream = File.OpenRead(src);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
 
-            trees.Add(CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview), cancellationToken: tokenSource),
+            trees.Add(CSharpSyntaxTree.ParseText(sourceText,
+                    new(LanguageVersion.Preview),
+                    cancellationToken: tokenSource),
                 (src, sourceText));
         }
 

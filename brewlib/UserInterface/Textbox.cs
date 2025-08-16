@@ -272,8 +272,8 @@ public class Textbox : Widget, Field
         }
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<TextboxStyle>(
-        BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
+    protected override WidgetStyle Style
+        => Manager.Skin.GetStyle<TextboxStyle>(BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
 
     public object FieldValue { get => Value.ToString(); set => Value = (string)value; }
 

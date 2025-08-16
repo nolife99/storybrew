@@ -241,7 +241,8 @@ public class LayerList : Widget
     static TempList<char> getLayerDetails(EditorStoryboardLayer layer, Effect effect)
     {
         var str = TempList.Create("using ");
-        if (layer.EstimatedSize > 30720) str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})");
+        if (layer.EstimatedSize > 30720)
+            str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})");
         else str.AddRange(effect.BaseName);
 
         return str;

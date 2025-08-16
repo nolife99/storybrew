@@ -12,7 +12,9 @@ using StorybrewEditor.Storyboarding;
 
 public static class ScreenLayerManagerExtensions
 {
-    public static void OpenFolderPicker(this ScreenLayerManager screenLayer, string initialValue, Action<string> callback)
+    public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
+        string initialValue,
+        Action<string> callback)
         => screenLayer.AsyncLoading("Select a folder",
             async () =>
             {
@@ -26,63 +28,76 @@ public static class ScreenLayerManagerExtensions
         string initialValue,
         string initialDirectory,
         IReadOnlyCollection<KeyValuePair<string, string>> filter,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a file",
-        async () =>
-        {
-            var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
-            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
-        });
+        Action<string> callback)
+        => screenLayer.AsyncLoading("Select a file",
+            async () =>
+            {
+                var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+                if (!string.IsNullOrEmpty(fileName))
+                    await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
+            });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
         string initialValue,
         string extension,
         IReadOnlyCollection<KeyValuePair<string, string>> filter,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a location",
-        async () =>
-        {
-            var fileName = NFD.SaveDialog(initialValue, extension, filter);
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
-            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
-        });
+        Action<string> callback)
+        => screenLayer.AsyncLoading("Select a location",
+            async () =>
+            {
+                var fileName = NFD.SaveDialog(initialValue, extension, filter);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+                if (!string.IsNullOrEmpty(fileName))
+                    await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
+            });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> message,
-        Func<ValueTask> action) => screenLayer.Add(new LoadingScreen(message, action));
+        Func<ValueTask> action)
+        => screenLayer.Add(new LoadingScreen(message, action));
 
-    public static void ShowMessage(this ScreenLayerManager screenLayer, scoped ReadOnlySpan<char> message, Action ok = null)
+    public static void ShowMessage(this ScreenLayerManager screenLayer,
+        scoped ReadOnlySpan<char> message,
+        Action ok = null)
         => screenLayer.Add(new MessageBox(message, ok, null, false));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> message,
         Action ok,
-        bool cancel) => screenLayer.Add(new MessageBox(message, ok, null, cancel));
+        bool cancel)
+        => screenLayer.Add(new MessageBox(message, ok, null, cancel));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> message,
         Action yes,
         Action no,
-        bool cancel) => screenLayer.Add(new MessageBox(message, yes, no, cancel));
+        bool cancel)
+        => screenLayer.Add(new MessageBox(message, yes, no, cancel));
 
     public static void ShowPrompt(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> title,
-        Action<ReadOnlySpan<char>> action) => screenLayer.Add(new PromptBox(title, "", "", action));
+        Action<ReadOnlySpan<char>> action)
+        => screenLayer.Add(new PromptBox(title, "", "", action));
 
     public static void ShowPrompt(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> title,
         scoped ReadOnlySpan<char> description,
         scoped ReadOnlySpan<char> text,
-        Action<ReadOnlySpan<char>> action) => screenLayer.Add(new PromptBox(title, description, text, action));
+        Action<ReadOnlySpan<char>> action)
+        => screenLayer.Add(new PromptBox(title, description, text, action));
 
     public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> title,
         Action<T> action,
-        params ReadOnlySpan<T> options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
+        params ReadOnlySpan<T> options)
+        => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
     public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> title,
         Action<T> action,
-        IEnumerable<T> options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
+        IEnumerable<T> options)
+        => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {

@@ -17,10 +17,11 @@ public sealed class NinePatch : Drawable
 
     public Vector2 PreferredSize => MinSize;
 
-    public Vector2 MinSize => Texture is not null ?
-        new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
-            Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
-        Vector2.Zero;
+    public Vector2 MinSize
+        => Texture is not null ?
+            new(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
+                Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
+            Vector2.Zero;
 
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
@@ -113,7 +114,14 @@ public sealed class NinePatch : Drawable
             new(0, Borders.Bottom),
             new(Borders.Left, Texture.Height));
 
-        renderer.Draw(Texture, vec2, Vector2.Zero, Vector2.One, 0, color, new(Borders.Right, Borders.Bottom), Texture.Size);
+        renderer.Draw(Texture,
+            vec2,
+            Vector2.Zero,
+            Vector2.One,
+            0,
+            color,
+            new(Borders.Right, Borders.Bottom),
+            Texture.Size);
     }
 
     public void Dispose() => Texture.Dispose();

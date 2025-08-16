@@ -22,7 +22,8 @@ public record OsuHitObject
     public static readonly SizeF WidescreenStoryboardSize = new(StoryboardSize.Width * 4 / 3, StoryboardSize.Height);
 
     ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
-    public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;
+    public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width *
+        WidescreenStoryboardSize.Height;
 
     ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
     public static readonly RectangleF StoryboardBounds = new(PointF.Empty, StoryboardSize);
@@ -175,15 +176,17 @@ public record OsuHitObject
         foreach (var value in values) value.Dispose();
 
         if (result is null)
-            throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
-            }");
+            throw new NotSupportedException(
+                $"Parsing failed - the line does not contain valid hit object information: {line
+                }");
 
         return result;
     }
 }
 
 ///<summary> Represents hit object flags. </summary>
-[Flags] public enum HitObjectFlag
+[Flags]
+public enum HitObjectFlag
 {
 #pragma warning disable CS1591
     Circle = 1,
@@ -198,7 +201,8 @@ public record OsuHitObject
 }
 
 ///<summary> Represents hit sound sample additions. </summary>
-[Flags] public enum HitSoundAddition
+[Flags]
+public enum HitSoundAddition
 {
     None = 0, Normal = 1, Whistle = 2, Finish = 4, Clap = 8
 }

@@ -136,13 +136,8 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
-        OsbOrigin origin = OsbOrigin.Centre) => CreateAnimation(
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        origin,
-        OsbSprite.DefaultPosition);
+        OsbOrigin origin = OsbOrigin.Centre)
+        => CreateAnimation(path, frameCount, frameDelay, loopType, origin, OsbSprite.DefaultPosition);
 
     public override OsbSample CreateSample(string path, float time, float volume)
     {
@@ -240,7 +235,8 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         var exportSettings = ExportSettings.Default;
 
         using ByteCountingTextWriter writer = new(Project.Encoding);
-        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
+        foreach (var sbo in storyboardObjects)
+            sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
 
         return (int)writer.ByteCount;
     }

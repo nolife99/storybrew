@@ -16,10 +16,8 @@ public class EditorBeatmap(string path) : Beatmap
 {
     static readonly Color[] defaultComboColors =
     [
-        Color.FromPixel(new Rgba32(255, 192, 0)),
-        Color.FromPixel(new Rgba32(0, 202, 0)),
-        Color.FromPixel(new Rgba32(18, 124, 255)),
-        Color.FromPixel(new Rgba32(242, 24, 57))
+        Color.FromPixel(new Rgba32(255, 192, 0)), Color.FromPixel(new Rgba32(0, 202, 0)),
+        Color.FromPixel(new Rgba32(18, 124, 255)), Color.FromPixel(new Rgba32(242, 24, 57))
     ];
 
     readonly List<int> bookmarks = [];
@@ -117,10 +115,13 @@ public class EditorBeatmap(string path) : Beatmap
                                         case "AudioFilename": bm.audioFilename = value.ToString(); break;
 
                                         case "StackLeniency":
-                                            bm.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
                                     }
                                 },
-                                state.beatmap); break;
+                                state.beatmap);
+
+                            break;
 
                         case "Editor":
                             state.reader.ParseKeyValueSection((key, value, bm) =>
@@ -140,7 +141,9 @@ public class EditorBeatmap(string path) : Beatmap
                                             break;
                                     }
                                 },
-                                state.beatmap); break;
+                                state.beatmap);
+
+                            break;
 
                         case "Metadata":
                             state.reader.ParseKeyValueSection((key, value, bm) =>
@@ -149,10 +152,14 @@ public class EditorBeatmap(string path) : Beatmap
                                     {
                                         case "Version": bm.name = value.ToString(); break;
 
-                                        case "BeatmapID": bm.id = long.Parse(value, CultureInfo.InvariantCulture); break;
+                                        case "BeatmapID":
+                                            bm.id = long.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
                                     }
                                 },
-                                state.beatmap); break;
+                                state.beatmap);
+
+                            break;
 
                         case "Difficulty":
                             state.reader.ParseKeyValueSection((key, value, bm) =>
@@ -160,25 +167,33 @@ public class EditorBeatmap(string path) : Beatmap
                                     switch (key)
                                     {
                                         case "HPDrainRate":
-                                            bm.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
 
                                         case "CircleSize":
-                                            bm.circleSize = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.circleSize = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
 
                                         case "OverallDifficulty":
-                                            bm.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
 
                                         case "ApproachRate":
-                                            bm.approachRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.approachRate = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
 
                                         case "SliderMultiplier":
-                                            bm.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
 
                                         case "SliderTickRate":
-                                            bm.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                            bm.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture);
+                                            break;
                                     }
                                 },
-                                state.beatmap); break;
+                                state.beatmap);
+
+                            break;
 
                         case "Events":
                             state.reader.ParseSectionLines((line, bm) =>
@@ -205,7 +220,9 @@ public class EditorBeatmap(string path) : Beatmap
                                     }
                                 },
                                 state.beatmap,
-                                false); break;
+                                false);
+
+                            break;
 
                         case "TimingPoints":
                         {
@@ -326,7 +343,8 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
                         if (objectN is OsuSlider spanN &&
-                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared() < stackLenienceSquared)
+                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared() <
+                            stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
 

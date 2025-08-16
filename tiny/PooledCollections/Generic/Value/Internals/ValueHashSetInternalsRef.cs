@@ -38,7 +38,8 @@ public readonly ref struct ValueHashSetInternalsRef<T>
 
 partial class CollectionInternals
 {
-    public static ValueHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly ValueHashSet<T> source) => new(in source);
+    public static ValueHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly ValueHashSet<T> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(this scoped ref readonly ValueHashSet<T> source)

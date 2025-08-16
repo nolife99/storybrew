@@ -44,7 +44,8 @@ public readonly ref struct ArrayDictionaryInternalsRef<TKey, TValue>
 
 partial class CollectionInternals
 {
-    public static ArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
+    public static ArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
+        this ArrayDictionary<TKey, TValue> source)
         => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,13 +58,15 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<ArrayEntry<TKey>> KeysAsReadOnlySpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
+    public static ReadOnlySpan<ArrayEntry<TKey>>
+        KeysAsReadOnlySpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
         => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries),
             source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<TValue> ValuesAsReadOnlySpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)
-        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._values),
+            source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsReadOnlyMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,
@@ -76,7 +79,8 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<ArrayEntry<TKey>> KeysAsReadOnlyMemory<TKey, TValue>(
-        this ArrayDictionary<TKey, TValue> source) => new(source._entries, 0, source._freeEntryIndex);
+        this ArrayDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<TValue> ValuesAsReadOnlyMemory<TKey, TValue>(this ArrayDictionary<TKey, TValue> source)

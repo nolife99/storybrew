@@ -27,7 +27,9 @@ partial class CollectionInternals
     public static TempQueueInternalsRef<T> GetRef<T>(this scoped ref readonly TempQueue<T> source) => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempQueue<T> source,
+        out int head,
+        out int tail)
     {
         head = source._head;
         tail = source._tail;

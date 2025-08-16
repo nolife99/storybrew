@@ -18,14 +18,15 @@ public record SrtParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream) => new(parseBlocks(stream)
-        .AsValueEnumerable()
-        .Select(block => block.Split('\n'))
-        .Select(blockLines => (blockLines, blockLines[1].Split("-->")))
-        .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0].Replace(',', '.')),
-            SubtitleParser.ParseTimestamp(t.Item2[1].Replace(',', '.')),
-            string.Join("\n", t.blockLines, 2, t.blockLines.Length - 2)))
-        .ToArray());
+    public SubtitleSet Parse(Stream stream)
+        => new(parseBlocks(stream)
+            .AsValueEnumerable()
+            .Select(block => block.Split('\n'))
+            .Select(blockLines => (blockLines, blockLines[1].Split("-->")))
+            .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0].Replace(',', '.')),
+                SubtitleParser.ParseTimestamp(t.Item2[1].Replace(',', '.')),
+                string.Join("\n", t.blockLines, 2, t.blockLines.Length - 2)))
+            .ToArray());
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

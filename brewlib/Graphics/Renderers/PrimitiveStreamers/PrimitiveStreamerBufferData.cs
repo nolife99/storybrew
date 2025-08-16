@@ -24,7 +24,8 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 
         primitiveBufferOffset = 0;
 
-        if (IndexBufferId != -1) GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
+        if (IndexBufferId != -1)
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
     }
 

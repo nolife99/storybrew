@@ -41,7 +41,8 @@ public readonly struct TempDictionaryInternalsRefUnsafe<TKey, TValue>
 partial class CollectionInternals
 {
     public static TempDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this scoped ref readonly TempDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly TempDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(
@@ -50,7 +51,8 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(
-        this scoped ref readonly TempDictionary<TKey, TValue> source) => new(source._entries, 0, source._count);
+        this scoped ref readonly TempDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<TKey, TValue>(this scoped ref readonly TempDictionary<TKey, TValue> source,
@@ -62,11 +64,12 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue
-        GetValueRefOrAddDefault<TKey, TValue>(this scoped ref readonly TempDictionary<TKey, TValue> dictionary,
-            TKey key,
-            out bool exists) where TKey : notnull
-        => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(ref Unsafe.AsRef(in dictionary),
+    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(
+        this scoped ref readonly TempDictionary<TKey, TValue> dictionary,
+        TKey key,
+        out bool exists) where TKey : notnull
+        => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(
+            ref Unsafe.AsRef(in dictionary),
             key,
             out exists);
 
@@ -74,5 +77,6 @@ partial class CollectionInternals
     public static bool TryInsert<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
         TKey key,
         TValue value,
-        InsertionBehavior behavior) => dictionary.TryInsert(key, value, behavior);
+        InsertionBehavior behavior)
+        => dictionary.TryInsert(key, value, behavior);
 }

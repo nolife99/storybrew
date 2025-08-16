@@ -41,7 +41,8 @@ public readonly struct ValueDictionaryInternalsRefUnsafe<TKey, TValue>
 partial class CollectionInternals
 {
     public static ValueDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(
@@ -50,7 +51,8 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(
-        this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(source._entries, 0, source._count);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<TKey, TValue>(this scoped ref readonly ValueDictionary<TKey, TValue> source,
@@ -62,13 +64,16 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
-        TKey key) where TKey : notnull => ref dictionary.FindValue(key);
+    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(
+        this scoped ref ValueDictionary<TKey, TValue> dictionary,
+        TKey key) where TKey : notnull
+        => ref dictionary.FindValue(key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
-        TKey key,
-        out bool exists) where TKey : notnull
+    public static ref TValue
+        GetValueRefOrAddDefault<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
+            TKey key,
+            out bool exists) where TKey : notnull
         => ref ValueDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(ref dictionary,
             key,
             out exists);
@@ -77,5 +82,6 @@ partial class CollectionInternals
     public static bool TryInsert<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
         TKey key,
         TValue value,
-        InsertionBehavior behavior) => dictionary.TryInsert(key, value, behavior);
+        InsertionBehavior behavior)
+        => dictionary.TryInsert(key, value, behavior);
 }

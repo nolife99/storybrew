@@ -46,8 +46,10 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
-    public PooledHashSet(T[] items, IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
-        : this(items.AsSpan(), comparer, bucketPool, entryPool) { }
+    public PooledHashSet(T[] items,
+        IEqualityComparer<T> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<T>> entryPool) : this(items.AsSpan(), comparer, bucketPool, entryPool) { }
 
     public PooledHashSet(ReadOnlySpan<T> span) : this(span, null) { }
 
@@ -183,7 +185,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
             if (AddIfNotPresent(other[i], out var location)) itemsAddedFromOther.MarkBit(location);
             else
             {
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
 
         for (var i = 0; i < originalCount; i++)
@@ -324,7 +327,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var src = _entries.AsSpan(0, _count);
 
@@ -437,8 +441,9 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
-    public PooledHashSet(IEqualityComparer<T> comparer) :
-        this(comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared) { }
+    public PooledHashSet(IEqualityComparer<T> comparer) : this(comparer,
+        ArrayPool<int>.Shared,
+        ArrayPool<Entry<T>>.Shared) { }
 
     public PooledHashSet(IEnumerable<T> collection, IEqualityComparer<T> comparer) : this(collection,
         comparer,
@@ -790,12 +795,10 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
         switch (other)
         {
-            case PooledHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet):
+            case PooledHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                 return Count <= otherAsSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSet);
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet):
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                 return Count <= otherAsSCGSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
 
             default:
@@ -818,12 +821,10 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
             switch (other)
             {
-                case PooledHashSet<T> otherAsSet
-                    when EqualityComparersAreEqual(this, otherAsSet):
+                case PooledHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                     return Count < otherAsSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSet);
 
-                case HashSet<T> otherAsSCGSet
-                    when EqualityComparersAreEqual(this, otherAsSCGSet):
+                case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                     return Count < otherAsSCGSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
             }
         }
@@ -843,9 +844,11 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
         switch (other)
         {
-            case PooledHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count:
+            case PooledHashSet<T> otherAsSet
+                when EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count:
             case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet) && otherAsSCGSet.Count > Count: return false;
+                when EqualityComparersAreEqual(this, otherAsSCGSet) && otherAsSCGSet.Count > Count:
+                return false;
 
             default: return ContainsAllElements(other);
         }
@@ -863,12 +866,10 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
             switch (other)
             {
-                case PooledHashSet<T> otherAsSet
-                    when EqualityComparersAreEqual(this, otherAsSet):
+                case PooledHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                     return otherAsSet.Count < Count && ContainsAllElements(otherAsSet);
 
-                case HashSet<T> otherAsSCGSet
-                    when EqualityComparersAreEqual(this, otherAsSCGSet):
+                case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                     return otherAsSCGSet.Count < Count && ContainsAllElements(otherAsSCGSet);
             }
         }
@@ -900,12 +901,10 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
         switch (other)
         {
-            case PooledHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet):
+            case PooledHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                 return Count == otherAsSet.Count && ContainsAllElements(otherAsSet);
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet):
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                 return Count == otherAsSCGSet.Count && ContainsAllElements(otherAsSCGSet);
         }
 
@@ -979,7 +978,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1) entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1)
+                    entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
             }
 
             if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
@@ -1316,7 +1316,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
             if (AddIfNotPresent(item, out var location)) itemsAddedFromOther.MarkBit(location);
             else
             {
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
 
         for (var i = 0; i < originalCount; i++)

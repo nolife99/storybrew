@@ -18,20 +18,16 @@ public static class TempDictionary
         => new(0, null, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
-        null,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared);
+    public static TempDictionary<TKey, TValue> Create<TKey, TValue>(int capacity)
+        => new(capacity, null, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> comparer)
         => new(0, comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary) => new(dictionary,
-        null,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared);
+    public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary)
+        => new(dictionary, null, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection)
@@ -53,83 +49,91 @@ public static class TempDictionary
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(0, null, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(0, null, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(capacity, null, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(capacity, null, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(0, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(0, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(dictionary, null, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(dictionary, null, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(collection, null, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(collection, null, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(capacity, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(capacity, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IDictionary<TKey, TValue> dictionary,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(dictionary, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(dictionary, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> collection,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(collection, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(collection, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>((TKey Key, TValue Value)[] array,
-        IEqualityComparer<TKey> comparer) => new(array.AsSpan(),
-        comparer,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared);
+        IEqualityComparer<TKey> comparer)
+        => new(array.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>((TKey Key, TValue Value)[] array,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(array.AsSpan(), comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(KeyValuePair<TKey, TValue>[] array,
-        IEqualityComparer<TKey> comparer) => new(array.AsSpan(),
-        comparer,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared);
+        IEqualityComparer<TKey> comparer)
+        => new(array.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(KeyValuePair<TKey, TValue>[] array,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(array.AsSpan(), comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<(TKey Key, TValue Value)> span,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(span, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<TKey, TValue>> entryPool)
+        => new(span, comparer, bucketPool, entryPool);
 }
 
 public ref struct TempDictionary<TKey, TValue>
@@ -210,7 +214,8 @@ public ref struct TempDictionary<TKey, TValue>
     internal TempDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
+        ArrayPool<Entry<TKey, TValue>> entryPool) : this(
+        (collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
         bucketPool,
         entryPool)
@@ -612,7 +617,8 @@ public ref struct TempDictionary<TKey, TValue>
                     {
                         if ((uint)i >= (uint)entries.Length) break;
 
-                        if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
+                        if (entries[i].HashCode == hashCode &&
+                            EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
                         {
                             exists = true;
 
@@ -969,7 +975,7 @@ public ref struct TempDictionary<TKey, TValue>
 
                 if (entry.Next < -1) continue;
 
-                Current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+                Current = new(entry.Key, entry.Value);
                 return true;
             }
 
@@ -1016,7 +1022,8 @@ public ref struct TempDictionary<TKey, TValue>
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var src = _entries.AsSpan(0, _count);
 

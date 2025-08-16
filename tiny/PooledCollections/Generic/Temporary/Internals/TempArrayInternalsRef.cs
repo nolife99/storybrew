@@ -52,7 +52,9 @@ partial class CollectionInternals
         => new(source._array, start, source._length - start);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempArray<T> source, int start, int length)
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempArray<T> source,
+        int start,
+        int length)
         => AsReadOnlyMemory(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

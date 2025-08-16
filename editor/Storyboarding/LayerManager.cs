@@ -137,8 +137,8 @@ public sealed class LayerManager : IDisposable
 
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {
-        if (e.PropertyName is null or nameof(EditorStoryboardLayer.OsbLayer) or nameof(EditorStoryboardLayer.DiffSpecific))
-            sortLayer((EditorStoryboardLayer)sender);
+        if (e.PropertyName is null or nameof(EditorStoryboardLayer.OsbLayer)
+            or nameof(EditorStoryboardLayer.DiffSpecific)) sortLayer((EditorStoryboardLayer)sender);
     }
 
     void sortLayer(EditorStoryboardLayer layer)

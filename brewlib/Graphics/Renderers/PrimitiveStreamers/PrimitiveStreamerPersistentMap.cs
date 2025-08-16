@@ -23,7 +23,9 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
     {
-        if (sync.WaitForRange(bufferOffset + totalQueuedPrimitives * PrimitiveSize, PrimitiveSize)) expandVertexBuffer();
+        if (sync.WaitForRange(bufferOffset + totalQueuedPrimitives * PrimitiveSize, PrimitiveSize))
+            expandVertexBuffer();
+
         Unsafe.Add(ref (bufferAddr + bufferOffset).AsRef<TPrimitive>(), totalQueuedPrimitives) = primitive;
     }
 
@@ -32,7 +34,8 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
         GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
 
-        if (IndexBufferId != -1) GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
+        if (IndexBufferId != -1)
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
 
         sync.LockRange(bufferOffset, vertexDataSize);

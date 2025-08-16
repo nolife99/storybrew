@@ -51,8 +51,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
     public void Initialize(MonitorInfo displayDevice)
     {
-        ResourceContainer = new AssemblyResourceContainer(
-            typeof(Editor).Assembly,
+        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly,
             $"{nameof(StorybrewEditor)}.Resources",
             "resources");
 
@@ -232,7 +231,9 @@ public sealed class Editor(NativeWindow window) : IDisposable
         Program.Settings.Volume.Bind(volumeSlider,
             () =>
             {
-                using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Volume: {volumeSlider.Value:P0}");
+                using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                    $"Volume: {volumeSlider.Value:P0}");
+
                 volumeSlider.Tooltip = text.AsReadOnlySpan();
             });
 

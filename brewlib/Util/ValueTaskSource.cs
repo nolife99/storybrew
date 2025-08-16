@@ -17,7 +17,10 @@ public class ValueTaskSource<T>(bool runContinuationsAsynchronously) : IValueTas
 
     public ValueTaskSourceStatus GetStatus(short token) => _core.GetStatus(token);
 
-    public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+    public void OnCompleted(Action<object> continuation,
+        object state,
+        short token,
+        ValueTaskSourceOnCompletedFlags flags)
         => _core.OnCompleted(continuation, state, token, flags);
 
     public void SetResult(T result) => _core.SetResult(result);

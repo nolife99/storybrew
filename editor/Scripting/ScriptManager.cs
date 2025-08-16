@@ -12,22 +12,24 @@ using BrewLib.Util;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
     readonly FileSystemWatcher libraryWatcher;
     readonly ResourceContainer resourceContainer;
-    readonly PooledDictionary<string, ScriptContainer<TScript>> scriptContainers = new();
     readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath;
 
     readonly FileSystemWatcher scriptWatcher;
 
     bool disposed;
 
-    PooledList<string> referencedAssemblies = new();
+    ValueList<string> referencedAssemblies = ValueList.Create<string>();
     ThrottledActionScheduler scheduler = new();
+
+    ValueDictionary<string, ScriptContainer<TScript>> scriptContainers = ValueDictionary
+        .Create<string, ScriptContainer<TScript>>();
 
     public ScriptManager(ResourceContainer resourceContainer,
         string scriptsNamespace,
@@ -49,8 +51,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             Filter = "*.cs",
             Path = scriptsSourcePath,
             IncludeSubdirectories = false,
-            NotifyFilter = NotifyFilters.LastWrite,
-            InternalBufferSize = 16384
+            NotifyFilter = NotifyFilters.LastWrite
         };
 
         scriptWatcher.Created += scriptWatcher_Changed;
@@ -83,7 +84,6 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         get => referencedAssemblies.AsReadOnlySpan();
         set
         {
-            referencedAssemblies ??= new();
             referencedAssemblies.Clear();
             referencedAssemblies.AddRange(value);
 
@@ -122,11 +122,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             referencedAssemblies.AsReadOnlySpan());
     }
 
-    public IEnumerable<string> GetScriptNames() => Directory
-        .EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
-        .Select(Path.GetFileNameWithoutExtension)
-        .Union(Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
-            .Select(Path.GetFileNameWithoutExtension));
+    public IEnumerable<string> GetScriptNames()
+        => Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileNameWithoutExtension)
+            .Union(Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileNameWithoutExtension));
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
@@ -139,7 +139,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
                 {
                     var alternateLookup = scriptContainers.GetAlternateLookup<ReadOnlySpan<char>>();
                     if (!disposed &&
-                        alternateLookup.TryGetValue(Path.GetFileNameWithoutExtension(e.Name.AsSpan()), out var container))
+                        alternateLookup.TryGetValue(Path.GetFileNameWithoutExtension(e.Name.AsSpan()),
+                            out var container))
                         container.ReloadScript();
                 });
     }
@@ -159,13 +160,14 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
                 });
     }
 
-    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}",
-        _ =>
-        {
-            if (disposed) return;
+    void scheduleSolutionUpdate()
+        => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}",
+            _ =>
+            {
+                if (disposed) return;
 
-            updateSolutionFiles();
-        });
+                updateSolutionFiles();
+            });
 
     void updateSolutionFiles()
     {
@@ -178,7 +180,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         XmlDocument document = new() { PreserveWhitespace = false };
         try
         {
-            using (var sr = XmlReader.Create(resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded),
+            using (var sr = XmlReader.Create(
+                resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded),
                 new() { CloseInput = true })) document.Load(sr);
 
             var xmlns = document.DocumentElement.GetAttribute("xmlns");

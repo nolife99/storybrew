@@ -30,7 +30,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(this scoped ref readonly TempStack<T> source) => new(source._array, 0, source._size);
+    public static Memory<T> AsMemory<T>(this scoped ref readonly TempStack<T> source)
+        => new(source._array, 0, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly TempStack<T> source, out T[] array, out int count)

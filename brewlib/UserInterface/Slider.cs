@@ -64,15 +64,18 @@ public class Slider : ProgressBar
         }
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
-        dragged || hovered ? "hover" : null));
+    protected override WidgetStyle Style
+        => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
+            dragged || hovered ? "hover" : null));
 
     public event EventHandler OnValueCommited;
 
     public float GetValueForPosition(Vector2 position)
     {
         var bounds = Bounds;
-        var value = MinValue + (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) / bounds.Width;
+        var value = MinValue +
+            (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) / bounds.Width;
+
         if (Step != 0) value = float.Min((int)(value / Step) * Step, MaxValue);
         return value;
     }

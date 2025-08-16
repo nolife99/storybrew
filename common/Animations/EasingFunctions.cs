@@ -139,7 +139,8 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeInOutBack"/>
     /// </summary>
-    public static float BackInOut(float x) => ToInOut(y => y * y * ((1.70158f * 1.525f + 1) * y - 1.70158f * 1.525f), x);
+    public static float BackInOut(float x)
+        => ToInOut(y => y * y * ((1.70158f * 1.525f + 1) * y - 1.70158f * 1.525f), x);
 
     /// <summary>
     ///     <see href="https://easings.net/#easeInBounce"/>
@@ -149,9 +150,11 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeOutBounce"/>
     /// </summary>
-    public static float BounceOut(float x) => x < 1 / 2.75f ? 7.5625f * x * x :
-        x < 2 / 2.75f ? 7.5625f * (x -= 1.5f / 2.75f) * x + .75f :
-        x < 2.5f / 2.75f ? 7.5625f * (x -= 2.25f / 2.75f) * x + .9375f : 7.5625f * (x -= 2.625f / 2.75f) * x + .984375f;
+    public static float BounceOut(float x)
+        => x < 1 / 2.75f ? 7.5625f * x * x :
+            x < 2 / 2.75f ? 7.5625f * (x -= 1.5f / 2.75f) * x + .75f :
+            x < 2.5f / 2.75f ? 7.5625f * (x -= 2.25f / 2.75f) * x + .9375f :
+            7.5625f * (x -= 2.625f / 2.75f) * x + .984375f;
 
     /// <summary>
     ///     <see href="https://easings.net/#easeInOutBounce"/>
@@ -189,78 +192,80 @@ public static class EasingFunctions
         => (value < .5f ? func(2 * value) : 2 - func(2 - 2 * value)) * .5f;
 
     /// <summary> Applies the specified <see cref="OsbEasing"/> to the progress (<paramref name="value"/>). </summary>
-    public static float Ease(this OsbEasing easing, float value) => easing switch
-    {
-        OsbEasing.In or OsbEasing.InQuad => QuadIn(value),
-        OsbEasing.Out or OsbEasing.OutQuad => QuadOut(value),
-        OsbEasing.InOutQuad => QuadInOut(value),
-        OsbEasing.InCubic => CubicIn(value),
-        OsbEasing.OutCubic => CubicOut(value),
-        OsbEasing.InOutCubic => CubicInOut(value),
-        OsbEasing.InQuart => QuartIn(value),
-        OsbEasing.OutQuart => QuartOut(value),
-        OsbEasing.InOutQuart => QuartInOut(value),
-        OsbEasing.InQuint => QuintIn(value),
-        OsbEasing.OutQuint => QuintOut(value),
-        OsbEasing.InOutQuint => QuintInOut(value),
-        OsbEasing.InSine => SineIn(value),
-        OsbEasing.OutSine => SineOut(value),
-        OsbEasing.InOutSine => SineInOut(value),
-        OsbEasing.InExpo => ExpoIn(value),
-        OsbEasing.OutExpo => ExpoOut(value),
-        OsbEasing.InOutExpo => ExpoInOut(value),
-        OsbEasing.InCirc => CircIn(value),
-        OsbEasing.OutCirc => CircOut(value),
-        OsbEasing.InOutCirc => CircInOut(value),
-        OsbEasing.InElastic => ElasticIn(value),
-        OsbEasing.OutElastic => ElasticOut(value),
-        OsbEasing.OutElasticHalf => ElasticOutHalf(value),
-        OsbEasing.OutElasticQuarter => ElasticOutQuarter(value),
-        OsbEasing.InOutElastic => ElasticInOut(value),
-        OsbEasing.InBack => BackIn(value),
-        OsbEasing.OutBack => BackOut(value),
-        OsbEasing.InOutBack => BackInOut(value),
-        OsbEasing.InBounce => BounceIn(value),
-        OsbEasing.OutBounce => BounceOut(value),
-        OsbEasing.InOutBounce => BounceInOut(value),
-        _ => Linear(value)
-    };
+    public static float Ease(this OsbEasing easing, float value)
+        => easing switch
+        {
+            OsbEasing.In or OsbEasing.InQuad => QuadIn(value),
+            OsbEasing.Out or OsbEasing.OutQuad => QuadOut(value),
+            OsbEasing.InOutQuad => QuadInOut(value),
+            OsbEasing.InCubic => CubicIn(value),
+            OsbEasing.OutCubic => CubicOut(value),
+            OsbEasing.InOutCubic => CubicInOut(value),
+            OsbEasing.InQuart => QuartIn(value),
+            OsbEasing.OutQuart => QuartOut(value),
+            OsbEasing.InOutQuart => QuartInOut(value),
+            OsbEasing.InQuint => QuintIn(value),
+            OsbEasing.OutQuint => QuintOut(value),
+            OsbEasing.InOutQuint => QuintInOut(value),
+            OsbEasing.InSine => SineIn(value),
+            OsbEasing.OutSine => SineOut(value),
+            OsbEasing.InOutSine => SineInOut(value),
+            OsbEasing.InExpo => ExpoIn(value),
+            OsbEasing.OutExpo => ExpoOut(value),
+            OsbEasing.InOutExpo => ExpoInOut(value),
+            OsbEasing.InCirc => CircIn(value),
+            OsbEasing.OutCirc => CircOut(value),
+            OsbEasing.InOutCirc => CircInOut(value),
+            OsbEasing.InElastic => ElasticIn(value),
+            OsbEasing.OutElastic => ElasticOut(value),
+            OsbEasing.OutElasticHalf => ElasticOutHalf(value),
+            OsbEasing.OutElasticQuarter => ElasticOutQuarter(value),
+            OsbEasing.InOutElastic => ElasticInOut(value),
+            OsbEasing.InBack => BackIn(value),
+            OsbEasing.OutBack => BackOut(value),
+            OsbEasing.InOutBack => BackInOut(value),
+            OsbEasing.InBounce => BounceIn(value),
+            OsbEasing.OutBounce => BounceOut(value),
+            OsbEasing.InOutBounce => BounceInOut(value),
+            _ => Linear(value)
+        };
 
     /// <summary> Converts an <see cref="OsbEasing"/> to one of the corresponding <see cref="EasingFunctions"/>. </summary>
-    public static Func<float, float> ToEasingFunction(OsbEasing easing) => easing switch
-    {
-        OsbEasing.In or OsbEasing.InQuad => QuadIn,
-        OsbEasing.Out or OsbEasing.OutQuad => QuadOut,
-        OsbEasing.InOutQuad => QuadInOut,
-        OsbEasing.InCubic => CubicIn,
-        OsbEasing.OutCubic => CubicOut,
-        OsbEasing.InOutCubic => CubicInOut,
-        OsbEasing.InQuart => QuartIn,
-        OsbEasing.OutQuart => QuartOut,
-        OsbEasing.InOutQuart => QuartInOut,
-        OsbEasing.InQuint => QuintIn,
-        OsbEasing.OutQuint => QuintOut,
-        OsbEasing.InOutQuint => QuintInOut,
-        OsbEasing.InSine => SineIn,
-        OsbEasing.OutSine => SineOut,
-        OsbEasing.InOutSine => SineInOut,
-        OsbEasing.InExpo => ExpoIn,
-        OsbEasing.OutExpo => ExpoOut,
-        OsbEasing.InOutExpo => ExpoInOut,
-        OsbEasing.InCirc => CircIn,
-        OsbEasing.OutCirc => CircOut,
-        OsbEasing.InOutCirc => CircInOut,
-        OsbEasing.InElastic => ElasticIn,
-        OsbEasing.OutElastic => ElasticOut,
-        OsbEasing.OutElasticHalf => ElasticOutHalf,
-        OsbEasing.OutElasticQuarter => ElasticOutQuarter,
-        OsbEasing.InOutElastic => ElasticInOut,
-        OsbEasing.InBack => BackIn,
-        OsbEasing.OutBack => BackOut,
-        OsbEasing.InOutBack => BackInOut,
-        OsbEasing.InBounce => BounceIn,
-        OsbEasing.OutBounce => BounceOut,
-        OsbEasing.InOutBounce => BounceInOut,
-        _ => Linear
-    };
+    public static Func<float, float> ToEasingFunction(OsbEasing easing)
+        => easing switch
+        {
+            OsbEasing.In or OsbEasing.InQuad => QuadIn,
+            OsbEasing.Out or OsbEasing.OutQuad => QuadOut,
+            OsbEasing.InOutQuad => QuadInOut,
+            OsbEasing.InCubic => CubicIn,
+            OsbEasing.OutCubic => CubicOut,
+            OsbEasing.InOutCubic => CubicInOut,
+            OsbEasing.InQuart => QuartIn,
+            OsbEasing.OutQuart => QuartOut,
+            OsbEasing.InOutQuart => QuartInOut,
+            OsbEasing.InQuint => QuintIn,
+            OsbEasing.OutQuint => QuintOut,
+            OsbEasing.InOutQuint => QuintInOut,
+            OsbEasing.InSine => SineIn,
+            OsbEasing.OutSine => SineOut,
+            OsbEasing.InOutSine => SineInOut,
+            OsbEasing.InExpo => ExpoIn,
+            OsbEasing.OutExpo => ExpoOut,
+            OsbEasing.InOutExpo => ExpoInOut,
+            OsbEasing.InCirc => CircIn,
+            OsbEasing.OutCirc => CircOut,
+            OsbEasing.InOutCirc => CircInOut,
+            OsbEasing.InElastic => ElasticIn,
+            OsbEasing.OutElastic => ElasticOut,
+            OsbEasing.OutElasticHalf => ElasticOutHalf,
+            OsbEasing.OutElasticQuarter => ElasticOutQuarter,
+            OsbEasing.InOutElastic => ElasticInOut,
+            OsbEasing.InBack => BackIn,
+            OsbEasing.OutBack => BackOut,
+            OsbEasing.InOutBack => BackInOut,
+            OsbEasing.InBounce => BounceIn,
+            OsbEasing.OutBounce => BounceOut,
+            OsbEasing.InOutBounce => BounceInOut,
+            _ => Linear
+        };
 }

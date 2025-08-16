@@ -67,18 +67,19 @@ public class FontTexture(string path,
     public IPathCollection PathData => paths;
 
     /// <summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
-    public Vector2 OffsetFor(OsbOrigin origin) => origin switch
-    {
-        OsbOrigin.TopCentre => new(OffsetX + Width * .5f, OffsetY),
-        OsbOrigin.TopRight => new(OffsetX + Width, OffsetY),
-        OsbOrigin.CentreLeft => new(OffsetX, OffsetY + Height * .5f),
-        OsbOrigin.Centre => new(OffsetX + Width * .5f, OffsetY + Height * .5f),
-        OsbOrigin.CentreRight => new(OffsetX + Width, OffsetY + Height * .5f),
-        OsbOrigin.BottomLeft => new(OffsetX, OffsetY + Height),
-        OsbOrigin.BottomCentre => new(OffsetX + Width * .5f, OffsetY + Height),
-        OsbOrigin.BottomRight => new(OffsetX + Width, OffsetY + Height),
-        _ => new(OffsetX, OffsetY)
-    };
+    public Vector2 OffsetFor(OsbOrigin origin)
+        => origin switch
+        {
+            OsbOrigin.TopCentre => new(OffsetX + Width * .5f, OffsetY),
+            OsbOrigin.TopRight => new(OffsetX + Width, OffsetY),
+            OsbOrigin.CentreLeft => new(OffsetX, OffsetY + Height * .5f),
+            OsbOrigin.Centre => new(OffsetX + Width * .5f, OffsetY + Height * .5f),
+            OsbOrigin.CentreRight => new(OffsetX + Width, OffsetY + Height * .5f),
+            OsbOrigin.BottomLeft => new(OffsetX, OffsetY + Height),
+            OsbOrigin.BottomCentre => new(OffsetX + Width * .5f, OffsetY + Height),
+            OsbOrigin.BottomRight => new(OffsetX + Width, OffsetY + Height),
+            _ => new(OffsetX, OffsetY)
+        };
 }
 
 ///<summary> Generates and manages font textures. </summary>
@@ -210,7 +211,9 @@ public sealed class FontGenerator : IDisposable
 
             SolidPen pen = new(Color.Red, 1);
             b.DrawLine(pen, new(x, paddingY), new(x, paddingY + measuredSize.Height))
-                .DrawLine(pen, new(x - measuredSize.Width * .5f, paddingY), new(x + measuredSize.Width * .5f, paddingY));
+                .DrawLine(pen,
+                    new(x - measuredSize.Width * .5f, paddingY),
+                    new(x + measuredSize.Width * .5f, paddingY));
         });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;

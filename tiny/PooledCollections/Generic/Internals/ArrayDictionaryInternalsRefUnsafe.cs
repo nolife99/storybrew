@@ -43,7 +43,8 @@ public readonly struct ArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 partial class CollectionInternals
 {
     public static ArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this ArrayDictionary<TKey, TValue> source) => new(source);
+        this ArrayDictionary<TKey, TValue> source)
+        => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this ArrayDictionary<TKey, TValue> source,

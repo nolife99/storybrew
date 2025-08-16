@@ -19,7 +19,7 @@ public class Vector3Picker : Widget, Field
 
     public Vector3Picker(WidgetManager manager) : base(manager)
     {
-        Add(layout = new LinearLayout(manager)
+        Add(layout = new(manager)
         {
             FitChildren = true,
             Children =
@@ -54,7 +54,7 @@ public class Vector3Picker : Widget, Field
                     Children =
                     [
                         new Label(Manager) { StyleName = "small", Text = "Z", CanGrow = false },
-                        zTextbox = new Textbox(manager) { EnterCommits = true }
+                        zTextbox = new(manager) { EnterCommits = true }
                     ]
                 }
             ]

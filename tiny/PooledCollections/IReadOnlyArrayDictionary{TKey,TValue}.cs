@@ -3,8 +3,8 @@
 using System;
 using System.Collections.Generic;
 
-public interface IReadOnlyArrayDictionary<TKey, TValue>
-    : IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<ArrayKeyValuePair<TKey, TValue>>
+public interface IReadOnlyArrayDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>,
+    IReadOnlyCollection<ArrayKeyValuePair<TKey, TValue>>
 {
     bool ContainsValue(TValue value);
 

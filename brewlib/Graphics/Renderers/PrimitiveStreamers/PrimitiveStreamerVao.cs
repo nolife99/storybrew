@@ -25,7 +25,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         int maxPrimitivesPerBatch,
         scoped ReadOnlySpan<ushort> indices)
     {
-        if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
+        if (vertexDeclaration.AttributeCount < 1)
+            throw new ArgumentException("At least one vertex attribute is required");
 
         MaxPrimitivesPerBatch = maxPrimitivesPerBatch;
         this.vertexDeclaration = vertexDeclaration;
@@ -200,7 +201,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         if (disposing) commandBuffer.Dispose();
     }
 
-    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
-        GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object") &&
-        GLFW.ExtensionSupported("GL_ARB_multi_draw_indirect");
+    public static bool HasCapabilities()
+        => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
+            GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object") &&
+            GLFW.ExtensionSupported("GL_ARB_multi_draw_indirect");
 }

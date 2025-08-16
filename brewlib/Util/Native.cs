@@ -47,7 +47,10 @@ public static class Native
     const string KERNEL32 = "kernel32.dll";
 
     [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
-    static extern nint CreateWaitableTimerExW(nint lpTimerAttributes, nint lpTimerName, uint dwFlags, uint dwDesiredAccess);
+    static extern nint CreateWaitableTimerExW(nint lpTimerAttributes,
+        nint lpTimerName,
+        uint dwFlags,
+        uint dwDesiredAccess);
 
     [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
     static extern int SetWaitableTimer(nint hTimer,
@@ -71,8 +74,8 @@ public static class Native
         var timer = perThreadTimer;
         if (timer is null)
         {
-            const uint CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002,
-                TIMER_ALL_ACCESS = 0x1F0003;
+            const uint CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001,
+                CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002, TIMER_ALL_ACCESS = 0x1F0003;
 
             var handle = CreateWaitableTimerExW(0,
                 0,

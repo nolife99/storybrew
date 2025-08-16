@@ -8,14 +8,17 @@ partial class CollectionInternals
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source)
-        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._array.Length);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array),
+            source._array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, int start)
         => AsReadOnlySpan(in source)[start..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source, int start, int length)
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ReadOnlyArray<T> source,
+        int start,
+        int length)
         => AsReadOnlySpan(in source)[start..length];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,10 +40,12 @@ partial class CollectionInternals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source,
         int start,
-        int length) => new(source._array, start, length);
+        int length)
+        => new(source._array, start, length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source, Index startIndex)
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ReadOnlyArray<T> source,
+        Index startIndex)
         => source._array.AsMemory(startIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

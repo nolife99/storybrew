@@ -107,7 +107,7 @@ public abstract class ObjectSerializer
             v =>
             {
                 var vector = (Vector3)v;
-                return ((Span<float>) [vector.X, vector.Y, vector.Z]).AsValueEnumerable().JoinToString(',');
+                return ((Span<float>)[vector.X, vector.Y, vector.Z]).AsValueEnumerable().JoinToString(',');
             }),
         new SimpleObjectSerializer<OpenTK.Mathematics.Vector2>(
             r => new OpenTK.Mathematics.Vector2(r.ReadSingle(), r.ReadSingle()),
@@ -155,7 +155,8 @@ public abstract class ObjectSerializer
                     "," +
                     vector.Z.ToString(CultureInfo.InvariantCulture);
             }),
-        new SimpleObjectSerializer<Color4>(r => new Color4(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),
+        new SimpleObjectSerializer<Color4>(
+            r => new Color4(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),
             (w, v) =>
             {
                 var color = (Color4)v;

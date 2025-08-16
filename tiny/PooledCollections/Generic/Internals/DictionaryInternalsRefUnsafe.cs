@@ -41,7 +41,8 @@ public readonly struct DictionaryInternalsRefUnsafe<TKey, TValue>
 partial class CollectionInternals
 {
     public static DictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this PooledDictionary<TKey, TValue> source) => new(source);
+        this PooledDictionary<TKey, TValue> source)
+        => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
@@ -61,18 +62,22 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this PooledDictionary<TKey, TValue> dictionary, TKey key)
-        where TKey : notnull => ref dictionary.FindValue(key);
+    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this PooledDictionary<TKey, TValue> dictionary,
+        TKey key) where TKey : notnull
+        => ref dictionary.FindValue(key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref TValue GetValueRefOrAddDefault<TKey, TValue>(this PooledDictionary<TKey, TValue> dictionary,
         TKey key,
         out bool exists) where TKey : notnull
-        => ref PooledDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
+        => ref PooledDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary,
+            key,
+            out exists);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryInsert<TKey, TValue>(this PooledDictionary<TKey, TValue> dictionary,
         TKey key,
         TValue value,
-        InsertionBehavior behavior) => dictionary.TryInsert(key, value, behavior);
+        InsertionBehavior behavior)
+        => dictionary.TryInsert(key, value, behavior);
 }

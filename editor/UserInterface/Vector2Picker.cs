@@ -17,7 +17,7 @@ public class Vector2Picker : Widget, Field
 
     public Vector2Picker(WidgetManager manager) : base(manager)
     {
-        Add(layout = new LinearLayout(manager)
+        Add(layout = new(manager)
         {
             FitChildren = true,
             Children =

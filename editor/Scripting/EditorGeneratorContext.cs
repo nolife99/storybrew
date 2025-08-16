@@ -28,9 +28,10 @@ public sealed class EditorGeneratorContext(Effect effect,
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;
 
-    public override string MapsetPath => Directory.Exists(mapsetPath) ?
-        mapsetPath :
-        throw new InvalidOperationException($"No existing folder at '{mapsetPath}'");
+    public override string MapsetPath
+        => Directory.Exists(mapsetPath) ?
+            mapsetPath :
+            throw new InvalidOperationException($"No existing folder at '{mapsetPath}'");
 
     public override Beatmap Beatmap
     {
@@ -103,7 +104,8 @@ public sealed class EditorGeneratorContext(Effect effect,
     public override IMemoryOwner<float> GetFft(float time, string path = null, bool splitChannels = false)
         => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001f, splitChannels);
 
-    public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
+    public override float GetFftFrequency(string path = null)
+        => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 
     #endregion
 }

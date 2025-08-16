@@ -3,7 +3,6 @@ namespace BrewLib.Util;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 public static class ListExtensions
 {
@@ -23,10 +22,10 @@ public static class ListExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> GetSpanUnsafe<T>(this List<T> list)
+    public static ArraySegment<T> GetArraySegment<T>(this List<T> list)
     {
         var debugView = Unsafe.As<ListDebugView<T>>(list);
-        return MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(debugView._items), debugView._size);
+        return new(debugView._items, 0, debugView._size);
     }
 
     class ListDebugView<T>

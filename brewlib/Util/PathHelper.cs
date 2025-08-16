@@ -47,9 +47,8 @@ public static class PathHelper
         '\u001e',
         '\u001f');
 
-    public static void OpenExplorer(string path) => Process
-        .Start(new ProcessStartInfo(path) { UseShellExecute = true })
-        ?.Dispose();
+    public static void OpenExplorer(string path)
+        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
 
     public static void SafeDelete(string path)
     {
@@ -99,6 +98,8 @@ public static class PathHelper
 
     public static bool IsValidPath(scoped ReadOnlySpan<char> path) => !path.ContainsAny(invalidChars);
 
-    public static bool IsValidFilename(char character) => !invalidChars.Contains(character) &&
-        (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character));
+    public static bool IsValidFilename(char character)
+        => !invalidChars.Contains(character) &&
+            (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) ||
+                char.IsDigit(character));
 }

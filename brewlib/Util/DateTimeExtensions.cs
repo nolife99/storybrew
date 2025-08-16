@@ -7,16 +7,11 @@ public static class DateTimeExtensions
 {
     static readonly (TimeSpan, string)[] thresholds =
     [
-        (TimeSpan.FromMinutes(1), "{0} seconds ago"),
-        (TimeSpan.FromMinutes(2), "a minute ago"),
-        (TimeSpan.FromHours(1), "{0} minutes ago"),
-        (TimeSpan.FromHours(2), "an hour ago"),
-        (TimeSpan.FromDays(1), "{0} hours ago"),
-        (TimeSpan.FromDays(2), "yesterday"),
-        (TimeSpan.FromDays(30), "{0} days ago"),
-        (TimeSpan.FromDays(60), "a month ago"),
-        (TimeSpan.FromDays(365), "{0} months ago"),
-        (TimeSpan.FromDays(730), "a year ago"),
+        (TimeSpan.FromMinutes(1), "{0} seconds ago"), (TimeSpan.FromMinutes(2), "a minute ago"),
+        (TimeSpan.FromHours(1), "{0} minutes ago"), (TimeSpan.FromHours(2), "an hour ago"),
+        (TimeSpan.FromDays(1), "{0} hours ago"), (TimeSpan.FromDays(2), "yesterday"),
+        (TimeSpan.FromDays(30), "{0} days ago"), (TimeSpan.FromDays(60), "a month ago"),
+        (TimeSpan.FromDays(365), "{0} months ago"), (TimeSpan.FromDays(730), "a year ago"),
         (TimeSpan.MaxValue, "{0} years ago")
     ];
 

@@ -26,7 +26,8 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         float opacity,
         scoped ref readonly StoryboardTransform transform,
         Project project,
-        FrameStats frameStats) => Draw(drawContext, camera, bounds, opacity, in transform, project, frameStats, this);
+        FrameStats frameStats)
+        => Draw(drawContext, camera, bounds, opacity, in transform, project, frameStats, this);
 
     public void PostProcess()
     {
@@ -108,7 +109,9 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (!transform.IsIdentity)
         {
-            position = sprite.HasMoveCommands ? transform.ApplyToPositionXY(position) : transform.ApplyToPosition(position);
+            position = sprite.HasMoveCommands ?
+                transform.ApplyToPositionXY(position) :
+                transform.ApplyToPosition(position);
 
             if (sprite.RotateTimeline.HasCommands) rotation = transform.ApplyToRotation(rotation);
             if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
@@ -125,8 +128,9 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 var aabb = spriteBox.GetAABB();
                 var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
 
-                var intersectionArea =
-                    size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
+                var intersectionArea = size.X *
+                    size.Y *
+                    (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
                 if (float.IsFinite(intersectionArea))
                     frameStats.ScreenFill += float.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
@@ -138,7 +142,8 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 frameStats.LastTexture = texturePath;
                 ++frameStats.Batches;
 
-                if (frameStats.LoadedPaths.Add(texturePath)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
+                if (frameStats.LoadedPaths.Add(texturePath))
+                    frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
             }
             else if (frameStats.LastBlendingMode != additive)
             {
@@ -153,7 +158,10 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var color = (Color)sprite.ColorAt(time);
         if (forceVisible)
             color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
-                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount * .00025f) / 2 + .5f, 1, 1, 1)));
+                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount * .00025f) / 2 + .5f,
+                    1,
+                    1,
+                    1)));
 
         DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,

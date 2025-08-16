@@ -10,12 +10,9 @@ public class YamlFormat : Format<YamlTokenType>
 
     static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
     [
-        new(YamlTokenType.Indent, "^(  )+", 0),
-        new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
-        new(YamlTokenType.ArrayIndicator, "- "),
-        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"),
-        new(YamlTokenType.Word, "[^\\s:]+"),
+        new(YamlTokenType.Indent, "^(  )+", 0), new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
+        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""), new(YamlTokenType.ArrayIndicator, "- "),
+        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"), new(YamlTokenType.Word, "[^\\s:]+"),
         new(YamlTokenType.EndLine, "\n")
     ];
 
@@ -103,7 +100,8 @@ public class YamlFormat : Format<YamlTokenType>
             case TinyTokenType.Null: writer.WriteLine(); break;
 
             case TinyTokenType.String:
-                writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\"")); break;
+                writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\""));
+                break;
 
             case TinyTokenType.Integer: writer.WriteLine(value?.ToString()); break;
 
@@ -111,8 +109,15 @@ public class YamlFormat : Format<YamlTokenType>
                 switch (value)
                 {
                     case float floatFloat: writer.WriteLine(floatFloat.ToString(CultureInfo.InvariantCulture)); break;
-                    case double floatDouble: writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture)); break;
-                    case decimal floatDecimal: writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture)); break;
+
+                    case double floatDouble:
+                        writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture));
+                        break;
+
+                    case decimal floatDecimal:
+                        writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture));
+                        break;
+
                     case string floatString: writer.WriteLine(floatString); break;
                     default: throw new InvalidDataException(value?.ToString());
                 }
@@ -123,7 +128,8 @@ public class YamlFormat : Format<YamlTokenType>
 
             case TinyTokenType.Array:
             case TinyTokenType.Object:
-            case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());
+            case TinyTokenType.Invalid:
+                throw new InvalidDataException(type.ToString());
 
             default: throw new NotSupportedException(type.ToString());
         }

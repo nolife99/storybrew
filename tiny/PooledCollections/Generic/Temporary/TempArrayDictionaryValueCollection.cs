@@ -7,7 +7,8 @@ public readonly ref struct TempArrayDictionaryValueCollection<TKey, TValue>
 {
     readonly TempArrayDictionary<TKey, TValue> _dictionary;
 
-    internal TempArrayDictionaryValueCollection(TempArrayDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
+    internal TempArrayDictionaryValueCollection(TempArrayDictionary<TKey, TValue> dictionary)
+        => _dictionary = dictionary;
 
     public int Count
     {

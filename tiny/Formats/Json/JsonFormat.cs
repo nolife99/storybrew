@@ -14,16 +14,14 @@ public class JsonFormat : Format<JsonTokenType>
             """
             "((?:[^"\\]|\\.)*)"
             """),
-        new(JsonTokenType.ObjectStart, "{"),
-        new(JsonTokenType.ObjectEnd, "}"),
-        new(JsonTokenType.ArrayStart, "\\["),
-        new(JsonTokenType.ArrayEnd, "]"),
-        new(JsonTokenType.ValueSeparator, ","),
-        new(JsonTokenType.Property, @"([^\s:,{}\[\]]*) *:"),
-        new(JsonTokenType.Word, @"[^\s:,{}\[\]]+")
+        new(JsonTokenType.ObjectStart, "{"), new(JsonTokenType.ObjectEnd, "}"), new(JsonTokenType.ArrayStart, "\\["),
+        new(JsonTokenType.ArrayEnd, "]"), new(JsonTokenType.ValueSeparator, ","),
+        new(JsonTokenType.Property, @"([^\s:,{}\[\]]*) *:"), new(JsonTokenType.Word, @"[^\s:,{}\[\]]+")
     ];
 
-    protected override ITokenizer<JsonTokenType> Tokenizer { get; } = new RegexTokenizer<JsonTokenType>(definitions, null);
+    protected override ITokenizer<JsonTokenType> Tokenizer { get; } =
+        new RegexTokenizer<JsonTokenType>(definitions, null);
+
     protected override ITokenParser<JsonTokenType> TokenParser { get; } = new JsonTokenParser();
 
     public override void Write(TextWriter writer, TinyToken value) { }

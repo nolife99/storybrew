@@ -26,7 +26,8 @@ public readonly struct PooledDictionaryKeyCollection<TKey, TValue> : ICollection
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        if (arrayIndex < 0 || arrayIndex > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+        if (arrayIndex < 0 || arrayIndex > array.Length)
+            ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 
         if (array.Length - arrayIndex < _dictionary.Count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);

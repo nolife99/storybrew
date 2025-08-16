@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 public readonly struct StoryboardTransform
 {
     /// <summary> The identity transform. </summary>
-    public static readonly StoryboardTransform Identity = Unsafe.BitCast<Matrix3x2, StoryboardTransform>(Matrix3x2.Identity);
+    public static readonly StoryboardTransform Identity =
+        Unsafe.BitCast<Matrix3x2, StoryboardTransform>(Matrix3x2.Identity);
 
     readonly Matrix3x2 transform = Matrix3x2.Identity;
 
@@ -43,8 +44,8 @@ public readonly struct StoryboardTransform
     public Vector2 ApplyToPosition(Vector2 value) => Vector2.Transform(value, transform);
 
     /// <summary> Applies the transform to a position vector, separating the X and Y transformations. </summary>
-    public Vector2 ApplyToPositionXY(Vector2 value) => new(Vector2.Transform(new(value.X, 0), transform).X,
-        Vector2.Transform(new(0, value.Y), transform).Y);
+    public Vector2 ApplyToPositionXY(Vector2 value)
+        => new(Vector2.Transform(new(value.X, 0), transform).X, Vector2.Transform(new(0, value.Y), transform).Y);
 
     /// <summary> Applies the transform to a position's X component. </summary>
     public float ApplyToPositionX(float value) => Vector2.Transform(new(value, 0), transform).X;

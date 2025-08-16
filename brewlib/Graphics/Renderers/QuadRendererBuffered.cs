@@ -140,8 +140,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
-            WriteToBuffer(combinedMatrices, Matrix4x4.Multiply(transformMatrix, camera.ProjectionView), queuedRenders);
-            if (Texture2d.BindlessTexturesSupported) WriteToBuffer(bindlessTextures, currentTextureHandle, queuedRenders);
+            WriteToBuffer(combinedMatrices, transformMatrix * camera.ProjectionView, queuedRenders);
+            if (Texture2d.BindlessTexturesSupported)
+                WriteToBuffer(bindlessTextures, currentTextureHandle, queuedRenders);
 
             var clipRegion = Rectangle.Intersect(DrawState.ClipRegion ?? Rectangle.Empty, DrawState.Viewport);
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
@@ -223,9 +224,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                 allSsbo.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch)) :
             sb.AddUniform(TextureUniformName, ActiveUniformType.Sampler2D);
 
-        var clipRects =
-            allSsbo.FieldAsVariable(new(sb.Context, allSsbo.Name, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch),
-                allSsbo.AddField(ClipUniformName, ActiveUniformType.FloatVec4, maxQuadsPerBatch));
+        var clipRects = allSsbo.FieldAsVariable(
+            new(sb.Context, allSsbo.Name, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch),
+            allSsbo.AddField(ClipUniformName, ActiveUniformType.FloatVec4, maxQuadsPerBatch));
 
         var color = sb.AddVarying(ActiveUniformType.FloatVec4);
         var textureCoord = sb.AddVarying(ActiveUniformType.FloatVec2);

@@ -11,9 +11,8 @@ public static class NetHelper
 {
     internal static HttpClient Client;
 
-    public static void OpenUrl(string url) => Process
-        .Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })
-        ?.Dispose();
+    public static void OpenUrl(string url)
+        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })?.Dispose();
 
     public static async void Request(string url, Func<string, Exception, Task> action)
     {
@@ -50,7 +49,9 @@ public static class NetHelper
         }
     }
 
-    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    public static void BlockingPost(string url,
+        Dictionary<string, string> data,
+        Action<string, Exception> action = null)
     {
         try
         {

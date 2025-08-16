@@ -37,7 +37,8 @@ public class ShaderBuilder
     public ShaderVariable AddUniform(string name, ActiveUniformType shaderTypeName, int count = -1)
         => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
 
-    public ShaderVariable AddVarying(ActiveUniformType shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
+    public ShaderVariable AddVarying(ActiveUniformType shaderTypeName)
+        => ProgramScope.AddVarying(Context, shaderTypeName);
 
     public ShaderVariable AddVertexVariable(ActiveUniformType shaderTypeName)
         => VertexShaderScope.AddVariable(Context, shaderTypeName);
@@ -52,7 +53,11 @@ public class ShaderBuilder
     public Shader Build(bool log = false)
     {
         Context.VertexDeclaration = VertexDeclaration;
-        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlFragCoord, GlPointSize, GlFragDepth);
+        Context.MarkUsedVariables(() => FragmentShader.Generate(Context),
+            GlPosition,
+            GlFragCoord,
+            GlPointSize,
+            GlFragDepth);
 
         using var commonCode = buildCommon();
         var commonCodeSpan = commonCode.AsReadOnlySpan();

@@ -1,30 +1,32 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace Tiny.PooledCollections.Generic;
+namespace Tiny.PooledCollections.Generic.Value;
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-partial class PooledDictionary<TKey, TValue>
+partial struct ValueDictionary<TKey, TValue>
 {
+    [UnscopedRef]
     public AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>()
         where TAlternateKey : notnull, allows ref struct
     {
-        if (!AlternateLookup<TAlternateKey>.IsCompatibleKey(this))
+        if (!AlternateLookup<TAlternateKey>.IsCompatibleKey(in this))
             throw new InvalidOperationException("Incompatible comparer");
 
-        return new(this);
+        return new(ref this);
     }
 
+    [UnscopedRef]
     public bool TryGetAlternateLookup<TAlternateKey>(out AlternateLookup<TAlternateKey> lookup)
         where TAlternateKey : notnull, allows ref struct
     {
-        if (AlternateLookup<TAlternateKey>.IsCompatibleKey(this))
+        if (AlternateLookup<TAlternateKey>.IsCompatibleKey(in this))
         {
-            lookup = new(this);
+            lookup = new(ref this);
             return true;
         }
 
@@ -32,11 +34,11 @@ partial class PooledDictionary<TKey, TValue>
         return false;
     }
 
-    public readonly struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
+    public readonly ref struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
     {
-        internal AlternateLookup(PooledDictionary<TKey, TValue> dictionary) => Dictionary = dictionary;
+        internal AlternateLookup(ref ValueDictionary<TKey, TValue> dictionary) => Dictionary = ref dictionary;
 
-        public PooledDictionary<TKey, TValue> Dictionary { get; }
+        public readonly ref ValueDictionary<TKey, TValue> Dictionary;
 
         public TValue this[TAlternateKey key]
         {
@@ -51,12 +53,12 @@ partial class PooledDictionary<TKey, TValue>
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsCompatibleKey(PooledDictionary<TKey, TValue> dictionary)
+        internal static bool IsCompatibleKey(scoped ref readonly ValueDictionary<TKey, TValue> dictionary)
             => dictionary._comparer is IAlternateEqualityComparer<TAlternateKey, TKey>;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IAlternateEqualityComparer<TAlternateKey, TKey> GetAlternateComparer(
-            PooledDictionary<TKey, TValue> dictionary)
+        internal static IAlternateEqualityComparer<TAlternateKey, TKey>
+            GetAlternateComparer(scoped ref readonly ValueDictionary<TKey, TValue> dictionary)
             => Unsafe.As<IAlternateEqualityComparer<TAlternateKey, TKey>>(dictionary._comparer);
 
         public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value)
@@ -91,8 +93,8 @@ partial class PooledDictionary<TKey, TValue>
 
         internal ref TValue FindValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey)
         {
-            var dictionary = Dictionary;
-            var comparer = GetAlternateComparer(dictionary);
+            ref var dictionary = ref Dictionary;
+            var comparer = GetAlternateComparer(in dictionary);
 
             ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
             if (!dictionary._buckets.IsNullOrEmpty())
@@ -140,8 +142,8 @@ partial class PooledDictionary<TKey, TValue>
             [MaybeNullWhen(false)] out TKey actualKey,
             [MaybeNullWhen(false)] out TValue value)
         {
-            var dictionary = Dictionary;
-            var comparer = GetAlternateComparer(dictionary);
+            ref var dictionary = ref Dictionary;
+            var comparer = GetAlternateComparer(in dictionary);
 
             if (!dictionary._buckets.IsNullOrEmpty())
             {
@@ -204,8 +206,8 @@ partial class PooledDictionary<TKey, TValue>
 
         internal ref TValue GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
         {
-            var dictionary = Dictionary;
-            var comparer = GetAlternateComparer(dictionary);
+            ref var dictionary = ref Dictionary;
+            var comparer = GetAlternateComparer(in dictionary);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
 

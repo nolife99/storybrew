@@ -8,9 +8,11 @@ using StorybrewEditor.Util;
 
 public static class Updater
 {
-    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
+    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update",
+        FirstRunPath = "firstrun";
 
-    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"], readOnlyPaths = ["scripts/"];
+    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"],
+        readOnlyPaths = ["scripts/"];
 
     static readonly Version readOnlyVersion = new(1, 8);
 
@@ -46,7 +48,8 @@ public static class Updater
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
         Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })
+        Process.Start(
+                new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })
             ?.Dispose();
     }
 

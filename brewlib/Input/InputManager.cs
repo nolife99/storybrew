@@ -62,7 +62,7 @@ public sealed class InputManager : IDisposable
         window.TextInput -= window_KeyPress;
     }
 
-    void updateMouseFocus() => handler.OnFocusChanged(new FocusedChangedEventArgs(HasMouseFocus));
+    void updateMouseFocus() => handler.OnFocusChanged(new(HasMouseFocus));
 
     void window_MouseEnter()
     {

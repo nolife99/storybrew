@@ -72,10 +72,11 @@ static class ThrowHelper
     static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
         => new($"Error adding duplicate with key: {key}.");
 
-    public static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key) => throw
+    public static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key)
+        => throw
 
-        // Generic key to move the boxing to the right hand side of throw
-        GetAddingDuplicateWithKeyArgumentException(key);
+            // Generic key to move the boxing to the right hand side of throw
+            GetAddingDuplicateWithKeyArgumentException(key);
 
     public static void ThrowArgumentException(ER resource) => throw GetArgumentException(resource);
 
@@ -203,7 +204,8 @@ static class ThrowHelper
                 return "Index was out of range. Must be non-negative and less than the size of the collection.";
 
             case ER.ArgumentOutOfRange_IndexMustBeLessOrEqual:
-                return "Index was out of range. Must be non-negative and less than or equal to the size of the collection.";
+                return
+                    "Index was out of range. Must be non-negative and less than or equal to the size of the collection.";
 
             case ER.ArgumentOutOfRange_Count: return "Argument 'count' was out of the range of valid values.";
 
@@ -211,7 +213,10 @@ static class ThrowHelper
                 return "Argument 'output' was smaller than the size of the collection.";
 
             case ER.Arg_ArrayPlusOffTooSmall: return "Array plus offset too small.";
-            case ER.NotSupported_ReadOnlyCollection: return "This operation is not supported on a read-only collection.";
+
+            case ER.NotSupported_ReadOnlyCollection:
+                return "This operation is not supported on a read-only collection.";
+
             case ER.Arg_RankMultiDimNotSupported: return "Multi-dimensional arrays are not supported.";
             case ER.Arg_NonZeroLowerBound: return "Arrays with a non-zero lower bound are not supported.";
             case ER.ArgumentOutOfRange_ListInsert: return "Insertion index was out of the range of valid values.";
@@ -230,7 +235,10 @@ static class ThrowHelper
             case ER.InvalidOperation_HSCapacityOverflow: return "Set hash capacity overflow. Cannot increase size.";
             case ER.NotSupported_StringComparison: return "String comparison not supported.";
             case ER.ConcurrentCollection_SyncRoot_NotSupported: return "SyncRoot not supported.";
-            case ER.ArgumentException_OtherNotArrayOfCorrectLength: return "The other array is not of the correct length.";
+
+            case ER.ArgumentException_OtherNotArrayOfCorrectLength:
+                return "The other array is not of the correct length.";
+
             case ER.ArgumentOutOfRange_EndIndexStartIndex: return "The end index does not come after the start index.";
             case ER.ArgumentOutOfRange_HugeArrayNotSupported: return "Huge arrays are not supported.";
             case ER.Argument_AddingDuplicate: return "Duplicate item added.";
@@ -238,7 +246,10 @@ static class ThrowHelper
             case ER.Arg_LowerBoundsMustMatch: return "Array lower bounds must match.";
             case ER.Arg_MustBeType: return "Argument must be of type: ";
             case ER.InvalidOperation_IComparerFailed: return "IComparer failed.";
-            case ER.NotSupported_FixedSizeCollection: return "This operation is not suppored on a fixed-size collection.";
+
+            case ER.NotSupported_FixedSizeCollection:
+                return "This operation is not suppored on a fixed-size collection.";
+
             case ER.Rank_MultiDimNotSupported: return "Multi-dimensional arrays are not supported.";
             case ER.Arg_TypeNotSupported: return "Type not supported.";
             case ER.Serialization_Pooled_MissingData: return "Serialized PooledDictionary missing data.";

@@ -2,7 +2,7 @@
 
 using StorybrewCommon.Storyboarding.CommandValues;
 
-sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
     public bool Active;
     public float TriggerTime;
@@ -15,7 +15,7 @@ sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue
             return false;
         }
 
-        result = CommandAtTime(time - TriggerTime).AsResult(TriggerTime);
+        result = new(CommandAtTime(time - TriggerTime), TriggerTime);
         return true;
     }
 }

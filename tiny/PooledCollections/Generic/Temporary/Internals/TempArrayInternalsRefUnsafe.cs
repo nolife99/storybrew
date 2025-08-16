@@ -30,7 +30,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref source._ref, source._length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, int start) => AsSpan(in source)[start..];
+    public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, int start)
+        => AsSpan(in source)[start..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, int start, int length)
@@ -41,7 +42,8 @@ partial class CollectionInternals
         => AsSpan(in source)[startIndex..];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, Range range) => AsSpan(in source)[range];
+    public static Span<T> AsSpan<T>(this scoped ref readonly TempArray<T> source, Range range)
+        => AsSpan(in source)[range];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<T> AsMemory<T>(this scoped ref readonly TempArray<T> source)

@@ -12,6 +12,7 @@ using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
 using ManagedBass;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -69,6 +70,8 @@ public static class Program
         Updater.NotifyEditorRun();
         Native.MainThreadScheduler = Schedule;
 
+        var audioCreateTask = Task.Run(createAudioManager);
+
         var displayDevice = Monitors.GetPrimaryMonitor();
         using (var window = createWindow(displayDevice))
         {
@@ -80,11 +83,8 @@ public static class Program
 
                 Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
 
-                using (AudioManager = createAudioManager())
+                using (AudioManager = audioCreateTask.Result)
                 {
-                    var frameRate = TimeSpan.TicksPerSecond /
-                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate);
-
                     window.Move += _ => refresh();
                     window.Resize += _ => refresh();
 
@@ -92,7 +92,8 @@ public static class Program
                         editor,
                         TimeSpan.TicksPerSecond /
                         (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
-                        frameRate);
+                        TimeSpan.TicksPerSecond /
+                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
 
                     void refresh() => Bass.UpdateThreads = 1;
                 }
@@ -119,10 +120,13 @@ public static class Program
             CurrentMonitor = displayDevice.Handle,
             Title = Name,
             StartVisible = false,
+            StartFocused = false,
             DepthBits = 0,
-            StencilBits = 0
+            StencilBits = 0,
+            AutoLoadBindings = false
         });
 
+        GL.LoadBindings(new GLFWBindingsContext());
         Native.InitializeHandle(window);
 
         if (Vector.IsHardwareAccelerated) Trace.WriteLine($"SIMD Vector Alignment: {Vector<byte>.Count} bytes");

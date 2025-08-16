@@ -192,7 +192,8 @@ public static class TempArray
     public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array) => new(array, array.Length, ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool) => new(array, array.Length, pool);
+    public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool)
+        => new(array, array.Length, pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length)

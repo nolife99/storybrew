@@ -195,7 +195,8 @@ public sealed class PooledQueue<T> : IReadOnlyCollection<T>
 
         if (_head < _tail) return Array.IndexOf(_array, item, _head, _size) >= 0;
 
-        return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 || Array.IndexOf(_array, item, 0, _tail) >= 0;
+        return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
+            Array.IndexOf(_array, item, 0, _tail) >= 0;
     }
 
     public T[] ToArray()
@@ -348,7 +349,8 @@ public sealed class PooledQueue<T> : IReadOnlyCollection<T>
 
         public bool MoveNext()
         {
-            if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _q._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             if (_index == -2) return false;
 
@@ -390,7 +392,8 @@ public sealed class PooledQueue<T> : IReadOnlyCollection<T>
 
         void IEnumerator.Reset()
         {
-            if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _q._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = -1;
             _currentElement = default;

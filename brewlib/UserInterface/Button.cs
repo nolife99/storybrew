@@ -16,7 +16,10 @@ public class Button : Widget, Field
 
     public Button(WidgetManager manager) : base(manager)
     {
-        Add(label = new(manager) { AnchorFrom = BoxAlignment.Centre, AnchorTo = BoxAlignment.Centre, Hoverable = false });
+        Add(label = new(manager)
+        {
+            AnchorFrom = BoxAlignment.Centre, AnchorTo = BoxAlignment.Centre, Hoverable = false
+        });
 
         clickBehavior = new(this);
         clickBehavior.OnStateChanged += (_, _) => RefreshStyle();
@@ -25,9 +28,8 @@ public class Button : Widget, Field
 
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
 
-    public override Vector2 PreferredSize => new(
-        label.PreferredSize.X + padding.Horizontal,
-        label.PreferredSize.Y + padding.Vertical);
+    public override Vector2 PreferredSize
+        => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
 
     public ReadOnlySpan<char> Text { get => label.Text; set => label.Text = value; }
 
@@ -72,10 +74,10 @@ public class Button : Widget, Field
 
     public bool Disabled { get => clickBehavior.Disabled; set => clickBehavior.Disabled = value; }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(
-        clickBehavior.Disabled ? "disabled" : null,
-        clickBehavior.Hovered ? "hover" : null,
-        clickBehavior.Pressed || isChecked ? "pressed" : null));
+    protected override WidgetStyle Style
+        => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(clickBehavior.Disabled ? "disabled" : null,
+            clickBehavior.Hovered ? "hover" : null,
+            clickBehavior.Pressed || isChecked ? "pressed" : null));
 
     public object FieldValue { get => Checked; set => Checked = (bool)value; }
 

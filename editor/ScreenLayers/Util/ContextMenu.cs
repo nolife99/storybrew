@@ -89,7 +89,11 @@ public class ContextMenu<T> : UiScreenLayer
             if (!searchTextbox.Value.IsEmpty &&
                 !option.Name.AsSpan().Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
 
-            Button button = new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre };
+            Button button = new(WidgetManager)
+            {
+                StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre
+            };
+
             optionsLayout.Add(button);
 
             var result = option.Value;

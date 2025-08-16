@@ -271,7 +271,8 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
             ref var entry = ref _entries[_freeEntryIndex];
             var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
+            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex)
+                _buckets[movingBucketIndex] = indexToValueToRemove + 1;
 
             var next = entry.Next;
             var previous = entry.Previous;
@@ -319,7 +320,8 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item)
+        => Add(item.Key, item.Value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Contains(ArrayKeyValuePair<TKey, TValue> item)
@@ -331,15 +333,15 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (dest.Length - destIndex < Count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < Count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var keys = _entries.AsSpan();
         var values = _values ?? s_emptyValues;
 
         if (keys.Length == 0 || values.Length == 0) return;
 
-        for (int i = 0, len = Count; i < len; i++)
-            dest[destIndex++] = new ArrayKeyValuePair<TKey, TValue>(keys[i].Key, values, i);
+        for (int i = 0, len = Count; i < len; i++) dest[destIndex++] = new(keys[i].Key, values, i);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -408,7 +410,8 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var keys = _entries;
         var values = _values;
@@ -417,7 +420,7 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
 
         for (int i = 0, len = Count; i < len && count > 0; i++)
         {
-            dest[destIndex++] = new KeyValuePair<TKey, TValue>(keys[i].Key, values[i]);
+            dest[destIndex++] = new(keys[i].Key, values[i]);
             count--;
         }
     }
@@ -455,7 +458,7 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
         {
             ResizeIfNeeded();
 
-            _entries[_freeEntryIndex] = new ArrayEntry<TKey>(key, hash);
+            _entries[_freeEntryIndex] = new(key, hash);
         }
         else
         {
@@ -498,7 +501,7 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
 
             _collisions++;
 
-            _entries[_freeEntryIndex] = new ArrayEntry<TKey>(key, hash, valueIndex);
+            _entries[_freeEntryIndex] = new(key, hash, valueIndex);
 
             _entries[valueIndex].Next = _freeEntryIndex;
         }
@@ -621,7 +624,9 @@ public sealed class ArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValu
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
     {
         if (hashcode >= N)
-            return Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N;
+            return Environment.Is64BitProcess ?
+                HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) :
+                hashcode % N;
 
         return hashcode;
     }

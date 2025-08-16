@@ -235,7 +235,8 @@ public class Widget(WidgetManager manager) : IDisposable
 
         if (widget == this) throw new InvalidOperationException("Cannot parent a widget to itself");
 
-        if (widget.HasDescendant(this)) throw new InvalidOperationException("Cannot recursively parent a widget to itself");
+        if (widget.HasDescendant(this))
+            throw new InvalidOperationException("Cannot recursively parent a widget to itself");
 
         widget.Parent?.Remove(widget);
         children.Add(widget);
@@ -371,8 +372,8 @@ public class Widget(WidgetManager manager) : IDisposable
         if (anchoringIteration < iteration)
         {
             anchoringIteration = iteration;
-            var actualAnchorTarget =
-                anchorTarget is not null && (anchorTarget.Parent is not null || anchorTarget == manager.Root) ?
+            var actualAnchorTarget = anchorTarget is not null &&
+                (anchorTarget.Parent is not null || anchorTarget == manager.Root) ?
                     anchorTarget :
                     Parent;
 

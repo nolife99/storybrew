@@ -35,14 +35,16 @@ public record OsuSpinner : OsuHitObject
 
             var objectSampleSet = (SampleSet)int.Parse(special[specialValues[0]], CultureInfo.InvariantCulture);
 
-            var objectAdditionsSampleSet = (SampleSet)int.Parse(special[specialValues[1]], CultureInfo.InvariantCulture);
+            var objectAdditionsSampleSet = (SampleSet)int.Parse(special[specialValues[1]],
+                CultureInfo.InvariantCulture);
 
             var objectCustomSampleSet = 0;
             if (specialValues.Count > 2)
                 objectCustomSampleSet = int.Parse(special[specialValues[2]], CultureInfo.InvariantCulture);
 
             var objectVolume = 0f;
-            if (specialValues.Count > 3) objectVolume = int.Parse(special[specialValues[3]], CultureInfo.InvariantCulture);
+            if (specialValues.Count > 3)
+                objectVolume = int.Parse(special[specialValues[3]], CultureInfo.InvariantCulture);
 
             if (specialValues.Count > 4) samplePath = special[specialValues[4]].ToString();
 

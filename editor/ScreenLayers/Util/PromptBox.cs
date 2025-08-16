@@ -36,7 +36,9 @@ public class PromptBox(scoped ReadOnlySpan<char> title,
             [
                 descriptionLabel = new(WidgetManager)
                 {
-                    StyleName = "small", Text = description.AsReadOnlySpan(), AnchorFrom = BoxAlignment.Centre
+                    StyleName = "small",
+                    Text = description.AsReadOnlySpan(),
+                    AnchorFrom = BoxAlignment.Centre
                 },
                 textbox = new(WidgetManager)
                 {

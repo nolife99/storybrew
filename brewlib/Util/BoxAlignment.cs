@@ -2,7 +2,8 @@
 
 using System;
 
-[Flags] public enum BoxAlignment
+[Flags]
+public enum BoxAlignment
 {
     Centre = 0,
     Top = 1,

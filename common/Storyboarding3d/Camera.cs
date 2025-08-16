@@ -29,7 +29,8 @@ public readonly record struct CameraState(Matrix4x4 ViewProjection,
             2 *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
-        return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
+        return new(screenPosition.X -
+            (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
             screenPosition.Y,
             transformed.Z / transformed.W,
             transformed.W);
@@ -48,37 +49,37 @@ public readonly record struct CameraState(Matrix4x4 ViewProjection,
 public class PerspectiveCamera : Camera
 {
     ///<summary> Represents the distance that distant objects disappear at. </summary>
-    public readonly KeyframedValue<float> FarClip = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> FarClip = new(float.Lerp);
 
     ///<summary> Represents the distance that distant objects start fading at. </summary>
-    public readonly KeyframedValue<float> FarFade = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> FarFade = new(float.Lerp);
 
     ///<summary> Represents the camera's horizontal field-of-view. </summary>
-    public readonly KeyframedValue<float> HorizontalFov = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> HorizontalFov = new(float.Lerp);
 
     ///<summary> Represents the distance that close objects disappear at. </summary>
-    public readonly KeyframedValue<float> NearClip = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> NearClip = new(float.Lerp);
 
     ///<summary> Represents the distance that close objects start fading at. </summary>
-    public readonly KeyframedValue<float> NearFade = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> NearFade = new(float.Lerp);
 
     ///<summary> Represents the camera's X-position in the 3D world. </summary>
-    public readonly KeyframedValue<float> PositionX = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> PositionX = new(float.Lerp);
 
     ///<summary> Represents the camera's Y-position in the 3D world. </summary>
-    public readonly KeyframedValue<float> PositionY = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> PositionY = new(float.Lerp);
 
     ///<summary> Represents the camera's Z-position in the 3D world. </summary>
-    public readonly KeyframedValue<float> PositionZ = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> PositionZ = new(float.Lerp);
 
     ///<summary> Represents the 3D-position the camera is facing towards. </summary>
-    public readonly KeyframedValue<Vector3> TargetPosition = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> TargetPosition = new(Vector3.Lerp);
 
     ///<summary> Represents the camera's up vector. </summary>
-    public readonly KeyframedValue<Vector3> Up = new(InterpolatingFunctions.Vector3, new(0, 1, 0));
+    public readonly KeyframedValue<Vector3> Up = new(Vector3.Lerp, new(0, 1, 0));
 
     ///<summary> Represents the camera's vertical field-of-view. </summary>
-    public readonly KeyframedValue<float> VerticalFov = new(InterpolatingFunctions.Float);
+    public readonly KeyframedValue<float> VerticalFov = new(float.Lerp);
 
     /// <summary> Returns the camera's state and information at <paramref name="time"/>. </summary>
     public override CameraState StateAt(float time)
@@ -97,9 +98,8 @@ public class PerspectiveCamera : Camera
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 
         return new(
-            Matrix4x4.Multiply(
-                Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length())),
-                Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip)),
+            Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length())) *
+            Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip),
             focusDistance,
             ResolutionScale,
             nearClip,

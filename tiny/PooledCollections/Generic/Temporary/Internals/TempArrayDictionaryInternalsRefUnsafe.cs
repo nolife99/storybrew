@@ -43,7 +43,8 @@ public readonly struct TempArrayDictionaryInternalsRefUnsafe<TKey, TValue>
 partial class CollectionInternals
 {
     public static TempArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
@@ -60,7 +61,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<TValue> ValuesAsSpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+    public static Span<TValue>
+        ValuesAsSpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,11 +76,13 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<ArrayEntry<TKey>> KeysAsMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._entries, 0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Memory<TValue> ValuesAsMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._values, 0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(source._values, 0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,

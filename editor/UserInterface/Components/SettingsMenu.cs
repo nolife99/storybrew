@@ -89,7 +89,8 @@ public class SettingsMenu : Widget
                             AnchorTo = BoxAlignment.Centre,
                             Checkable = true,
                             Checked = project.ShowHitObjects,
-                            Tooltip = "Displays hit objects of the current beatmap on\nthe timeline."
+                            Tooltip =
+                                "Displays hit objects of the current beatmap on\nthe timeline."
                         }
                     ]
                 }
@@ -98,7 +99,8 @@ public class SettingsMenu : Widget
 
         helpButton.OnClick += (_, _) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
 
-        referencedAssemblyButton.OnClick += (_, _) => Manager.ScreenLayerManager.Add(new ReferencedAssemblyConfig(project));
+        referencedAssemblyButton.OnClick +=
+            (_, _) => Manager.ScreenLayerManager.Add(new ReferencedAssemblyConfig(project));
 
         dimSlider.OnValueChanged += (_, _) =>
         {

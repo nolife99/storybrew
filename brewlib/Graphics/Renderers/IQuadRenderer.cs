@@ -11,7 +11,8 @@ public interface IQuadRenderer : IRenderer
     internal void Draw(scoped ref readonly QuadPrimitive quad, Texture2dRegion texture);
 }
 
-[StructLayout(LayoutKind.Sequential)] struct QuadPrimitive
+[StructLayout(LayoutKind.Sequential)]
+struct QuadPrimitive
 {
     public Vector2 vec1;
     public Half u1, v1;

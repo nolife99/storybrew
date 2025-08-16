@@ -186,9 +186,10 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         }
     }
 
-    string getRelativePath(string assembly) => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ?
-        assembly :
-        Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
+    string getRelativePath(string assembly)
+        => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ?
+            assembly :
+            Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
 
     static bool isValidAssembly(string assembly)
     {
@@ -242,32 +243,33 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         refreshAssemblies();
     }
 
-    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
-        Path.GetDirectoryName(assembly),
-        fileFilter,
-        path =>
-        {
-            if (!isValidAssembly(path))
+    void changeReferencedAssembly(string assembly)
+        => WidgetManager.ScreenLayerManager.OpenFilePicker("",
+            Path.GetDirectoryName(assembly),
+            fileFilter,
+            path =>
             {
-                WidgetManager.ScreenLayerManager.ShowMessage(
-                    "Invalid assembly file. Are you sure that the file is intended for .NET?");
+                if (!isValidAssembly(path))
+                {
+                    WidgetManager.ScreenLayerManager.ShowMessage(
+                        "Invalid assembly file. Are you sure that the file is intended for .NET?");
 
-                return;
-            }
+                    return;
+                }
 
-            var assem = assembly;
-            if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assem))) return;
+                var assem = assembly;
+                if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assem))) return;
 
-            var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
-                path :
-                copyReferencedAssembly(path);
+                var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
+                    path :
+                    copyReferencedAssembly(path);
 
-            if (path == assembly) return;
+                if (path == assembly) return;
 
-            selectedAssemblies.Remove(assembly);
-            selectedAssemblies.Add(newPath);
-            refreshAssemblies();
-        });
+                selectedAssemblies.Remove(assembly);
+                selectedAssemblies.Add(newPath);
+                refreshAssemblies();
+            });
 
     protected override void Dispose(bool disposing)
     {

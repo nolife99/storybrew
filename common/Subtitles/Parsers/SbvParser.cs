@@ -17,14 +17,15 @@ public record SbvParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream) => new(parseBlocks(stream)
-        .AsValueEnumerable()
-        .Select(block => block.Split('\n'))
-        .Select(blockLines => (blockLines, blockLines[0].Split(',')))
-        .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0]),
-            SubtitleParser.ParseTimestamp(t.Item2[1]),
-            string.Join('\n', t.blockLines, 1, t.blockLines.Length - 1)))
-        .ToArray());
+    public SubtitleSet Parse(Stream stream)
+        => new(parseBlocks(stream)
+            .AsValueEnumerable()
+            .Select(block => block.Split('\n'))
+            .Select(blockLines => (blockLines, blockLines[0].Split(',')))
+            .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0]),
+                SubtitleParser.ParseTimestamp(t.Item2[1]),
+                string.Join('\n', t.blockLines, 1, t.blockLines.Length - 1)))
+            .ToArray());
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

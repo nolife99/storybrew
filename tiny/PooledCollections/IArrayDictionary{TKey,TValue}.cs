@@ -2,8 +2,8 @@
 
 using System.Collections.Generic;
 
-public interface IArrayDictionary<TKey, TValue>
-    : IDictionary<TKey, TValue>, IReadOnlyArrayDictionary<TKey, TValue>, ICollection<ArrayKeyValuePair<TKey, TValue>>
+public interface IArrayDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyArrayDictionary<TKey, TValue>,
+    ICollection<ArrayKeyValuePair<TKey, TValue>>
 {
     void EnsureCapacity(int capacity);
 

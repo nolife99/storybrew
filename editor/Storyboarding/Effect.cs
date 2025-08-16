@@ -121,11 +121,8 @@ public abstract class Effect : IDisposable
     {
         if (Project.Disposed || willRefresh) return;
 
-        if (Status is EffectStatus.Ready
-            or EffectStatus.UpdateCanceled
-            or EffectStatus.CompilationFailed
-            or EffectStatus.LoadingFailed
-            or EffectStatus.ExecutionFailed) Project.QueueEffectUpdate(this);
+        if (Status is EffectStatus.Ready or EffectStatus.UpdateCanceled or EffectStatus.CompilationFailed
+            or EffectStatus.LoadingFailed or EffectStatus.ExecutionFailed) Project.QueueEffectUpdate(this);
         else QueueStatusCheckForUpdate();
     }
 
@@ -138,10 +135,8 @@ public abstract class Effect : IDisposable
 
         void OnStatusChangedForQueuedUpdate(Effect sender)
         {
-            if (sender.Status is not (EffectStatus.Ready
-                or EffectStatus.UpdateCanceled
-                or EffectStatus.CompilationFailed
-                or EffectStatus.LoadingFailed
+            if (sender.Status is not (EffectStatus.Ready or EffectStatus.UpdateCanceled
+                or EffectStatus.CompilationFailed or EffectStatus.LoadingFailed
                 or EffectStatus.ExecutionFailed)) return;
 
             sender.Changed -= OnStatusChangedForQueuedUpdate;

@@ -207,7 +207,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         if (defaultStyle is null)
                         {
                             if (styleName == "default") defaultStyle = style;
-                            else throw new InvalidDataException($"The default {styleTypeName} style must be defined first");
+                            else
+                                throw new InvalidDataException(
+                                    $"The default {styleTypeName} style must be defined first");
                         }
 
                         styles.Add(styleName, style);
@@ -311,8 +313,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         return null;
     }
 
-    static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers =
-        new PooledDictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
+    static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new
+        PooledDictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
         {
             [typeof(string)] = (data, _, _) => data.Value<string>(),
             [typeof(float)] = (data, _, _) => data.Value<float>(),
@@ -324,7 +326,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             [typeof(Vector2)] = (data, constants, _) =>
             {
                 if (data is TinyArray tinyArray)
-                    return new Vector2(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
+                    return new Vector2(resolve<float>(tinyArray[0], constants),
+                        resolve<float>(tinyArray[1], constants));
 
                 throw new InvalidDataException($"Incorrect vector2 format: {data}");
             },
@@ -342,11 +345,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => Color.FromScaledVector(new Vector4(resolve<float>(tinyArray[0], constants),
+                        3 => Color.FromScaledVector(new(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             1)),
-                        _ => Color.FromScaledVector(new Vector4(resolve<float>(tinyArray[0], constants),
+                        _ => Color.FromScaledVector(new(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants)))
@@ -359,10 +362,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        1 => new FourSide(resolve<float>(tinyArray[0], constants)),
-                        2 => new FourSide(resolve<float>(tinyArray[0], constants),
-                            resolve<float>(tinyArray[1], constants)),
-                        3 => new FourSide(resolve<float>(tinyArray[0], constants),
+                        1 => new(resolve<float>(tinyArray[0], constants)),
+                        2 => new(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
+                        3 => new(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
                         _ => new FourSide(resolve<float>(tinyArray[0], constants),

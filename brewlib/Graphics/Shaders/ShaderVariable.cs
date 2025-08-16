@@ -31,7 +31,8 @@ public class ShaderVariable
         }
     }
 
-    public void Assign(Func<string> expression, string components = null) => Context.Assign(this, expression, components);
+    public void Assign(Func<string> expression, string components = null)
+        => Context.Assign(this, expression, components);
 
     protected void RecordDependency() => Context.RecordDependency(this);
 

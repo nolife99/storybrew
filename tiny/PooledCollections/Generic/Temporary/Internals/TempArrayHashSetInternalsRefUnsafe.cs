@@ -37,7 +37,8 @@ public readonly struct TempArrayHashSetInternalsRefUnsafe<T>
 
 partial class CollectionInternals
 {
-    public static TempArrayHashSetInternalsRefUnsafe<T> GetUnsafeRef<T>(this scoped ref readonly TempArrayHashSet<T> source)
+    public static TempArrayHashSetInternalsRefUnsafe<T> GetUnsafeRef<T>(
+        this scoped ref readonly TempArrayHashSet<T> source)
         => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

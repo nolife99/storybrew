@@ -116,9 +116,10 @@ public class Setting<T>(T defaultValue) : Setting
         handler(this, EventArgs.Empty);
     }
 
-    public override string ToString() => typeof(T).GetInterface(nameof(IConvertible)) is not null ?
-        Convert.ToString(value, CultureInfo.InvariantCulture) :
-        value.ToString();
+    public override string ToString()
+        => typeof(T).GetInterface(nameof(IConvertible)) is not null ?
+            Convert.ToString(value, CultureInfo.InvariantCulture) :
+            value.ToString();
 
     public static implicit operator T(Setting<T> setting) => setting.value;
 }

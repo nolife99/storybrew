@@ -345,15 +345,20 @@ public sealed partial class Project : IDisposable
                 case EffectStatus.Loading:
                 case EffectStatus.Configuring:
                 case EffectStatus.Updating:
-                case EffectStatus.ReloadPending: isUpdating = true; break;
+                case EffectStatus.ReloadPending:
+                    isUpdating = true;
+                    break;
 
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
-                case EffectStatus.ExecutionFailed: hasError = true; break;
+                case EffectStatus.ExecutionFailed:
+                    hasError = true;
+                    break;
 
                 case EffectStatus.Initializing:
                 case EffectStatus.Ready:
-                case EffectStatus.UpdateCanceled: break;
+                case EffectStatus.UpdateCanceled:
+                    break;
             }
 
         EffectsStatus = hasError ? EffectStatus.ExecutionFailed :
@@ -464,7 +469,8 @@ public sealed partial class Project : IDisposable
         switch (Path.GetExtension(e.Name.AsSpan()))
         {
             case ".png" or ".jpg" or ".jpeg" when isReloadingTextures:
-            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio: return;
+            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio:
+                return;
 
             case ".png" or ".jpg" or ".jpeg": isReloadingTextures = true; break;
             case ".wav" or ".mp3" or ".ogg": isReloadingAudio = true; break;
@@ -490,7 +496,10 @@ public sealed partial class Project : IDisposable
         var assetsFolderPath = Path.GetFullPath(ProjectAssetFolderPath);
         if (!Directory.Exists(assetsFolderPath)) Directory.CreateDirectory(assetsFolderPath);
 
-        assetWatcher = new() { Path = assetsFolderPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size };
+        assetWatcher = new()
+        {
+            Path = assetsFolderPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size
+        };
 
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
@@ -508,7 +517,8 @@ public sealed partial class Project : IDisposable
         switch (Path.GetExtension(e.Name.AsSpan()))
         {
             case ".png" or ".jpg" or ".jpeg" when isReloadingTextures:
-            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio: return;
+            case ".wav" or ".mp3" or ".ogg" when isReloadingAudio:
+                return;
 
             case ".png" or ".jpg" or ".jpeg": isReloadingTextures = true; break;
             case ".wav" or ".mp3" or ".ogg": isReloadingAudio = true; break;
@@ -529,18 +539,15 @@ public sealed partial class Project : IDisposable
         Environment.Version.ToString(),
         "ref"));
 
-    public static readonly string RuntimeRefDirectory =
-        string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref");
+    public static readonly string RuntimeRefDirectory = string.Format(CultureInfo.InvariantCulture,
+        runtimePath,
+        "Microsoft.NETCore.App.Ref");
 
     public static readonly string[] DefaultAssemblies =
     [
-        typeof(Font).Assembly.Location,
-        typeof(IPathCollection).Assembly.Location,
-        typeof(Rgba32).Assembly.Location,
-        typeof(MathHelper).Assembly.Location,
-        typeof(Script).Assembly.Location,
-        typeof(ValueArray<>).Assembly.Location,
-        typeof(Pool<>).Assembly.Location,
+        typeof(Font).Assembly.Location, typeof(IPathCollection).Assembly.Location, typeof(Rgba32).Assembly.Location,
+        typeof(MathHelper).Assembly.Location, typeof(Script).Assembly.Location,
+        typeof(ValueArray<>).Assembly.Location, typeof(Pool<>).Assembly.Location,
         .. Directory.EnumerateFiles(RuntimeRefDirectory, "*.dll", SearchOption.AllDirectories)
     ];
 
@@ -555,8 +562,9 @@ public sealed partial class Project : IDisposable
             importedAssemblies.Clear();
 
             using var distinctAss = value.AsValueEnumerable().Distinct().ToArrayPool();
-            using var referencedAss =
-                DefaultAssemblies.AsValueEnumerable().Union(distinctAss.AsValueEnumerable()).ToArrayPool();
+            using var referencedAss = DefaultAssemblies.AsValueEnumerable()
+                .Union(distinctAss.AsValueEnumerable())
+                .ToArrayPool();
 
             scriptManager.ReferencedAssemblies = referencedAss.Span;
             importedAssemblies.AddRange(distinctAss.Span);
@@ -607,7 +615,9 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        BinaryWriter w = new(new BrotliStream(File.Create(path), CompressionLevel.SmallestSize, false), Encoding, false);
+        BinaryWriter w = new(new BrotliStream(File.Create(path), CompressionLevel.SmallestSize, false),
+            Encoding,
+            false);
 
         w.Write(Version);
 
@@ -688,14 +698,16 @@ public sealed partial class Project : IDisposable
 
             var read = r.Read(effectBaseName);
             if (read != effectBaseName.Length)
-                throw new InvalidDataException($"Corrupted project: expected {effectBaseName.Length} characters got {read}");
+                throw new InvalidDataException(
+                    $"Corrupted project: expected {effectBaseName.Length} characters got {read}");
 
             var effect = AddScriptedEffect(effectBaseName, r.ReadBoolean());
             var effectName = charBuffer[..r.Read7BitEncodedInt()];
 
             read = r.Read(effectName);
             if (read != effectName.Length)
-                throw new InvalidDataException($"Corrupted project: expected {effectName.Length} characters got {read}");
+                throw new InvalidDataException(
+                    $"Corrupted project: expected {effectName.Length} characters got {read}");
 
             using (var temp = TempArray.Create<char>(effectName)) effect.Name = temp.AsReadOnlySpan();
 
@@ -736,7 +748,10 @@ public sealed partial class Project : IDisposable
             });
         }
 
-        using var imported = ValueEnumerable.Range(0, r.ReadInt32()).Select(_ => r.ReadString()).Distinct().ToArrayPool();
+        using var imported = ValueEnumerable.Range(0, r.ReadInt32())
+            .Select(_ => r.ReadString())
+            .Distinct()
+            .ToArrayPool();
 
         ImportedAssemblies = imported.Span;
     }
@@ -1027,7 +1042,8 @@ public sealed partial class Project : IDisposable
                             inStoryboard = true;
                         }
                     }
-                    else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal)) inStoryboard = false;
+                    else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal))
+                        inStoryboard = false;
 
                     if (inStoryboard) continue;
                 }

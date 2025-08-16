@@ -128,7 +128,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         throw;
 
                     case TypeLoadException:
-                        details = "Make sure the script's class name is the same as the file name.\n"; break;
+                        details = "Make sure the script's class name is the same as the file name.\n";
+                        break;
                 }
 
                 throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");

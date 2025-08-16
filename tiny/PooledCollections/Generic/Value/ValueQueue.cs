@@ -205,7 +205,8 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
         if (_head < _tail) return Array.IndexOf(_array, item, _head, _size) >= 0;
 
         // We've wrapped around. Check both partitions, the least recently enqueued first.
-        return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 || Array.IndexOf(_array, item, 0, _tail) >= 0;
+        return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
+            Array.IndexOf(_array, item, 0, _tail) >= 0;
     }
 
     // Iterates over the objects in the queue, returning an array of the
@@ -354,7 +355,8 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
 
         public bool MoveNext()
         {
-            if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _q._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             if (_index == -2) return false;
 
@@ -410,7 +412,8 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
 
         void IEnumerator.Reset()
         {
-            if (_version != _q._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _q._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = -1;
             _currentElement = default;

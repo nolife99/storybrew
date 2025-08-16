@@ -5,10 +5,8 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 
-public sealed class TextureAtlas2d(int width,
-    int height,
-    TextureOptions textureOptions = null,
-    int padding = 0) : IDisposable
+public sealed class TextureAtlas2d(int width, int height, TextureOptions textureOptions = null, int padding = 0)
+    : IDisposable
 {
     readonly PooledList<Rectangle> freeRegions = [new(0, 0, width, height)];
     readonly Texture2d texture = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>(), width, height, textureOptions);
@@ -103,7 +101,8 @@ public sealed class TextureAtlas2d(int width,
         wasMerged = true;
     }
 
-    class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent) : Texture2dRegion(texture, bounds)
+    class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent)
+        : Texture2dRegion(texture, bounds)
     {
         protected override void Dispose(bool disposing)
         {

@@ -39,7 +39,7 @@ class Tetris : StoryboardObjectGenerator
         cells = new Cell[GridWidth, GridHeight];
         for (var x = 0; x < GridWidth; ++x)
         for (var y = 0; y < GridHeight; ++y)
-            cells[x, y] = new Cell { X = x, Y = y };
+            cells[x, y] = new() { X = x, Y = y };
 
         for (float time = StartTime; time < EndTime; time += timestep)
         {
@@ -200,9 +200,9 @@ class Tetris : StoryboardObjectGenerator
             transform(targetPosition) + ShadowOffset);
     }
 
-    Vector2 transform(Vector2 position) => Vector2.Transform(
-        new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
-        Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
+    Vector2 transform(Vector2 position)
+        => Vector2.Transform(new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
+            Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
 
     void shuffle(Span<int> array)
     {

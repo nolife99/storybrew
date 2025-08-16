@@ -50,14 +50,17 @@ partial class CollectionInternals
         => new(source._entries, 0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(this scoped ref readonly TempHashSet<T> source, out Entry<T>[] entries, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly TempHashSet<T> source,
+        out Entry<T>[] entries,
+        out int count)
     {
         entries = source._entries;
         count = source._count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref T GetValueRefOrNullRef<T>(this scoped ref readonly TempHashSet<T> set, T equalValue) where T : notnull
+    public static ref T GetValueRefOrNullRef<T>(this scoped ref readonly TempHashSet<T> set, T equalValue)
+        where T : notnull
         => ref set.FindValue(equalValue);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

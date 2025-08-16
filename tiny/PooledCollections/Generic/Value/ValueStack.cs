@@ -351,7 +351,9 @@ public struct ValueStack<T> : IReadOnlyCollection<T>, IDisposable
         public bool MoveNext()
         {
             bool retval;
-            if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _stack._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
             if (_index == -2)
             {
                 _index = _stack._size - 1;
@@ -390,7 +392,9 @@ public struct ValueStack<T> : IReadOnlyCollection<T>, IDisposable
 
         void IEnumerator.Reset()
         {
-            if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _stack._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
             _index = -2;
             _currentElement = default;
         }

@@ -161,7 +161,12 @@ public class ScrollArea : Widget
         scrollIndicatorLeft.Displayed = hovered && scrollsHorizontally && scrollContainer.Offset.X < 0;
         scrollIndicatorRight.Displayed = hovered && scrollsHorizontally && scrollContainer.Offset.X > -ScrollableX;
 
-        scrollIndicatorBottom.Offset = scrollIndicatorRight.Displayed ? new(0, -scrollIndicatorRight.Height) : Vector2.Zero;
-        scrollIndicatorRight.Offset = scrollIndicatorBottom.Displayed ? new(-scrollIndicatorBottom.Width, 0) : Vector2.Zero;
+        scrollIndicatorBottom.Offset = scrollIndicatorRight.Displayed ?
+            new(0, -scrollIndicatorRight.Height) :
+            Vector2.Zero;
+
+        scrollIndicatorRight.Offset = scrollIndicatorBottom.Displayed ?
+            new(-scrollIndicatorBottom.Width, 0) :
+            Vector2.Zero;
     }
 }

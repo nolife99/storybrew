@@ -5,11 +5,18 @@ using System.Runtime.CompilerServices;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-[InterpolatedStringHandler] public ref struct PoolingInterpolatedStringHandler(int literalLength,
+[InterpolatedStringHandler]
+public ref struct PoolingInterpolatedStringHandler(int literalLength,
     int formattedCount,
     IFormatProvider provider = null)
 {
     internal TempList<char> buffer = TempList.Create<char>(8 * formattedCount + literalLength);
+
+    public readonly ReadOnlySpan<char> Result
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => buffer.AsReadOnlySpan();
+    }
 
     public void AppendLiteral(string value) => AppendFormatted(value.AsSpan());
 
@@ -78,16 +85,20 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
                     destBuf = new(array, count, bufferSize);
                 }
 
-            case IFormattable: AppendFormatted(((IFormattable)value).ToString(format, provider).AsSpan(), alignment); break;
+            case IFormattable:
+                AppendFormatted(((IFormattable)value).ToString(format, provider).AsSpan(), alignment);
+                break;
 
             case not null: AppendFormatted(value.ToString().AsSpan(), alignment); break;
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "TryFormatUnconstrained")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
     static extern bool TryFormatUnconstrained<T>(Enum c,
         T value,
         Span<char> destination,
         out int charsWritten,
         ReadOnlySpan<char> format = default);
+
+    public void Dispose() => buffer.Dispose();
 }

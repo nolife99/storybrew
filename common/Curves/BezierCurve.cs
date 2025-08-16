@@ -73,7 +73,8 @@ public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
         return output;
     }
 
-    static TempStack<ValueArray<Vector2>> bSplineToBezierInternal(scoped ReadOnlySpan<Vector2> controlPoints, ref int degree)
+    static TempStack<ValueArray<Vector2>> bSplineToBezierInternal(scoped ReadOnlySpan<Vector2> controlPoints,
+        ref int degree)
     {
         var result = TempStack.Create<ValueArray<Vector2>>();
         degree = int.Min(degree, controlPoints.Length - 1);
@@ -157,8 +158,8 @@ public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
         for (var i = 1; i < count - 1; ++i)
         {
             var index = 2 * i;
-            output.Add(
-                .25f * (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
+            output.Add(.25f *
+                (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
         }
     }
 }

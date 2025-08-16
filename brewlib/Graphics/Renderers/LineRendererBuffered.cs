@@ -20,8 +20,7 @@ public sealed class LineRendererBuffered : ILineRenderer
     const int VertexPerLine = 2;
     const string CombinedMatrixUniformName = "u_combinedMatrix";
 
-    static readonly VertexDeclaration VertexDeclaration = new(
-        VertexAttribute.CreatePosition3d(),
+    static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition3d(),
         VertexAttribute.CreateColor(true));
 
     readonly PooledList<Matrix4x4> combinedMatrices;
@@ -108,7 +107,7 @@ public sealed class LineRendererBuffered : ILineRenderer
     {
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
-            combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
+            combinedMatrices.Add(transformMatrix * camera.ProjectionView);
             primitiveStreamer.QueueRender(VertexPerLine, VertexPerLine);
         }
 

@@ -37,9 +37,10 @@ public record ControlPoint : IComparable<ControlPoint>
     public bool OmitFirstBarLine { get; private init; }
 
     ///<returns> The duration of a beat based on the BPM measure of the control point. </returns>
-    public float BeatDuration => IsInherited ?
-        throw new InvalidOperationException("Control points don't have a beat duration, use timing points") :
-        beatDurationSV;
+    public float BeatDuration
+        => IsInherited ?
+            throw new InvalidOperationException("Control points don't have a beat duration, use timing points") :
+            beatDurationSV;
 
     ///<summary> The beats per minute measure of this control point. </summary>
     public float BPM => BeatDuration == 0 ? 0 : 60000 / BeatDuration;
@@ -81,7 +82,8 @@ public record ControlPoint : IComparable<ControlPoint>
             Volume = values.Count > 5 ? int.Parse(line[values[5]], CultureInfo.InvariantCulture) : 100,
             IsInherited = values.Count > 6 && int.Parse(line[values[6]], CultureInfo.InvariantCulture) == 0,
             IsKiai = values.Count > 7 && (int.Parse(line[values[7]], CultureInfo.InvariantCulture) & 1) != 0,
-            OmitFirstBarLine = values.Count > 7 && (int.Parse(line[values[7]], CultureInfo.InvariantCulture) & 8) != 0
+            OmitFirstBarLine = values.Count > 7 &&
+                (int.Parse(line[values[7]], CultureInfo.InvariantCulture) & 8) != 0
         };
 
         return result;

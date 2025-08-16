@@ -17,9 +17,8 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     public override Vector2 MinSize => bar.MinSize;
 
-    public override Vector2 PreferredSize => new(
-        float.Max(200, bar.PreferredSize.X),
-        float.Max(preferredHeight, bar.PreferredSize.Y));
+    public override Vector2 PreferredSize
+        => new(float.Max(200, bar.PreferredSize.X), float.Max(preferredHeight, bar.PreferredSize.Y));
 
     public float Value
     {

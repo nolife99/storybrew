@@ -44,10 +44,12 @@ partial class CollectionInternals
         => new(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<Entry<TKey, TValue>> AsReadOnlySpan<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
+    public static ReadOnlySpan<Entry<TKey, TValue>>
+        AsReadOnlySpan<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
         => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<Entry<TKey, TValue>> AsReadOnlyMemory<TKey, TValue>(
-        this PooledDictionary<TKey, TValue> source) => new(source._entries, 0, source._count);
+        this PooledDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._count);
 }

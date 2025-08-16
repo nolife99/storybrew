@@ -22,14 +22,16 @@ public sealed class TextureContainerAsync : TextureContainer
     readonly TextureOptions textureOptions;
 
     readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures;
-    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+
+    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload>.AlternateLookup<ReadOnlySpan<char>>
+        texturesLookup;
 
     public TextureContainerAsync(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
     {
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
 
-        textures = new();
+        textures = new(StringComparer.OrdinalIgnoreCase);
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 

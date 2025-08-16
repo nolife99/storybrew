@@ -41,7 +41,8 @@ public readonly ref struct TempDictionaryInternalsRef<TKey, TValue>
 partial class CollectionInternals
 {
     public static TempDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
-        this scoped ref readonly TempDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly TempDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<TKey, TValue>> AsReadOnlySpan<TKey, TValue>(
@@ -50,5 +51,6 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<Entry<TKey, TValue>> AsReadOnlyMemory<TKey, TValue>(
-        this scoped ref readonly TempDictionary<TKey, TValue> source) => new(source._entries, 0, source._count);
+        this scoped ref readonly TempDictionary<TKey, TValue> source)
+        => new(source._entries, 0, source._count);
 }

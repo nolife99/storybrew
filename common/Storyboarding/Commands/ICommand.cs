@@ -15,12 +15,7 @@ public interface ICommand : IComparable<ICommand>
     /// <summary> Determines if the command is fragmentable at the given time. </summary>
     bool IsFragmentableAt(float time);
 
-    /// <summary> Writes the command to a .osb file. </summary>
-    /// <param name="writer"> The writer to write the command to. </param>
-    /// <param name="exportSettings"> The export settings to use when writing the command. </param>
-    /// <param name="transform"> The transform to apply to the command when writing it. </param>
-    /// <param name="indentation"> The number of spaces to indent the command with. </param>
-    void WriteOsb(TextWriter writer,
+    internal void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         scoped ref readonly StoryboardTransform transform,
         int indentation);

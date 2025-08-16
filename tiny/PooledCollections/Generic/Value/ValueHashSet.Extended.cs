@@ -86,7 +86,7 @@ partial struct ValueHashSet<T> : IDisposable
     /// <param name="other"> </param>
     void IntersectWithSpan(ReadOnlySpan<T> other)
     {
-        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(!_buckets.IsNullOrEmpty(), "_buckets shouldn't be null; callers should check first");
 
         // keep track of current last index; don't want to move past the end of our bit array
         // (could happen if another thread is modifying the collection)
@@ -95,7 +95,7 @@ partial struct ValueHashSet<T> : IDisposable
 
         Span<int> span = stackalloc int[StackAllocThreshold];
         var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
+            new(span.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         // mark if contains: find index of in slots array and mark corresponding element in bit array
@@ -165,12 +165,12 @@ partial struct ValueHashSet<T> : IDisposable
 
         Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
         var itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
+            new(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
         var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
+            new(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         for (int i = 0, len = other.Length; i < len; i++)
@@ -188,7 +188,8 @@ partial struct ValueHashSet<T> : IDisposable
                 // *NOTE* Even though BitHelper will check that location is in range, we want
                 // to check here. There's no point in checking items beyond originalCount
                 // because they could not have been in the original collection
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
 
         // if anything marked, remove it
@@ -275,14 +276,14 @@ partial struct ValueHashSet<T> : IDisposable
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(!_buckets.IsNullOrEmpty() && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
         Span<int> span = stackalloc int[StackAllocThreshold];
         var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
+            new(span.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         var unfoundCount = 0; // count of items in other not found in this
@@ -425,7 +426,8 @@ partial struct ValueHashSet<T> : IDisposable
         // Will the array, starting at arrayIndex, be able to hold elements? Note: not
         // checking arrayIndex >= array.Length (consistency with list of allowing
         // count of 0; subsequent check takes care of the rest)
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var src = _entries.AsSpan(0, _count);
 

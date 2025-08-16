@@ -64,8 +64,10 @@ public static class CommandSplitter
             return result;
         }
 
-        using var segmentTimes =
-            pickFragmentTimes(distinctFragTimes.Span, idealSegmentCount, sprite.StartTime, sprite.EndTime);
+        using var segmentTimes = pickFragmentTimes(distinctFragTimes.Span,
+            idealSegmentCount,
+            sprite.StartTime,
+            sprite.EndTime);
 
         segmentTimes.Insert(0, sprite.StartTime);
         segmentTimes.Add(sprite.EndTime);
@@ -78,8 +80,8 @@ public static class CommandSplitter
             var segmentSprite = sprite switch
             {
                 OsbAnimation animation when
-                    animation.LoopType == OsbLoopType.LoopOnce && i == 1 || animation.LoopType == OsbLoopType.LoopForever
-                    => createAnimation(animation.TexturePath,
+                    animation.LoopType == OsbLoopType.LoopOnce && i == 1 ||
+                    animation.LoopType == OsbLoopType.LoopForever => createAnimation(animation.TexturePath,
                         animation.FrameCount,
                         animation.FrameDelay,
                         animation.LoopType,
@@ -123,7 +125,8 @@ public static class CommandSplitter
     static void transferCommands(OsbSprite sprite, OsbSprite segmentSprite, float segmentStart, float segmentEnd)
     {
         foreach (var command in sprite.commandGroups.AsValueEnumerable()
-            .Concat(sprite.displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
+            .Concat(sprite.displayValueBuilders.AsValueEnumerable()
+                .SelectMany(c => c.Timeline.Commands.AsValueEnumerable())))
         {
             if (segmentEnd <= command.StartTime || command.EndTime <= segmentStart) continue;
 
@@ -137,59 +140,76 @@ public static class CommandSplitter
                         startTime,
                         endTime,
                         moveCommand.ValueAtTime(startTime),
-                        moveCommand.ValueAtTime(endTime)); break;
+                        moveCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case MoveXCommand moveXCommand:
                     segmentSprite.MoveX(moveXCommand.Easing,
                         startTime,
                         endTime,
                         moveXCommand.ValueAtTime(startTime),
-                        moveXCommand.ValueAtTime(endTime)); break;
+                        moveXCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case MoveYCommand moveYCommand:
                     segmentSprite.MoveY(moveYCommand.Easing,
                         startTime,
                         endTime,
                         moveYCommand.ValueAtTime(startTime),
-                        moveYCommand.ValueAtTime(endTime)); break;
+                        moveYCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case ScaleCommand scaleCommand:
                     segmentSprite.Scale(scaleCommand.Easing,
                         startTime,
                         endTime,
                         scaleCommand.ValueAtTime(startTime),
-                        scaleCommand.ValueAtTime(endTime)); break;
+                        scaleCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case VScaleCommand scaleVecCommand:
                     segmentSprite.ScaleVec(scaleVecCommand.Easing,
                         startTime,
                         endTime,
                         scaleVecCommand.ValueAtTime(startTime),
-                        scaleVecCommand.ValueAtTime(endTime)); break;
+                        scaleVecCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case RotateCommand rotateCommand:
                     segmentSprite.Rotate(rotateCommand.Easing,
                         startTime,
                         endTime,
                         rotateCommand.ValueAtTime(startTime),
-                        rotateCommand.ValueAtTime(endTime)); break;
+                        rotateCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case FadeCommand fadeCommand:
                     segmentSprite.Fade(fadeCommand.Easing,
                         startTime,
                         endTime,
                         fadeCommand.ValueAtTime(startTime),
-                        fadeCommand.ValueAtTime(endTime)); break;
+                        fadeCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case ColorCommand colorCommand:
                     segmentSprite.Color(colorCommand.Easing,
                         startTime,
                         endTime,
                         colorCommand.ValueAtTime(startTime),
-                        colorCommand.ValueAtTime(endTime)); break;
+                        colorCommand.ValueAtTime(endTime));
+
+                    break;
 
                 case ParameterCommand parameterCommand:
-                    segmentSprite.Parameter(startTime, endTime, parameterCommand.StartValue); break;
+                    segmentSprite.Parameter(startTime, endTime, parameterCommand.StartValue);
+                    break;
 
                 case LoopCommand loopCommand:
                     if (loopCommand.StartTime < startTime || endTime < loopCommand.EndTime)
@@ -198,7 +218,8 @@ public static class CommandSplitter
                         var loopEndIndex = (endTime - loopCommand.StartTime) / loopCommand.CommandsDuration;
                         var loopCount = (int)float.Round(loopEndIndex - loopStartIndex);
 
-                        var loopSegmentStartTime = loopCommand.StartTime + loopCommand.CommandsDuration * loopStartIndex;
+                        var loopSegmentStartTime = loopCommand.StartTime +
+                            loopCommand.CommandsDuration * loopStartIndex;
 
                         Debug.Assert(loopCount > 0);
                         if (loopCount == 1)
@@ -220,7 +241,7 @@ public static class CommandSplitter
 
                     break;
 
-                default: throw new NotImplementedException(command.GetType().FullName);
+                default: throw new NotSupportedException(command.GetType().FullName);
             }
         }
     }
@@ -231,8 +252,11 @@ public static class CommandSplitter
         {
             var spriteStartPosition = sprite.PositionAt(segmentStart);
             var segmentStartPosition = segmentSprite.PositionAt(segmentStart);
-            if (segmentStartPosition.X != spriteStartPosition.X) segmentSprite.MoveX(segmentStart, spriteStartPosition.X);
-            if (segmentStartPosition.Y != spriteStartPosition.Y) segmentSprite.MoveY(segmentStart, spriteStartPosition.Y);
+            if (segmentStartPosition.X != spriteStartPosition.X)
+                segmentSprite.MoveX(segmentStart, spriteStartPosition.X);
+
+            if (segmentStartPosition.Y != spriteStartPosition.Y)
+                segmentSprite.MoveY(segmentStart, spriteStartPosition.Y);
         }
         else
         {
@@ -262,9 +286,11 @@ public static class CommandSplitter
         if (segmentSprite.OpacityAt(segmentStart) != spriteStartFade) segmentSprite.Fade(segmentStart, spriteStartFade);
 
         var spriteStartColor = sprite.ColorAt(segmentStart);
-        if (segmentSprite.ColorAt(segmentStart) != spriteStartColor) segmentSprite.Color(segmentStart, spriteStartColor);
+        if (segmentSprite.ColorAt(segmentStart) != spriteStartColor)
+            segmentSprite.Color(segmentStart, spriteStartColor);
 
-        if (segmentSprite.AdditiveAt(segmentStart) != sprite.AdditiveAt(segmentStart)) segmentSprite.Additive(segmentStart);
+        if (segmentSprite.AdditiveAt(segmentStart) != sprite.AdditiveAt(segmentStart))
+            segmentSprite.Additive(segmentStart);
 
         if (segmentSprite.FlipHAt(segmentStart) != sprite.FlipHAt(segmentStart)) segmentSprite.FlipH(segmentStart);
 
@@ -275,7 +301,8 @@ public static class CommandSplitter
     {
         using var duringCommandTypes = TempHashSet.Create<Type>();
         foreach (var command in sprite.commandGroups.AsValueEnumerable()
-            .Concat(sprite.displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
+            .Concat(sprite.displayValueBuilders.AsValueEnumerable()
+                .SelectMany(c => c.Timeline.Commands.AsValueEnumerable())))
         {
             if (time <= command.StartTime || command.EndTime <= time) continue;
 
@@ -317,7 +344,7 @@ public static class CommandSplitter
 
                     return result;
 
-                default: throw new NotImplementedException(animation.LoopType.ToString());
+                default: throw new NotSupportedException(animation.LoopType.ToString());
             }
 
         var fragmentationTimes = getCommandFragmentationTimes(sprite);
@@ -331,7 +358,8 @@ public static class CommandSplitter
     {
         var set = TempHashSet.Create<float>();
         foreach (var command in sprite.commandGroups.AsValueEnumerable()
-            .Concat(sprite.displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
+            .Concat(sprite.displayValueBuilders.AsValueEnumerable()
+                .SelectMany(c => c.Timeline.Commands.AsValueEnumerable())))
         {
             set.Add(command.StartTime);
             if (command is LoopCommand loopCommand)

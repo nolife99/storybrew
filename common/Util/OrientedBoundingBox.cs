@@ -34,19 +34,16 @@ public readonly struct OrientedBoundingBox
         origin1 = Vector2.Dot(corner0, axis1);
     }
 
-    public RectangleF GetAABB() => RectangleF.FromLTRB(
-        float.Min(float.Min(corner0.X, corner1.X), float.Min(corner2.X, corner3.X)),
-        float.Min(float.Min(corner0.Y, corner1.Y), float.Min(corner2.Y, corner3.Y)),
-        float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)),
-        float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
-
-    bool Intersects(scoped ref readonly OrientedBoundingBox other)
-        => intersects1Way(in other) && other.intersects1Way(in this);
+    public RectangleF GetAABB()
+        => RectangleF.FromLTRB(float.Min(float.Min(corner0.X, corner1.X), float.Min(corner2.X, corner3.X)),
+            float.Min(float.Min(corner0.Y, corner1.Y), float.Min(corner2.Y, corner3.Y)),
+            float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)),
+            float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
 
     public bool Intersects(scoped ref readonly RectangleF other)
     {
-        OrientedBoundingBox otherBox = new(new Vector2(other.X, other.Y), Vector2.Zero, other.Width, other.Height, 0);
-        return Intersects(in otherBox);
+        OrientedBoundingBox otherBox = new(new(other.X, other.Y), Vector2.Zero, other.Width, other.Height, 0);
+        return intersects1Way(in otherBox) && otherBox.intersects1Way(in this);
     }
 
     bool intersects1Way(scoped ref readonly OrientedBoundingBox other)

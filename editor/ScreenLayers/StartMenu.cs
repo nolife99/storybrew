@@ -36,8 +36,14 @@ public class StartMenu : UiScreenLayer
             FitChildren = true,
             Children =
             [
-                newProjectButton = new(WidgetManager) { Text = "New project", AnchorFrom = BoxAlignment.Centre },
-                openProjectButton = new(WidgetManager) { Text = "Open project", AnchorFrom = BoxAlignment.Centre },
+                newProjectButton = new(WidgetManager)
+                {
+                    Text = "New project", AnchorFrom = BoxAlignment.Centre
+                },
+                openProjectButton = new(WidgetManager)
+                {
+                    Text = "Open project", AnchorFrom = BoxAlignment.Centre
+                },
                 new Button(WidgetManager)
                 {
                     Text = "Preferences", AnchorFrom = BoxAlignment.Centre, Disabled = true
@@ -131,113 +137,118 @@ public class StartMenu : UiScreenLayer
         bottomRightLayout.Pack((1024 - bottomLayout.Width) / 2);
     }
 
-    void checkLatestVersion() => NetHelper.Request(
-        $"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1",
-        async (r, e) =>
-        {
-            if (IsDisposed) return;
-
-            if (e is not null)
+    void checkLatestVersion()
+        => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1",
+            async (r, e) =>
             {
-                await handleLatestVersionException(e);
-                return;
-            }
+                if (IsDisposed) return;
 
-            try
-            {
-                var hasLatest = false;
-                var latestVersion = Program.Version;
-                var description = "";
-                string downloadUrl = null;
-
-                var releases = TinyToken.ReadString<JsonFormat>(r);
-                foreach (var release in releases.Values<TinyObject>())
+                if (e is not null)
                 {
-                    var isDraft = release.Value<bool>("draft");
-                    var isPreRelease = release.Value<bool>("prerelease");
-                    if (isDraft || isPreRelease) continue;
-
-                    var name = release.Value<string>("name");
-                    Version version = new(name);
-
-                    if (!hasLatest)
-                    {
-                        hasLatest = true;
-                        latestVersion = version;
-
-                        foreach (var asset in release.Values<TinyObject>("assets"))
-                        {
-                            var downloadName = asset.Value<string>("name");
-                            if (!downloadName.EndsWith(".zip", StringComparison.Ordinal)) continue;
-
-                            downloadUrl = asset.Value<string>("browser_download_url");
-                            break;
-                        }
-                    }
-
-                    if (Program.Version < version || Program.Version >= latestVersion)
-                    {
-                        var publishedAt = release.Value<string>("published_at");
-                        var publishDate = DateTimeOffset.ParseExact(publishedAt,
-                            @"yyyy-MM-dd\THH:mm:ss\Z",
-                            CultureInfo.InvariantCulture,
-                            DateTimeStyles.AssumeUniversal);
-
-                        var authorName = release.Value<string>("author", "login");
-
-                        var body = release.Value<string>("body").AsSpan();
-                        if (body.Contains("---", StringComparison.Ordinal))
-                            body = body[..body.IndexOf("---", StringComparison.Ordinal)];
-
-                        body = body.ToString().Replace("\r\n", "\n").AsSpan().Trim([' ', '\n']);
-                        body = $"v{version} - {authorName}, {publishDate.ToTimeAgo()}\n{body}\n\n";
-
-                        var newDescription = string.Concat(description, body);
-                        if (description.Length > 0 && newDescription.Count(c => c == '\n') > 35) break;
-
-                        description = newDescription;
-                    }
-                    else break;
+                    await handleLatestVersionException(e);
+                    return;
                 }
 
-                await Program.Schedule(s =>
+                try
+                {
+                    var hasLatest = false;
+                    var latestVersion = Program.Version;
+                    var description = "";
+                    string downloadUrl = null;
+
+                    var releases = TinyToken.ReadString<JsonFormat>(r);
+                    foreach (var release in releases.Values<TinyObject>())
                     {
-                        var (latestVer, desc, dlUrl, menu) = s;
+                        var isDraft = release.Value<bool>("draft");
+                        var isPreRelease = release.Value<bool>("prerelease");
+                        if (isDraft || isPreRelease) continue;
 
-                        if (Program.Version < latestVer)
+                        var name = release.Value<string>("name");
+                        Version version = new(name);
+
+                        if (!hasLatest)
                         {
-                            menu.updateButton.Text = "Version " + latestVer + " available!";
+                            hasLatest = true;
+                            latestVersion = version;
 
-                            using (var sb = StringHelper.Interpolate($"What's new:\n\n{desc.AsSpan().TrimEnd('\n')}"))
-                                menu.updateButton.Tooltip = sb.AsReadOnlySpan();
+                            foreach (var asset in release.Values<TinyObject>("assets"))
+                            {
+                                var downloadName = asset.Value<string>("name");
+                                if (!downloadName.EndsWith(".zip", StringComparison.Ordinal)) continue;
 
-                            if (dlUrl is not null && latestVer >= new Version(1, 4))
-                                menu.updateButton.OnClick += (_, _) => menu.Manager.Add(new UpdateMenu(dlUrl));
-                            else menu.updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
-
-                            menu.updateButton.StyleName = "";
-                            menu.updateButton.Disabled = false;
+                                downloadUrl = asset.Value<string>("browser_download_url");
+                                break;
+                            }
                         }
-                        else
+
+                        if (Program.Version < version || Program.Version >= latestVersion)
                         {
-                            using var sb = StringHelper.Interpolate($"Recent changes:\n\n{desc.AsSpan().TrimEnd('\n')}");
-                            menu.versionLabel.Tooltip = sb.AsReadOnlySpan();
-                            menu.updateButton.Displayed = false;
-                        }
+                            var publishedAt = release.Value<string>("published_at");
+                            var publishDate = DateTimeOffset.ParseExact(publishedAt,
+                                @"yyyy-MM-dd\THH:mm:ss\Z",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeUniversal);
 
-                        menu.bottomLayout.Pack(600);
-                    },
-                    (latestVersion, description, downloadUrl, this));
-            }
-            catch (Exception ex)
-            {
-                await handleLatestVersionException(ex);
-            }
-        });
+                            var authorName = release.Value<string>("author", "login");
+
+                            var body = release.Value<string>("body").AsSpan();
+                            if (body.Contains("---", StringComparison.Ordinal))
+                                body = body[..body.IndexOf("---", StringComparison.Ordinal)];
+
+                            body = body.ToString().Replace("\r\n", "\n").AsSpan().Trim([' ', '\n']);
+                            body = $"v{version} - {authorName}, {publishDate.ToTimeAgo()}\n{body}\n\n";
+
+                            var newDescription = string.Concat(description, body);
+                            if (description.Length > 0 && newDescription.Count(c => c == '\n') > 35) break;
+
+                            description = newDescription;
+                        }
+                        else break;
+                    }
+
+                    await Program.Schedule(s =>
+                        {
+                            var (latestVer, desc, dlUrl, menu) = s;
+
+                            if (Program.Version < latestVer)
+                            {
+                                menu.updateButton.Text = "Version " + latestVer + " available!";
+
+                                using (var sb =
+                                    StringHelper.Interpolate($"What's new:\n\n{desc.AsSpan().TrimEnd('\n')}"))
+                                    menu.updateButton.Tooltip = sb.AsReadOnlySpan();
+
+                                if (dlUrl is not null && latestVer >= new Version(1, 4))
+                                    menu.updateButton.OnClick += (_, _) => menu.Manager.Add(new UpdateMenu(dlUrl));
+                                else menu.updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
+
+                                menu.updateButton.StyleName = "";
+                                menu.updateButton.Disabled = false;
+                            }
+                            else
+                            {
+                                using var sb =
+                                    StringHelper.Interpolate($"Recent changes:\n\n{desc.AsSpan().TrimEnd('\n')}");
+
+                                menu.versionLabel.Tooltip = sb.AsReadOnlySpan();
+                                menu.updateButton.Displayed = false;
+                            }
+
+                            menu.bottomLayout.Pack(600);
+                        },
+                        (latestVersion, description, downloadUrl, this));
+                }
+                catch (Exception ex)
+                {
+                    await handleLatestVersionException(ex);
+                }
+            });
 
     ValueTask handleLatestVersionException(Exception exception)
     {
-        Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
+        Trace.TraceError(
+            $"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
+
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message
         }\n\n{versionLabel.Text}";
 

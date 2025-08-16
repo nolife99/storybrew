@@ -65,7 +65,8 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                     string executablePath = null;
                     using (var zip = ZipFile.OpenRead(Updater.UpdateArchivePath))
                     {
-                        if (Directory.Exists(Updater.UpdateFolderPath)) Directory.Delete(Updater.UpdateFolderPath, true);
+                        if (Directory.Exists(Updater.UpdateFolderPath))
+                            Directory.Delete(Updater.UpdateFolderPath, true);
 
                         foreach (var entry in zip.Entries)
                         {

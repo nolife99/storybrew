@@ -32,12 +32,13 @@ public class TextureOptions : IEquatable<TextureOptions>
     public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
     public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
 
-    public bool Equals(TextureOptions other) => Srgb == other.Srgb &&
-        GenerateMipmaps == other.GenerateMipmaps &&
-        TextureMinFilter == other.TextureMinFilter &&
-        TextureMagFilter == other.TextureMagFilter &&
-        TextureWrapS == other.TextureWrapS &&
-        TextureWrapT == other.TextureWrapT;
+    public bool Equals(TextureOptions other)
+        => Srgb == other.Srgb &&
+            GenerateMipmaps == other.GenerateMipmaps &&
+            TextureMinFilter == other.TextureMinFilter &&
+            TextureMagFilter == other.TextureMagFilter &&
+            TextureWrapS == other.TextureWrapS &&
+            TextureWrapT == other.TextureWrapT;
 
     public void ApplyParameters(TextureTarget texture)
     {
@@ -48,10 +49,13 @@ public class TextureOptions : IEquatable<TextureOptions>
     }
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
-    public override int GetHashCode() => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
-    public static string GetOptionsFilename(string textureFilename) => Path.Combine(Path.GetDirectoryName(textureFilename),
-        Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
+    public override int GetHashCode()
+        => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
+
+    public static string GetOptionsFilename(string textureFilename)
+        => Path.Combine(Path.GetDirectoryName(textureFilename),
+            Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
 
     public static TextureOptions Load(string filename, ResourceContainer resourceContainer = null)
     {

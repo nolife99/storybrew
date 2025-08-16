@@ -380,11 +380,13 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
                 Clear();
                 return;
 
-            case ValueHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet): SymmetricExceptWithUniqueHashSet(otherAsSet); break;
+            case ValueHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
+                SymmetricExceptWithUniqueHashSet(otherAsSet);
+                break;
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet): SymmetricExceptWithUniqueHashSet(otherAsSCGSet); break;
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
+                SymmetricExceptWithUniqueHashSet(otherAsSCGSet);
+                break;
 
             default: SymmetricExceptWithEnumerable(other); break;
         }
@@ -400,12 +402,10 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
         {
             case ValueHashSet<T> otherSet when otherSet._buckets == _buckets: return true;
 
-            case ValueHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet):
+            case ValueHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                 return Count <= otherAsSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSet);
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet):
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                 return Count <= otherAsSCGSet.Count && IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
 
             default:
@@ -421,7 +421,8 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
         switch (other)
         {
             case ValueHashSet<T> otherSet when otherSet._buckets == _buckets:
-            case ICollection<T> { Count: 0 }: return false;
+            case ICollection<T> { Count: 0 }:
+                return false;
 
             case ICollection<T> otherAsCollection when Count == 0: return otherAsCollection.Count > 0;
 
@@ -444,12 +445,15 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
         switch (other)
         {
             case ValueHashSet<T> otherSet when otherSet._buckets == _buckets:
-            case ICollection<T> { Count: 0 }: return true;
+            case ICollection<T> { Count: 0 }:
+                return true;
 
-            case ValueHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count:
+            case ValueHashSet<T> otherAsSet
+                when EqualityComparersAreEqual(this, otherAsSet) && otherAsSet.Count > Count:
 
             case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet) && otherAsSCGSet.Count > Count: return false;
+                when EqualityComparersAreEqual(this, otherAsSCGSet) && otherAsSCGSet.Count > Count:
+                return false;
 
             default: return ContainsAllElements(other);
         }
@@ -466,12 +470,10 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
             case ValueHashSet<T> otherSet when otherSet._buckets == _buckets: return false;
             case ICollection<T> { Count: 0 }: return true;
 
-            case ValueHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet):
+            case ValueHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                 return otherAsSet.Count < Count && ContainsAllElements(otherAsSet);
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet):
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                 return otherAsSCGSet.Count < Count && ContainsAllElements(otherAsSCGSet);
 
             default:
@@ -503,12 +505,10 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
         {
             case ValueHashSet<T> otherSet when otherSet._buckets == _buckets: return true;
 
-            case ValueHashSet<T> otherAsSet
-                when EqualityComparersAreEqual(this, otherAsSet):
+            case ValueHashSet<T> otherAsSet when EqualityComparersAreEqual(this, otherAsSet):
                 return Count == otherAsSet.Count && ContainsAllElements(otherAsSet);
 
-            case HashSet<T> otherAsSCGSet
-                when EqualityComparersAreEqual(this, otherAsSCGSet):
+            case HashSet<T> otherAsSCGSet when EqualityComparersAreEqual(this, otherAsSCGSet):
                 return Count == otherAsSCGSet.Count && ContainsAllElements(otherAsSCGSet);
 
             case ICollection<T> { Count: > 0 } when Count == 0: return false;
@@ -583,7 +583,8 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1) entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1)
+                    entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
             }
 
             if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
@@ -867,7 +868,7 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
 
         Span<int> span = stackalloc int[StackAllocThreshold];
         var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
+            new(span.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         foreach (var item in other)
@@ -912,12 +913,12 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
 
         Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
         var itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
+            new(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
         var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
+            new(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         foreach (var item in other)
@@ -926,7 +927,8 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
             if (AddIfNotPresent(item, out location)) itemsAddedFromOther.MarkBit(location);
             else
             {
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
         }
 
@@ -954,7 +956,7 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
 
         Span<int> span = stackalloc int[StackAllocThreshold];
         var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
+            new(span.Slice(0, intArrayLength), true) :
             new BitHelper(new int[intArrayLength], false);
 
         var unfoundCount = 0;

@@ -46,6 +46,7 @@ partial class CollectionInternals
             source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(this scoped ref readonly ValueArrayHashSet<T> source)
+    public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(
+        this scoped ref readonly ValueArrayHashSet<T> source)
         => new(source._entries, 0, source.Count);
 }

@@ -1,72 +1,76 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using BrewLib.Util;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Display;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary> A command that can be given to an <see cref="OsbSprite"/> to change its properties over time. </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
-public abstract record Command<TValue> : ICommand, IOffsetable where TValue : struct, ICommandValue
+public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand, IOffsetable
+    where TValue : struct, ICommandValue<TValue>
 {
+    /// <summary> The easing function used to interpolate between the start and end times. </summary>
+    public readonly OsbEasing Easing;
+
     /// <summary> The end value of the command. </summary>
     public readonly TValue EndValue;
+
+    readonly bool maintainValue;
 
     /// <summary> The start value of the command. </summary>
     public readonly TValue StartValue;
 
-    private protected Command(OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
+    internal float endTime, startTime;
+
+    private protected Command(OsbEasing easing,
+        float startTime,
+        float endTime,
+        TValue startValue,
+        TValue endValue,
+        bool maintainValue = true)
     {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.maintainValue = maintainValue;
+
         Easing = easing;
-        StartTime = startTime;
-        EndTime = endTime;
         StartValue = startValue;
         EndValue = endValue;
 
-        if (startTime > endTime) EndTime = startTime;
+        if (startTime > endTime) this.endTime = startTime;
     }
 
     private protected abstract string Identifier { get; }
-
-    /// <summary> The easing function used to interpolate between the start and end times. </summary>
-    public OsbEasing Easing { get; }
-
-    private protected virtual bool MaintainValue => true;
     private protected virtual bool ExportEndValue => true;
 
     /// <inheritdoc/>
     public virtual bool IsFragmentableAt(float time) => Easing == OsbEasing.None;
 
     /// <inheritdoc/>
-    public float StartTime { get; private set; }
+    public float StartTime => startTime;
 
     /// <inheritdoc/>
-    public float EndTime { get; private set; }
+    public float EndTime => endTime;
 
     /// <inheritdoc/>
     public int CompareTo(ICommand other)
     {
-        var result = StartTime - other.StartTime;
+        var result = startTime - other.StartTime;
         if (result != 0) return Math.Sign(result);
 
-        result = EndTime - other.EndTime;
+        result = endTime - other.EndTime;
         if (result != 0) return Math.Sign(result);
 
         if (other is not Command<TValue> typedOther) return 1;
 
-        return EqualityComparer<TValue>.Default.Equals(StartValue, typedOther.StartValue) &&
-            EqualityComparer<TValue>.Default.Equals(EndValue, typedOther.EndValue) ?
-                0 :
-                1;
+        return StartValue.Equals(typedOther.StartValue) && EndValue.Equals(typedOther.EndValue) ? 0 : 1;
     }
 
-    /// <inheritdoc/>
-    public virtual void WriteOsb(TextWriter writer,
+    void ICommand.WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         scoped ref readonly StoryboardTransform transform,
         int indentation)
@@ -77,24 +81,36 @@ public abstract record Command<TValue> : ICommand, IOffsetable where TValue : st
         writer.WriteLine(str.AsReadOnlySpan());
     }
 
+    /// <inheritdoc/>
+    public int CompareTo(Command<TValue> other)
+    {
+        var result = startTime - other.startTime;
+        if (result != 0) return Math.Sign(result);
+
+        result = endTime - other.endTime;
+        if (result != 0) return Math.Sign(result);
+
+        return StartValue.Equals(other.StartValue) && EndValue.Equals(other.EndValue) ? 0 : 1;
+    }
+
     /// <summary> Offsets the start and end times of the command by the given value. </summary>
     public void Offset(float offset)
     {
-        StartTime += offset;
-        EndTime += offset;
+        startTime += offset;
+        endTime += offset;
     }
-
-    /// <summary> Converts the command to a <see cref="CommandResult{TValue}"/> with the given time offset. </summary>
-    public CommandResult<TValue> AsResult(float timeOffset = 0) => new(this, timeOffset);
 
     /// <summary> Gets the value of the command at the given time. </summary>
     public TValue ValueAtTime(float time)
     {
-        if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
-        if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
+        var startT = startTime;
+        if (time < startT) return maintainValue ? StartValue : default;
 
-        var duration = EndTime - StartTime;
-        return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
+        var endT = endTime;
+        if (endT < time) return maintainValue ? EndValue : default;
+
+        var duration = endT - startT;
+        return StartValue + (EndValue - StartValue) * (duration > 0 ? Easing.Ease((time - startT) / duration) : 0);
     }
 
     /// <summary> Gets the transformed start value of the command. </summary>
@@ -105,23 +121,20 @@ public abstract record Command<TValue> : ICommand, IOffsetable where TValue : st
     /// <param name="transform"> The transform to apply to the command's end value. </param>
     protected virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
 
-    /// <summary> Gets the value of the command at the given progress. </summary>
-    public abstract TValue ValueAtProgress(float progress);
-
     TempList<char> ToOsbString(ExportSettings exportSettings, scoped ref readonly StoryboardTransform transform)
     {
         using var startTimeString =
-            (exportSettings.UseFloatForTime ? StartTime : (int)float.Round(StartTime)).ToCharArray(
+            (exportSettings.UseFloatForTime ? startTime : (int)float.Round(startTime)).ToCharArray(
                 provider: exportSettings.NumberFormat);
 
         using var endTimeString =
-            (exportSettings.UseFloatForTime ? EndTime : (int)float.Round(EndTime)).ToCharArray(
+            (exportSettings.UseFloatForTime ? endTime : (int)float.Round(endTime)).ToCharArray(
                 provider: exportSettings.NumberFormat);
 
         var tranformedStartValue = GetTransformedStartValue(transform);
         using var startValueString = tranformedStartValue.ToOsbString(exportSettings);
-        using var endValueString =
-            (ExportEndValue ? GetTransformedEndValue(transform) : tranformedStartValue).ToOsbString(exportSettings);
+        using var endValueString = (ExportEndValue ? GetTransformedEndValue(transform) : tranformedStartValue)
+            .ToOsbString(exportSettings);
 
         var result = StringHelper.Interpolate(exportSettings.NumberFormat,
             $"{Identifier},{(int)Easing},{startTimeString.AsReadOnlySpan()},");

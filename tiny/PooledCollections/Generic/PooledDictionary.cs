@@ -12,8 +12,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-public sealed partial class PooledDictionary<TKey, TValue>
-    : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDisposable where TKey : notnull
+public sealed partial class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
+    IReadOnlyDictionary<TKey, TValue>, IDisposable where TKey : notnull
 {
     const int StartOfFreeList = -3;
 
@@ -75,11 +75,11 @@ public sealed partial class PooledDictionary<TKey, TValue>
         ArrayPool<int>.Shared,
         ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
-    public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) : this(
-        (collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
-        comparer,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared) { }
+    public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
+        this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
+            comparer,
+            ArrayPool<int>.Shared,
+            ArrayPool<Entry<TKey, TValue>>.Shared) { }
 
     public PooledDictionary(ArrayPool<int> bucketPool, ArrayPool<Entry<TKey, TValue>> entryPool) : this(0,
         null,
@@ -125,9 +125,11 @@ public sealed partial class PooledDictionary<TKey, TValue>
         {
             _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-            if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
+            if (typeof(TKey) == typeof(string) && comparer is null)
+                _comparer = (IEqualityComparer<TKey>)_stringComparer;
         }
-        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default)) _comparer = comparer;
+        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
+            _comparer = comparer;
     }
 
     public PooledDictionary(IDictionary<TKey, TValue> dictionary,
@@ -143,7 +145,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
     public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection,
         IEqualityComparer<TKey> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
+        ArrayPool<Entry<TKey, TValue>> entryPool) : this(
+        (collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0,
         comparer,
         bucketPool,
         entryPool)
@@ -230,7 +233,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
     bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
     {
         ref var value = ref FindValue(keyValuePair.Key);
-        if (Unsafe.IsNullRef(ref value) || !EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value)) return false;
+        if (Unsafe.IsNullRef(ref value) ||
+            !EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value)) return false;
 
         Remove(keyValuePair.Key);
         return true;
@@ -346,7 +350,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var src = _entries.AsSpan(0, _count);
 
@@ -357,7 +362,7 @@ public sealed partial class PooledDictionary<TKey, TValue>
             ref var entry = ref src[i];
             if (entry.Next >= -1)
             {
-                dest[destIndex++] = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+                dest[destIndex++] = new(entry.Key, entry.Value);
                 count--;
             }
         }
@@ -586,7 +591,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
                                 return true;
 
                             case InsertionBehavior.ThrowOnExisting:
-                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                                break;
                         }
 
                         return false;
@@ -613,7 +619,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
                                 return true;
 
                             case InsertionBehavior.ThrowOnExisting:
-                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                                break;
                         }
 
                         return false;
@@ -640,7 +647,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
                             return true;
 
                         case InsertionBehavior.ThrowOnExisting:
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            break;
                     }
 
                     return false;
@@ -882,7 +890,8 @@ public sealed partial class PooledDictionary<TKey, TValue>
                     {
                         if ((uint)i >= (uint)entries.Length) break;
 
-                        if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
+                        if (entries[i].HashCode == hashCode &&
+                            EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
                         {
                             exists = true;
 

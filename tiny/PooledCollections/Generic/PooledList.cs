@@ -341,7 +341,8 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
         if ((uint)startIndex > (uint)_size)
             ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex > _size - count)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         ArgumentNullException.ThrowIfNull(match);
 
@@ -388,7 +389,8 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
         }
 
-        if (count < 0 || startIndex - count + 1 < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex - count + 1 < 0)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         var endIndex = startIndex - count;
         var items = _items;
@@ -629,7 +631,8 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
         _size += count;
         _version++;
 
-        var output = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index), count);
+        var output = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index),
+            count);
 
         if (clearSpan && s_clearItems) output.Clear();
 
@@ -769,7 +772,8 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
 
         public bool MoveNext()
         {
-            if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _list._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             var index = _index + 1;
             if (index >= _list._size) return false;
@@ -797,7 +801,8 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
 
         void IEnumerator.Reset()
         {
-            if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _list._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = -1;
         }

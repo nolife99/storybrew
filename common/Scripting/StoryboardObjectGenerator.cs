@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using BrewLib.Memory;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
@@ -30,18 +31,19 @@ public abstract class StoryboardObjectGenerator : Script
     GeneratorContext context;
 
     /// <summary> Reserved </summary>
-    protected StoryboardObjectGenerator() => configurableFields = GetType()
-        .GetFields()
-        .AsValueEnumerable()
-        .Select(field => (field, field.GetCustomAttribute<ConfigurableAttribute>(true)))
-        .Where(item => item.Item2 is not null)
-        .Select((item, order) => new ConfigurableField(item.field,
-            item.Item2,
-            item.field.GetValue(this),
-            item.field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-            item.field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
-            order))
-        .ToArray();
+    protected StoryboardObjectGenerator()
+        => configurableFields = GetType()
+            .GetFields()
+            .AsValueEnumerable()
+            .Select(field => (field, field.GetCustomAttribute<ConfigurableAttribute>(true)))
+            .Where(item => item.Item2 is not null)
+            .Select((item, order) => new ConfigurableField(item.field,
+                item.Item2,
+                item.field.GetValue(this),
+                item.field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+                item.field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
+                order))
+            .ToArray();
 
     ///<summary> Gets the currently executing script. </summary>
     public static StoryboardObjectGenerator Current => instance.Value;
@@ -83,6 +85,14 @@ public abstract class StoryboardObjectGenerator : Script
 
     /// <summary> Logs a message on the effect. </summary>
     /// <param name="message"> Message to be displayed. </param>
+    [OverloadResolutionPriority(1)]
+    public void Log(scoped ref PoolingInterpolatedStringHandler message)
+    {
+        using (message) context.AppendLog(message.Result);
+    }
+
+    /// <summary> Logs a message on the effect. </summary>
+    /// <param name="message"> Message to be displayed. </param>
     public void Log(object message) => context.AppendLog(message.ToString());
 
     /// <summary> Throws an exception if <paramref name="condition"/> returns false. </summary>
@@ -98,21 +108,25 @@ public abstract class StoryboardObjectGenerator : Script
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
-    public void Generate(GeneratorContext context, Action<Action, CancellationToken> scriptWrapper, CancellationToken token)
+    public void Generate(GeneratorContext context,
+        Action<Action, CancellationToken> scriptWrapper,
+        CancellationToken token)
     {
-        if (instance.Value is not null) throw new InvalidOperationException("A script is already running in this thread");
+        if (instance.Value is not null)
+            throw new InvalidOperationException("A script is already running in this thread");
+
+        this.context = context;
+        rnd = new(RandomSeed);
+        instance.Value = this;
 
         try
         {
-            this.context = context;
-            rnd = new(RandomSeed);
-            instance.Value = this;
-
             scriptWrapper(Generate, token);
-            context.Multithreaded = Multithreaded;
         }
         finally
         {
+            context.Multithreaded = Multithreaded;
+
             instance.Value = null;
             this.context = null;
 
@@ -141,9 +155,8 @@ public abstract class StoryboardObjectGenerator : Script
     /// <summary> Returns a <see cref="Image"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
-        Path.Combine(context.ProjectAssetPath, path),
-        watch);
+    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true)
+        => getBitmap(Path.Combine(context.MapsetPath, path), Path.Combine(context.ProjectAssetPath, path), watch);
 
     Image<Rgba32> getBitmap(string path, string alternatePath, bool watch)
     {
@@ -174,7 +187,8 @@ public abstract class StoryboardObjectGenerator : Script
 
     /// <summary> Opens a file, relative to the mapset folder, in read-only mode. </summary>
     /// <remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
-    public Stream OpenMapsetFile(string path, bool watch = true) => openFile(Path.Combine(context.MapsetPath, path), watch);
+    public Stream OpenMapsetFile(string path, bool watch = true)
+        => openFile(Path.Combine(context.MapsetPath, path), watch);
 
     FileStream openFile(string path, bool watch)
     {
@@ -303,7 +317,9 @@ public abstract class StoryboardObjectGenerator : Script
     /// <param name="directory"> The path to the font file. </param>
     /// <param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
     /// <param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
-    public FontGenerator LoadFont(string directory, FontDescription description, params ReadOnlySpan<FontEffect> effects)
+    public FontGenerator LoadFont(string directory,
+        FontDescription description,
+        params ReadOnlySpan<FontEffect> effects)
         => LoadFont(directory, false, description, effects);
 
     /// <summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>

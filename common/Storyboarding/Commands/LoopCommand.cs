@@ -55,13 +55,12 @@ public sealed class LoopCommand : CommandGroup
         return false;
     }
 
-    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings) => StringHelper.Interpolate(
-        exportSettings.NumberFormat,
-        $"L,{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{LoopCount}");
+    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
+        => StringHelper.Interpolate(exportSettings.NumberFormat,
+            $"L,{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{LoopCount}");
 
     public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
 
-    public bool Equals(LoopCommand other) => other.StartTime == StartTime &&
-        other.LoopCount == LoopCount &&
-        commands.SequenceEqual(other.commands);
+    public bool Equals(LoopCommand other)
+        => other.StartTime == StartTime && other.LoopCount == LoopCount && commands.SequenceEqual(other.commands);
 }

@@ -54,7 +54,8 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
 
     #region Enumerable
 
-    public IEnumerator<VertexAttribute> GetEnumerator() => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
+    public IEnumerator<VertexAttribute> GetEnumerator()
+        => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

@@ -85,15 +85,13 @@ public static class StringHelper
         IFormatProvider provider,
         [InterpolatedStringHandlerArgument(nameof(provider))] scoped ref PoolingInterpolatedStringHandler handler)
     {
-        using var buffer = handler.buffer;
-        Unsafe.AsRef(in list).AddRange(buffer.AsReadOnlySpan());
+        using (handler) Unsafe.AsRef(in list).AddRange(handler.Result);
     }
 
     public static void Append(this scoped ref readonly TempList<char> list,
         scoped ref PoolingInterpolatedStringHandler handler)
     {
-        using var buffer = handler.buffer;
-        Unsafe.AsRef(in list).AddRange(buffer.AsReadOnlySpan());
+        using (handler) Unsafe.AsRef(in list).AddRange(handler.Result);
     }
 
     public static TempList<char> Interpolate(IFormatProvider provider,

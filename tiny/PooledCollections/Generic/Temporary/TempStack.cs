@@ -104,17 +104,18 @@ public ref struct TempStack<T>
         _version++;
     }
 
-    public readonly bool Contains(T item) =>
+    public readonly bool Contains(T item)
+        =>
 
-        // Compare items using the default equality comparer
-        // PERF: Internally Array.LastIndexOf calls
-        // EqualityComparer<T>.Default.LastIndexOf, which
-        // is specialized for different types. This
-        // boosts performance since instead of making a
-        // virtual method call each iteration of the loop,
-        // via EqualityComparer<T>.Default.Equals, we
-        // only make one virtual call to EqualityComparer.LastIndexOf.
-        _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
+            // Compare items using the default equality comparer
+            // PERF: Internally Array.LastIndexOf calls
+            // EqualityComparer<T>.Default.LastIndexOf, which
+            // is specialized for different types. This
+            // boosts performance since instead of making a
+            // virtual method call each iteration of the loop,
+            // via EqualityComparer<T>.Default.Equals, we
+            // only make one virtual call to EqualityComparer.LastIndexOf.
+            _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(T[] dest) => CopyTo(dest, 0, _size);
@@ -345,7 +346,9 @@ public ref struct TempStack<T>
         public bool MoveNext()
         {
             bool retval;
-            if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _stack._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
             if (_index == -2)
             {
                 // First call to enumerator.

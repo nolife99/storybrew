@@ -45,12 +45,13 @@ class ImportOsb : StoryboardObjectGenerator
         vars.Dispose();
     }
 
-    void parseVariables(StreamReader reader) => reader.ParseSectionLines((line, state) =>
-        {
-            using var v = line.Split(['=']);
-            if (v.Count == 2) state.vars[ValueArray.Create(line[v[0]])] = ValueArray.Create(line[v[1]]);
-        },
-        this);
+    void parseVariables(StreamReader reader)
+        => reader.ParseSectionLines((line, state) =>
+            {
+                using var v = line.Split(['=']);
+                if (v.Count == 2) state.vars[ValueArray.Create(line[v[0]])] = ValueArray.Create(line[v[1]]);
+            },
+            this);
 
     void parseEvents(StreamReader reader)
     {
@@ -98,7 +99,12 @@ class ImportOsb : StoryboardObjectGenerator
                         var frameDelay = float.Parse(trim[v[7]], CultureInfo.InvariantCulture);
                         var loopType = Enum.Parse<OsbLoopType>(trim[v[8]]);
                         sprite = state.GetLayer(trim[v[1]].ToString())
-                            .CreateAnimation(path.ToString(), frameCount, frameDelay, loopType, origin, new Vector2(x, y));
+                            .CreateAnimation(path.ToString(),
+                                frameCount,
+                                frameDelay,
+                                loopType,
+                                origin,
+                                new Vector2(x, y));
 
                         break;
                     }
@@ -107,7 +113,9 @@ class ImportOsb : StoryboardObjectGenerator
                         state.GetLayer(trim[v[2]].ToString())
                             .CreateSample(removeQuotes(trim[v[3]]).ToString(),
                                 int.Parse(trim[v[1]], CultureInfo.InvariantCulture),
-                                float.Parse(trim[v[4]], CultureInfo.InvariantCulture)); break;
+                                float.Parse(trim[v[4]], CultureInfo.InvariantCulture));
+
+                        break;
 
                     case "T":
                         sprite.StartTriggerGroup(trim[v[1]].ToString(),
@@ -130,7 +138,9 @@ class ImportOsb : StoryboardObjectGenerator
                         var command = v[0];
                         var easing = (OsbEasing)int.Parse(trim[v[1]], CultureInfo.InvariantCulture);
                         var startTime = int.Parse(trim[v[2]], CultureInfo.InvariantCulture);
-                        var endTime = trim[v[3]].IsEmpty ? startTime : int.Parse(trim[v[3]], CultureInfo.InvariantCulture);
+                        var endTime = trim[v[3]].IsEmpty ?
+                            startTime :
+                            int.Parse(trim[v[3]], CultureInfo.InvariantCulture);
 
                         switch (trim[command])
                         {

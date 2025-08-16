@@ -29,7 +29,10 @@ public class PathSelector : Widget
             FitChildren = true,
             Children =
             [
-                textbox = new(manager) { AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft },
+                textbox = new(manager)
+                {
+                    AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft
+                },
                 button = new(manager)
                 {
                     Icon = IconFont.FolderOpen,
@@ -55,19 +58,25 @@ public class PathSelector : Widget
                     Manager.ScreenLayerManager.OpenFilePicker(textbox.Value.ToString(),
                         "",
                         Filter,
-                        path => textbox.Value = path); break;
+                        path => textbox.Value = path);
+
+                    break;
 
                 case PathSelectorMode.OpenDirectory:
                     Manager.ScreenLayerManager.OpenFilePicker("",
                         textbox.Value.ToString(),
                         Filter,
-                        path => textbox.Value = path); break;
+                        path => textbox.Value = path);
+
+                    break;
 
                 case PathSelectorMode.SaveFile:
                     Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value.ToString(),
                         SaveExtension,
                         Filter,
-                        path => textbox.Value = path); break;
+                        path => textbox.Value = path);
+
+                    break;
             }
         };
     }

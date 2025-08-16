@@ -14,7 +14,8 @@ using StorybrewEditor.Storyboarding;
 public class TimelineSlider : Slider
 {
     static readonly Color tickBlue = Color.FromPixel(new Rgba32(50, 128, 255, 225)),
-        tickYellow = Color.FromPixel(new Rgba32(255, 255, 0, 225)), tickRed = Color.FromPixel(new Rgba32(255, 0, 0, 225)),
+        tickYellow = Color.FromPixel(new Rgba32(255, 255, 0, 225)),
+        tickRed = Color.FromPixel(new Rgba32(255, 0, 0, 225)),
         tickViolet = Color.FromPixel(new Rgba32(200, 0, 200, 225)),
         tickWhite = Color.FromPixel(new Rgba32(255, 255, 255, 220)),
         tickMagenta = Color.FromPixel(new Rgba32(144, 64, 144, 225)),
@@ -113,7 +114,10 @@ public class TimelineSlider : Slider
 
                 line.Draw(drawContext,
                     Manager.Camera,
-                    RectangleF.FromLTRB(kiaiLeft, offset.Y + Bounds.Height * .3f, kiaiRight, offset.Y + Bounds.Height * .4f),
+                    RectangleF.FromLTRB(kiaiLeft,
+                        offset.Y + Bounds.Height * .3f,
+                        kiaiRight,
+                        offset.Y + Bounds.Height * .4f),
                     actualOpacity);
             }
             else kiaiStartTime = controlPoint.Offset * .001f;
@@ -131,7 +135,10 @@ public class TimelineSlider : Slider
 
             line.Draw(drawContext,
                 Manager.Camera,
-                RectangleF.FromLTRB(breakLeft, offset.Y + Bounds.Height * .3f, breakRight, offset.Y + Bounds.Height * .4f),
+                RectangleF.FromLTRB(breakLeft,
+                    offset.Y + Bounds.Height * .3f,
+                    breakRight,
+                    offset.Y + Bounds.Height * .4f),
                 actualOpacity);
         }
 

@@ -66,7 +66,8 @@ public class FastRandom
         z = w;
 
         var range = maxValue - minValue;
-        if (range < 0) return minValue + (int)(UNIT_UINT * (w = w ^ w >> 19 ^ t ^ t >> 8) * (maxValue - (long)minValue));
+        if (range < 0)
+            return minValue + (int)(UNIT_UINT * (w = w ^ w >> 19 ^ t ^ t >> 8) * (maxValue - (long)minValue));
 
         return minValue + (int)(UNIT_INT * (int)(0x7FFFFFFF & (w = w ^ w >> 19 ^ t ^ t >> 8)) * range);
     }

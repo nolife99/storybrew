@@ -1,65 +1,67 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
+using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 
-class CommandChannel<TValue> where TValue : struct, ICommandValue
+class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
-    protected readonly List<CommandResult<TValue>> commands = [];
+    readonly List<Command<TValue>> commands = [];
+    protected ArraySegment<Command<TValue>> commandsView = ArraySegment<Command<TValue>>.Empty;
 
-    public IReadOnlyList<CommandResult<TValue>> Commands => commands;
+    public ReadOnlySpan<Command<TValue>> Commands => commandsView.AsSpan();
 
     public bool HasOverlap { get; private set; }
 
     public bool Add(Command<TValue> command)
     {
-        var result = command.AsResult();
+        var c = commandsView;
 
-        var index = commands.BinarySearch(result);
+        var index = Array.BinarySearch(c.Array!, c.Offset, c.Count, command);
         if (index >= 0)
         {
-            commands[index] = result;
+            c[index] = command;
             return false;
         }
 
         index = ~index;
-        while (index < commands.Count)
+        while (index < c.Count)
         {
-            if (commands[index].Command.CompareTo(command) > 0) break;
+            if (c[index].CompareTo(command) > 0) break;
 
             ++index;
         }
 
-        HasOverlap |= index > 0 && result.StartTime < commands[index - 1].EndTime ||
-            index < commands.Count && commands[index].StartTime < result.EndTime;
+        HasOverlap |= index > 0 && command.startTime < c[index - 1].endTime ||
+            index < c.Count && c[index].startTime < command.endTime;
 
-        commands.Insert(index, result);
+        commands.Insert(index, command);
+        commandsView = commands.GetArraySegment();
 
         return true;
     }
 
     protected Command<TValue> CommandAtTime(float time)
     {
-        if (commands.Count == 0) return null;
+        var c = commandsView;
+        if (c.Count == 0) return null;
 
         if (!findCommandIndex(time, out var index) && index > 0) --index;
 
         if (HasOverlap)
         {
             for (var i = 0; i < index; i++)
-                if (commands[i].StartTime <= commands[index].StartTime && time <= commands[i].EndTime)
+                if (c[i].StartTime <= c[index].StartTime && time <= c[i].EndTime)
                 {
                     index = i;
                     break;
                 }
         }
-        else if (index > 0 && time == commands[index - 1].EndTime) --index;
+        else if (index > 0 && time == c[index - 1].EndTime) --index;
 
-        return commands[index].Command;
+        return c[index];
     }
 
     public virtual bool ResultAtTime(float time, out CommandResult<TValue> result)
@@ -71,22 +73,21 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue
             return false;
         }
 
-        result = command.AsResult();
+        result = new(command);
         return true;
     }
 
     bool findCommandIndex(float time, out int index)
     {
-        var c = commands.GetSpanUnsafe();
+        var c = commandsView;
 
         var left = 0;
-        var right = c.Length - 1;
+        var right = c.Count - 1;
 
-        ref var first = ref MemoryMarshal.GetReference(c);
         while (left <= right)
         {
             var currentIndex = right + left >> 1;
-            var commandTime = Unsafe.Add(ref first, currentIndex).StartTime;
+            var commandTime = c[currentIndex].startTime;
 
             if (commandTime > time) right = currentIndex - 1;
             else if (commandTime < time) left = currentIndex + 1;

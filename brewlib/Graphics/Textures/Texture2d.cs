@@ -145,7 +145,8 @@ public sealed class Texture2d : Texture2dRegion
         return null;
     }
 
-    public static TextureOptions LoadTextureOptions(string forBitmapFilename, ResourceContainer resourceContainer = null)
+    public static TextureOptions LoadTextureOptions(string forBitmapFilename,
+        ResourceContainer resourceContainer = null)
         => TextureOptions.Load(TextureOptions.GetOptionsFilename(forBitmapFilename), resourceContainer);
 
     public static Texture2d Load(string filename,
@@ -153,7 +154,9 @@ public sealed class Texture2d : Texture2dRegion
         TextureOptions textureOptions = null)
     {
         using var bitmap = LoadBitmap(filename, resourceContainer);
-        return bitmap is not null ? Load(bitmap, textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
+        return bitmap is not null ?
+            Load(bitmap, textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
+            null;
     }
 
     public static Texture2d Create(Rgba32 color, int width = 1, int height = 1, TextureOptions textureOptions = null)
@@ -263,7 +266,15 @@ public sealed class Texture2d : Texture2dRegion
                     .CopyTo(MemoryMarshal.CreateSpan(ref Unsafe.Add(ref addr, i * width), width));
 
             GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, 0);
+            GL.TexSubImage2D(TextureTarget.Texture2D,
+                0,
+                0,
+                0,
+                width,
+                height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                0);
 
             GL.DeleteBuffer(pbo);
         }

@@ -31,8 +31,10 @@ public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
     /// <param name="time"> The time of the keyframe. </param>
     /// <param name="value"> The value of the keyframe. </param>
     /// <param name="easing"> The easing function to apply to this keyframe. </param>
-    public Keyframe(float time, TValue value = default, Func<float, float> easing = null) :
-        this(time, value, easing, false) { }
+    public Keyframe(float time, TValue value = default, Func<float, float> easing = null) : this(time,
+        value,
+        easing,
+        false) { }
 
     internal Keyframe(float time, TValue value, Func<float, float> easing, bool until)
     {

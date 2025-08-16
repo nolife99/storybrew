@@ -36,7 +36,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, int uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
+    public void Queue(T target,
+        int uniqueKey,
+        Func<CancellationTokenSource, ValueTask> action,
+        bool mustRunAlone = false)
     {
         for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
             (actionRunners[i] ??= new(context)).EnsureThreadAlive();
@@ -87,10 +90,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
             }
         }
 
-        public void Signal() => Interlocked.Exchange(
-                ref tcs,
-                new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
-            .TrySetResult();
+        public void Signal()
+            => Interlocked.Exchange(ref tcs, new(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
 
         public Task WaitForSignal() => tcs.Task;
 

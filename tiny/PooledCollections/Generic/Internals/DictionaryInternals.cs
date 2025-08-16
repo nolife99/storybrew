@@ -52,7 +52,8 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
 partial class CollectionInternals
 {
-    public static DictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(this PooledDictionary<TKey, TValue> source)
+    public static DictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
+        this PooledDictionary<TKey, TValue> source)
     {
         DictionaryInternals<TKey, TValue> internals = new(source);
 

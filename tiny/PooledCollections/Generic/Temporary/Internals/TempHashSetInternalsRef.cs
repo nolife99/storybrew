@@ -38,7 +38,8 @@ public readonly ref struct TempHashSetInternalsRef<T>
 
 partial class CollectionInternals
 {
-    public static TempHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly TempHashSet<T> source) => new(in source);
+    public static TempHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly TempHashSet<T> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(this scoped ref readonly TempHashSet<T> source)

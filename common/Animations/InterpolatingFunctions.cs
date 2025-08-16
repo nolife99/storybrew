@@ -1,6 +1,5 @@
 ﻿namespace StorybrewCommon.Animations;
 
-using System;
 using System.Numerics;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -9,25 +8,28 @@ using StorybrewCommon.Storyboarding.CommandValues;
 public static class InterpolatingFunctions
 {
     /// <summary> Interpolates between 2 <see cref="System.Numerics.Vector2"/> vectors. </summary>
-    public static readonly Func<Vector2, Vector2, float, Vector2> Vector2 = System.Numerics.Vector2.Lerp;
+    public static Vector2 Vector2(Vector2 from, Vector2 to, float progress)
+        => System.Numerics.Vector2.Lerp(from, to, progress);
 
     /// <summary> Interpolates between 2 <see cref="System.Numerics.Vector3"/> vectors. </summary>
-    public static readonly Func<Vector3, Vector3, float, Vector3> Vector3 = System.Numerics.Vector3.Lerp;
+    public static Vector3 Vector3(Vector3 from, Vector3 to, float progress)
+        => System.Numerics.Vector3.Lerp(from, to, progress);
 
     /// <summary> Performs spherical linear interpolation on 2 <see cref="Quaternion"/>s. </summary>
-    public static readonly Func<Quaternion, Quaternion, float, Quaternion> QuaternionSlerp = Quaternion.Slerp;
+    public static Quaternion QuaternionSlerp(Quaternion from, Quaternion to, float progress)
+        => Quaternion.Slerp(from, to, progress);
 
     ///<summary> Returns the first value. </summary>
-    public static readonly Func<bool, bool, float, bool> BoolFrom = (from, _, _) => from;
+    public static bool BoolFrom(bool from, bool to, float progress) => from;
 
     ///<summary> Returns the second value. </summary>
-    public static readonly Func<bool, bool, float, bool> BoolTo = (_, to, _) => to;
+    public static bool BoolTo(bool from, bool to, float progress) => to;
 
     ///<summary> Returns the OR comparison between the two values. </summary>
-    public static readonly Func<bool, bool, float, bool> BoolAny = (from, to, _) => from || to;
+    public static bool BoolAny(bool from, bool to, float progress) => from || to;
 
     ///<summary> Returns the AND comparison between the two values. </summary>
-    public static readonly Func<bool, bool, float, bool> BoolBoth = (from, to, _) => from && to;
+    public static bool BoolBoth(bool from, bool to, float progress) => from && to;
 
     /// <summary> Interpolates between 2 <see cref="float"/>s. </summary>
     public static float Float(float from, float to, float progress) => from + (to - from) * progress;
@@ -45,7 +47,7 @@ public static class InterpolatingFunctions
 
     /// <summary> Interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static CommandPosition Position(CommandPosition from, CommandPosition to, float progress)
-        => System.Numerics.Vector2.Lerp(from, to, progress);
+        => CommandPosition.Lerp(from, to, progress);
 
     /// <summary> Interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static CommandScale Scale(CommandScale from, CommandScale to, float progress)

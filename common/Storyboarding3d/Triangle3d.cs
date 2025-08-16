@@ -14,13 +14,13 @@ public class Triangle3d : Node3d, HasOsbSprites
     readonly CommandGenerator gen0 = new(), gen1 = new();
 
     /// <summary> The position of the first vertex of the triangle. </summary>
-    public readonly KeyframedValue<Vector3> Position0 = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> Position0 = new(Vector3.Lerp);
 
     /// <summary> The position of the second vertex of the triangle. </summary>
-    public readonly KeyframedValue<Vector3> Position1 = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> Position1 = new(Vector3.Lerp);
 
     /// <summary> The position of the third vertex of the triangle. </summary>
-    public readonly KeyframedValue<Vector3> Position2 = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> Position2 = new(Vector3.Lerp);
 
     /// <summary> Toggles additive blending on this <see cref="Triangle3d"/>. </summary>
     public bool Additive;
@@ -84,7 +84,7 @@ public class Triangle3d : Node3d, HasOsbSprites
         scoped ref readonly CameraState cameraState,
         scoped ref readonly Object3dState object3dState)
     {
-        var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
+        var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
 
         if (FixedEdge >= 0) edgeIndex = FixedEdge;
 
@@ -118,7 +118,9 @@ public class Triangle3d : Node3d, HasOsbSprites
             default: throw new InvalidOperationException();
         }
 
-        var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y) - (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
+        var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y) -
+            (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
+
         if (cross > 0)
         {
             if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;

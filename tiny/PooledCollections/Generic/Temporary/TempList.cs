@@ -330,14 +330,16 @@ public ref struct TempList<T>
 
     public readonly int FindIndex(Predicate<T> match) => FindIndex(0, _size, match);
 
-    public readonly int FindIndex(int startIndex, Predicate<T> match) => FindIndex(startIndex, _size - startIndex, match);
+    public readonly int FindIndex(int startIndex, Predicate<T> match)
+        => FindIndex(startIndex, _size - startIndex, match);
 
     public readonly int FindIndex(int startIndex, int count, Predicate<T> match)
     {
         if ((uint)startIndex > (uint)_size)
             ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex > _size - count)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         ArgumentNullException.ThrowIfNull(match);
 
@@ -383,7 +385,8 @@ public ref struct TempList<T>
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
         }
 
-        if (count < 0 || startIndex - count + 1 < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+        if (count < 0 || startIndex - count + 1 < 0)
+            ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
         var endIndex = startIndex - count;
         var items = _items;
@@ -688,10 +691,11 @@ public ref struct TempList<T>
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        InsertRange(index, new ReadOnlySpan<T>(array));
+        InsertRange(index, new(array));
     }
 
-    [OverloadResolutionPriority(1)] public void InsertRange(int index, scoped ReadOnlySpan<T> span)
+    [OverloadResolutionPriority(1)]
+    public void InsertRange(int index, scoped ReadOnlySpan<T> span)
     {
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -703,7 +707,7 @@ public ref struct TempList<T>
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        AddRange(new ReadOnlySpan<T>(array));
+        AddRange(new(array));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]

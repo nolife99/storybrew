@@ -30,5 +30,6 @@ partial class CollectionInternals
         => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._array), source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this PooledStack<T> source) => new(source._array, 0, source._size);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this PooledStack<T> source)
+        => new(source._array, 0, source._size);
 }

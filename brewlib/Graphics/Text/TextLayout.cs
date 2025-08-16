@@ -154,7 +154,8 @@ public sealed class TextLayout : IDisposable
     }
 }
 
-public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmpty) : IDisposable
+public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmpty)
+    : IDisposable
 {
     ValueList<TextLayoutGlyph> _glyphs = ValueList.Create<TextLayoutGlyph>();
     bool advance = advanceOnEmpty;
@@ -166,9 +167,10 @@ public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alig
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 :
-        (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
-        y);
+    public Vector2 Position
+        => new((alignment & BoxAlignment.Left) > 0 ? 0 :
+            (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
+            y);
 
     public void Dispose() => _glyphs.Dispose();
 

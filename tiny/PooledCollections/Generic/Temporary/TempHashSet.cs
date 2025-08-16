@@ -40,34 +40,36 @@ public static class TempHashSet
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<T>> entryPool) => new(comparer, bucketPool, entryPool);
+        ArrayPool<Entry<T>> entryPool)
+        => new(comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(IEnumerable<T> collection,
         IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<T>> entryPool) => new(collection, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<T>> entryPool)
+        => new(collection, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(int capacity,
         IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<T>> entryPool) => new(capacity, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<T>> entryPool)
+        => new(capacity, comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(T[] items) => new(items.AsSpan());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSet<T> Create<T>(T[] items, IEqualityComparer<T> comparer) => new(items.AsSpan(),
-        comparer,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<T>>.Shared);
+    public static TempHashSet<T> Create<T>(T[] items, IEqualityComparer<T> comparer)
+        => new(items.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<T>>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(T[] items,
         IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<T>> entryPool) => new(items.AsSpan(), comparer, bucketPool, entryPool);
+        ArrayPool<Entry<T>> entryPool)
+        => new(items.AsSpan(), comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span) => new(span);
@@ -80,7 +82,8 @@ public static class TempHashSet
     public static TempHashSet<T> Create<T>(ReadOnlySpan<T> span,
         IEqualityComparer<T> comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<T>> entryPool) => new(span, comparer, bucketPool, entryPool);
+        ArrayPool<Entry<T>> entryPool)
+        => new(span, comparer, bucketPool, entryPool);
 }
 
 public ref struct TempHashSet<T>
@@ -176,7 +179,7 @@ public ref struct TempHashSet<T>
         var count = _count;
         if (count <= 0) return;
 
-        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
+        Debug.Assert(!_buckets.IsNullOrEmpty(), "_buckets should be non-null");
         Debug.Assert(_entries is not null, "_entries should be non-null");
 
         Array.Clear(_buckets, 0, _buckets.Length);
@@ -581,7 +584,8 @@ public ref struct TempHashSet<T>
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1) entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1)
+                    entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
             }
 
             if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
@@ -671,7 +675,7 @@ public ref struct TempHashSet<T>
     internal bool AddIfNotPresent(T value, out int location)
     {
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        Debug.Assert(_buckets.IsNullOrEmpty() == false);
+        Debug.Assert(!_buckets.IsNullOrEmpty());
 
         var entries = _entries;
         Debug.Assert(entries is not null, "expected entries to be non-null");
@@ -858,7 +862,7 @@ public ref struct TempHashSet<T>
 
     void IntersectWithEnumerable(IEnumerable<T> other)
     {
-        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(!_buckets.IsNullOrEmpty(), "_buckets shouldn't be null; callers should check first");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -912,7 +916,8 @@ public ref struct TempHashSet<T>
             if (AddIfNotPresent(item, out var location)) itemsAddedFromOther.MarkBit(location);
             else
             {
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
 
         for (var i = 0; i < originalCount; i++)
@@ -939,7 +944,7 @@ public ref struct TempHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(!_buckets.IsNullOrEmpty() && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1043,8 +1048,10 @@ public ref struct TempHashSet<T>
         ArrayPool<int>.Shared,
         ArrayPool<Entry<T>>.Shared) { }
 
-    internal TempHashSet(T[] items, IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
-        : this(items.AsSpan(), comparer, bucketPool, entryPool) { }
+    internal TempHashSet(T[] items,
+        IEqualityComparer<T> comparer,
+        ArrayPool<int> bucketPool,
+        ArrayPool<Entry<T>> entryPool) : this(items.AsSpan(), comparer, bucketPool, entryPool) { }
 
     internal TempHashSet(ReadOnlySpan<T> span, IEqualityComparer<T> comparer = null) : this(span,
         comparer,
@@ -1098,7 +1105,7 @@ public ref struct TempHashSet<T>
 
     void IntersectWithSpan(ReadOnlySpan<T> other)
     {
-        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(!_buckets.IsNullOrEmpty(), "_buckets shouldn't be null; callers should check first");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1169,7 +1176,8 @@ public ref struct TempHashSet<T>
             if (AddIfNotPresent(other[i], out var location)) itemsAddedFromOther.MarkBit(location);
             else
             {
-                if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
+                if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    itemsToRemove.MarkBit(location);
             }
 
         for (var i = 0; i < originalCount; i++)
@@ -1220,7 +1228,7 @@ public ref struct TempHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(!_buckets.IsNullOrEmpty() && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1317,7 +1325,8 @@ public ref struct TempHashSet<T>
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var src = _entries.AsSpan(0, _count);
 

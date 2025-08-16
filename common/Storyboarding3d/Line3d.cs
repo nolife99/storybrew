@@ -12,15 +12,15 @@ using StorybrewCommon.Storyboarding.Util;
 public class Line3d : Node3d, HasOsbSprites
 {
     /// <summary> The segment end position of this <see cref="Line3d"/>. </summary>
-    public readonly KeyframedValue<Vector3> EndPosition = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> EndPosition = new(Vector3.Lerp);
 
     readonly CommandGenerator gen = new();
 
     /// <summary> The segment start position of this <see cref="Line3d"/>. </summary>
-    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3);
+    public readonly KeyframedValue<Vector3> StartPosition = new(Vector3.Lerp);
 
     /// <summary> The thickness of this <see cref="Line3d"/>, in absolute osu!pixels. </summary>
-    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1);
+    public readonly KeyframedValue<float> Thickness = new(float.Lerp, 1);
 
     /// <summary> Toggles additive blending on this <see cref="Sprite3d"/>. </summary>
     public bool Additive;
@@ -63,7 +63,7 @@ public class Line3d : Node3d, HasOsbSprites
         scoped ref readonly CameraState cameraState,
         scoped ref readonly Object3dState object3dState)
     {
-        var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
+        var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var startVector = CameraState.ToScreen(in wvp, StartPosition.ValueAt(time));
         var endVector = CameraState.ToScreen(in wvp, EndPosition.ValueAt(time));
 
@@ -71,7 +71,8 @@ public class Line3d : Node3d, HasOsbSprites
         if (delta.LengthSquared() == 0) return;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade)
+            opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var endStateRot = Unsafe.IsNullRef(ref gen.EndState) ? 0 : gen.EndState.Rotation;
         gen.Add(new()
@@ -112,23 +113,22 @@ public class Line3d : Node3d, HasOsbSprites
         gen.GenerateCommands(sprite, action, startTime, endTime, timeOffset, loopable);
     }
 }
+
 #pragma warning disable CS1591
 public class Line3dEx : Node3d, HasOsbSprites
 {
     readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(),
         genEndCap = new();
 
-    readonly Vector2[] spriteBitmaps = new Vector2[3];
+    public readonly KeyframedValue<Vector3> StartPosition = new(Vector3.Lerp), EndPosition = new(Vector3.Lerp);
 
-    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3),
-        EndPosition = new(InterpolatingFunctions.Vector3);
-
-    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1),
-        StartThickness = new(InterpolatingFunctions.Float, 1), EndThickness = new(InterpolatingFunctions.Float, 1);
+    public readonly KeyframedValue<float> Thickness = new(float.Lerp, 1), StartThickness = new(float.Lerp, 1),
+        EndThickness = new(float.Lerp, 1);
 
     public bool Additive, UseDistanceFade = true, EnableStartCap = true, EnableEndCap = true, OrientedCaps;
     public float EdgeOverlap = .5f, CapOverlap = .2f;
     Action<OsbSprite> finalize;
+    Line3dExBitmaps spriteBitmaps;
     OsbSprite spriteBody, spriteTopEdge, spriteBottomEdge, spriteStartCap, spriteEndCap;
     public string SpritePathBody, SpritePathEdge, SpritePathCap;
 
@@ -194,8 +194,12 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         if (SpritePathCap is not null)
         {
-            spriteStartCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
-            spriteEndCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
+            spriteStartCap ??= segment.CreateSprite(SpritePathCap,
+                OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
+
+            spriteEndCap ??= segment.CreateSprite(SpritePathCap,
+                OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
+
             spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
         }
     }
@@ -205,7 +209,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         scoped ref readonly CameraState cameraState,
         scoped ref readonly Object3dState object3dState)
     {
-        var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
+        var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var startVector = CameraState.ToScreen(in wvp, StartPosition.ValueAt(time));
         var endVector = CameraState.ToScreen(in wvp, EndPosition.ValueAt(time));
 
@@ -222,8 +226,10 @@ public class Line3dEx : Node3d, HasOsbSprites
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;
         var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * cameraState.ResolutionScale;
-        var startScale =
-            scaleFactor * (cameraState.FocusDistance / startVector.W) * thickness * StartThickness.ValueAt(time);
+        var startScale = scaleFactor *
+            (cameraState.FocusDistance / startVector.W) *
+            thickness *
+            StartThickness.ValueAt(time);
 
         var endScale = scaleFactor * (cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
 
@@ -236,12 +242,13 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (ignoreEdges) bodyHeight += edgeHeight * 2;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade)
+            opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var length = delta.Length();
 
         var positionBody = new Vector2(startVector.X, startVector.Y) + delta / 2;
-        genBody.Add(new State
+        genBody.Add(new()
         {
             Time = time,
             Position = positionBody,
@@ -353,7 +360,14 @@ public class Line3dEx : Node3d, HasOsbSprites
             if (EnableStartCap)
                 genStartCap.GenerateCommands(spriteStartCap, action, startTime, endTime, timeOffset, loopable);
 
-            if (EnableEndCap) genEndCap.GenerateCommands(spriteEndCap, action, startTime, endTime, timeOffset, loopable);
+            if (EnableEndCap)
+                genEndCap.GenerateCommands(spriteEndCap, action, startTime, endTime, timeOffset, loopable);
         }
+    }
+
+    [InlineArray(3)]
+    struct Line3dExBitmaps
+    {
+        public Vector2 Size;
     }
 }

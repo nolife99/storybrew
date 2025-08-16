@@ -30,7 +30,10 @@ public class ProgramScope
         return type;
     }
 
-    public ShaderVariable AddUniform(ShaderContext context, string name, ActiveUniformType shaderTypeName, int count = -1)
+    public ShaderVariable AddUniform(ShaderContext context,
+        string name,
+        ActiveUniformType shaderTypeName,
+        int count = -1)
     {
         ShaderVariable uniform = new(context, name, shaderTypeName, count);
         uniforms.Add(uniform);

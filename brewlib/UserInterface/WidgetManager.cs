@@ -324,7 +324,8 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     public bool OnClickDown(MouseButtonEventArgs e)
     {
         var target = HoveredWidget ?? rootContainer;
-        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus)) KeyboardFocus = null;
+        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
+            KeyboardFocus = null;
 
         var widgetEvent = fire((w, evt, ev) => w.NotifyClickDown(evt, ev), target, state: e);
         if (widgetEvent.Handled) clickTargets[e.Button] = widgetEvent.Listener;
@@ -353,26 +354,20 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         }
     }
 
-    public bool OnMouseWheel(MouseWheelEventArgs e) => fire(
-            (w, evt, ev) => w.NotifyMouseWheel(evt, ev),
-            HoveredWidget ?? rootContainer,
-            state: e)
-        .Handled;
+    public bool OnMouseWheel(MouseWheelEventArgs e)
+        => fire((w, evt, ev) => w.NotifyMouseWheel(evt, ev), HoveredWidget ?? rootContainer, state: e).Handled;
 
-    public bool OnKeyDown(KeyboardKeyEventArgs e) => fire((w, evt, ev) => w.NotifyKeyDown(evt, ev),
-            keyboardFocus ?? HoveredWidget ?? rootContainer,
-            state: e)
-        .Handled;
+    public bool OnKeyDown(KeyboardKeyEventArgs e)
+        => fire((w, evt, ev) => w.NotifyKeyDown(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
+            .Handled;
 
-    public bool OnKeyUp(KeyboardKeyEventArgs e) => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev),
-            keyboardFocus ?? HoveredWidget ?? rootContainer,
-            state: e)
-        .Handled;
+    public bool OnKeyUp(KeyboardKeyEventArgs e)
+        => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
+            .Handled;
 
-    public bool OnKeyPress(TextInputEventArgs e) => fire((w, evt, ev) => w.NotifyKeyPress(evt, ev),
-            keyboardFocus ?? HoveredWidget ?? rootContainer,
-            state: e)
-        .Handled;
+    public bool OnKeyPress(TextInputEventArgs e)
+        => fire((w, evt, ev) => w.NotifyKeyPress(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
+            .Handled;
 
     void changeHoveredWidget(Widget widget)
     {

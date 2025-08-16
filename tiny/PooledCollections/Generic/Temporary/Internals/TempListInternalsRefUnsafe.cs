@@ -30,7 +30,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref source._ref, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(this scoped ref readonly TempList<T> source) => new(source._items, 0, source._size);
+    public static Memory<T> AsMemory<T>(this scoped ref readonly TempList<T> source)
+        => new(source._items, 0, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly TempList<T> source, out T[] items, out int count)

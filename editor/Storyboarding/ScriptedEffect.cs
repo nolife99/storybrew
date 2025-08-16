@@ -47,7 +47,10 @@ public class ScriptedEffect : Effect
     public override ReadOnlySpan<char> BaseName => scriptContainer is null ? default : scriptContainer.Name;
     public override string Path => scriptContainer?.MainSourcePath;
     public override EffectStatus Status => status;
-    public override ReadOnlySpan<char> StatusMessage => statusMessage is null ? default : statusMessage.AsReadOnlySpan();
+
+    public override ReadOnlySpan<char> StatusMessage
+        => statusMessage is null ? default : statusMessage.AsReadOnlySpan();
+
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
 
@@ -186,7 +189,8 @@ public class ScriptedEffect : Effect
                 case EffectStatus.Ready:
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
-                case EffectStatus.ExecutionFailed: break;
+                case EffectStatus.ExecutionFailed:
+                    break;
 
                 default: Trace.WriteLine($"{Name}: {this.status} took {duration}ms"); break;
             }
@@ -211,10 +215,11 @@ public class ScriptedEffect : Effect
         return task;
     }
 
-    TempList<char> getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
-        StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}") :
-        StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Uncaught error during {status}:\n{e}");
+    TempList<char> getExecutionFailedMessage(Exception e)
+        => e is FileNotFoundException exception ?
+            StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}") :
+            StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Uncaught error during {status}:\n{e}");
 
     #region IDisposable Support
 

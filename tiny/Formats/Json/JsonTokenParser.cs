@@ -43,10 +43,14 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
                     switch (context.LookaheadToken.Type)
                     {
                         case JsonTokenType.ObjectStart:
-                        case JsonTokenType.ArrayStart: context.PushParser(new AnyParser(r => result.Add(key, r))); break;
+                        case JsonTokenType.ArrayStart:
+                            context.PushParser(new AnyParser(r => result.Add(key, r)));
+                            break;
 
                         case JsonTokenType.Word:
-                        case JsonTokenType.WordQuoted: context.PushParser(new ValueParser(r => result.Add(key, r))); break;
+                        case JsonTokenType.WordQuoted:
+                            context.PushParser(new ValueParser(r => result.Add(key, r)));
+                            break;
 
                         default:
                             throw new InvalidDataException("Unexpected token: " +

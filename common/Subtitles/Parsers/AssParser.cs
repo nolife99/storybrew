@@ -54,7 +54,9 @@ public record AssParser : SubtitleParser
                                         }
                                     }
                                 },
-                                state.lines); break;
+                                state.lines);
+
+                            break;
                     }
                 },
                 (reader, lines));

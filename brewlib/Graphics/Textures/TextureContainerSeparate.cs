@@ -18,7 +18,7 @@ public sealed class TextureContainerSeparate : TextureContainer
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
 
-        textures = new();
+        textures = new(StringComparer.OrdinalIgnoreCase);
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 

@@ -3,6 +3,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,7 +11,9 @@ using Tiny.PooledCollections.Generic.Temporary;
 using Vector3 = System.Numerics.Vector3;
 
 ///<summary> Base struct for coloring commands. </summary>
-public readonly record struct CommandColor : ICommandValue
+public readonly record struct CommandColor : ICommandValue<CommandColor>,
+    IMultiplyOperators<CommandColor, CommandColor, CommandColor>,
+    IDivisionOperators<CommandColor, CommandColor, CommandColor>
 {
     /// <summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);
@@ -38,6 +41,9 @@ public readonly record struct CommandColor : ICommandValue
         internalVec = new((float)r, (float)g, (float)b);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    CommandColor(Vector3 vec) => internalVec = vec;
+
     ///<summary> Gets the red value of this instance. </summary>
     public byte R => toByte(internalVec.X);
 
@@ -47,7 +53,7 @@ public readonly record struct CommandColor : ICommandValue
     ///<summary> Gets the blue value of this instance. </summary>
     public byte B => toByte(internalVec.Z);
 
-    TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
+    TempList<char> ICommandValue<CommandColor>.ToOsbString(ExportSettings exportSettings)
     {
         Span<char> temp = stackalloc char[3];
         var list = TempList.Create<char>();
@@ -65,13 +71,6 @@ public readonly record struct CommandColor : ICommandValue
 
         return list;
     }
-
-    /// <summary> Returns whether this instance and <paramref name="other"/> are equal to each other. </summary>
-    public bool Equals(CommandColor other) => internalVec == other.internalVec;
-
-    /// <summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
-    /// <remarks> Some color information could be lost. </remarks>
-    public override int GetHashCode() => 0 | B << 16 | G << 8 | R;
 
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
@@ -100,6 +99,10 @@ public readonly record struct CommandColor : ICommandValue
         };
     }
 
+    /// <summary> Performs a linear interpolation between two vectors based on the given weighting. </summary>
+    public static CommandColor Lerp(CommandColor a, CommandColor b, float t)
+        => new(Vector3.Lerp(a.internalVec, b.internalVec, t));
+
     /// <summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
     public static CommandColor FromHtml(string htmlColor) => Color.ParseHex(htmlColor);
 
@@ -118,13 +121,27 @@ public readonly record struct CommandColor : ICommandValue
 
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => obj.internalVec;
-    public static implicit operator CommandColor(Vector3 obj) => new(obj.X, obj.Y, obj.Z);
+    public static implicit operator CommandColor(Vector3 obj) => new(obj);
 
-    public static CommandColor operator +(CommandColor left, CommandColor right) => left.internalVec + right.internalVec;
-    public static CommandColor operator -(CommandColor left, CommandColor right) => left.internalVec - right.internalVec;
-    public static CommandColor operator *(CommandColor left, CommandColor right) => left.internalVec * right.internalVec;
+    /// <inheritdoc/>
+    public static CommandColor operator +(CommandColor left, CommandColor right)
+        => left.internalVec + right.internalVec;
 
+    /// <inheritdoc/>
+    public static CommandColor operator -(CommandColor left, CommandColor right)
+        => left.internalVec - right.internalVec;
+
+    /// <inheritdoc/>
+    public static CommandColor operator *(CommandColor left, CommandColor right)
+        => left.internalVec * right.internalVec;
+
+    /// <inheritdoc/>
+    public static CommandColor operator /(CommandColor left, CommandColor right)
+        => left.internalVec / right.internalVec;
+
+    /// <inheritdoc/>
     public static CommandColor operator *(CommandColor left, CommandDecimal right) => left.internalVec * right;
+
     public static CommandColor operator *(CommandDecimal left, CommandColor right) => right.internalVec * left;
     public static CommandColor operator /(CommandColor left, CommandDecimal right) => left.internalVec / right;
 }

@@ -73,7 +73,8 @@ public class OsbAnimation : OsbSprite
         writer.Write("Animation,");
         WriteHeaderCommon(writer, exportSettings, layer, transform);
 
-        using var builder = StringHelper.Interpolate(exportSettings.NumberFormat, $",{FrameCount},{FrameDelay},{LoopType}");
+        using var builder = StringHelper.Interpolate(exportSettings.NumberFormat,
+            $",{FrameCount},{FrameDelay},{LoopType}");
 
         writer.WriteLine(builder.AsReadOnlySpan());
     }

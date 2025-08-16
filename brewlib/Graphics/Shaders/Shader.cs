@@ -59,7 +59,9 @@ public sealed partial class Shader : IDisposable
     }
 
     public int GetAttributeLocation(scoped ReadOnlySpan<char> name)
-        => attributes.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var property) ? property.Location : -1;
+        => attributes.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var property) ?
+            property.Location :
+            -1;
 
     public int GetUniformLocation(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
@@ -127,7 +129,9 @@ public sealed partial class Shader : IDisposable
 
         if (compileStatus != 0) return id;
 
-        log.AppendLine(CultureInfo.InvariantCulture, $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
+        log.AppendLine(CultureInfo.InvariantCulture,
+            $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
+
         return -1;
     }
 

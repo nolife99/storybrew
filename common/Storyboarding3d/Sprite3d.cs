@@ -17,7 +17,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     public readonly KeyframedValue<float> SpriteRotation = new(InterpolatingFunctions.FloatAngle);
 
     ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
-    public readonly KeyframedValue<CommandScale> SpriteScale = new(InterpolatingFunctions.Scale, Vector2.One);
+    public readonly KeyframedValue<CommandScale> SpriteScale = new(CommandScale.Lerp, Vector2.One);
 
     /// <summary> Toggles additive blending on this <see cref="Sprite3d"/>. </summary>
     public bool Additive;
@@ -65,7 +65,7 @@ public class Sprite3d : Node3d, HasOsbSprites
         scoped ref readonly CameraState cameraState,
         scoped ref readonly Object3dState object3dState)
     {
-        var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
+        var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var screenPosition = CameraState.ToScreen(in wvp, Vector3.Zero);
 
         var angle = 0f;

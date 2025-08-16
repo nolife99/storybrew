@@ -9,13 +9,9 @@ public sealed record ParameterCommand : Command<CommandParameter>
         startTime,
         endTime,
         value,
-        value) { }
+        value,
+        startTime == endTime) { }
 
     private protected override string Identifier => "P";
-
-    private protected override bool MaintainValue => StartTime == EndTime;
     private protected override bool ExportEndValue => false;
-
-    /// <inheritdoc/>
-    public override CommandParameter ValueAtProgress(float progress) => StartValue;
 }

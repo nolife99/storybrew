@@ -47,7 +47,8 @@ public static class KeyframedValueExtensions
         float time,
         double x,
         double y,
-        Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(x, y), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -58,7 +59,8 @@ public static class KeyframedValueExtensions
     public static KeyframedValue<CommandScale> Add(this KeyframedValue<CommandScale> keyframes,
         float time,
         double scale,
-        Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(scale), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -71,7 +73,8 @@ public static class KeyframedValueExtensions
         float time,
         double x,
         double y,
-        Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(x, y), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -82,7 +85,8 @@ public static class KeyframedValueExtensions
     public static KeyframedValue<CommandPosition> Add(this KeyframedValue<CommandPosition> keyframes,
         float time,
         double xy,
-        Func<float, float> easing = null) => keyframes.Add(time, new(xy, xy), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(xy, xy), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -95,7 +99,8 @@ public static class KeyframedValueExtensions
         float time,
         float x,
         float y,
-        Func<float, float> easing = null) => keyframes.Add(time, new(x, y), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(x, y), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -106,7 +111,8 @@ public static class KeyframedValueExtensions
     public static KeyframedValue<Vector2> Add(this KeyframedValue<Vector2> keyframes,
         float time,
         float scale,
-        Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(scale), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -121,7 +127,8 @@ public static class KeyframedValueExtensions
         float x,
         float y,
         float z,
-        Func<float, float> easing = null) => keyframes.Add(time, new(x, y, z), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(x, y, z), easing);
 
     /// <summary> Adds a keyframe with the given value to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -132,7 +139,8 @@ public static class KeyframedValueExtensions
     public static KeyframedValue<Vector3> Add(this KeyframedValue<Vector3> keyframes,
         float time,
         float scale,
-        Func<float, float> easing = null) => keyframes.Add(time, new(scale), easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, new(scale), easing);
 
     /// <summary> Adds a keyframe with the given rotation to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>
@@ -160,10 +168,8 @@ public static class KeyframedValueExtensions
     public static KeyframedValue<Quaternion> Add(this KeyframedValue<Quaternion> keyframes,
         float time,
         float angle,
-        Func<float, float> easing = null) => keyframes.Add(
-        time,
-        Quaternion.CreateFromYawPitchRoll(angle, angle, angle),
-        easing);
+        Func<float, float> easing = null)
+        => keyframes.Add(time, Quaternion.CreateFromYawPitchRoll(angle, angle, angle), easing);
 
     /// <summary> Adds a keyframe with the given rotation to the keyframes. </summary>
     /// <param name="keyframes"> The keyframes to add to. </param>

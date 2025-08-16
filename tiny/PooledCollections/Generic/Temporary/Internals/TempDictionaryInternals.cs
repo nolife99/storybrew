@@ -66,5 +66,6 @@ partial class CollectionInternals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref TValue GetValueRefOrNullRef<TKey, TValue>(
         this scoped ref readonly TempDictionary<TKey, TValue> dictionary,
-        TKey key) where TKey : notnull => ref dictionary.FindValue(key);
+        TKey key) where TKey : notnull
+        => ref dictionary.FindValue(key);
 }

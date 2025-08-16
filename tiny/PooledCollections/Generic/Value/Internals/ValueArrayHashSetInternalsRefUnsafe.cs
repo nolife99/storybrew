@@ -38,7 +38,8 @@ public readonly struct ValueArrayHashSetInternalsRefUnsafe<T>
 partial class CollectionInternals
 {
     public static ValueArrayHashSetInternalsRefUnsafe<T> GetUnsafeRef<T>(
-        this scoped ref readonly ValueArrayHashSet<T> source) => new(in source);
+        this scoped ref readonly ValueArrayHashSet<T> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<ArrayEntry<T>> AsSpan<T>(this scoped ref readonly ValueArrayHashSet<T> source)

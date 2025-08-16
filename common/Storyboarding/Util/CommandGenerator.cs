@@ -11,29 +11,28 @@ using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
     static readonly ConditionalWeakTable<StoryboardObjectGenerator, Dictionary<int, Vector2>> dimensionTable = [];
 
-    readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
-        finalColors = new(InterpolatingFunctions.CommandColor);
+    readonly KeyframedValue<CommandColor> colors = new(CommandColor.Lerp), finalColors = new(CommandColor.Lerp);
 
-    readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom), flipV = new(InterpolatingFunctions.BoolFrom),
-        additive = new(InterpolatingFunctions.BoolFrom);
+    readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom),
+        flipV = new(InterpolatingFunctions.BoolFrom), additive = new(InterpolatingFunctions.BoolFrom);
 
-    readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position),
-        finalPositions = new(InterpolatingFunctions.Position);
+    readonly KeyframedValue<CommandPosition> positions = new(CommandPosition.Lerp),
+        finalPositions = new(CommandPosition.Lerp);
 
-    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle),
-        fades = new(InterpolatingFunctions.Float), finalRotations = new(InterpolatingFunctions.FloatAngle),
-        finalFades = new(InterpolatingFunctions.Float);
+    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(float.Lerp),
+        finalRotations = new(InterpolatingFunctions.FloatAngle), finalFades = new(float.Lerp);
 
-    readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
-        finalScales = new(InterpolatingFunctions.Scale);
+    readonly KeyframedValue<CommandScale> scales = new(CommandScale.Lerp), finalScales = new(CommandScale.Lerp);
 
-    readonly List<State> states = [];
+    readonly PooledList<State> states = [];
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -64,14 +63,11 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State StartState
-        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref CollectionsMarshal.AsSpan(states)[0];
+    public ref State StartState => ref states.AsSpan().GetPinnableReference();
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState => ref states.Count == 0 ?
-        ref Unsafe.NullRef<State>() :
-        ref CollectionsMarshal.AsSpan(states)[^1];
+    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[^1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -116,11 +112,11 @@ public class CommandGenerator
     {
         if (states.Count == 0) return;
 
-        ref var previousState = ref Unsafe.NullRef<State>();
+        ref readonly var previousState = ref Unsafe.NullRef<State>();
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref var state in CollectionsMarshal.AsSpan(states))
+        foreach (ref readonly var state in states.AsReadOnlySpan())
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -130,20 +126,20 @@ public class CommandGenerator
             switch (wasVisible)
             {
                 case false when isVisible:
-                    if (!stateAdded && !Unsafe.IsNullRef(ref previousState))
-                        addKeyframes(ref previousState, loopable ? time : previousState.Time + timeOffset);
+                    if (!stateAdded && !Unsafe.IsNullRef(in previousState))
+                        addKeyframes(in previousState, loopable ? time : previousState.Time + timeOffset);
 
-                    addKeyframes(ref state, time);
+                    addKeyframes(in state, time);
                     if (!stateAdded) stateAdded = true;
                     break;
 
                 case true when !isVisible:
-                    addKeyframes(ref state, time);
+                    addKeyframes(in state, time);
                     commitKeyframes(imageSize);
                     break;
 
                 default:
-                    if (isVisible) addKeyframes(ref state, time);
+                    if (isVisible) addKeyframes(in state, time);
                     else stateAdded = false;
 
                     break;
@@ -193,11 +189,11 @@ public class CommandGenerator
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        var moveX = finalPositions.keyframes.TrueForAll(keyframe
-            => checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y));
+        var moveX = finalPositions.keyframes.TrueForAll(keyframe => checkPos(keyframe.Value.Y) ==
+            checkPos(finalPositions.StartValue.Y));
 
-        var moveY = finalPositions.keyframes.TrueForAll(keyframe
-            => checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X));
+        var moveY = finalPositions.keyframes.TrueForAll(keyframe => checkPos(keyframe.Value.X) ==
+            checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
             {
@@ -275,7 +271,7 @@ public class CommandGenerator
         float checkPos(float value) => float.Round(value, PositionDecimals);
     }
 
-    void addKeyframes(ref readonly State state, float time)
+    void addKeyframes(scoped ref readonly State state, float time)
     {
         positions.Add(time, state.Position);
         scales.Add(time, state.Scale);

@@ -323,7 +323,9 @@ public sealed class PooledStack<T> : IReadOnlyCollection<T>
         public bool MoveNext()
         {
             bool retval;
-            if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _stack._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
             switch (_index)
             {
                 case -2:
@@ -362,7 +364,9 @@ public sealed class PooledStack<T> : IReadOnlyCollection<T>
 
         void IEnumerator.Reset()
         {
-            if (_version != _stack._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+            if (_version != _stack._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
             _index = -2;
             _currentElement = default;
         }

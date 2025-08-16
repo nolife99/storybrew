@@ -34,9 +34,15 @@ class HitObjectHighlight : StoryboardObjectGenerator
             if (hSprite.PositionAt(hitobject.StartTime) != pos && hitobject is not OsuSlider)
                 hSprite.Move(hitobject.StartTime, pos + hitobject.StackOffset);
 
-            hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
+            hSprite.Scale(OsbEasing.In,
+                hitobject.StartTime,
+                hitobject.EndTime + FadeDuration,
+                SpriteScale,
+                SpriteScale / 5);
+
             hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
-            if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
+            if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color)
+                hSprite.Color(hitobject.StartTime, hitobject.Color);
 
             if (hitobject is OsuSlider)
             {

@@ -33,7 +33,9 @@ public ref struct TempArrayHashSet<T> where T : notnull
         => new(capacity, ArrayPool<ArrayEntry<T>>.Shared, ArrayPool<int>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArrayHashSet<T> Create(int capacity, ArrayPool<ArrayEntry<T>> entryPool, ArrayPool<int> bucketPool)
+    public static TempArrayHashSet<T> Create(int capacity,
+        ArrayPool<ArrayEntry<T>> entryPool,
+        ArrayPool<int> bucketPool)
         => new(capacity, entryPool, bucketPool);
 
     internal TempArrayHashSet(int capacity, ArrayPool<ArrayEntry<T>> entryPool, ArrayPool<int> bucketPool) : this()
@@ -137,7 +139,7 @@ public ref struct TempArrayHashSet<T> where T : notnull
         {
             ResizeIfNeeded();
 
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash);
+            _entries[_freeEntryIndex] = new(item, hash);
         }
         else
         {
@@ -180,7 +182,7 @@ public ref struct TempArrayHashSet<T> where T : notnull
 
             _collisions++;
 
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash, valueIndex);
+            _entries[_freeEntryIndex] = new(item, hash, valueIndex);
 
             _entries[valueIndex].Next = _freeEntryIndex;
         }
@@ -302,7 +304,8 @@ public ref struct TempArrayHashSet<T> where T : notnull
             ref var entry = ref _entries[_freeEntryIndex];
             var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
+            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex)
+                _buckets[movingBucketIndex] = indexToValueToRemove + 1;
 
             var next = entry.Next;
             var previous = entry.Previous;
@@ -365,7 +368,8 @@ public ref struct TempArrayHashSet<T> where T : notnull
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var items = _entries.AsSpan();
 
@@ -411,7 +415,9 @@ public ref struct TempArrayHashSet<T> where T : notnull
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
     {
         if (hashcode >= N)
-            return Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N;
+            return Environment.Is64BitProcess ?
+                HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) :
+                hashcode % N;
 
         return hashcode;
     }

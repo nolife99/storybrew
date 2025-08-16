@@ -44,7 +44,8 @@ public readonly ref struct TempArrayDictionaryInternalsRef<TKey, TValue>
 partial class CollectionInternals
 {
     public static TempArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsReadOnlySpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
@@ -64,7 +65,8 @@ partial class CollectionInternals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<TValue> ValuesAsReadOnlySpan<TKey, TValue>(
         this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
-        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
+        => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(source._values),
+            source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsReadOnlyMemory<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
@@ -82,5 +84,6 @@ partial class CollectionInternals
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<TValue> ValuesAsReadOnlyMemory<TKey, TValue>(
-        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(source._values, 0, source._freeEntryIndex);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source)
+        => new(source._values, 0, source._freeEntryIndex);
 }

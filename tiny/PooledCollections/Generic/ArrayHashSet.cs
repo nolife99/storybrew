@@ -133,7 +133,8 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
             ref var entry = ref _entries[_freeEntryIndex];
             var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
+            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex)
+                _buckets[movingBucketIndex] = indexToValueToRemove + 1;
 
             var next = entry.Next;
             var previous = entry.Previous;
@@ -211,7 +212,7 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
         {
             ResizeIfNeeded();
 
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash);
+            _entries[_freeEntryIndex] = new(item, hash);
         }
         else
         {
@@ -254,7 +255,7 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
 
             _collisions++;
 
-            _entries[_freeEntryIndex] = new ArrayEntry<T>(item, hash, valueIndex);
+            _entries[_freeEntryIndex] = new(item, hash, valueIndex);
 
             _entries[valueIndex].Next = _freeEntryIndex;
         }
@@ -368,7 +369,8 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var items = _entries.AsSpan();
 
@@ -408,7 +410,9 @@ public sealed class ArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : no
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
     {
         if (hashcode >= N)
-            return Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N;
+            return Environment.Is64BitProcess ?
+                HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) :
+                hashcode % N;
 
         return hashcode;
     }

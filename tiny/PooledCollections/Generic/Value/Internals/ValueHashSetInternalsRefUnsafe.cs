@@ -50,7 +50,9 @@ partial class CollectionInternals
         => new(source._entries, 0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(this scoped ref readonly ValueHashSet<T> source, out Entry<T>[] entries, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly ValueHashSet<T> source,
+        out Entry<T>[] entries,
+        out int count)
     {
         entries = source._entries;
         count = source._count;

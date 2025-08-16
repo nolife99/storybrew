@@ -7,7 +7,9 @@ public class SafeDirectoryReader
     public SafeDirectoryReader(string targetDirectory)
     {
         var backupDirectory = targetDirectory + ".bak";
-        Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ? targetDirectory : backupDirectory;
+        Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ?
+            targetDirectory :
+            backupDirectory;
     }
 
     public string Path { get; }

@@ -111,16 +111,18 @@ public class Label(WidgetManager manager) : Widget(manager)
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
-        if (!textDrawable.Text.IsWhiteSpace()) textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
+        if (!textDrawable.Text.IsWhiteSpace())
+            textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
 
-    public RectangleF GetCharacterBounds(int index) => RectangleF.Transform(textDrawable.GetCharacterBounds(index),
-        Matrix3x2.CreateTranslation(AbsolutePosition));
+    public RectangleF GetCharacterBounds(int index)
+        => RectangleF.Transform(textDrawable.GetCharacterBounds(index), Matrix3x2.CreateTranslation(AbsolutePosition));
 
     public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
         => textDrawable.ForTextBounds(startIndex,
             endIndex,
-            (bounds, a) => a.action(RectangleF.Transform(bounds, Matrix3x2.CreateTranslation(a.AbsolutePosition)), a.state),
+            (bounds, a) => a.action(RectangleF.Transform(bounds, Matrix3x2.CreateTranslation(a.AbsolutePosition)),
+                a.state),
             (action, AbsolutePosition, state));
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);

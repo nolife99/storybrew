@@ -2,48 +2,52 @@
 
 using StorybrewCommon.Storyboarding.CommandValues;
 
-sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
     public int LoopCount = 1;
     public float LoopStartTime, LoopDuration;
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
-        if (commands.Count == 0)
+        var c = commandsView;
+        if (c.Count == 0)
         {
             result = default;
             return false;
         }
 
-        if (time < LoopStartTime)
+        var startTime = LoopStartTime;
+        if (time < startTime)
         {
-            result = commands[0].WithOffset(LoopStartTime);
+            result = new(c[0], startTime);
             return true;
         }
 
-        var loopTime = time - LoopStartTime;
-        if (loopTime >= LoopCount * LoopDuration)
+        var loopTime = time - startTime;
+        var loopDuration = LoopDuration;
+
+        if (loopTime >= LoopCount * loopDuration)
         {
-            result = commands[^1].WithOffset(LoopStartTime + (LoopCount - 1) * LoopDuration);
+            result = new(c[^1], startTime + (LoopCount - 1) * loopDuration);
             return true;
         }
 
-        if (loopTime < LoopDuration)
+        if (loopTime < loopDuration)
         {
-            result = CommandAtTime(loopTime).AsResult(LoopStartTime);
+            result = new(CommandAtTime(loopTime), startTime);
             return true;
         }
 
-        var loopNumber = (int)(loopTime / LoopDuration);
-        loopTime %= LoopDuration;
+        var loopNumber = (int)(loopTime / loopDuration);
+        loopTime %= loopDuration;
 
-        if (loopTime <= commands[0].StartTime)
+        if (loopTime <= c[0].StartTime)
         {
-            result = commands[^1].WithOffset(LoopStartTime + (loopNumber - 1) * LoopDuration);
+            result = new(c[^1], startTime + (loopNumber - 1) * loopDuration);
             return true;
         }
 
-        result = CommandAtTime(loopTime).AsResult(LoopStartTime + loopNumber * LoopDuration);
+        result = new(CommandAtTime(loopTime), startTime + loopNumber * loopDuration);
         return true;
     }
 }

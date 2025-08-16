@@ -1,17 +1,19 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
+using System.Numerics;
 using Tiny.PooledCollections.Generic.Temporary;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
-public readonly record struct CommandDecimal : ICommandValue, ISpanFormattable
+public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, ISpanFormattable,
+    IUnaryNegationOperators<CommandDecimal, CommandDecimal>
 {
     const int FloatG7MaxChars = 16;
     readonly double value;
 
     CommandDecimal(double value) => this.value = value;
 
-    TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
+    TempList<char> ICommandValue<CommandDecimal>.ToOsbString(ExportSettings exportSettings)
     {
         Span<char> arr = stackalloc char[FloatG7MaxChars];
         value.TryFormat(arr, out var written, "G7", exportSettings.NumberFormat);
@@ -32,14 +34,23 @@ public readonly record struct CommandDecimal : ICommandValue, ISpanFormattable
     }
 
 #pragma warning disable CS1591
+
+    /// <inheritdoc/>
     public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => new(left.value - right.value);
+
     public static CommandDecimal operator --(CommandDecimal value) => new(value.value - 1);
+
+    /// <inheritdoc/>
     public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => new(left.value + right.value);
+
     public static CommandDecimal operator ++(CommandDecimal value) => new(value.value + 1);
     public static CommandDecimal operator *(CommandDecimal left, CommandDecimal right) => new(left.value * right.value);
+
     public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => new(left.value / right.value);
 
+    /// <inheritdoc/>
     public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
+
     public static CommandDecimal operator +(CommandDecimal value) => new(double.Abs(value.value));
 
     public static implicit operator CommandDecimal(double value) => new(value);

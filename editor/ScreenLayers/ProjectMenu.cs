@@ -73,7 +73,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             [
                 timeB = new(WidgetManager)
                 {
-                    StyleName = "small", AnchorFrom = BoxAlignment.Centre, Text = "--:--:---", CanGrow = false
+                    StyleName = "small",
+                    AnchorFrom = BoxAlignment.Centre,
+                    Text = "--:--:---",
+                    CanGrow = false
                 },
                 divisorB = new(WidgetManager)
                 {
@@ -91,7 +94,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 },
-                timeline = new(WidgetManager, proj) { AnchorFrom = BoxAlignment.Centre, SnapDivisor = defaultDiv },
+                timeline = new(WidgetManager, proj)
+                {
+                    AnchorFrom = BoxAlignment.Centre, SnapDivisor = defaultDiv
+                },
                 mapB = new(WidgetManager)
                 {
                     StyleName = "icon",
@@ -378,9 +384,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (!proj.MapsetPathIsValid)
         {
-            using var text =
-                StringHelper.Interpolate(
-                    $"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.");
+            using var text = StringHelper.Interpolate(
+                $"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.");
 
             Manager.ShowMessage(text.AsReadOnlySpan(), changeMapsetFolder, true);
         }
@@ -448,7 +453,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                         ClipboardHelper.SetText(TimeSpan.FromSeconds(timeSource.Current)
                             .ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
                     else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                    else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                    else
+                        ClipboardHelper.SetText(
+                            (timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
 
                     return true;
                 }
@@ -487,7 +494,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             [new(".osu files", "osu")],
             newPath =>
             {
-                if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);
+                if (!Directory.Exists(newPath) && File.Exists(newPath))
+                    proj.MapsetPath = Path.GetDirectoryName(newPath);
                 else Manager.ShowMessage("Invalid mapset path.");
             });
     }
@@ -495,37 +503,38 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     void saveProject() => Manager.AsyncLoading("Saving", proj.Save);
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
 
-    void exportProjectAll() => Manager.AsyncLoading("Exporting",
-        async () =>
-        {
-            var first = true;
-            var mainBeatmap = proj.MainBeatmap;
+    void exportProjectAll()
+        => Manager.AsyncLoading("Exporting",
+            async () =>
+            {
+                var first = true;
+                var mainBeatmap = proj.MainBeatmap;
 
-            using (var array = ValueArray.Create(proj.MapsetManager.Beatmaps))
-                foreach (var map in array)
-                {
-                    await Program.Schedule(s => s.proj.MainBeatmap = s.map, (map, proj));
-                    while (proj.EffectsStatus is not EffectStatus.Ready)
+                using (var array = ValueArray.Create(proj.MapsetManager.Beatmaps))
+                    foreach (var map in array)
                     {
-                        switch (proj.EffectsStatus)
+                        await Program.Schedule(s => s.proj.MainBeatmap = s.map, (map, proj));
+                        while (proj.EffectsStatus is not EffectStatus.Ready)
                         {
-                            case EffectStatus.CompilationFailed:
-                            case EffectStatus.ExecutionFailed:
-                            case EffectStatus.LoadingFailed:
-                                throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
-                                })\nCheck its log for the actual error.");
+                            switch (proj.EffectsStatus)
+                            {
+                                case EffectStatus.CompilationFailed:
+                                case EffectStatus.ExecutionFailed:
+                                case EffectStatus.LoadingFailed:
+                                    throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
+                                    })\nCheck its log for the actual error.");
+                            }
+
+                            await Task.Delay(100);
                         }
 
-                        await Task.Delay(100);
+                        await proj.ExportToOsb(first);
+                        first = false;
                     }
 
-                    await proj.ExportToOsb(first);
-                    first = false;
-                }
-
-            if (proj.MainBeatmap != mainBeatmap)
-                await Program.Schedule(s => s.proj.MainBeatmap = s.mainBeatmap, (mainBeatmap, proj));
-        });
+                if (proj.MainBeatmap != mainBeatmap)
+                    await Program.Schedule(s => s.proj.MainBeatmap = s.mainBeatmap, (mainBeatmap, proj));
+            });
 
     public override void FixedUpdate()
     {
@@ -536,9 +545,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         pendingSeek = null;
     }
 
-    public override void Update(bool isTop, bool isCovered)
+    public override void Update(bool isTopFocus, bool isCovered)
     {
-        base.Update(isTop, isCovered);
+        base.Update(isTopFocus, isCovered);
 
         timeSource.Update();
         var time = pendingSeek ?? timeSource.Current;
@@ -594,7 +603,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         storyboardDrawable.Time = time;
         storyboardDrawable.Clip = !Manager.GetContext<Editor>().InputManager.Alt;
         if (previewContainer.Visible)
-            previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
+            previewDrawable.Time =
+                timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
 
     TempList<char> buildWarningMessage()
@@ -786,20 +796,21 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.MaxValue = float.Max(audio.Duration, proj.EndTime * .001f);
     }
 
-    public override void Close() => withSavePrompt(() =>
-    {
-        proj.StopEffectUpdates();
-        Manager.AsyncLoading("Stopping effect updates",
-            async () =>
-            {
-                await proj.CancelEffectUpdates(true);
-                await Program.Schedule(m => m.GetContext<Editor>().Restart(), Manager);
+    public override void Close()
+        => withSavePrompt(() =>
+        {
+            proj.StopEffectUpdates();
+            Manager.AsyncLoading("Stopping effect updates",
+                async () =>
+                {
+                    await proj.CancelEffectUpdates(true);
+                    await Program.Schedule(m => m.GetContext<Editor>().Restart(), Manager);
 
-                await Task.Delay(5000);
+                    await Task.Delay(5000);
 
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
-            });
-    });
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+                });
+        });
 
     void withSavePrompt(Action action)
     {

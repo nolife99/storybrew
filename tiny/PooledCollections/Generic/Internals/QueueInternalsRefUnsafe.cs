@@ -43,7 +43,11 @@ partial class CollectionInternals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(this PooledQueue<T> source, out T[] array, out int count, out int head, out int tail)
+    public static void GetUnsafe<T>(this PooledQueue<T> source,
+        out T[] array,
+        out int count,
+        out int head,
+        out int tail)
     {
         array = source._array;
         count = source._size;

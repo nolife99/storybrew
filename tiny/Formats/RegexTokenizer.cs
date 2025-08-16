@@ -90,7 +90,8 @@ public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] 
         internal readonly int captureGroup = captureGroup;
         internal readonly TTokenType matchType = matchType;
 
-        internal readonly Lazy<Regex> regex = new(() => new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        internal readonly Lazy<Regex> regex = new(
+            () => new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled),
             LazyThreadSafetyMode.None);
 
         internal readonly struct Match

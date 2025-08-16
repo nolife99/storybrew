@@ -43,7 +43,8 @@ partial class CollectionInternals
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayDictionaryInternalsRefUnsafe<TKey, TValue> GetUnsafeRef<TKey, TValue>(
-        this scoped ref readonly ValueArrayDictionary<TKey, TValue> source) => new(in source);
+        this scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
+        => new(in source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AsSpan<TKey, TValue>(this scoped ref readonly ValueArrayDictionary<TKey, TValue> source,
@@ -60,7 +61,8 @@ partial class CollectionInternals
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._entries), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<TValue> ValuesAsSpan<TKey, TValue>(this scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
+    public static Span<TValue>
+        ValuesAsSpan<TKey, TValue>(this scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
         => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._values), source._freeEntryIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

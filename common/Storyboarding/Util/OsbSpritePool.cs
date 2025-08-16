@@ -39,18 +39,15 @@ public class OsbSpritePool : IDisposable
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         CommandPosition position,
-        Action<OsbSprite, float, float> finalizer = null) : this(segment, path, OsbOrigin.Centre, position, finalizer) { }
+        Action<OsbSprite, float, float> finalizer = null) :
+        this(segment, path, OsbOrigin.Centre, position, finalizer) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="finalizer"> The actions to be applied to each sprite in the pool. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> finalizer = null) : this(
-        segment,
-        path,
-        OsbOrigin.Centre,
-        default,
-        finalizer) { }
+    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> finalizer = null) :
+        this(segment, path, OsbOrigin.Centre, default, finalizer) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -58,8 +55,11 @@ public class OsbSpritePool : IDisposable
     /// <param name="origin"> The origin point for the sprites within the pool. </param>
     /// <param name="position"> The initial position of the sprites in the pool. </param>
     /// <param name="additive"> Toggle the sprites' additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, bool additive) :
-        this(segment, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null) { }
+    public OsbSpritePool(StoryboardSegment segment,
+        string path,
+        OsbOrigin origin,
+        CommandPosition position,
+        bool additive) : this(segment, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -77,7 +77,8 @@ public class OsbSpritePool : IDisposable
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="position"> The initial position of the sprites in the pool. </param>
     /// <param name="additive"> Toggle the sprites' additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(segment,
+    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(
+        segment,
         path,
         OsbOrigin.Centre,
         position,
@@ -170,7 +171,8 @@ public class OsbSpritePool : IDisposable
     private protected virtual OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
-        CommandPosition position) => segment.CreateSprite(path, origin, position);
+        CommandPosition position)
+        => segment.CreateSprite(path, origin, position);
 
     internal void Dispose(bool disposing)
     {
@@ -239,7 +241,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbOrigin origin,
         CommandPosition position,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => getPool(path, origin, position, finalizer, group).Get(startTime, endTime);
+        int group = 0)
+        => getPool(path, origin, position, finalizer, group).Get(startTime, endTime);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -253,7 +256,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         string path,
         CommandPosition position,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, position, finalizer, group);
+        int group = 0)
+        => Get(startTime, endTime, path, OsbOrigin.Centre, position, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -267,7 +271,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         string path,
         OsbOrigin origin,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime, endTime, path, origin, default, finalizer, group);
+        int group = 0)
+        => Get(startTime, endTime, path, origin, default, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -279,7 +284,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float endTime,
         string path,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, default, finalizer, group);
+        int group = 0)
+        => Get(startTime, endTime, path, OsbOrigin.Centre, default, finalizer, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -295,13 +301,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbOrigin origin,
         CommandPosition position,
         bool additive,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        origin,
-        position,
-        additive ? (pS, sT, _) => pS.Additive(sT) : null,
-        group);
+        int group = 0)
+        => Get(startTime, endTime, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -320,7 +321,12 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
     /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, CommandPosition position, bool additive, int group = 0)
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        CommandPosition position,
+        bool additive,
+        int group = 0)
         => Get(startTime, endTime, path, OsbOrigin.Centre, position, additive, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
@@ -329,14 +335,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the sprite. </param>
     /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, bool additive, int group = 0) => Get(
-        startTime,
-        endTime,
-        path,
-        OsbOrigin.Centre,
-        default,
-        additive,
-        group);
+    public OsbSprite Get(float startTime, float endTime, string path, bool additive, int group = 0)
+        => Get(startTime, endTime, path, OsbOrigin.Centre, default, additive, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -358,8 +358,9 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbOrigin origin,
         CommandPosition position,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, finalizer, group)
-        .Get(startTime, endTime);
+        int group = 0)
+        => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, finalizer, group)
+            .Get(startTime, endTime);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -379,7 +380,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         OsbOrigin origin,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, finalizer, group);
+        int group = 0)
+        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, finalizer, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -399,16 +401,17 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         CommandPosition position,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        OsbOrigin.Centre,
-        position,
-        finalizer,
-        group);
+        int group = 0)
+        => Get(startTime,
+            endTime,
+            path,
+            frameCount,
+            frameDelay,
+            loopType,
+            OsbOrigin.Centre,
+            position,
+            finalizer,
+            group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -426,16 +429,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         Action<OsbSprite, float, float> finalizer = null,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        OsbOrigin.Centre,
-        default,
-        finalizer,
-        group);
+        int group = 0)
+        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, finalizer, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -457,16 +452,17 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbOrigin origin,
         CommandPosition position,
         bool additive,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        origin,
-        position,
-        additive ? (pS, sT, _) => pS.Additive(sT) : null,
-        group);
+        int group = 0)
+        => Get(startTime,
+            endTime,
+            path,
+            frameCount,
+            frameDelay,
+            loopType,
+            origin,
+            position,
+            additive ? (pS, sT, _) => pS.Additive(sT) : null,
+            group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -486,7 +482,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         OsbOrigin origin,
         bool additive,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, additive, group);
+        int group = 0)
+        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, additive, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -506,16 +503,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         CommandPosition position,
         bool additive,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        OsbOrigin.Centre,
-        position,
-        additive,
-        group);
+        int group = 0)
+        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, additive, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -533,16 +522,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         bool additive,
-        int group = 0) => Get(startTime,
-        endTime,
-        path,
-        frameCount,
-        frameDelay,
-        loopType,
-        OsbOrigin.Centre,
-        default,
-        additive,
-        group);
+        int group = 0)
+        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive, group);
 
     /// <summary> Modifies the start and end times of a sprite in the pool. </summary>
     /// <remarks> If the sprite is not found in the pool, it is added to the pool. </remarks>
@@ -612,14 +593,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         OsbOrigin origin,
         Action<OsbSprite, float, float> action,
-        int group) => HashCode.Combine(path,
-        frameCount,
-        frameDelay,
-        loopType,
-        origin,
-        action?.Target,
-        action?.Method.Name,
-        group);
+        int group)
+        => HashCode.Combine(path, frameCount, frameDelay, loopType, origin, action?.Target, action?.Method.Name, group);
 
     void Dispose(bool disposing)
     {
@@ -792,5 +767,6 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     private protected override OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
-        CommandPosition position) => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
+        CommandPosition position)
+        => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
 }

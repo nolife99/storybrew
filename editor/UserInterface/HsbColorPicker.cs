@@ -40,8 +40,7 @@ public class HsbColorPicker : Widget, Field
                 new Label(manager) { StyleName = "small", Text = "Brightness" },
                 brightnessSlider = new(manager) { StyleName = "small", Value = 1 },
                 new Label(manager) { StyleName = "small", Text = "Alpha" },
-                alphaSlider = new(manager) { StyleName = "small", Value = 1 },
-                htmlTextbox = new(manager)
+                alphaSlider = new(manager) { StyleName = "small", Value = 1 }, htmlTextbox = new(manager)
             ]
         });
 
@@ -154,7 +153,9 @@ public class HsbColorPicker : Widget, Field
         previewSprite.Color = Color.FromScaledVector(value);
         Rgba32 bit32 = new(value);
 
-        using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
+        using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+            $"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
+
         htmlTextbox.SetValueSilent(text.AsReadOnlySpan());
     }
 

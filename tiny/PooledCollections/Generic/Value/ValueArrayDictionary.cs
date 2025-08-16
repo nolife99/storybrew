@@ -11,22 +11,19 @@ using System.Runtime.CompilerServices;
 public static class ValueArrayDictionary
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>() => new(0,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>()
+        => new(0, ArrayPool<ArrayEntry<TKey>>.Shared, ArrayPool<TValue>.Shared, ArrayPool<int>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity) => new(capacity,
-        ArrayPool<ArrayEntry<TKey>>.Shared,
-        ArrayPool<TValue>.Shared,
-        ArrayPool<int>.Shared);
+    public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity)
+        => new(capacity, ArrayPool<ArrayEntry<TKey>>.Shared, ArrayPool<TValue>.Shared, ArrayPool<int>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayDictionary<TKey, TValue> Create<TKey, TValue>(int capacity,
         ArrayPool<ArrayEntry<TKey>> entryPool,
         ArrayPool<TValue> valuePool,
-        ArrayPool<int> bucketPool) => new(capacity, entryPool, valuePool, bucketPool);
+        ArrayPool<int> bucketPool)
+        => new(capacity, entryPool, valuePool, bucketPool);
 }
 
 public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue>, IDisposable where TKey : notnull
@@ -256,7 +253,7 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
         {
             ResizeIfNeeded();
 
-            _entries[_freeEntryIndex] = new ArrayEntry<TKey>(key, hash);
+            _entries[_freeEntryIndex] = new(key, hash);
         }
         else
         {
@@ -440,7 +437,8 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
             ref var entry = ref _entries[_freeEntryIndex];
             var movingBucketIndex = Reduce((uint)entry.Hashcode, (uint)_buckets.Length, _fastModBucketsMultiplier);
 
-            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex) _buckets[movingBucketIndex] = indexToValueToRemove + 1;
+            if (_buckets[movingBucketIndex] - 1 == _freeEntryIndex)
+                _buckets[movingBucketIndex] = indexToValueToRemove + 1;
 
             var next = entry.Next;
             var previous = entry.Previous;
@@ -486,7 +484,8 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
     public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex)
+        => CopyTo(dest.AsSpan(), destIndex, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
@@ -506,7 +505,8 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
 
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var keys = _entries.AsSpan();
         var values = _values.AsSpan();
@@ -588,7 +588,9 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
     {
         if (hashcode >= N)
-            return Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N;
+            return Environment.Is64BitProcess ?
+                HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) :
+                hashcode % N;
 
         return hashcode;
     }
@@ -608,7 +610,8 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item)
+        => Add(item.Key, item.Value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Contains(ArrayKeyValuePair<TKey, TValue> item)
@@ -620,7 +623,8 @@ public struct ValueArrayDictionary<TKey, TValue> : IArrayDictionary<TKey, TValue
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (dest.Length - destIndex < Count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+        if (dest.Length - destIndex < Count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
         var keys = _entries.AsSpan();
         var values = _values ?? s_emptyValues;

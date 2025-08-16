@@ -29,15 +29,18 @@ public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Act
             Children =
             [
                 new ScrollArea(WidgetManager,
-                    new Label(WidgetManager) { Text = message.AsReadOnlySpan(), AnchorFrom = BoxAlignment.Centre })
-                {
-                    ScrollsHorizontally = true
-                },
+                    new Label(WidgetManager)
+                    {
+                        Text = message.AsReadOnlySpan(), AnchorFrom = BoxAlignment.Centre
+                    }) { ScrollsHorizontally = true },
                 buttonsLayout = new(WidgetManager) { Horizontal = true, AnchorFrom = BoxAlignment.Centre }
             ]
         });
 
-        Button yesButton = new(WidgetManager) { Text = noAction is null ? "Ok" : "Yes", AnchorFrom = BoxAlignment.Centre };
+        Button yesButton = new(WidgetManager)
+        {
+            Text = noAction is null ? "Ok" : "Yes", AnchorFrom = BoxAlignment.Centre
+        };
 
         yesButton.OnClick += (_, _) =>
         {

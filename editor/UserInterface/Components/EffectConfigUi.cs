@@ -167,7 +167,8 @@ public class EffectConfigUi : Widget
             }
 
             var displayName = field.DisplayName;
-            if (currentGroup is not null) displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
+            if (currentGroup is not null)
+                displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
 
             using var description = StringHelper.Interpolate($"Variable: {field.Name} ({field.Type.Name})");
             if (!string.IsNullOrWhiteSpace(field.Description))
@@ -265,7 +266,11 @@ public class EffectConfigUi : Widget
 
             Vector3Picker widget = new(Manager)
             {
-                Value = [(float)x.GetValue(field.Value), (float)y.GetValue(field.Value), (float)z.GetValue(field.Value)],
+                Value =
+                [
+                    (float)x.GetValue(field.Value), (float)y.GetValue(field.Value),
+                    (float)z.GetValue(field.Value)
+                ],
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -335,7 +340,9 @@ public class EffectConfigUi : Widget
         {
             Vector2Picker widget = new(Manager)
             {
-                Value = field.Type == typeof(Vector2) ? (Vector2)field.Value : (OpenTK.Mathematics.Vector2)field.Value,
+                Value = field.Type == typeof(Vector2) ?
+                    (Vector2)field.Value :
+                    (OpenTK.Mathematics.Vector2)field.Value,
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false

@@ -50,7 +50,9 @@ public sealed class Sprite : Drawable
                 break;
 
             case ScaleMode.Fit:
-            case ScaleMode.RepeatFit: scale = float.Min(scaleVec.X, scaleVec.Y); break;
+            case ScaleMode.RepeatFit:
+                scale = float.Min(scaleVec.X, scaleVec.Y);
+                break;
 
             default: scale = 1; break;
         }
@@ -83,7 +85,9 @@ public sealed class Sprite : Drawable
                     Rotation,
                     color,
                     texture0,
-                    texture1); break;
+                    texture1);
+
+                break;
         }
     }
 

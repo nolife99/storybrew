@@ -20,7 +20,4 @@ public sealed record RotateCommand : Command<CommandDecimal>
     /// <inheritdoc/>
     protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToRotation(EndValue);
-
-    /// <inheritdoc/>
-    public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }

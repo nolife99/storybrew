@@ -192,7 +192,7 @@ public static class ValueArray
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArray<T> Create<T>(T[] array, int length, ArrayPool<T> pool)
-        => new(new ReadOnlySpan<T>(array, 0, length), length, pool);
+        => new(new(array, 0, length), length, pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArray<T> Create<T>(int length) => new(length, ArrayPool<T>.Shared);
@@ -204,10 +204,12 @@ public static class ValueArray
     public static ValueArray<T> Empty<T>() => Create<T>(0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
-    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array) => new(array, array.Length, ArrayPool<T>.Shared);
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array)
+        => new(array, array.Length, ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
-    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool) => new(array, array.Length, pool);
+    public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, ArrayPool<T> pool)
+        => new(array, array.Length, pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public static ValueArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length)

@@ -16,7 +16,8 @@ public static class ValueListExtensions
 
         internal Extensions(scoped ref readonly ValueList<T> list) => _list = list;
 
-        public void ConvertAll<TOut, TOutput>(TOutput output, Converter<T, TOut> converter) where TOutput : ICollection<TOut>
+        public void ConvertAll<TOut, TOutput>(TOutput output, Converter<T, TOut> converter)
+            where TOutput : ICollection<TOut>
         {
             ArgumentNullException.ThrowIfNull(converter);
 

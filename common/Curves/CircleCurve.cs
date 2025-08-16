@@ -32,13 +32,14 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
     }
 
     ///<summary> Returns whether or not the curve is a valid circle curve based on given control points. </summary>
-    public static bool IsValid(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) => startPoint != midPoint &&
-        midPoint != endPoint &&
-        2 *
-        (startPoint.X * (midPoint.Y - endPoint.Y) +
-            midPoint.X * (endPoint.Y - startPoint.Y) +
-            endPoint.X * (startPoint.Y - midPoint.Y)) !=
-        0;
+    public static bool IsValid(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
+        => startPoint != midPoint &&
+            midPoint != endPoint &&
+            2 *
+            (startPoint.X * (midPoint.Y - endPoint.Y) +
+                midPoint.X * (endPoint.Y - startPoint.Y) +
+                endPoint.X * (startPoint.Y - midPoint.Y)) !=
+            0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
     static TempArray<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)

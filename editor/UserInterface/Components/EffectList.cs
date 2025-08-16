@@ -325,7 +325,9 @@ public partial class EffectList : Widget
 
             case EffectStatus.CompilationFailed:
             case EffectStatus.LoadingFailed:
-            case EffectStatus.ExecutionFailed: button.Icon = IconFont.BugReport; break;
+            case EffectStatus.ExecutionFailed:
+                button.Icon = IconFont.BugReport;
+                break;
 
             case EffectStatus.Ready:
                 button.Icon = IconFont.Eco;
@@ -340,7 +342,8 @@ public partial class EffectList : Widget
     {
         name = ZeroOrMoreDigitsPrefixRegex()
             .Replace(NotLetterNorNumberRegex()
-                    .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""),
+                    .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")),
+                        ""),
                 "");
 
         if (name.Length == 0) name = "EffectScript";
@@ -419,7 +422,9 @@ public partial class EffectList : Widget
                 Process.Start(new ProcessStartInfo(path, arguments)
                     {
                         UseShellExecute = true,
-                        WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
+                        WindowStyle = Program.Settings.VerboseVsCode ?
+                            ProcessWindowStyle.Normal :
+                            ProcessWindowStyle.Hidden
                     })
                     ?.Dispose();
 
@@ -439,7 +444,8 @@ public partial class EffectList : Widget
     static TempList<char> getEffectDetails(Effect effect)
     {
         var str = TempList.Create("using ");
-        if (effect.EstimatedSize > 30720) str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})");
+        if (effect.EstimatedSize > 30720)
+            str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})");
         else str.AddRange(effect.BaseName);
 
         return str;

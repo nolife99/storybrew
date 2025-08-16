@@ -16,7 +16,8 @@ public static class TempListExtensions
 
         internal Extensions(scoped ref readonly TempList<T> list) => _list = list;
 
-        public void ConvertAll<TOut, TOutput>(TOutput output, Converter<T, TOut> converter) where TOutput : ICollection<TOut>
+        public void ConvertAll<TOut, TOutput>(TOutput output, Converter<T, TOut> converter)
+            where TOutput : ICollection<TOut>
         {
             ArgumentNullException.ThrowIfNull(converter);
 
