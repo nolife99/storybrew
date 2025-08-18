@@ -13,10 +13,10 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
         ParseContext<YamlTokenType> context = new(tokens, new AnyParser(r => result = r));
         while (context.CurrentToken is not null)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.Indent:
-                    context.Indent(context.CurrentToken.Value.Length / 2);
+                    context.Indent(context.CurrentToken.GetValueOrDefault().Value.Length / 2);
                     context.ConsumeToken();
                     continue;
 
@@ -58,7 +58,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
     {
         readonly TinyObject result = [];
 
-        public ObjectParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent)
+        public ObjectParser(Action<TinyToken> callback, int virtualIndent) : base(callback, virtualIndent)
             => callback(result);
 
         protected override int ResultCount => result.Count;
@@ -67,7 +67,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
         {
             if (CheckIndent(context)) return;
 
-            switch (context.LookaheadToken.Type)
+            switch (context.LookaheadToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.ArrayIndicator:
                 case YamlTokenType.Property:
@@ -78,14 +78,15 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                         context.CurrentToken);
             }
 
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.Property:
                 case YamlTokenType.PropertyQuoted:
-                    var key = context.CurrentToken.Value;
-                    if (context.CurrentToken.Type == YamlTokenType.PropertyQuoted) key = YamlUtil.UnescapeString(key);
+                    var key = context.CurrentToken.GetValueOrDefault().Value;
+                    if (context.CurrentToken.GetValueOrDefault().Type == YamlTokenType.PropertyQuoted)
+                        key = YamlUtil.UnescapeString(key);
 
-                    switch (context.LookaheadToken.Type)
+                    switch (context.LookaheadToken.GetValueOrDefault().Type)
                     {
                         case YamlTokenType.Word:
                         case YamlTokenType.WordQuoted:
@@ -128,7 +129,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
         {
             if (CheckIndent(context)) return;
 
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.ArrayIndicator:
                     context.PushParser(new AnyParser(result.Add, result.Count == 0 ? VirtualIndent + 1 : 1));
@@ -152,7 +153,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
         public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
-            switch (context.LookaheadToken.Type)
+            switch (context.LookaheadToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.EndLine: break;
 
@@ -163,17 +164,14 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                         context.CurrentToken);
             }
 
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.Word:
                 {
-                    var value = context.CurrentToken.Value;
-                    Match match;
-                    if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if ((match = integerRegex.Match(value)).Success)
-                        Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if ((match = boolRegex.Match(value)).Success)
-                        Callback(new TinyValue(value == YamlFormat.BooleanTrue));
+                    var value = context.CurrentToken.GetValueOrDefault().Value;
+                    if (floatRegex.IsMatch(value)) Callback(new TinyValue(value, TinyTokenType.Float));
+                    else if (integerRegex.IsMatch(value)) Callback(new TinyValue(value, TinyTokenType.Integer));
+                    else if (boolRegex.IsMatch(value)) Callback(new TinyValue(value == YamlFormat.BooleanTrue));
                     else Callback(new TinyValue(value));
 
                     context.ConsumeToken();
@@ -184,7 +182,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
                 case YamlTokenType.WordQuoted:
                 {
-                    var value = YamlUtil.UnescapeString(context.CurrentToken.Value);
+                    var value = YamlUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value);
                     Callback(new TinyValue(value));
                     context.ConsumeToken();
                     context.PopParser();
@@ -203,7 +201,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
     {
         public override void Parse(scoped ref ParseContext<YamlTokenType> context)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case YamlTokenType.Property:
                 case YamlTokenType.PropertyQuoted:

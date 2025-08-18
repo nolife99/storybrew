@@ -28,6 +28,7 @@ public static class DrawState
     static int drawCalls;
     public static bool UseTextureCompression { get; set; }
 
+    public static bool CanInvalidate { get; private set; }
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
 
@@ -120,6 +121,7 @@ public static class DrawState
         }
 
         UseTextureCompression &= GLFW.ExtensionSupported("GL_EXT_texture_compression_s3tc");
+        CanInvalidate = GLFW.ExtensionSupported("GL_ARB_invalidate_subdata");
 
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);

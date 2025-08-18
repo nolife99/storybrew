@@ -5,16 +5,14 @@ using SixLabors.ImageSharp;
 
 public static class ColorExtensions
 {
-    public static Color LerpColor(this scoped ref readonly Color color,
-        scoped ref readonly Color otherColor,
-        float blend)
+    public static Color LerpColor(this Color color, Color otherColor, float blend)
     {
         var rgba = color.ToScaledVector4();
         return Color.FromScaledVector(
             new(rgba.AsVector3() * (1 - blend) + otherColor.ToScaledVector4().AsVector3() * blend, rgba.W));
     }
 
-    public static Color WithOpacity(this scoped ref readonly Color color, float opacity)
+    public static Color WithOpacity(this Color color, float opacity)
     {
         var rgba = color.ToScaledVector4();
         rgba.W *= opacity;
@@ -24,13 +22,9 @@ public static class ColorExtensions
 
     public static Vector4 FromHsb(Vector4 hsba)
     {
-        float hue = hsba.X * 360, saturation = hsba.Y, brightness = hsba.Z;
-        var c = brightness * saturation;
+        float hue = hsba.X * 360, saturation = hsba.Y, brightness = hsba.Z, c = brightness * saturation, h = hue / 60,
+            x = c * (1 - float.Abs(h % 2 - 1)), r, g, b;
 
-        var h = hue / 60;
-        var x = c * (1 - float.Abs(h % 2 - 1));
-
-        float r, g, b;
         switch (h)
         {
             case >= 0 and < 1:

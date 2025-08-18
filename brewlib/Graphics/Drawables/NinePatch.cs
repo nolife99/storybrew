@@ -9,11 +9,11 @@ using SixLabors.ImageSharp;
 
 public sealed class NinePatch : Drawable
 {
+    static readonly RenderStates renderStates = new();
     public FourSide Borders, Outset;
     public bool BordersOnly;
     public Color Color;
     public Texture2dRegion Texture;
-    public RenderStates RenderStates { get; } = new();
 
     public Vector2 PreferredSize => MinSize;
 
@@ -35,7 +35,7 @@ public sealed class NinePatch : Drawable
         var scale = (vec2 - vec1) / new Vector2(Borders.Right - Borders.Left, Borders.Bottom - Borders.Top);
 
         var color = Color.WithOpacity(opacity);
-        var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
+        var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, renderStates);
 
         // Center
         if (!BordersOnly && scale is { X: > 0, Y: > 0 })

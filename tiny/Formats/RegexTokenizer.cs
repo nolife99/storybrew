@@ -2,13 +2,14 @@ namespace Tiny.Formats;
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Tiny.PooledCollections.Generic.Temporary;
 using ZLinq;
 
-public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] definitions, TTokenType? endLineToken)
-    : ITokenizer<TTokenType> where TTokenType : struct
+public sealed class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] definitions,
+    TTokenType? endLineToken) : ITokenizer<TTokenType> where TTokenType : struct
 {
     TempList<Token<TTokenType>> ITokenizer<TTokenType>.Tokenize(TextReader reader)
     {
@@ -18,9 +19,9 @@ public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] 
         while (reader.ReadLine() is { } line)
         {
             using var tokens = Tokenize(line);
-            foreach (var token in tokens)
+            foreach (ref readonly var token in tokens)
             {
-                token.LineNumber = lineNumber;
+                Unsafe.AsRef(in token).LineNumber = lineNumber;
                 result.Add(token);
             }
 
@@ -85,13 +86,12 @@ public class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Definition[] 
         return result;
     }
 
-    public sealed class Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
+    public readonly struct Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
     {
         internal readonly int captureGroup = captureGroup;
         internal readonly TTokenType matchType = matchType;
 
-        internal readonly Lazy<Regex> regex = new(
-            () => new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        internal readonly Lazy<Regex> regex = new(() => new(regexPattern, RegexOptions.IgnoreCase),
             LazyThreadSafetyMode.None);
 
         internal readonly struct Match

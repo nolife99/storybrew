@@ -818,7 +818,7 @@ public class OsbSprite : StoryboardObject
                     var result = timeline.Add(command);
                     if (result) ++CommandCost;
 
-                    return;
+                    break;
                 }
         }
 

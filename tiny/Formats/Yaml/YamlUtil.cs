@@ -1,6 +1,8 @@
 ﻿namespace Tiny.Formats.Yaml;
 
 using System.Text;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class YamlUtil
 {
@@ -13,7 +15,7 @@ public class YamlUtil
                 case '\r': sb.Append("\\r"); break;
                 case '\n': sb.Append("\\n"); break;
                 case '"': sb.Append("\\\""); break;
-                case '\\': sb.Append("\\\\"); break;
+                case '\\': sb.Append(@"\\"); break;
                 default: sb.Append(c); break;
             }
 
@@ -24,22 +26,22 @@ public class YamlUtil
     {
         var special = false;
 
-        StringBuilder sb = new(value.Length);
+        using var sb = TempList.Create<char>(value.Length);
         foreach (var c in value)
             if (special)
             {
                 switch (c)
                 {
-                    case 'r': sb.Append('\r'); break;
-                    case 'n': sb.Append('\n'); break;
-                    default: sb.Append(c); break;
+                    case 'r': sb.Add('\r'); break;
+                    case 'n': sb.Add('\n'); break;
+                    default: sb.Add(c); break;
                 }
 
                 special = false;
             }
             else if (c == '\\') special = true;
-            else sb.Append(c);
+            else sb.Add(c);
 
-        return sb.ToString();
+        return sb.AsReadOnlySpan().ToString();
     }
 }

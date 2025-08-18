@@ -8,16 +8,13 @@ public class YamlFormat : Format<YamlTokenType>
 {
     public const string BooleanTrue = "Yes", BooleanFalse = "No";
 
-    static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
-    [
-        new(YamlTokenType.Indent, "^(  )+", 0), new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""), new(YamlTokenType.ArrayIndicator, "- "),
-        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"), new(YamlTokenType.Word, "[^\\s:]+"),
-        new(YamlTokenType.EndLine, "\n")
-    ];
-
-    protected override ITokenizer<YamlTokenType> Tokenizer { get; } =
-        new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
+    protected override ITokenizer<YamlTokenType> Tokenizer { get; } = new RegexTokenizer<YamlTokenType>([
+            new(YamlTokenType.Indent, "^(  )+", 0), new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
+            new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""), new(YamlTokenType.ArrayIndicator, "- "),
+            new(YamlTokenType.Property, @"([^\s:-][^\s:]*) *:"), new(YamlTokenType.Word, "[^\\s:]+"),
+            new(YamlTokenType.EndLine, "\n")
+        ],
+        YamlTokenType.EndLine);
 
     protected override ITokenParser<YamlTokenType> TokenParser { get; } = new YamlTokenParser();
 
@@ -29,13 +26,13 @@ public class YamlFormat : Format<YamlTokenType>
         {
             case TinyTokenType.Object: writeObject(writer, (TinyObject)token, parent, indentLevel); break;
             case TinyTokenType.Array: writeArray(writer, (TinyArray)token, parent, indentLevel); break;
-            default: writeValue(writer, (TinyValue)token, parent, indentLevel); break;
+            default: writeValue(writer, (TinyValue)token); break;
         }
     }
 
     void writeObject(TextWriter writer, TinyObject obj, TinyToken parent, int indentLevel)
     {
-        var parentIsArray = parent is not null && parent.Type == TinyTokenType.Array;
+        var parentIsArray = parent?.Type is TinyTokenType.Array;
 
         var first = true;
         foreach (var property in obj)
@@ -50,12 +47,16 @@ public class YamlFormat : Format<YamlTokenType>
             if (value.IsEmpty) writer.WriteLine(key + ":");
             else if (value.IsInline)
             {
-                writer.Write(key + ": ");
+                writer.Write(key);
+                writer.Write(": ");
+
                 write(writer, value, obj, 0);
             }
             else
             {
-                writer.WriteLine(key + ":");
+                writer.Write(key);
+                writer.Write(':');
+
                 write(writer, value, obj, indentLevel + 1);
             }
 
@@ -65,10 +66,10 @@ public class YamlFormat : Format<YamlTokenType>
 
     void writeArray(TextWriter writer, TinyArray array, TinyToken parent, int indentLevel)
     {
-        var parentIsArray = parent is not null && parent.Type == TinyTokenType.Array;
+        var parentIsArray = parent?.Type is TinyTokenType.Array;
 
         var first = true;
-        foreach (var token in array)
+        foreach (var token in array.AsReadOnlySpan())
         {
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
@@ -88,10 +89,8 @@ public class YamlFormat : Format<YamlTokenType>
         }
     }
 
-    static void writeValue(TextWriter writer, TinyValue valueToken, TinyToken parent, int indentLevel)
+    static void writeValue(TextWriter writer, TinyValue valueToken)
     {
-        if (indentLevel != 0) throw new InvalidOperationException();
-
         var type = valueToken.Type;
         var value = valueToken.Value<object>();
 
@@ -137,8 +136,6 @@ public class YamlFormat : Format<YamlTokenType>
 
     static void writeIndent(TextWriter writer, int indentLevel)
     {
-        if (indentLevel <= 0) return;
-
-        writer.Write(new string(' ', indentLevel * 2));
+        for (var i = 0; i < indentLevel * 2; ++i) writer.Write(' ');
     }
 }

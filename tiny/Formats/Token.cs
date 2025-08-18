@@ -1,6 +1,6 @@
 ﻿namespace Tiny.Formats;
 
-public class Token<TToken>(TToken type, string value = null)
+public struct Token<TToken>(TToken type, string value = null)
 {
     public int LineNumber, CharNumber;
     public TToken Type => type;

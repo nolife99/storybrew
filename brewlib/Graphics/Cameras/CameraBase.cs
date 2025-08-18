@@ -187,7 +187,7 @@ public abstract class CameraBase : ICamera
         // TODO Vector3.Project() ?
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
-        var devicePosition = transformedPosition.AsVector3() / float.Abs(transformedPosition.W);
+        var devicePosition = transformedPosition / float.Abs(transformedPosition.W);
 
         return new((devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,

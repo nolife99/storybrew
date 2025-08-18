@@ -170,7 +170,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 origin,
                 scale,
                 rotation,
-                color.LerpColor(in SixLabors.ImageSharp.Color.Black, project.DimFactor).WithOpacity(opacity * fade),
+                color.LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor).WithOpacity(opacity * fade),
                 Vector2.Zero,
                 texture.Size);
     }

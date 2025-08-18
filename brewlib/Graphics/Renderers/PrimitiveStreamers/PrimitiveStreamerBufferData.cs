@@ -20,25 +20,19 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
-        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, totalQueuedPrimitives * PrimitiveSize, primitiveBuffer);
-
-        primitiveBufferOffset = 0;
+        var size = totalQueuedPrimitives * PrimitiveSize;
+        GL.BufferData(BufferTarget.ArrayBuffer, size, primitiveBuffer, BufferUsageHint.StaticDraw);
 
         if (IndexBufferId != -1)
             GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
+
+        if (DrawState.CanInvalidate) GL.InvalidateBufferData(VertexBufferId);
+
+        primitiveBufferOffset = 0;
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-
-    protected override void initializeVertexBuffer()
-    {
-        base.initializeVertexBuffer();
-        GL.BufferStorage(BufferTarget.ArrayBuffer,
-            MaxPrimitivesPerBatch * PrimitiveSize,
-            0,
-            BufferStorageFlags.DynamicStorageBit);
-    }
 
     protected override void Dispose(bool disposing)
     {

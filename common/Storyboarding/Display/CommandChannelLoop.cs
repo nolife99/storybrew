@@ -9,7 +9,7 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
-        var c = commandsView;
+        var c = commands;
         if (c.Count == 0)
         {
             result = default;

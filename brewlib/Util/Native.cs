@@ -8,12 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.IO;
 using Microsoft.Win32.SafeHandles;
+using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
+using Image = SixLabors.ImageSharp.Image;
 
 public static class Native
 {
@@ -24,19 +25,22 @@ public static class Native
     public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 
     public static void SetWindowIcon(ResourceContainer container, string iconPath)
-    {
-        using var iconResource = container.GetStream(iconPath, ResourceSource.Embedded);
-        if (iconResource is null) return;
+        => Task.Run(async () =>
+        {
+            await using var iconResource = container.GetStream(iconPath, ResourceSource.Embedded);
+            if (iconResource is null) return;
 
-        using var image = Image.Load<Rgba32>(iconResource);
-        image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
+            using var image = Image.Load<Rgba32>(iconResource);
+            image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
 
-        using var bytes = TempArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
-        image.CopyPixelDataTo(bytes.AsSpan());
+            using var bytes = ValueArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
+            image.CopyPixelDataTo(bytes.AsSpan());
 
-        bytes.GetUnsafe(out var array, out _);
-        Window.Icon = new(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array));
-    }
+            bytes.GetUnsafe(out var array, out _);
+
+            WindowIcon icon = new(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array));
+            await MainThreadScheduler(x => Window.Icon = (WindowIcon)x, icon);
+        });
 
     #region Win32
 

@@ -25,6 +25,8 @@ public sealed class Texture2d : Texture2dRegion
 
     long bindlessId = -1;
 
+    nint fenceId;
+
     Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height)) => _textureId = textureId;
 
     public int TextureId
@@ -43,11 +45,15 @@ public sealed class Texture2d : Texture2dRegion
     {
         get
         {
-            if (bindlessId != -1) return bindlessId;
+            if (fenceId == -1) return bindlessId;
 
             if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
-            ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+            GL.GetSync(fenceId, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
+            if (values == 0x9118) return -1;
+
+            GL.DeleteSync(fenceId);
+            fenceId = -1;
 
             GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
             if (!BitConverter.IsLittleEndian)
@@ -209,8 +215,13 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
+        Texture2d texture = new(textureId, width, height)
+        {
+            fenceId = BindlessTexturesSupported ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : -1
+        };
+
         GL.Flush();
-        return new(textureId, width, height);
+        return texture;
     }
 
     public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
@@ -223,25 +234,19 @@ public sealed class Texture2d : Texture2dRegion
         var compress = DrawState.UseTextureCompression;
 
         var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt3Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, textureId);
 
-        GL.TexStorage2D(TextureTarget2d.Texture2D,
-            1,
-            Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format),
-            width,
-            height);
-
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
-            GL.TexSubImage2D(TextureTarget.Texture2D,
+            GL.TexImage2D(TextureTarget.Texture2D,
                 0,
-                0,
-                0,
+                format,
                 width,
                 height,
+                0,
                 PixelFormat.Rgba,
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
@@ -266,12 +271,12 @@ public sealed class Texture2d : Texture2dRegion
                     .CopyTo(MemoryMarshal.CreateSpan(ref Unsafe.Add(ref addr, i * width), width));
 
             GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-            GL.TexSubImage2D(TextureTarget.Texture2D,
+            GL.TexImage2D(TextureTarget.Texture2D,
                 0,
-                0,
-                0,
+                format,
                 width,
                 height,
+                0,
                 PixelFormat.Rgba,
                 PixelType.UnsignedByte,
                 0);
@@ -282,8 +287,13 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
+        Texture2d texture = new(textureId, width, height)
+        {
+            fenceId = BindlessTexturesSupported ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : -1
+        };
+
         GL.Flush();
-        return new(textureId, width, height);
+        return texture;
     }
 
     #region IDisposable Support
@@ -294,14 +304,21 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (disposing)
             {
-                GL.DeleteTexture(_textureId);
+                Free(this);
+
                 _textureId = 0;
                 bindlessId = -1;
             }
-            else Native.MainThreadScheduler(id => GL.DeleteTexture((int)id), _textureId);
+            else Native.MainThreadScheduler(tex => Free((Texture2d)tex), this);
         }
 
         base.Dispose(disposing);
+    }
+
+    static void Free(Texture2d texture)
+    {
+        GL.DeleteTexture(texture._textureId);
+        if (texture.fenceId != -1) GL.DeleteSync(texture.fenceId);
     }
 
     #endregion

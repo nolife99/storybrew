@@ -138,10 +138,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (string.IsNullOrEmpty(value)) return NullDrawable.Instance;
 
                 var drawable = GetDrawable(value);
-                if (drawable == NullDrawable.Instance)
-                    throw new InvalidDataException($"Referenced drawable '{value}' must be defined before '{data}'");
-
-                return drawable;
+                return drawable == NullDrawable.Instance ?
+                    throw new InvalidDataException($"Referenced drawable '{value}' must be defined before '{data}'") :
+                    drawable;
             }
 
             case TinyTokenType.Array:
@@ -240,19 +239,15 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var type = skinnable.GetType();
         while (type != typeof(object))
         {
-            var fields = type.GetFields();
-            foreach (var field in fields)
+            foreach (var field in type.GetFields())
             {
                 var fieldData = resolveConstants(data.Value<TinyToken>(field.Name), constants);
                 if (fieldData is not null)
                 {
                     var fieldType = field.FieldType;
                     var parser = getFieldParser(fieldType);
-                    if (parser is not null)
-                    {
-                        var value = parser.Invoke(fieldData, constants, this);
-                        field.SetValue(skinnable, value);
-                    }
+
+                    if (parser is not null) field.SetValue(skinnable, parser(fieldData, constants, this));
                     else Trace.TraceWarning($"Skin - No parser for {fieldType}");
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));

@@ -1,25 +1,24 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System;
-using System.Collections.Generic;
-using BrewLib.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
-    readonly List<Command<TValue>> commands = [];
-    protected ArraySegment<Command<TValue>> commandsView = ArraySegment<Command<TValue>>.Empty;
+    protected ValueList<Command<TValue>> commands = ValueList.Create<Command<TValue>>();
 
-    public ReadOnlySpan<Command<TValue>> Commands => commandsView.AsSpan();
+    public bool HasOverlap;
 
-    public bool HasOverlap { get; private set; }
+    public ReadOnlySpan<Command<TValue>> Commands => commands.AsReadOnlySpan();
 
     public bool Add(Command<TValue> command)
     {
-        var c = commandsView;
+        var c = commands;
 
-        var index = Array.BinarySearch(c.Array!, c.Offset, c.Count, command);
+        var index = c.AsReadOnlySpan().BinarySearch(command);
         if (index >= 0)
         {
             c[index] = command;
@@ -38,14 +37,13 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             index < c.Count && c[index].startTime < command.endTime;
 
         commands.Insert(index, command);
-        commandsView = commands.GetArraySegment();
 
         return true;
     }
 
     protected Command<TValue> CommandAtTime(float time)
     {
-        var c = commandsView;
+        var c = commands;
         if (c.Count == 0) return null;
 
         if (!findCommandIndex(time, out var index) && index > 0) --index;
@@ -79,7 +77,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
     bool findCommandIndex(float time, out int index)
     {
-        var c = commandsView;
+        var c = commands;
 
         var left = 0;
         var right = c.Count - 1;

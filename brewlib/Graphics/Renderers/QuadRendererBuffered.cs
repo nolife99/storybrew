@@ -76,8 +76,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                 indices);
         }
 
-        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
-        GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferStorageFlags.DynamicStorageBit);
+        ssbo = GL.GenBuffer();
 
         Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
 
@@ -154,10 +153,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            0,
-            ssboSize - Unsafe.SizeOf<Vector4>() * (maxQuadsPerBatch - queuedRenders),
-            combinedMatrices);
+        var ssboWritten = ssboSize - Unsafe.SizeOf<Vector4>() * (maxQuadsPerBatch - queuedRenders);
+        GL.BufferData(BufferTarget.ShaderStorageBuffer, ssboWritten, combinedMatrices, BufferUsageHint.StaticDraw);
 
         if (!Texture2d.BindlessTexturesSupported)
         {
@@ -170,6 +167,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         }
 
         primitiveStreamer.Render(PrimitiveType.Triangles, VertexPerQuad);
+
+        if (DrawState.CanInvalidate) GL.InvalidateBufferData(ssbo);
     }
 
     void IQuadRenderer.Draw(scoped ref readonly QuadPrimitive quad, Texture2dRegion texture)
@@ -177,6 +176,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         if (Texture2d.BindlessTexturesSupported)
         {
             var textureId = texture.BindableTexture.BindlessTextureHandle;
+            if (textureId == -1) return;
+
             if (currentTextureHandle != textureId)
             {
                 DrawState.FlushRenderer();

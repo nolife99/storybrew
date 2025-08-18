@@ -26,7 +26,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
         public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case JsonTokenType.Property:
                 case JsonTokenType.PropertyQuoted:
@@ -37,10 +37,11 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
                             ", after: " +
                             context.CurrentToken);
 
-                    var key = context.CurrentToken.Value;
-                    if (context.CurrentToken.Type is JsonTokenType.PropertyQuoted) key = JsonUtil.UnescapeString(key);
+                    var key = context.CurrentToken.GetValueOrDefault().Value;
+                    if (context.CurrentToken.GetValueOrDefault().Type is JsonTokenType.PropertyQuoted)
+                        key = JsonUtil.UnescapeString(key);
 
-                    switch (context.LookaheadToken.Type)
+                    switch (context.LookaheadToken.GetValueOrDefault().Type)
                     {
                         case JsonTokenType.ObjectStart:
                         case JsonTokenType.ArrayStart:
@@ -89,7 +90,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
         public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case JsonTokenType.ObjectStart:
                 case JsonTokenType.ArrayStart:
@@ -122,11 +123,11 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
     {
         public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case JsonTokenType.Word:
                 {
-                    var value = context.CurrentToken.Value;
+                    var value = context.CurrentToken.GetValueOrDefault().Value;
                     if (floatRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
                     else if (integerRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
                     else if (boolRegex().Match(value).Success) Callback(new TinyValue(value == bool.TrueString));
@@ -140,7 +141,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
                 case JsonTokenType.WordQuoted:
                 {
-                    var value = JsonUtil.UnescapeString(context.CurrentToken.Value);
+                    var value = JsonUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value);
                     Callback(new TinyValue(value));
                     context.ConsumeToken();
                     context.PopParser();
@@ -168,7 +169,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
     {
         public override void Parse(scoped ref ParseContext<JsonTokenType> context)
         {
-            switch (context.CurrentToken.Type)
+            switch (context.CurrentToken.GetValueOrDefault().Type)
             {
                 case JsonTokenType.ObjectStart:
                     context.ReplaceParser(new ObjectParser(Callback));

@@ -50,12 +50,7 @@ public sealed class LineRendererBuffered : ILineRenderer
             int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)),
             default);
 
-        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, combinedMatricesBuffer = GL.GenBuffer());
-        GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
-            Unsafe.SizeOf<Matrix4x4>() * maxLinesPerBatch,
-            0,
-            BufferStorageFlags.DynamicStorageBit);
-
+        combinedMatricesBuffer = GL.GenBuffer();
         combinedMatrices = new();
 
         Trace.WriteLine($"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
@@ -114,14 +109,17 @@ public sealed class LineRendererBuffered : ILineRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            0,
-            Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
-            ref MemoryMarshal.GetReference(combinedMatrices.AsReadOnlySpan()));
+        var ssboWritten = Unsafe.SizeOf<Matrix4x4>() * queuedRenders;
+        GL.BufferData(BufferTarget.ShaderStorageBuffer,
+            ssboWritten,
+            ref MemoryMarshal.GetReference(combinedMatrices.AsReadOnlySpan()),
+            BufferUsageHint.StaticDraw);
 
         combinedMatrices.Clear();
 
         primitiveStreamer.Render(PrimitiveType.Lines, VertexPerLine);
+
+        if (DrawState.CanInvalidate) GL.InvalidateBufferData(combinedMatricesBuffer);
     }
 
     void ILineRenderer.Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)

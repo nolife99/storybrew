@@ -11,14 +11,16 @@ public ref struct ParseContext<TTokenType>
     public ParseContext(ReadOnlySpan<Token<TTokenType>> tokens, Parser<TTokenType> initialParser)
     {
         tokenEnumerator = tokens.GetEnumerator();
-        initializeCurrentAndLookahead();
+
+        ConsumeToken();
+        ConsumeToken();
 
         parserStack = TempStack.Create<Parser<TTokenType>>();
         parserStack.Push(initialParser);
     }
 
-    public Token<TTokenType> CurrentToken { get; private set; }
-    public Token<TTokenType> LookaheadToken { get; private set; }
+    public Token<TTokenType>? CurrentToken { get; private set; }
+    public Token<TTokenType>? LookaheadToken { get; private set; }
 
     public Parser<TTokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
 
@@ -51,11 +53,5 @@ public ref struct ParseContext<TTokenType>
     {
         CurrentToken = LookaheadToken;
         LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : null;
-    }
-
-    void initializeCurrentAndLookahead()
-    {
-        ConsumeToken();
-        ConsumeToken();
     }
 }

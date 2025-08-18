@@ -163,9 +163,10 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
 
     public ref T this[int index]
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_size);
             return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index);
         }
     }
@@ -239,9 +240,9 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
         return Array.BinarySearch(_items, index, count, item, comparer);
     }
 
-    public int BinarySearch(T item) => BinarySearch(0, Count, item, null);
+    public int BinarySearch(T item) => Array.BinarySearch(_items, 0, _size, item, null);
 
-    public int BinarySearch(T item, IComparer<T> comparer) => BinarySearch(0, Count, item, comparer);
+    public int BinarySearch(T item, IComparer<T> comparer) => Array.BinarySearch(_items, 0, _size, item, comparer);
 
     // Clears the contents of List.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
