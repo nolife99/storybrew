@@ -21,7 +21,7 @@ public class ScriptedEffect : Effect
     readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
 
     bool beatmapDependent = true;
-    string configScriptIdentifier;
+    int configScriptIdentifier;
     MultiFileWatcher dependencyWatcher;
 
     bool multithreaded;

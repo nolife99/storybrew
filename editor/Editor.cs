@@ -94,8 +94,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
                     => Type.GetType(
                         $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
                         false,
-                        true) ??
-                    brewLibAssembly.GetType(
+                        true) ?? brewLibAssembly.GetType(
                         $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
                         true,
                         true)

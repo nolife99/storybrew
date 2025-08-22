@@ -158,8 +158,6 @@ public ref struct TempDictionary<TKey, TValue>
 
     internal readonly ArrayPool<Entry<TKey, TValue>> _entryPool;
 
-    internal static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
-
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>(),
         s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>(),
         s_clearEntries = s_isReferenceKey || s_isReferenceValue;
@@ -196,9 +194,15 @@ public ref struct TempDictionary<TKey, TValue>
             _entries = s_emptyEntries;
         }
 
-        if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default)) _comparer = comparer;
+        if (!typeof(TKey).IsValueType)
+        {
+            _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
-        if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
+            if (typeof(TKey) == typeof(string) && _comparer!.GetStringComparer() is { } stringComparer)
+                _comparer = (IEqualityComparer<TKey>)stringComparer;
+        }
+        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
+            _comparer = comparer;
     }
 
     internal TempDictionary(IDictionary<TKey, TValue> dictionary,
@@ -583,9 +587,8 @@ public ref struct TempDictionary<TKey, TValue>
         bucket = index + 1;
         _version++;
 
-        if (!typeof(TKey).IsValueType &&
-            collisionCount > HashHelpers.HashCollisionThreshold &&
-            ReferenceEquals(comparer, _stringComparer)) Resize(entries.Length, true);
+        if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold &&
+            comparer.IsNonRandomizedStringComparer()) Resize(entries.Length, true);
 
         return true;
     }
@@ -702,9 +705,8 @@ public ref struct TempDictionary<TKey, TValue>
             bucket = index + 1;
             dictionary._version++;
 
-            if (!typeof(TKey).IsValueType &&
-                collisionCount > HashHelpers.HashCollisionThreshold &&
-                ReferenceEquals(comparer, _stringComparer))
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold &&
+                comparer.IsNonRandomizedStringComparer())
             {
                 dictionary.Resize(entries.Length, true);
 
@@ -731,13 +733,12 @@ public ref struct TempDictionary<TKey, TValue>
 
         if (!typeof(TKey).IsValueType && forceNewHashCodes)
         {
-            _comparer = EqualityComparer<TKey>.Default;
+            var comparer = _comparer = (IEqualityComparer<TKey>)((IEqualityComparer<string>)_comparer)
+                .GetRandomizedStringComparer();
 
             for (var i = 0; i < count; i++)
                 if (entries[i].Next >= -1)
-                    entries[i].HashCode = (uint)_comparer.GetHashCode(entries[i].Key);
-
-            if (ReferenceEquals(_comparer, EqualityComparer<TKey>.Default)) _comparer = null;
+                    entries[i].HashCode = (uint)comparer.GetHashCode(entries[i].Key);
         }
 
         RenewBuckets(newSize);
@@ -774,8 +775,8 @@ public ref struct TempDictionary<TKey, TValue>
             {
                 ref var entry = ref entries[i];
 
-                if (entry.HashCode == hashCode &&
-                    (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
+                if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Key, key) ??
+                    EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
                     if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;
@@ -819,8 +820,8 @@ public ref struct TempDictionary<TKey, TValue>
             {
                 ref var entry = ref entries[i];
 
-                if (entry.HashCode == hashCode &&
-                    (_comparer?.Equals(entry.Key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
+                if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Key, key) ??
+                    EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
                     if (last < 0) bucket = entry.Next + 1;
                     else entries[last].Next = entry.Next;

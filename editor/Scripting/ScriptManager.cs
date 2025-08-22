@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.Scripting;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,6 +13,7 @@ using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
+using ZLinq;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
@@ -122,11 +122,14 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             referencedAssemblies.AsReadOnlySpan());
     }
 
-    public IEnumerable<string> GetScriptNames()
+    public PooledArray<string> GetScriptNames()
         => Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+            .AsValueEnumerable()
             .Select(Path.GetFileNameWithoutExtension)
             .Union(Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
-                .Select(Path.GetFileNameWithoutExtension));
+                .AsValueEnumerable()
+                .Select(Path.GetFileNameWithoutExtension))
+            .ToArrayPool();
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
@@ -137,10 +140,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             scheduler?.Schedule(e.FullPath,
                 _ =>
                 {
-                    var alternateLookup = scriptContainers.GetAlternateLookup<ReadOnlySpan<char>>();
-                    if (!disposed &&
-                        alternateLookup.TryGetValue(Path.GetFileNameWithoutExtension(e.Name.AsSpan()),
-                            out var container))
+                    if (!disposed && scriptContainers.GetAlternateLookup<ReadOnlySpan<char>>()
+                        .TryGetValue(Path.GetFileNameWithoutExtension(e.Name.AsSpan()), out var container))
                         container.ReloadScript();
                 });
     }

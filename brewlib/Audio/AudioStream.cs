@@ -13,7 +13,7 @@ public class AudioStream : AudioChannel
 
     internal AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
     {
-        const BassFlags flags = BassFlags.Decode | BassFlags.Prescan;
+        const BassFlags flags = BassFlags.Decode;
 
         decodeStream = Bass.CreateStream(path, 0, 0, flags | BassFlags.AsyncFile);
         if (decodeStream == 0 && !Path.IsPathRooted(path))

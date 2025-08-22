@@ -158,8 +158,8 @@ public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
         for (var i = 1; i < count - 1; ++i)
         {
             var index = 2 * i;
-            output.Add(.25f *
-                (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
+            output.Add(.25f * (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] +
+                subdivisionBuffer2[index + 1]));
         }
     }
 }

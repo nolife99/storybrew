@@ -22,14 +22,9 @@ public class VertexAttribute
     {
         if (obj == this) return true;
 
-        return obj is VertexAttribute otherAttribute &&
-            Name == otherAttribute.Name &&
-            Type == otherAttribute.Type &&
-            ComponentSize == otherAttribute.ComponentSize &&
-            ComponentCount == otherAttribute.ComponentCount &&
-            Normalized == otherAttribute.Normalized &&
-            Offset == otherAttribute.Offset &&
-            Usage == otherAttribute.Usage;
+        return obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
+            ComponentSize == otherAttribute.ComponentSize && ComponentCount == otherAttribute.ComponentCount &&
+            Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
     }
 
     public override int GetHashCode()

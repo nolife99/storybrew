@@ -33,7 +33,7 @@ public sealed class TextureContainerAtlas : TextureContainer
         this.atlasDescription = atlasDescription;
 
         atlases = new();
-        textures = new(StringComparer.OrdinalIgnoreCase);
+        textures = new();
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 

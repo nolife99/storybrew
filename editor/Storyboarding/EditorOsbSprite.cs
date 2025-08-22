@@ -120,16 +120,15 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         if (frameStats is not null && !forceVisible)
         {
             var size = texture.Size * scale;
-            OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation);
-            if (spriteBox.Intersects(in OsuHitObject.StoryboardBounds))
+            OrientedBoundingBox spriteBox = new(position, origin * scale, size, rotation);
+            if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
                 frameStats.EffectiveCommandCount += sprite.CommandCost;
 
                 var aabb = spriteBox.GetAABB();
                 var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
 
-                var intersectionArea = size.X *
-                    size.Y *
+                var intersectionArea = size.X * size.Y *
                     (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
                 if (float.IsFinite(intersectionArea))
@@ -158,7 +157,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var color = (Color)sprite.ColorAt(time);
         if (forceVisible)
             color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
-                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount * .00025f) / 2 + .5f,
+                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount64 * .00025f) * .5f + .5f,
                     1,
                     1,
                     1)));

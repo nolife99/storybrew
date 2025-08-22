@@ -48,7 +48,7 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
     private protected virtual bool ExportEndValue => true;
 
     /// <inheritdoc/>
-    public virtual bool IsFragmentableAt(float time) => Easing == OsbEasing.None;
+    public virtual bool IsFragmentableAt(float time) => Easing is OsbEasing.None;
 
     /// <inheritdoc/>
     public float StartTime => startTime;

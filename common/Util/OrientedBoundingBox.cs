@@ -9,13 +9,13 @@ public readonly struct OrientedBoundingBox
     readonly Vector2 corner0, corner1, corner2, corner3, axis0, axis1;
     readonly float origin0, origin1;
 
-    public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
+    public OrientedBoundingBox(Vector2 position, Vector2 origin, Vector2 size, float angle)
     {
         var (sin, cos) = float.SinCos(angle);
         Vector2 unitRight = new(cos, sin), unitUp = new(-sin, cos);
 
-        var right = unitRight * (width - origin.X);
-        var up = unitUp * (height - origin.Y);
+        var right = unitRight * (size.X - origin.X);
+        var up = unitUp * (size.Y - origin.Y);
         var left = unitRight * -origin.X;
         var down = unitUp * -origin.Y;
 
@@ -40,9 +40,9 @@ public readonly struct OrientedBoundingBox
             float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)),
             float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
 
-    public bool Intersects(scoped ref readonly RectangleF other)
+    public bool Intersects(RectangleF other)
     {
-        OrientedBoundingBox otherBox = new(new(other.X, other.Y), Vector2.Zero, other.Width, other.Height, 0);
+        OrientedBoundingBox otherBox = new(new(other.X, other.Y), Vector2.Zero, new(other.Width, other.Height), 0);
         return intersects1Way(in otherBox) && otherBox.intersects1Way(in this);
     }
 

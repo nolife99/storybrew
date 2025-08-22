@@ -16,9 +16,9 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
     public bool Add(Command<TValue> command)
     {
-        var c = commands;
+        var c = commands.AsSpan();
 
-        var index = c.AsReadOnlySpan().BinarySearch(command);
+        var index = c.BinarySearch(command);
         if (index >= 0)
         {
             c[index] = command;
@@ -26,7 +26,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         }
 
         index = ~index;
-        while (index < c.Count)
+        while (index < c.Length)
         {
             if (c[index].CompareTo(command) > 0) break;
 
@@ -34,7 +34,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         }
 
         HasOverlap |= index > 0 && command.startTime < c[index - 1].endTime ||
-            index < c.Count && c[index].startTime < command.endTime;
+            index < c.Length && c[index].startTime < command.endTime;
 
         commands.Insert(index, command);
 
@@ -43,10 +43,10 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
     protected Command<TValue> CommandAtTime(float time)
     {
-        var c = commands;
-        if (c.Count == 0) return null;
+        var c = commands.AsReadOnlySpan();
+        if (c.Length == 0) return null;
 
-        if (!findCommandIndex(time, out var index) && index > 0) --index;
+        if (!findCommandIndex(c, time, out var index) && index > 0) --index;
 
         if (HasOverlap)
         {
@@ -75,12 +75,10 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         return true;
     }
 
-    bool findCommandIndex(float time, out int index)
+    static bool findCommandIndex(ReadOnlySpan<Command<TValue>> c, float time, out int index)
     {
-        var c = commands;
-
         var left = 0;
-        var right = c.Count - 1;
+        var right = c.Length - 1;
 
         while (left <= right)
         {

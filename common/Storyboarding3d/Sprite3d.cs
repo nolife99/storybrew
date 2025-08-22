@@ -93,8 +93,7 @@ public class Sprite3d : Node3d, HasOsbSprites
                     object3dState.WorldTransform.M13).Length(),
                 new Vector3(object3dState.WorldTransform.M21,
                     object3dState.WorldTransform.M22,
-                    object3dState.WorldTransform.M23).Length()) *
-            (cameraState.FocusDistance / screenPosition.W) *
+                    object3dState.WorldTransform.M23).Length()) * (cameraState.FocusDistance / screenPosition.W) *
             cameraState.ResolutionScale;
 
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;

@@ -132,9 +132,8 @@ public class OsbSpritePool : IDisposable
         PooledSprite result = null;
         foreach (var pooledSprite in pooled)
             if ((MaxPoolDuration > 0 ?
-                    pooledSprite.EndTime <= startTime && startTime < pooledSprite.StartTime + MaxPoolDuration :
-                    pooledSprite.EndTime <= startTime) &&
-                (result is null || pooledSprite.StartTime < result.StartTime))
+                pooledSprite.EndTime <= startTime && startTime < pooledSprite.StartTime + MaxPoolDuration :
+                pooledSprite.EndTime <= startTime) && (result is null || pooledSprite.StartTime < result.StartTime))
                 result = pooledSprite;
 
         if (result is not null)

@@ -143,16 +143,12 @@ public sealed partial class Project : IDisposable
             var regex = OsuFileRegex();
             var osuFilename = Path.GetFileName(MainBeatmap.Path.AsSpan());
 
-            if (regex.IsMatch(osuFilename))
-            {
-                var match = regex.Match(osuFilename.ToString());
-                return Path.Combine(MapsetPath, string.Concat(match.Groups[1].ValueSpan, ".osb"));
-            }
+            if (!regex.IsMatch(osuFilename))
+                return Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly).FirstOrDefault() ??
+                    Path.Combine(MapsetPath, "storyboard.osb");
 
-            foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly))
-                return osbFilePath;
-
-            return Path.Combine(MapsetPath, "storyboard.osb");
+            var match = regex.Match(osuFilename.ToString());
+            return Path.Combine(MapsetPath, string.Concat(match.Groups[1].ValueSpan, ".osb"));
         }
     }
 
@@ -202,7 +198,7 @@ public sealed partial class Project : IDisposable
     void reloadTextures()
     {
         TextureContainer?.Dispose();
-        TextureContainer = new TextureContainerSeparate();
+        TextureContainer = new TextureContainerAsync();
     }
 
     void reloadAudio()
@@ -278,7 +274,7 @@ public sealed partial class Project : IDisposable
         effectUpdateQueue.Enabled = false;
     }
 
-    public IEnumerable<string> GetEffectNames() => scriptManager.GetScriptNames();
+    public PooledArray<string> GetEffectNames() => scriptManager.GetScriptNames();
 
     public Effect AddScriptedEffect(ReadOnlySpan<char> scriptName, bool multithreaded = false)
     {

@@ -42,9 +42,6 @@ public sealed class TriggerCommand : CommandGroup
     public override bool Equals(object obj) => obj is TriggerCommand loop && Equals(loop);
 
     public bool Equals(TriggerCommand other)
-        => other.TriggerName == TriggerName &&
-            other.StartTime == StartTime &&
-            other.EndTime == EndTime &&
-            other.Group == Group &&
-            commands.SequenceEqual(other.commands);
+        => other.TriggerName == TriggerName && other.StartTime == StartTime && other.EndTime == EndTime &&
+            other.Group == Group && commands.SequenceEqual(other.commands);
 }

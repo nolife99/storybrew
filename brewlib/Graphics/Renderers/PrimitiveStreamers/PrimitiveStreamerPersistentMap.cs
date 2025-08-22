@@ -62,10 +62,8 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
         bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer,
             0,
             vertexBufferSize,
-            MapBufferAccessMask.MapWriteBit |
-            MapBufferAccessMask.MapPersistentBit |
-            MapBufferAccessMask.MapInvalidateBufferBit |
-            MapBufferAccessMask.MapFlushExplicitBit |
+            MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
+            MapBufferAccessMask.MapInvalidateBufferBit | MapBufferAccessMask.MapFlushExplicitBit |
             MapBufferAccessMask.MapUnsynchronizedBit);
     }
 

@@ -32,9 +32,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
                 case JsonTokenType.PropertyQuoted:
 
                     if (expectingSeparator)
-                        throw new InvalidDataException("Unexpected token: " +
-                            context.LookaheadToken +
-                            ", after: " +
+                        throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                             context.CurrentToken);
 
                     var key = context.CurrentToken.GetValueOrDefault().Value;
@@ -54,9 +52,7 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
                             break;
 
                         default:
-                            throw new InvalidDataException("Unexpected token: " +
-                                context.LookaheadToken +
-                                ", after: " +
+                            throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                                 context.CurrentToken);
                     }
 

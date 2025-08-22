@@ -104,7 +104,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         switch (collection)
         {
             case KeyframedValue<TValue> keyframedValue:
-                foreach (var keyframe in keyframedValue)
+                foreach (var keyframe in keyframedValue.keyframes)
                     if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
                     else keyframes.Insert(indexFor(keyframe, false), keyframe);
 
@@ -201,9 +201,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
                 else if (stepStart.HasValue)
                 {
                     ref readonly var stepStartValue = ref Nullable.GetValueRefOrDefaultRef(ref stepStart);
-                    if (!hasPair &&
-                        explicitStartTime.HasValue &&
-                        startTime < stepStartValue.Time &&
+                    if (!hasPair && explicitStartTime.HasValue && startTime < stepStartValue.Time &&
                         !stepStartValue.Until)
                     {
                         var initialPair = stepStartValue.WithTime(startTime);
@@ -366,28 +364,29 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistanceSq,
         TState state)
     {
+        var keyframesSpan = CollectionsMarshal.AsSpan(keyframes);
         if (tolerance <= .00001f)
         {
             List<Keyframe<TValue>> unionKeyframes = new();
             var comparer = EqualityComparer<TValue>.Default;
 
-            for (var i = 0; i < keyframes.Count; ++i)
+            for (var i = 0; i < keyframesSpan.Length; ++i)
             {
-                var startKeyframe = keyframes[i];
+                var startKeyframe = keyframesSpan[i];
                 unionKeyframes.Add(startKeyframe);
 
-                for (var j = i + 1; j < keyframes.Count; j++)
+                for (var j = i + 1; j < keyframesSpan.Length; j++)
                 {
-                    var endKeyframe = keyframes[j];
+                    var endKeyframe = keyframesSpan[j];
                     if (!comparer.Equals(startKeyframe.Value, endKeyframe.Value))
                     {
-                        if (i < j - 1) unionKeyframes.Add(keyframes[j - 1]);
+                        if (i < j - 1) unionKeyframes.Add(keyframesSpan[j - 1]);
                         unionKeyframes.Add(endKeyframe);
                         i = j;
                         break;
                     }
 
-                    if (j == keyframes.Count - 1) i = j;
+                    if (j == keyframesSpan.Length - 1) i = j;
                 }
             }
 
@@ -395,12 +394,12 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             return;
         }
 
-        if (keyframes.Count < 3) return;
+        if (keyframesSpan.Length < 3) return;
 
-        var lastPoint = keyframes.Count - 1;
+        var lastPoint = keyframesSpan.Length - 1;
 
         var keep = TempList.Create([0, lastPoint]);
-        getSimplifiedKeyframeIndices(keyframes,
+        getSimplifiedKeyframeIndices(keyframesSpan,
             ref keep,
             0,
             lastPoint,
@@ -408,50 +407,56 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             getDistanceSq,
             ref state);
 
-        if (keep.Count == keyframes.Count)
+        if (keep.Count == keyframesSpan.Length)
         {
             keep.Dispose();
             return;
         }
 
-        List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
-        foreach (var t in keep) simplifiedKeyframes.Add(keyframes[t]);
-        keep.Dispose();
+        for (var i = 0; i < keep.Count; i++) keyframesSpan[i] = keyframesSpan[keep[i]];
 
-        keyframes = simplifiedKeyframes;
+        keyframes.RemoveRange(keep.Count, keyframesSpan.Length - keep.Count);
+        keep.Dispose();
     }
 
-    static void getSimplifiedKeyframeIndices<TState>(List<Keyframe<TValue>> span,
+    static void getSimplifiedKeyframeIndices<TState>(ReadOnlySpan<Keyframe<TValue>> span,
         scoped ref TempList<int> keep,
         int first,
         int last,
         float epsilonSq,
-        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistance,
+        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistanceSq,
         scoped ref TState state)
     {
-        while (true)
+        using var stack = TempList.Create([(first, last)]);
+        while (stack.Count > 0)
         {
-            var start = span[first];
-            var end = span[last];
+            var (left, right) = stack[^1];
+            stack.RemoveAt(stack.Count - 1);
+
+            var start = span[left];
+            var end = span[right];
 
             var maxDistSq = 0f;
             var indexFar = 0;
 
-            for (var i = first; i < last; ++i)
+            for (var i = left; i < right; ++i)
             {
-                var distanceSq = getDistance(start, span[i], end, state);
+                var distanceSq = getDistanceSq(start, span[i], end, state);
                 if (distanceSq < maxDistSq) continue;
 
                 maxDistSq = distanceSq;
                 indexFar = i;
             }
 
-            if (maxDistSq < epsilonSq || indexFar <= 0) return;
+            if (maxDistSq < epsilonSq || indexFar <= 0) continue;
 
-            getSimplifiedKeyframeIndices(span, ref keep, first, indexFar, epsilonSq, getDistance, ref state);
+            if (stack.Count > 8100)
+                throw new InsufficientMemoryException(
+                    $"Too many keyframes to simplify! Tolerance: {float.Sqrt(epsilonSq)}");
+
             keep.Add(indexFar);
-            first = indexFar;
+            stack.AddRange([(indexFar, right), (left, indexFar)]);
         }
     }
 

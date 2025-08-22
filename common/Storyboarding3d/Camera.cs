@@ -25,8 +25,7 @@ public readonly record struct CameraState(Matrix4x4 ViewProjection,
     public static Vector4 ToScreen(scoped ref readonly Matrix4x4 transform, Vector3 point)
     {
         var transformed = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (transformed.AsVector2() / float.Abs(transformed.W) + Vector2.One) /
-            2 *
+        var screenPosition = (transformed.AsVector2() / float.Abs(transformed.W) + Vector2.One) * .5f *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
         return new(screenPosition.X -

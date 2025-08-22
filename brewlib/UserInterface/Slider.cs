@@ -73,8 +73,8 @@ public class Slider : ProgressBar
     public float GetValueForPosition(Vector2 position)
     {
         var bounds = Bounds;
-        var value = MinValue +
-            (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) / bounds.Width;
+        var value = MinValue + (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) /
+            bounds.Width;
 
         if (Step != 0) value = float.Min((int)(value / Step) * Step, MaxValue);
         return value;

@@ -81,8 +81,7 @@ public static class Program
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
                 editor.Initialize(displayDevice);
 
-                Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
-
+                var iconSetTask = Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
                 using (AudioManager = audioCreateTask.Result)
                 {
                     window.Move += _ => refresh();
@@ -90,13 +89,17 @@ public static class Program
 
                     runMainLoop(window,
                         editor,
-                        TimeSpan.TicksPerSecond /
-                        (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
-                        TimeSpan.TicksPerSecond /
-                        (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
+                        TimeSpan.TicksPerSecond / (Settings.UpdateRate > 0 ?
+                            Settings.UpdateRate :
+                            displayDevice.CurrentVideoMode.RefreshRate),
+                        TimeSpan.TicksPerSecond / (Settings.FrameRate > 0 ?
+                            Settings.FrameRate :
+                            displayDevice.CurrentVideoMode.RefreshRate));
 
                     void refresh() => Bass.UpdateThreads = 1;
                 }
+
+                iconSetTask.Wait();
             }
         }
 

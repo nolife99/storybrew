@@ -123,8 +123,8 @@ public class Triangle3d : Node3d, HasOsbSprites
 
         if (cross > 0)
         {
-            if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
-            if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
+            if (!Unsafe.IsNullRef(in gen0.EndState)) Unsafe.AsRef(in gen0.EndState).Opacity = 0;
+            if (!Unsafe.IsNullRef(in gen1.EndState)) Unsafe.AsRef(in gen1.EndState).Opacity = 0;
             return;
         }
 
@@ -138,12 +138,15 @@ public class Triangle3d : Node3d, HasOsbSprites
             Vector2 delta2 = new(vector1.X - vector0.X, vector1.Y - vector0.Y);
             var dot = Vector2.Dot(normalizedDelta, delta2);
 
+            ref var endState0 = ref Unsafe.AsRef(in gen0.EndState);
+            ref var endState1 = ref Unsafe.AsRef(in gen1.EndState);
+
             if (dot <= 0 || dot > deltaLength)
             {
                 if (FixedEdge >= 0)
                 {
-                    if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
-                    if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
+                    if (!Unsafe.IsNullRef(in gen0.EndState)) endState0.Opacity = 0;
+                    if (!Unsafe.IsNullRef(in gen1.EndState)) endState1.Opacity = 0;
                     break;
                 }
 
@@ -164,21 +167,19 @@ public class Triangle3d : Node3d, HasOsbSprites
 
             var angle = float.Atan2(delta.Y, delta.X);
             var rotation = InterpolatingFunctions.FloatAngle(
-                Unsafe.IsNullRef(ref gen0.EndState) ? 0 : gen0.EndState.Rotation,
+                Unsafe.IsNullRef(in gen0.EndState) ? 0 : gen0.EndState.Rotation,
                 angle,
                 1);
 
             var opacity = vector0.W < 0 && vector1.W < 0 && vector2.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade)
-                opacity *= (cameraState.OpacityAt(vector0.W) +
-                        cameraState.OpacityAt(vector1.W) +
-                        cameraState.OpacityAt(vector2.W)) /
-                    3;
+                opacity *= (cameraState.OpacityAt(vector0.W) + cameraState.OpacityAt(vector1.W) +
+                    cameraState.OpacityAt(vector2.W)) / 3;
 
             if (switchedEdge)
             {
-                if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
-                if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
+                if (!Unsafe.IsNullRef(in gen0.EndState)) endState0.Opacity = 0;
+                if (!Unsafe.IsNullRef(in gen1.EndState)) endState1.Opacity = 0;
             }
 
             gen0.Add(new()

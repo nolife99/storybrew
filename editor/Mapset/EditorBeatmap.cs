@@ -277,8 +277,7 @@ public class EditorBeatmap(string path) : Beatmap
                                 {
                                     var hitobject = OsuHitObject.Parse(bm, line);
 
-                                    if (hitobject.NewCombo ||
-                                        previousHitObject is null ||
+                                    if (hitobject.NewCombo || previousHitObject is null ||
                                         (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
                                     {
                                         hitobject.Flags |= HitObjectFlag.NewCombo;
@@ -376,8 +375,7 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
 
                         if (!((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) -
-                                objectI.PlayfieldPosition).LengthSquared() <
-                            stackLenienceSquared)) continue;
+                            objectI.PlayfieldPosition).LengthSquared() < stackLenienceSquared)) continue;
 
                         objectN.StackIndex = objectI.StackIndex + 1;
                         objectI = objectN;

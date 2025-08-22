@@ -4,5 +4,5 @@
 public abstract class Script
 {
     ///<summary> Script name </summary>
-    public string Identifier { get; set; }
+    public int Identifier { get; set; }
 }

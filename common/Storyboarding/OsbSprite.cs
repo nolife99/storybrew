@@ -824,17 +824,10 @@ public class OsbSprite : StoryboardObject
 
         clearStartEndTimes();
 
-        HasOverlappedCommands = MoveTimeline.HasOverlap ||
-            MoveXTimeline.HasOverlap ||
-            MoveYTimeline.HasOverlap ||
-            ScaleTimeline.HasOverlap ||
-            ScaleVecTimeline.HasOverlap ||
-            RotateTimeline.HasOverlap ||
-            FadeTimeline.HasOverlap ||
-            ColorTimeline.HasOverlap ||
-            AdditiveTimeline.HasOverlap ||
-            FlipHTimeline.HasOverlap ||
-            FlipVTimeline.HasOverlap;
+        HasOverlappedCommands = MoveTimeline.HasOverlap || MoveXTimeline.HasOverlap || MoveYTimeline.HasOverlap ||
+            ScaleTimeline.HasOverlap || ScaleVecTimeline.HasOverlap || RotateTimeline.HasOverlap ||
+            FadeTimeline.HasOverlap || ColorTimeline.HasOverlap || AdditiveTimeline.HasOverlap ||
+            FlipHTimeline.HasOverlap || FlipVTimeline.HasOverlap;
 
         HasIncompatibleCommands =
             MoveTimeline.HasCommands && (MoveXTimeline.HasCommands || MoveYTimeline.HasCommands) ||
@@ -974,8 +967,8 @@ public class OsbSprite : StoryboardObject
         CommandScale size,
         CommandDecimal rotation,
         OsbOrigin origin)
-        => new OrientedBoundingBox(position, GetOriginVector(origin, size), size.X, size.Y, rotation).Intersects(
-            in OsuHitObject.WidescreenStoryboardBounds);
+        => new OrientedBoundingBox(position, GetOriginVector(origin, size), size, rotation).Intersects(OsuHitObject
+            .WidescreenStoryboardBounds);
 
     /// <summary> Gets the origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
     /// <param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>

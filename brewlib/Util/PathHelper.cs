@@ -89,8 +89,7 @@ public static class PathHelper
         var _folder = folder.AsSpan().TrimEnd('/');
         var _path = path.AsSpan().TrimEnd('/');
 
-        return _path.Length >= _folder.Length + 1 &&
-            _path[_folder.Length] == '/' &&
+        return _path.Length >= _folder.Length + 1 && _path[_folder.Length] == '/' &&
             _path.StartsWith(_folder, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -29,7 +29,6 @@ public static class ScriptCompiler
 
     public static Assembly Compile(AssemblyLoadContext context,
         IEnumerable<string> sourcePaths,
-        string asmName,
         ReadOnlySpan<string> referencedAssemblies,
         CancellationTokenSource token)
     {
@@ -47,7 +46,7 @@ public static class ScriptCompiler
                 (src, sourceText));
         }
 
-        using var assemblies = ValueList.Create<AssemblyMetadata>();
+        var assemblies = ValueList.Create<AssemblyMetadata>();
         foreach (var asmPath in referencedAssemblies)
         {
             using var stream = File.OpenRead(asmPath);
@@ -72,7 +71,7 @@ public static class ScriptCompiler
             try
             {
                 compilation = CSharpCompilation
-                    .Create(asmName,
+                    .Create(null,
                         trees.Keys,
                         assemblies.Select(s => s.GetReference()),
                         new(OutputKind.DynamicallyLinkedLibrary,
@@ -88,6 +87,7 @@ public static class ScriptCompiler
             finally
             {
                 foreach (var ass in assemblies) ass.Dispose();
+                assemblies.Dispose();
             }
 
             if (compilation.Success) return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);

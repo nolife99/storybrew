@@ -74,7 +74,7 @@ public class Line3d : Node3d, HasOsbSprites
         if (UseDistanceFade)
             opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
-        var endStateRot = Unsafe.IsNullRef(ref gen.EndState) ? 0 : gen.EndState.Rotation;
+        var endStateRot = Unsafe.IsNullRef(in gen.EndState) ? 0 : gen.EndState.Rotation;
         gen.Add(new()
         {
             Time = time,
@@ -219,16 +219,14 @@ public class Line3dEx : Node3d, HasOsbSprites
         var angle = float.Atan2(delta.Y, delta.X);
 
         var rotation = InterpolatingFunctions.FloatAngle(
-            Unsafe.IsNullRef(ref genBody.EndState) ? 0 : genBody.EndState.Rotation,
+            Unsafe.IsNullRef(in genBody.EndState) ? 0 : genBody.EndState.Rotation,
             angle,
             1);
 
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;
         var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * cameraState.ResolutionScale;
-        var startScale = scaleFactor *
-            (cameraState.FocusDistance / startVector.W) *
-            thickness *
+        var startScale = scaleFactor * (cameraState.FocusDistance / startVector.W) * thickness *
             StartThickness.ValueAt(time);
 
         var endScale = scaleFactor * (cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);

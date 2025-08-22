@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -31,7 +30,7 @@ public sealed class TextureContainerAsync : TextureContainer
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
 
-        textures = new(StringComparer.OrdinalIgnoreCase);
+        textures = new();
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
@@ -93,7 +92,7 @@ sealed class TextureUploadQueue : IDisposable
     readonly PooledList<NativeWindow> contexts = new();
 
     readonly object enqueueSignal = new();
-    readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
+    readonly PooledQueue<QueuedUpload> queuedUploads = [];
 
     readonly PooledList<Thread> threads = new();
 
@@ -138,11 +137,17 @@ sealed class TextureUploadQueue : IDisposable
 
                 while (!exiting)
                 {
+                    Monitor.Enter(queuedUploads);
+
                     if (!queuedUploads.TryDequeue(out var queued))
                     {
+                        Monitor.Exit(queuedUploads);
                         lock (enqueueSignal) Monitor.Wait(enqueueSignal);
+
                         continue;
                     }
+
+                    Monitor.Exit(queuedUploads);
 
                     var filename = queued.FileName;
 
@@ -155,7 +160,7 @@ sealed class TextureUploadQueue : IDisposable
                     }
                     catch (IOException)
                     {
-                        queuedUploads.Enqueue(queued);
+                        lock (queuedUploads) queuedUploads.Enqueue(queued);
 
                         // Happens when another process is writing to the file, will try again later.
                         continue;
@@ -201,7 +206,7 @@ sealed class TextureUploadQueue : IDisposable
 
     public void Clear()
     {
-        queuedUploads.Clear();
+        lock (queuedUploads) queuedUploads.Clear();
         Signal();
     }
 
@@ -213,7 +218,7 @@ sealed class TextureUploadQueue : IDisposable
     public QueuedUpload Enqueue(string filename, ResourceContainer container, TextureOptions options)
     {
         QueuedUpload toQueue = new(filename, container, options);
-        queuedUploads.Enqueue(toQueue);
+        lock (queuedUploads) queuedUploads.Enqueue(toQueue);
 
         Signal();
 

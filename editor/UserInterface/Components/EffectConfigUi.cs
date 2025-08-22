@@ -253,10 +253,8 @@ public class EffectConfigUi : Widget
             return widget;
         }
 
-        if (field.Type == typeof(Vector2) ||
-            field.Type == typeof(OpenTK.Mathematics.Vector2) ||
-            field.Type == typeof(CommandPosition) ||
-            field.Type == typeof(CommandScale)) return vector2Field(field);
+        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2) ||
+            field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale)) return vector2Field(field);
 
         if (field.Type == typeof(Vector3) || field.Type == typeof(OpenTK.Mathematics.Vector3))
         {

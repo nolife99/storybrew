@@ -2,15 +2,18 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Tiny.PooledCollections.Generic.Temporary;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
 public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, ISpanFormattable,
+    IDivisionOperators<CommandDecimal, CommandDecimal, CommandDecimal>,
     IUnaryNegationOperators<CommandDecimal, CommandDecimal>
 {
     const int FloatG7MaxChars = 16;
     readonly double value;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     CommandDecimal(double value) => this.value = value;
 
     TempList<char> ICommandValue<CommandDecimal>.ToOsbString(ExportSettings exportSettings)
@@ -36,25 +39,32 @@ public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, IS
 #pragma warning disable CS1591
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => new(left.value - right.value);
 
-    public static CommandDecimal operator --(CommandDecimal value) => new(value.value - 1);
-
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => new(left.value + right.value);
 
-    public static CommandDecimal operator ++(CommandDecimal value) => new(value.value + 1);
+    /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator *(CommandDecimal left, CommandDecimal right) => new(left.value * right.value);
 
+    /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => new(left.value / right.value);
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
 
-    public static CommandDecimal operator +(CommandDecimal value) => new(double.Abs(value.value));
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandDecimal(double value) => new(value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator double(CommandDecimal obj) => obj.value;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 
     string IFormattable.ToString(string format, IFormatProvider formatProvider)

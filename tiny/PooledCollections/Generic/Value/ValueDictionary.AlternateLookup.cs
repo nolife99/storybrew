@@ -268,9 +268,8 @@ partial struct ValueDictionary<TKey, TValue>
             bucket = index + 1;
             dictionary._version++;
 
-            if (!typeof(TKey).IsValueType &&
-                collisionCount > HashHelpers.HashCollisionThreshold &&
-                ReferenceEquals(comparer, _stringComparer))
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold &&
+                comparer.IsNonRandomizedStringComparer())
             {
                 dictionary.Resize(entries.Length, true);
 

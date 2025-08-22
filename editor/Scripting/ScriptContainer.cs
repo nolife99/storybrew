@@ -2,30 +2,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
 using System.Threading;
 using StorybrewCommon.Scripting;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 using ZLinq;
-
-file static class ScriptContainerShared
-{
-    internal static int nextId;
-}
 
 public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
-    public readonly int Id = ScriptContainerShared.nextId++;
-
     AssemblyLoadContext appDomain;
 
     volatile int currentVersion, targetVersion = 1;
 
-    PooledList<string> referencedAssemblies;
+    ValueList<string> referencedAssemblies;
     Type scriptType;
 
     public ScriptContainer(string scriptTypeName,
@@ -70,12 +62,22 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         set
         {
             using var distinct = value.AsValueEnumerable().Distinct().ToArrayPool();
-            if (referencedAssemblies is not null &&
-                distinct.Size == referencedAssemblies.Count &&
-                distinct.AsValueEnumerable().All(referencedAssemblies.Contains)) return;
+            if (distinct.Size == referencedAssemblies.Count)
+            {
+                var areSame = true;
+                foreach (var ass in distinct.Span)
+                    if (!referencedAssemblies.Contains(ass))
+                    {
+                        areSame = false;
+                        break;
+                    }
 
-            referencedAssemblies ??= new();
-            referencedAssemblies.Clear();
+                if (areSame) return;
+            }
+
+            if (referencedAssemblies.IsValid) referencedAssemblies.Clear();
+            else referencedAssemblies = ValueList.Create<string>();
+
             referencedAssemblies.AddRange(distinct.Span);
 
             ReloadScript();
@@ -87,7 +89,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     public void Dispose()
     {
         appDomain?.Unload();
-        referencedAssemblies?.Dispose();
+        referencedAssemblies.Dispose();
 
         scriptType = null;
     }
@@ -102,23 +104,22 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
-            AssemblyLoadContext scriptDomain = new(ScriptTypeName + Id, true);
+            AssemblyLoadContext scriptDomain = new(null, true);
 
             try
             {
-                scriptType = ScriptCompiler.Compile(
-                        scriptDomain,
-                        SourcePaths,
-                        Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture),
-                        referencedAssemblies.AsReadOnlySpan(),
-                        token)
-                    .GetType(ScriptTypeName, true);
+                scriptType = ScriptCompiler
+                    .Compile(scriptDomain, SourcePaths, referencedAssemblies.AsReadOnlySpan(), token)
+                    .GetModules()
+                    .AsValueEnumerable()
+                    .SelectMany(m => m.GetTypes())
+                    .First(t => t.IsAssignableTo(typeof(TScript)) && !t.IsAbstract);
             }
             catch (Exception e)
             {
                 scriptDomain.Unload();
 
-                var details = "";
+                string details = null;
                 switch (e)
                 {
                     case ScriptCompilationException: throw;
@@ -128,7 +129,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         throw;
 
                     case TypeLoadException:
-                        details = "Make sure the script's class name is the same as the file name.\n";
+                        details = "Make sure the script is not abstract and inherits from StoryboardObjectGenerator.\n";
                         break;
                 }
 
@@ -140,7 +141,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         }
 
         var script = (TScript)Activator.CreateInstance(scriptType!, true);
-        script!.Identifier = Environment.TickCount.ToString(CultureInfo.InvariantCulture);
+        script!.Identifier = Environment.TickCount;
         return script;
     }
 

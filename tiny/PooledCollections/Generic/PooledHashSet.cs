@@ -21,8 +21,6 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
     internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
-
     internal readonly ArrayPool<int> _bucketPool;
 
     internal readonly ArrayPool<Entry<T>> _entryPool;
@@ -465,7 +463,14 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         _buckets = s_emptyBuckets;
         _entries = s_emptyEntries;
 
-        if (typeof(T) == typeof(string)) _comparer = (IEqualityComparer<T>)_stringComparer;
+        if (!typeof(T).IsValueType)
+        {
+            _comparer = comparer ?? EqualityComparer<T>.Default;
+
+            if (typeof(T) == typeof(string) && _comparer.GetStringComparer() is { } stringComparer)
+                _comparer = (IEqualityComparer<T>)stringComparer;
+        }
+        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<T>.Default)) _comparer = comparer;
     }
 
     public PooledHashSet(IEnumerable<T> collection,
@@ -645,8 +650,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
         {
             ref var entry = ref entries[i];
 
-            if (entry.HashCode == hashCode &&
-                (_comparer?.Equals(entry.Value, item) ?? EqualityComparer<T>.Default.Equals(entry.Value, item)))
+            if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Value, item) ??
+                EqualityComparer<T>.Default.Equals(entry.Value, item)))
             {
                 if (last < 0) bucket = entry.Next + 1;
                 else entries[last].Next = entry.Next;
@@ -973,16 +978,14 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            _comparer = EqualityComparer<T>.Default;
+            var comparer = _comparer = (IEqualityComparer<T>)((IEqualityComparer<string>)_comparer)
+                .GetRandomizedStringComparer();
 
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1)
-                    entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1) entry.HashCode = entry.Value is null ? 0 : comparer.GetHashCode(entry.Value);
             }
-
-            if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
         }
 
         RenewBuckets(newSize);
@@ -1173,9 +1176,8 @@ public sealed class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, IDisposable
             location = index;
         }
 
-        if (typeof(T).IsValueType ||
-            collisionCount <= HashHelpers.HashCollisionThreshold ||
-            !ReferenceEquals(comparer, _stringComparer)) return true;
+        if (typeof(T).IsValueType || collisionCount <= HashHelpers.HashCollisionThreshold ||
+            !comparer.IsNonRandomizedStringComparer()) return true;
 
         Resize(entries.Length, true);
         location = FindItemIndex(value);

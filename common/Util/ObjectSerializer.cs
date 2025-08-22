@@ -85,8 +85,7 @@ public abstract class ObjectSerializer
             v =>
             {
                 var vector = (Vector2)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return vector.X.ToString(CultureInfo.InvariantCulture) + "," +
                     vector.Y.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<Vector3>(r => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),
@@ -126,8 +125,7 @@ public abstract class ObjectSerializer
             v =>
             {
                 var vector = (OpenTK.Mathematics.Vector2)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return vector.X.ToString(CultureInfo.InvariantCulture) + "," +
                     vector.Y.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<OpenTK.Mathematics.Vector3>(
@@ -149,10 +147,8 @@ public abstract class ObjectSerializer
             v =>
             {
                 var vector = (OpenTK.Mathematics.Vector3)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    vector.Y.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return vector.X.ToString(CultureInfo.InvariantCulture) + "," +
+                    vector.Y.ToString(CultureInfo.InvariantCulture) + "," +
                     vector.Z.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<Color4>(
@@ -176,12 +172,9 @@ public abstract class ObjectSerializer
             v =>
             {
                 var color = (Color4)v;
-                return color.R.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.G.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.B.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return color.R.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.G.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.B.ToString(CultureInfo.InvariantCulture) + "," +
                     color.A.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<Rgba32>(r => new Rgba32(r.ReadUInt32()),
@@ -197,13 +190,10 @@ public abstract class ObjectSerializer
             v =>
             {
                 var color = (Rgba32)v;
-                return color.R.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.G.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return color.R.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.G.ToString(CultureInfo.InvariantCulture) + "," +
                     color.B.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.A.ToString(CultureInfo.InvariantCulture);
+                    "," + color.A.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<Color>(r => Color.FromPixel(new Rgba32(r.ReadUInt32())),
             (w, v) => w.Write(((Rgba32)v).PackedValue),
@@ -218,13 +208,10 @@ public abstract class ObjectSerializer
             v =>
             {
                 var color = ((Color)v).ToPixel<Rgba32>();
-                return color.R.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.G.ToString(CultureInfo.InvariantCulture) +
-                    "," +
+                return color.R.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.G.ToString(CultureInfo.InvariantCulture) + "," +
                     color.B.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    color.A.ToString(CultureInfo.InvariantCulture);
+                    "," + color.A.ToString(CultureInfo.InvariantCulture);
             })
     ];
 

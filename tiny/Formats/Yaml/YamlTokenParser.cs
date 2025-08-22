@@ -72,9 +72,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                 case YamlTokenType.ArrayIndicator:
                 case YamlTokenType.Property:
                 case YamlTokenType.PropertyQuoted:
-                    throw new InvalidDataException("Unexpected token: " +
-                        context.LookaheadToken +
-                        ", after: " +
+                    throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                         context.CurrentToken);
             }
 
@@ -100,9 +98,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                             break;
 
                         default:
-                            throw new InvalidDataException("Unexpected token: " +
-                                context.LookaheadToken +
-                                ", after: " +
+                            throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                                 context.CurrentToken);
                     }
 
@@ -158,9 +154,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                 case YamlTokenType.EndLine: break;
 
                 default:
-                    throw new InvalidDataException("Unexpected token: " +
-                        context.LookaheadToken +
-                        ", after: " +
+                    throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                         context.CurrentToken);
             }
 

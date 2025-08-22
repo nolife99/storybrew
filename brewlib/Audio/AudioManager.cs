@@ -69,8 +69,7 @@ public sealed class AudioManager : IDisposable
 
             if (!channel.Temporary || !channel.Completed)
             {
-                if (channel.Playing &&
-                    Bass.GetDeviceInfo(Bass.ChannelGetDevice(channel.Channel), out var info) &&
+                if (channel.Playing && Bass.GetDeviceInfo(Bass.ChannelGetDevice(channel.Channel), out var info) &&
                     !SoundUtil.IsDefault(info))
                 {
                     var device = 0;

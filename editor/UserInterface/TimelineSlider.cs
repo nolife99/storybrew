@@ -167,8 +167,7 @@ public class TimelineSlider : Slider
                     drawLine(drawContext,
                         offset + new Vector2(Manager.SnapToPixel(left - height / 2), hitObjectsY),
                         new(Manager.SnapToPixel(float.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width) -
-                                left +
-                                height),
+                                left + height),
                             height),
                         hitObject.Color,
                         actualOpacity);
@@ -322,8 +321,7 @@ public class TimelineSlider : Slider
                     }
                     else lineSize.Y *= .4f;
 
-                    if (snap != 0 ||
-                        tickCount == 0 && timingPoint.OmitFirstBarLine ||
+                    if (snap != 0 || tickCount == 0 && timingPoint.OmitFirstBarLine ||
                         beatCount % timingPoint.BeatPerMeasure != 0) lineSize.Y *= .5f;
 
                     var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);

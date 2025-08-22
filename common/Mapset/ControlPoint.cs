@@ -58,9 +58,8 @@ public record ControlPoint : IComparable<ControlPoint>
     /// <inheritdoc/>
     public override string ToString()
         => (IsInherited ?
-                $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" :
-                $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
-            (IsKiai ? " Kiai" : "");
+            $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" :
+            $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") + (IsKiai ? " Kiai" : "");
 
     ///<summary> Parses a control point from a given line. </summary>
     public static ControlPoint Parse(scoped ReadOnlySpan<char> line)

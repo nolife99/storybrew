@@ -655,8 +655,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var unusedRatio = unusedCommands / float.Max(1, commands);
 
         var hiddenCommands = unusedCommands >= 5000 && unusedRatio > .5f ||
-            unusedCommands >= 10000 && unusedRatio > .2f ||
-            unusedCommands >= 15000;
+            unusedCommands >= 10000 && unusedRatio > .2f || unusedCommands >= 15000;
 
         var showWarning = commands >= 15000 || hiddenCommands;
         if (showWarning || proj.DisplayDebugWarning && commands > 0)

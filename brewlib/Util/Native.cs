@@ -24,13 +24,13 @@ public static class Native
 
     public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 
-    public static void SetWindowIcon(ResourceContainer container, string iconPath)
+    public static Task SetWindowIcon(ResourceContainer container, string iconPath)
         => Task.Run(async () =>
         {
             await using var iconResource = container.GetStream(iconPath, ResourceSource.Embedded);
             if (iconResource is null) return;
 
-            using var image = Image.Load<Rgba32>(iconResource);
+            using var image = await Image.LoadAsync<Rgba32>(iconResource);
             image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
 
             using var bytes = ValueArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());

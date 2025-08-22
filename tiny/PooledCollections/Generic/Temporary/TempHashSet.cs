@@ -115,8 +115,6 @@ public ref struct TempHashSet<T>
 
     internal readonly ArrayPool<Entry<T>> _entryPool;
 
-    static readonly IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
-
     #region Constructors
 
     internal TempHashSet(IEqualityComparer<T> comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
@@ -137,9 +135,14 @@ public ref struct TempHashSet<T>
         _buckets = s_emptyBuckets;
         _entries = s_emptyEntries;
 
-        if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<T>.Default)) _comparer = comparer;
+        if (!typeof(T).IsValueType)
+        {
+            _comparer = comparer ?? EqualityComparer<T>.Default;
 
-        if (typeof(T) == typeof(string)) _comparer = (IEqualityComparer<T>)_stringComparer;
+            if (typeof(T) == typeof(string) && _comparer.GetStringComparer() is { } stringComparer)
+                _comparer = (IEqualityComparer<T>)stringComparer;
+        }
+        else if (comparer is not null && !ReferenceEquals(comparer, EqualityComparer<T>.Default)) _comparer = comparer;
     }
 
     internal TempHashSet(IEnumerable<T> collection,
@@ -286,8 +289,8 @@ public ref struct TempHashSet<T>
         {
             ref var entry = ref entries[i];
 
-            if (entry.HashCode == hashCode &&
-                (_comparer?.Equals(entry.Value, item) ?? EqualityComparer<T>.Default.Equals(entry.Value, item)))
+            if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Value, item) ??
+                EqualityComparer<T>.Default.Equals(entry.Value, item)))
             {
                 if (last < 0) bucket = entry.Next + 1;
                 else entries[last].Next = entry.Next;
@@ -457,8 +460,7 @@ public ref struct TempHashSet<T>
         if (other is not ICollection<T> otherAsCollection) return ContainsAllElements(other);
         if (otherAsCollection.Count == 0) return true;
 
-        if (other is HashSet<T> otherAsSCGSet &&
-            EqualityComparersAreEqual(this, otherAsSCGSet) &&
+        if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet) &&
             otherAsSCGSet.Count > Count) return false;
 
         return ContainsAllElements(other);
@@ -579,16 +581,14 @@ public ref struct TempHashSet<T>
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            _comparer = EqualityComparer<T>.Default;
+            var comparer = _comparer = (IEqualityComparer<T>)((IEqualityComparer<string>)_comparer)
+                .GetRandomizedStringComparer();
 
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1)
-                    entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1) entry.HashCode = entry.Value is null ? 0 : comparer.GetHashCode(entry.Value);
             }
-
-            if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
         }
 
         RenewBuckets(newSize);
@@ -784,9 +784,8 @@ public ref struct TempHashSet<T>
             location = index;
         }
 
-        if (typeof(T).IsValueType ||
-            collisionCount <= HashHelpers.HashCollisionThreshold ||
-            !ReferenceEquals(comparer, _stringComparer)) return true;
+        if (typeof(T).IsValueType || collisionCount <= HashHelpers.HashCollisionThreshold ||
+            !comparer.IsNonRandomizedStringComparer()) return true;
 
         Resize(entries.Length, true);
         location = FindItemIndex(value);

@@ -136,8 +136,8 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
                     break;
 
                 case ResultState.CommandInPast:
-                    if (channelState is ResultState.CommandInPresent ||
-                        channelState is ResultState.CommandInPast && currentResult.IsBefore(channelResult))
+                    if (channelState is ResultState.CommandInPresent || channelState is ResultState.CommandInPast &&
+                        currentResult.IsBefore(channelResult))
                     {
                         currentResult = channelResult;
                         currentState = channelState;

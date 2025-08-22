@@ -43,7 +43,7 @@ public class AudioChannel : IDisposable
         {
             if (channel == 0) return;
 
-            Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value));
+            Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value), PositionFlags.Scan);
         }
     }
 

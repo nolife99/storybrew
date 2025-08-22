@@ -66,9 +66,13 @@ public partial class EffectList : Widget
             ]
         });
 
-        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
-            name => project.AddScriptedEffect(name),
-            project.GetEffectNames());
+        addEffectButton.OnClick += (_, _) =>
+        {
+            using var eff = project.GetEffectNames();
+            Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
+                name => project.AddScriptedEffect(name),
+                (ReadOnlySpan<string>)eff.Span);
+        };
 
         newScriptButton.OnClick += (_, _)
             => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name.ToString()));

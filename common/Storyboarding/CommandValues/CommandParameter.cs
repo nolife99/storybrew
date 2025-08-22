@@ -1,6 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
+using System.Runtime.CompilerServices;
 using Tiny.PooledCollections.Generic.Temporary;
 
 #pragma warning disable CS1591
@@ -11,6 +12,8 @@ public readonly record struct CommandParameter : ICommandValue<CommandParameter>
         AdditiveBlending = new(ParameterType.AdditiveBlending);
 
     public readonly ParameterType Type;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     CommandParameter(ParameterType type) => Type = type;
 
     TempList<char> ICommandValue<CommandParameter>.ToOsbString(ExportSettings exportSettings)
@@ -25,13 +28,17 @@ public readonly record struct CommandParameter : ICommandValue<CommandParameter>
         ]);
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandParameter operator +(CommandParameter left, CommandParameter right) => left;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandParameter operator -(CommandParameter left, CommandParameter right) => left;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandParameter operator *(CommandParameter left, CommandDecimal right) => left;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator bool(CommandParameter obj) => obj.Type is not ParameterType.None;
 }

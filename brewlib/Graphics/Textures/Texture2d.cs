@@ -50,7 +50,7 @@ public sealed class Texture2d : Texture2dRegion
             if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
             GL.GetSync(fenceId, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
-            if (values == 0x9118) return -1;
+            if (values == 0x9118) return -1L;
 
             GL.DeleteSync(fenceId);
             fenceId = -1;
@@ -234,7 +234,7 @@ public sealed class Texture2d : Texture2dRegion
         var compress = DrawState.UseTextureCompression;
 
         var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt3Ext : PixelInternalFormat.Rgba8;
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, textureId);
@@ -261,8 +261,7 @@ public sealed class Texture2d : Texture2dRegion
             ref var addr = ref GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
                     0,
                     dataSize,
-                    MapBufferAccessMask.MapWriteBit |
-                    MapBufferAccessMask.MapInvalidateBufferBit |
+                    MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapInvalidateBufferBit |
                     MapBufferAccessMask.MapUnsynchronizedBit)
                 .AsRef<Rgba32>();
 

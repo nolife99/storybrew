@@ -5,17 +5,16 @@ using System.Collections.Generic;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class ContextMenu<T> : UiScreenLayer
 {
     readonly Action<T> callback;
-    readonly PooledList<Option> options;
 
     Button cancelButton;
     LinearLayout mainLayout, optionsLayout;
+    ValueList<Option> options;
     Textbox searchTextbox;
     ValueArray<char> title;
 
@@ -24,7 +23,7 @@ public class ContextMenu<T> : UiScreenLayer
         this.title = ValueArray.Create(title);
         this.callback = callback;
 
-        this.options = new(options.Length);
+        this.options = ValueList.Create<Option>(options.Length);
         foreach (var option in options) this.options.Add(new(option.ToString(), option));
     }
 
@@ -32,7 +31,7 @@ public class ContextMenu<T> : UiScreenLayer
     {
         this.title = ValueArray.Create(title);
         this.callback = callback;
-        this.options = new(options.Select(option => new Option(option.ToString(), option)));
+        this.options = ValueList.Create(options.Select(option => new Option(option.ToString(), option)));
     }
 
     public override bool IsPopup => true;

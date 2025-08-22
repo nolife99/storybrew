@@ -11,8 +11,6 @@ using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
@@ -32,7 +30,7 @@ public class CommandGenerator
 
     readonly KeyframedValue<CommandScale> scales = new(CommandScale.Lerp), finalScales = new(CommandScale.Lerp);
 
-    readonly PooledList<State> states = [];
+    readonly List<State> states = [];
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -63,11 +61,12 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State StartState => ref states.AsSpan().GetPinnableReference();
+    public ref readonly State StartState => ref CollectionsMarshal.AsSpan(states).GetPinnableReference();
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[^1];
+    public ref readonly State EndState
+        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref CollectionsMarshal.AsSpan(states)[^1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -116,7 +115,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref readonly var state in states.AsReadOnlySpan())
+        foreach (ref readonly var state in CollectionsMarshal.AsSpan(states))
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -251,8 +250,7 @@ public class CommandGenerator
 
         finalFades.ForEachPair((s, e) =>
             {
-                if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
-                    s.Time == sprite.EndTime ||
+                if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 || s.Time == sprite.EndTime ||
                     s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
                     sprite.Fade(s.Time, e.Time, s.Value, e.Value);
             },
@@ -379,8 +377,7 @@ public record struct State
             noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black ||
-            (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
-            scale.X <= 0 ||
+            (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 || scale.X <= 0 ||
             scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
