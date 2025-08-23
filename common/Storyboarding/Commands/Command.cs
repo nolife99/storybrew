@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using BrewLib.Util;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -13,13 +14,10 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand, IOffsetable
     where TValue : struct, ICommandValue<TValue>
 {
-    /// <summary> The easing function used to interpolate between the start and end times. </summary>
-    public readonly OsbEasing Easing;
-
     /// <summary> The end value of the command. </summary>
     public readonly TValue EndValue;
 
-    readonly bool maintainValue;
+    readonly byte flags;
 
     /// <summary> The start value of the command. </summary>
     public readonly TValue StartValue;
@@ -34,14 +32,26 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
         bool maintainValue = true)
     {
         this.startTime = startTime;
-        this.endTime = endTime;
-        this.maintainValue = maintainValue;
+        this.endTime = startTime > endTime ? startTime : endTime;
 
-        Easing = easing;
         StartValue = startValue;
         EndValue = endValue;
 
-        if (startTime > endTime) this.endTime = startTime;
+        flags = (byte)easing;
+        if (maintainValue) flags |= 0x80;
+    }
+
+    bool MaintainValue
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (flags & 0x80) != 0;
+    }
+
+    /// <summary> The easing function used to interpolate between the start and end times. </summary>
+    public OsbEasing Easing
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (OsbEasing)(flags & 0x7F);
     }
 
     private protected abstract string Identifier { get; }
@@ -104,10 +114,10 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
     public TValue ValueAtTime(float time)
     {
         var startT = startTime;
-        if (time < startT) return maintainValue ? StartValue : default;
+        if (time < startT) return MaintainValue ? StartValue : default;
 
         var endT = endTime;
-        if (endT < time) return maintainValue ? EndValue : default;
+        if (endT < time) return MaintainValue ? EndValue : default;
 
         var duration = endT - startT;
         return StartValue + (EndValue - StartValue) * (duration > 0 ? Easing.Ease((time - startT) / duration) : 0);

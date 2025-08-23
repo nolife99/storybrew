@@ -845,46 +845,46 @@ public class OsbSprite : StoryboardObject
         switch (command)
         {
             case ColorCommand color:
-                Color(color.Easing, color.StartTime, color.EndTime + offset, color.StartValue, color.EndValue);
+                Color(color.Easing, color.startTime, color.endTime + offset, color.StartValue, color.EndValue);
                 break;
 
             case FadeCommand fade:
-                Fade(fade.Easing, fade.StartTime + offset, fade.EndTime + offset, fade.StartValue, fade.EndValue);
+                Fade(fade.Easing, fade.startTime + offset, fade.endTime + offset, fade.StartValue, fade.EndValue);
                 break;
 
             case ScaleCommand scale:
-                Scale(scale.Easing, scale.StartTime + offset, scale.EndTime + offset, scale.StartValue, scale.EndValue);
+                Scale(scale.Easing, scale.startTime + offset, scale.endTime + offset, scale.StartValue, scale.EndValue);
                 break;
 
             case VScaleCommand vScale:
                 ScaleVec(vScale.Easing,
-                    vScale.StartTime + offset,
-                    vScale.EndTime + offset,
+                    vScale.startTime + offset,
+                    vScale.endTime + offset,
                     vScale.StartValue,
                     vScale.EndValue);
 
                 break;
 
             case ParameterCommand param:
-                Parameter(param.StartTime + offset, param.EndTime + offset, param.StartValue);
+                Parameter(param.startTime + offset, param.endTime + offset, param.StartValue);
                 break;
 
             case MoveCommand move:
-                Move(move.Easing, move.StartTime + offset, move.EndTime + offset, move.StartValue, move.EndValue);
+                Move(move.Easing, move.startTime + offset, move.endTime + offset, move.StartValue, move.EndValue);
                 break;
 
             case MoveXCommand moveX:
-                MoveX(moveX.Easing, moveX.StartTime + offset, moveX.EndTime + offset, moveX.StartValue, moveX.EndValue);
+                MoveX(moveX.Easing, moveX.startTime + offset, moveX.endTime + offset, moveX.StartValue, moveX.EndValue);
                 break;
 
             case MoveYCommand moveY:
-                MoveY(moveY.Easing, moveY.StartTime + offset, moveY.EndTime + offset, moveY.StartValue, moveY.EndValue);
+                MoveY(moveY.Easing, moveY.startTime + offset, moveY.endTime + offset, moveY.StartValue, moveY.EndValue);
                 break;
 
             case RotateCommand rotate:
                 Rotate(rotate.Easing,
-                    rotate.StartTime + offset,
-                    rotate.EndTime + offset,
+                    rotate.startTime + offset,
+                    rotate.endTime + offset,
                     rotate.StartValue,
                     rotate.EndValue);
 

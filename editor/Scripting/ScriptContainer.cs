@@ -128,7 +128,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         currentVersion = localCurrentVersion;
                         throw;
 
-                    case TypeLoadException:
+                    case InvalidOperationException:
                         details = "Make sure the script is not abstract and inherits from StoryboardObjectGenerator.\n";
                         break;
                 }

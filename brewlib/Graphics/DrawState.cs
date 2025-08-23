@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -12,15 +13,16 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
 
 public static class DrawState
 {
     public static readonly bool UseSrgb;
+    public static readonly SearchValues<string> Extensions = getExtensions();
 
     static IRenderer renderer;
 
@@ -51,12 +53,21 @@ public static class DrawState
         }
     }
 
+    static SearchValues<string> getExtensions()
+    {
+        using var extensions = ValueEnumerable.Range(0, GL.GetInteger(GetPName.NumExtensions))
+            .Select(i => GL.GetString(StringNameIndexed.Extensions, i))
+            .ToArrayPool();
+
+        return SearchValues.Create(extensions.Span, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static void Initialize(ResourceContainer resourceContainer,
         TextureContainer textureContainer,
         int width,
         int height)
     {
-        if (GLFW.ExtensionSupported("GL_KHR_debug"))
+        if (Extensions.Contains("GL_KHR_debug"))
         {
             GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.Khr.DebugMessageCallback((source, type, _, severity, length, message, _) =>
@@ -120,12 +131,12 @@ public static class DrawState
             else Trace.TraceWarning("The default framebuffer isn't sRgb");
         }
 
-        UseTextureCompression &= GLFW.ExtensionSupported("GL_EXT_texture_compression_s3tc");
-        CanInvalidate = GLFW.ExtensionSupported("GL_ARB_invalidate_subdata");
+        UseTextureCompression &= Extensions.Contains("GL_EXT_texture_compression_s3tc");
+        CanInvalidate = Extensions.Contains("GL_ARB_invalidate_subdata");
 
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
-        maxGeometryTextureImageUnits = GLFW.ExtensionSupported("GL_ARB_geometry_shader4") ?
+        maxGeometryTextureImageUnits = Extensions.Contains("GL_ARB_geometry_shader4") ?
             GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
             0;
 

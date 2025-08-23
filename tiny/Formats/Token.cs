@@ -1,10 +1,12 @@
 ﻿namespace Tiny.Formats;
 
-public struct Token<TToken>(TToken type, string value = null)
+using System;
+
+public struct Token<TToken>(TToken type, ReadOnlyMemory<char> value = default)
 {
     public int LineNumber, CharNumber;
     public TToken Type => type;
-    public string Value => value;
+    public ReadOnlyMemory<char> Value => value;
 
     public override string ToString() => $"{Type} <{Value}> (line {LineNumber}, char {CharNumber})";
 }

@@ -9,7 +9,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 public sealed class InputManager : IDisposable
 {
     readonly IInputHandler handler;
-    internal readonly NativeWindow window;
+    readonly NativeWindow window;
 
     bool hasMouseHover;
 

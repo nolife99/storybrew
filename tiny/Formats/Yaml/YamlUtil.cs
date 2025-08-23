@@ -1,28 +1,28 @@
 ﻿namespace Tiny.Formats.Yaml;
 
-using System.Text;
+using System;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class YamlUtil
 {
-    public static string EscapeString(string value)
+    public static string EscapeString(scoped ReadOnlySpan<char> value)
     {
-        StringBuilder sb = new((int)(value.Length * 1.3f));
+        using var sb = TempList.Create<char>((int)(value.Length * 1.3f));
         foreach (var c in value)
             switch (c)
             {
-                case '\r': sb.Append("\\r"); break;
-                case '\n': sb.Append("\\n"); break;
-                case '"': sb.Append("\\\""); break;
-                case '\\': sb.Append(@"\\"); break;
-                default: sb.Append(c); break;
+                case '\r': sb.AddRange("\\r"); break;
+                case '\n': sb.AddRange("\\n"); break;
+                case '"': sb.AddRange("\\\""); break;
+                case '\\': sb.AddRange(@"\\"); break;
+                default: sb.Add(c); break;
             }
 
-        return sb.ToString();
+        return sb.AsReadOnlySpan().ToString();
     }
 
-    public static string UnescapeString(string value)
+    public static string UnescapeString(scoped ReadOnlySpan<char> value)
     {
         var special = false;
 

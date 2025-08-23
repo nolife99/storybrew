@@ -176,8 +176,6 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         if (Texture2d.BindlessTexturesSupported)
         {
             var textureId = texture.BindableTexture.BindlessTextureHandle;
-            if (textureId == -1) return;
-
             if (currentTextureHandle != textureId)
             {
                 DrawState.FlushRenderer();

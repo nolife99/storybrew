@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
@@ -82,7 +81,7 @@ public class ShaderBuilder
 
         foreach (var extensionName in requiredExt)
         {
-            if (!GLFW.ExtensionSupported(extensionName))
+            if (!DrawState.Extensions.Contains(extensionName))
                 throw new NotSupportedException($"Required extension {extensionName} not supported");
 
             code.Append($"#extension {extensionName} : require\n");

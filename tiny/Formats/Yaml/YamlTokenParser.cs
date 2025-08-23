@@ -82,17 +82,17 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                 case YamlTokenType.PropertyQuoted:
                     var key = context.CurrentToken.GetValueOrDefault().Value;
                     if (context.CurrentToken.GetValueOrDefault().Type == YamlTokenType.PropertyQuoted)
-                        key = YamlUtil.UnescapeString(key);
+                        key = YamlUtil.UnescapeString(key.Span).AsMemory();
 
                     switch (context.LookaheadToken.GetValueOrDefault().Type)
                     {
                         case YamlTokenType.Word:
                         case YamlTokenType.WordQuoted:
-                            context.PushParser(new ValueParser(r => result.Add(key, r)));
+                            context.PushParser(new ValueParser(r => result.Add(key.ToString(), r)));
                             break;
 
                         case YamlTokenType.EndLine:
-                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r),
+                            context.PushParser(new EmptyProperyParser(r => result.Add(key.ToString(), r),
                                 context.IndentLevel + 1));
 
                             break;
@@ -162,11 +162,13 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
             {
                 case YamlTokenType.Word:
                 {
-                    var value = context.CurrentToken.GetValueOrDefault().Value;
-                    if (floatRegex.IsMatch(value)) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if (integerRegex.IsMatch(value)) Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if (boolRegex.IsMatch(value)) Callback(new TinyValue(value == YamlFormat.BooleanTrue));
-                    else Callback(new TinyValue(value));
+                    var value = context.CurrentToken.GetValueOrDefault().Value.Span;
+                    if (floatRegex.IsMatch(value)) Callback(new TinyValue(value.ToString(), TinyTokenType.Float));
+                    else if (integerRegex.IsMatch(value))
+                        Callback(new TinyValue(value.ToString(), TinyTokenType.Integer));
+                    else if (boolRegex.IsMatch(value))
+                        Callback(new TinyValue(value.SequenceEqual(YamlFormat.BooleanTrue)));
+                    else Callback(new TinyValue(value.ToString()));
 
                     context.ConsumeToken();
                     context.PopParser();
@@ -176,7 +178,7 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
 
                 case YamlTokenType.WordQuoted:
                 {
-                    var value = YamlUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value);
+                    var value = YamlUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value.Span);
                     Callback(new TinyValue(value));
                     context.ConsumeToken();
                     context.PopParser();

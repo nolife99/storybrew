@@ -1,8 +1,10 @@
 ﻿namespace Tiny.Formats.Json;
 
+using System;
+
 public static class JsonUtil
 {
-    public static string UnescapeString(string value)
+    public static string UnescapeString(scoped ReadOnlySpan<char> value)
         => string.Create(value.Length,
             value,
             (span, state) =>

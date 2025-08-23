@@ -7,7 +7,6 @@ using System.Threading;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -40,7 +39,7 @@ public sealed class TextureContainerAsync : TextureContainer
         {
             var pixels = 0f;
             foreach (var texture in textures.Values)
-                if (texture.IsLoaded)
+                if (texture.Result is not null)
                 {
                     var size = texture.Result.Size;
                     pixels += size.X * size.Y;
@@ -109,7 +108,6 @@ sealed class TextureUploadQueue : IDisposable
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
-            GLFW.WindowHint(WindowHintBool.DoubleBuffer, false);
             NativeWindow window = new(new()
             {
                 Title = "storybrew texture loader",
@@ -172,13 +170,9 @@ sealed class TextureUploadQueue : IDisposable
                         continue;
                     }
 
-                    using (var bitmap = Image.Load<Rgba32>(stream))
-                    {
-                        stream.Dispose();
-                        queued.Result = Texture2d.Load(bitmap, queued.Options);
-                    }
-
-                    queued.IsLoaded = true;
+                    using var bitmap = Image.Load<Rgba32>(stream);
+                    stream.Dispose();
+                    queued.Result = Texture2d.Load(bitmap, queued.Options);
                 }
             });
 
@@ -227,7 +221,7 @@ sealed class TextureUploadQueue : IDisposable
 
     public record QueuedUpload(string FileName, ResourceContainer Container, TextureOptions Options)
     {
-        public bool IsLoaded;
-        public Texture2d Result;
+        public volatile Texture2d Result;
+        public bool IsLoaded => Result?.Wait(false) ?? false;
     }
 }

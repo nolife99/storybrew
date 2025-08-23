@@ -244,7 +244,7 @@ public class Textbox : Widget, Field
         get => content.Text;
         set
         {
-            if (content.Text == value) return;
+            if (content.Text.SequenceEqual(value)) return;
 
             SetValueSilent(value);
 

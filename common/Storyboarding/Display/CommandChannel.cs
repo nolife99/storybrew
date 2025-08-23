@@ -51,13 +51,13 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         if (HasOverlap)
         {
             for (var i = 0; i < index; i++)
-                if (c[i].StartTime <= c[index].StartTime && time <= c[i].EndTime)
+                if (c[i].StartTime <= c[index].startTime && time <= c[i].endTime)
                 {
                     index = i;
                     break;
                 }
         }
-        else if (index > 0 && time == c[index - 1].EndTime) --index;
+        else if (index > 0 && time == c[index - 1].endTime) --index;
 
         return c[index];
     }

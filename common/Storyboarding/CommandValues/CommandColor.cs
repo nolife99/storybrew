@@ -45,13 +45,25 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     CommandColor(Vector3 vec) => internalVec = vec;
 
     ///<summary> Gets the red value of this instance. </summary>
-    public byte R => toByte(internalVec.X);
+    public byte R
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => toByte(internalVec.X);
+    }
 
     ///<summary> Gets the green value of this instance. </summary>
-    public byte G => toByte(internalVec.Y);
+    public byte G
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => toByte(internalVec.Y);
+    }
 
     ///<summary> Gets the blue value of this instance. </summary>
-    public byte B => toByte(internalVec.Z);
+    public byte B
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => toByte(internalVec.Z);
+    }
 
     TempList<char> ICommandValue<CommandColor>.ToOsbString(ExportSettings exportSettings)
     {
@@ -73,6 +85,7 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     }
 
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
 
     /// <summary>
@@ -100,48 +113,73 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     }
 
     /// <summary> Performs a linear interpolation between two vectors based on the given weighting. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor Lerp(CommandColor a, CommandColor b, float t)
         => new(Vector3.Lerp(a.internalVec, b.internalVec, t));
 
     /// <summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor FromHtml(string htmlColor) => Color.ParseHex(htmlColor);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
 #pragma warning disable CS1591
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Color4(CommandColor obj)
         => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandColor(Rgba32 obj) => obj.ToVector4().AsVector3();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new(obj.internalVec, 1));
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandColor(Color obj) => obj.ToScaledVector4().AsVector3();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector3(CommandColor obj) => obj.internalVec;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandColor(Vector3 obj) => new(obj);
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator +(CommandColor left, CommandColor right)
         => left.internalVec + right.internalVec;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator -(CommandColor left, CommandColor right)
         => left.internalVec - right.internalVec;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator *(CommandColor left, CommandColor right)
         => left.internalVec * right.internalVec;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator /(CommandColor left, CommandColor right)
         => left.internalVec / right.internalVec;
 
     /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator *(CommandColor left, CommandDecimal right) => left.internalVec * right;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator *(CommandDecimal left, CommandColor right) => right.internalVec * left;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandColor operator /(CommandColor left, CommandDecimal right) => left.internalVec / right;
 }

@@ -40,8 +40,10 @@ public class AudioStream : AudioChannel
             return;
         }
 
-        stream = BassFx.TempoCreate(decodeStream, BassFlags.Default);
+        stream = BassFx.TempoCreate(decodeStream, BassFlags.FxTempoAlgorithmLinear);
         Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoUseQuickAlgorithm, 1);
+        Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoUseAAFilter, 0);
+        Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoPreventClick, 1);
 
         Channel = stream;
     }

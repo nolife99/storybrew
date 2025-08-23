@@ -39,13 +39,17 @@ public sealed class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Defini
         using var enumerator = definitions.AsValueEnumerable()
             .SelectMany((d, i) => d.regex.Value.Matches(content)
                 .AsValueEnumerable()
-                .Select(match => new Definition.Match
+                .Select(match =>
                 {
-                    StartIndex = match.Index,
-                    EndIndex = match.Index + match.Length,
-                    Priority = i,
-                    Type = d.matchType,
-                    Value = match.Groups.Count > d.captureGroup ? match.Groups[d.captureGroup].Value : match.Value
+                    var splitValue = match.Groups.Count > d.captureGroup ? match.Groups[d.captureGroup] : match;
+                    return new Definition.Match
+                    {
+                        StartIndex = match.Index,
+                        EndIndex = match.Index + match.Length,
+                        Priority = i,
+                        Type = d.matchType,
+                        Value = content.AsMemory(splitValue.Index, splitValue.Length)
+                    };
                 }))
             .OrderBy(d => d.StartIndex)
             .Enumerator;
@@ -54,7 +58,7 @@ public sealed class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Defini
 
         Definition.Match previousMatch = default;
         while (true)
-            if (previousMatch.Value is null || current.StartIndex >= previousMatch.EndIndex)
+            if (previousMatch.Value.IsEmpty || current.StartIndex >= previousMatch.EndIndex)
             {
                 var skip = false;
                 var next = current;
@@ -100,7 +104,7 @@ public sealed class RegexTokenizer<TTokenType>(RegexTokenizer<TTokenType>.Defini
             public int EndIndex { get; init; }
             public int Priority { get; init; }
             public TTokenType Type { get; init; }
-            public string Value { get; init; }
+            public ReadOnlyMemory<char> Value { get; init; }
         }
     }
 }

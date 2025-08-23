@@ -29,7 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.0-beta.1">
+        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -37,7 +37,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
+        <PackageReference Include="ManagedBass.Fx" Version="3.1.4"/>
         <PackageReference Include="OpenTK.Graphics" Version="4.9.4"/>
         <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4"/>
         <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3"/>

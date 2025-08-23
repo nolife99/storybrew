@@ -37,18 +37,18 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
                     var key = context.CurrentToken.GetValueOrDefault().Value;
                     if (context.CurrentToken.GetValueOrDefault().Type is JsonTokenType.PropertyQuoted)
-                        key = JsonUtil.UnescapeString(key);
+                        key = JsonUtil.UnescapeString(key.Span).AsMemory();
 
                     switch (context.LookaheadToken.GetValueOrDefault().Type)
                     {
                         case JsonTokenType.ObjectStart:
                         case JsonTokenType.ArrayStart:
-                            context.PushParser(new AnyParser(r => result.Add(key, r)));
+                            context.PushParser(new AnyParser(r => result.Add(key.ToString(), r)));
                             break;
 
                         case JsonTokenType.Word:
                         case JsonTokenType.WordQuoted:
-                            context.PushParser(new ValueParser(r => result.Add(key, r)));
+                            context.PushParser(new ValueParser(r => result.Add(key.ToString(), r)));
                             break;
 
                         default:
@@ -123,11 +123,12 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
             {
                 case JsonTokenType.Word:
                 {
-                    var value = context.CurrentToken.GetValueOrDefault().Value;
-                    if (floatRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if (integerRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if (boolRegex().Match(value).Success) Callback(new TinyValue(value == bool.TrueString));
-                    else Callback(new TinyValue(value));
+                    var value = context.CurrentToken.GetValueOrDefault().Value.Span;
+                    if (floatRegex().IsMatch(value)) Callback(new TinyValue(value.ToString(), TinyTokenType.Float));
+                    else if (integerRegex().IsMatch(value))
+                        Callback(new TinyValue(value.ToString(), TinyTokenType.Integer));
+                    else if (boolRegex().IsMatch(value)) Callback(new TinyValue(value.SequenceEqual(bool.TrueString)));
+                    else Callback(new TinyValue(value.ToString()));
 
                     context.ConsumeToken();
                     context.PopParser();
@@ -137,8 +138,9 @@ public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 
                 case JsonTokenType.WordQuoted:
                 {
-                    var value = JsonUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value);
-                    Callback(new TinyValue(value));
+                    Callback(
+                        new TinyValue(JsonUtil.UnescapeString(context.CurrentToken.GetValueOrDefault().Value.Span)));
+
                     context.ConsumeToken();
                     context.PopParser();
                 }

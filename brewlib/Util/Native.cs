@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -25,22 +26,26 @@ public static class Native
     public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 
     public static Task SetWindowIcon(ResourceContainer container, string iconPath)
-        => Task.Run(async () =>
-        {
-            await using var iconResource = container.GetStream(iconPath, ResourceSource.Embedded);
-            if (iconResource is null) return;
+    {
+        var r = container.GetStream(iconPath, ResourceSource.Embedded);
+        if (r is null) return Task.CompletedTask;
 
-            using var image = await Image.LoadAsync<Rgba32>(iconResource);
-            image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
+        return Task.Factory.StartNew(async streamObj =>
+            {
+                await using var iconResource = (Stream)streamObj;
+                using var image = await Image.LoadAsync<Rgba32>(iconResource);
+                image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
 
-            using var bytes = ValueArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
-            image.CopyPixelDataTo(bytes.AsSpan());
+                using var bytes = ValueArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
+                image.CopyPixelDataTo(bytes.AsSpan());
 
-            bytes.GetUnsafe(out var array, out _);
+                bytes.GetUnsafe(out var array, out _);
 
-            WindowIcon icon = new(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array));
-            await MainThreadScheduler(x => Window.Icon = (WindowIcon)x, icon);
-        });
+                await MainThreadScheduler(x => Window.Icon = (WindowIcon)x,
+                    new WindowIcon(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array)));
+            },
+            r);
+    }
 
     #region Win32
 

@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
@@ -18,16 +17,21 @@ using Image = SixLabors.ImageSharp.Image;
 public sealed class Texture2d : Texture2dRegion
 {
     const int StackAllocThreshold = 1024;
-    static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
 
-    public static readonly bool BindlessTexturesSupported = GLFW.ExtensionSupported("GL_ARB_bindless_texture");
+    public static readonly bool BindlessTexturesSupported = DrawState.Extensions.Contains("GL_ARB_bindless_texture");
     int _textureId;
 
     long bindlessId = -1;
 
     nint fenceId;
 
-    Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height)) => _textureId = textureId;
+    Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height))
+    {
+        _textureId = textureId;
+        fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+
+        GL.Flush();
+    }
 
     public int TextureId
     {
@@ -37,6 +41,8 @@ public sealed class Texture2d : Texture2dRegion
 
             ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
+            Wait(true);
+
             return _textureId;
         }
     }
@@ -45,15 +51,9 @@ public sealed class Texture2d : Texture2dRegion
     {
         get
         {
-            if (fenceId == -1) return bindlessId;
+            if (bindlessId != -1) return bindlessId;
 
             if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
-
-            GL.GetSync(fenceId, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
-            if (values == 0x9118) return -1L;
-
-            GL.DeleteSync(fenceId);
-            fenceId = -1;
 
             GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
             if (!BitConverter.IsLittleEndian)
@@ -67,7 +67,7 @@ public sealed class Texture2d : Texture2dRegion
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
-        if (useGlClearTex)
+        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
             GL.ClearTexSubImage(_textureId,
                 0,
                 x,
@@ -184,7 +184,8 @@ public sealed class Texture2d : Texture2dRegion
             width,
             height);
 
-        if (useGlClearTex) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
+        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
+            GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
         else
         {
             IMemoryOwner<Rgba32> spanOwner = null;
@@ -215,13 +216,7 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        Texture2d texture = new(textureId, width, height)
-        {
-            fenceId = BindlessTexturesSupported ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : -1
-        };
-
-        GL.Flush();
-        return texture;
+        return new(textureId, width, height);
     }
 
     public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
@@ -286,13 +281,30 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        Texture2d texture = new(textureId, width, height)
-        {
-            fenceId = BindlessTexturesSupported ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : -1
-        };
+        return new(textureId, width, height);
+    }
 
-        GL.Flush();
-        return texture;
+    internal bool Wait(bool canBlock)
+    {
+        var fence = fenceId;
+        if (fence == -1) return true;
+
+        if (canBlock)
+        {
+            GL.ClientWaitSync(fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+            GL.DeleteSync(fence);
+            fenceId = -1;
+
+            return true;
+        }
+
+        GL.GetSync(fence, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
+        if (values == 0x9118) return false;
+
+        GL.DeleteSync(fence);
+        fenceId = -1;
+
+        return true;
     }
 
     #region IDisposable Support

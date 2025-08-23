@@ -210,7 +210,6 @@ public static class Program
 
             buildStatsMessage(editor, av, avActive, longest, draws);
 
-            longest = 0;
             lastStat = cur;
         }
     }

@@ -13,11 +13,13 @@ public sealed class AudioManager : IDisposable
 
     public AudioManager()
     {
+        const DeviceInitFlags flags = DeviceInitFlags.DirectSound | DeviceInitFlags.Latency;
+
         var initialized = false;
         try
         {
             Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
-            if (Bass.Init())
+            if (Bass.Init(Flags: flags))
             {
                 initialized = true;
                 return;
@@ -30,7 +32,7 @@ public sealed class AudioManager : IDisposable
                 var device = Bass.GetDeviceInfo(i);
                 if (device.Driver is null || device.IsDefault) continue;
 
-                if (Bass.Init(i))
+                if (Bass.Init(i, Flags: flags))
                 {
                     initialized = true;
                     return;
@@ -42,6 +44,9 @@ public sealed class AudioManager : IDisposable
         finally
         {
             if (initialized) Bass.UpdateThreads = 0;
+
+            Bass.GetInfo(out var info);
+            Bass.PlaybackBufferLength = info.MinBufferLength * 3;
         }
 
         if (!initialized) throw new BassException(Bass.LastError);
@@ -65,7 +70,7 @@ public sealed class AudioManager : IDisposable
         {
             var channel = audioChannels[i];
             if (!channel.Completed && channel.Playing)
-                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame * 2 / TimeSpan.TicksPerMillisecond));
+                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame * 1.5f / TimeSpan.TicksPerMillisecond));
 
             if (!channel.Temporary || !channel.Completed)
             {

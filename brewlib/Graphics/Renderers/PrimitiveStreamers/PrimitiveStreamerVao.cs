@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 
@@ -202,7 +201,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     }
 
     public static bool HasCapabilities()
-        => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
-            GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object") &&
-            GLFW.ExtensionSupported("GL_ARB_multi_draw_indirect");
+        => DrawState.Extensions.Contains("GL_ARB_buffer_storage") &&
+            DrawState.Extensions.Contains("GL_ARB_shader_storage_buffer_object") &&
+            DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }

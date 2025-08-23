@@ -1,10 +1,12 @@
 ﻿namespace BrewLib.Util;
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
 
 public static class ColorExtensions
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color LerpColor(this Color color, Color otherColor, float blend)
     {
         var rgba = color.ToScaledVector4();
@@ -12,6 +14,7 @@ public static class ColorExtensions
             new(rgba.AsVector3() * (1 - blend) + otherColor.ToScaledVector4().AsVector3() * blend, rgba.W));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color WithOpacity(this Color color, float opacity)
     {
         var rgba = color.ToScaledVector4();

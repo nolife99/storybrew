@@ -9,12 +9,12 @@ using SixLabors.ImageSharp.Memory;
 public class FftStream : IDisposable
 {
     public readonly float Duration, Frequency;
+    readonly ChannelInfo info;
     readonly int stream;
-    ChannelInfo info;
 
     public FftStream(string path)
     {
-        stream = Bass.CreateStream(path, 0, 0, BassFlags.Decode | BassFlags.Prescan);
+        stream = Bass.CreateStream(path, 0, 0, BassFlags.Decode | BassFlags.AsyncFile);
         Duration = (float)Bass.ChannelBytes2Seconds(stream, Bass.ChannelGetLength(stream));
         info = Bass.ChannelGetInfo(stream);
 
@@ -23,7 +23,7 @@ public class FftStream : IDisposable
 
     public IMemoryOwner<float> GetFft(float time, bool splitChannels = false)
     {
-        Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
+        Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time), PositionFlags.Scan);
 
         var size = 1024;
         var flags = DataFlags.FFT2048;

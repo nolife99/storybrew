@@ -42,7 +42,7 @@ public readonly struct OrientedBoundingBox
 
     public bool Intersects(RectangleF other)
     {
-        OrientedBoundingBox otherBox = new(new(other.X, other.Y), Vector2.Zero, new(other.Width, other.Height), 0);
+        OrientedBoundingBox otherBox = new(other.Location, Vector2.Zero, other.Size, 0);
         return intersects1Way(in otherBox) && otherBox.intersects1Way(in this);
     }
 
