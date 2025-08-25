@@ -27,7 +27,7 @@ public static class ScriptCompiler
         ReadOnlySpan<byte> arrAssembly,
         ReadOnlySpan<byte> arrSymbols);
 
-    public static Assembly Compile(AssemblyLoadContext context,
+    public static ScriptProcessingResult<Assembly> Compile(AssemblyLoadContext context,
         IEnumerable<string> sourcePaths,
         ReadOnlySpan<string> referencedAssemblies,
         CancellationTokenSource token)
@@ -90,7 +90,8 @@ public static class ScriptCompiler
                 assemblies.Dispose();
             }
 
-            if (compilation.Success) return InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan);
+            if (compilation.Success)
+                return new(InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan));
         }
 
         using var error = TempList.Create("Compilation error\n");
@@ -128,6 +129,6 @@ public static class ScriptCompiler
 
         tokenSource.ThrowIfCancellationRequested();
 
-        throw new ScriptCompilationException(error.AsReadOnlySpan().ToString());
+        return new(new ScriptCompilationException(error.AsReadOnlySpan().ToString()));
     }
 }

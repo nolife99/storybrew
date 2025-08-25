@@ -105,6 +105,7 @@ public sealed class Texture2d : Texture2dRegion
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(span));
 
+            GL.BindTexture(TextureTarget.Texture2D, 0);
             spanOwner?.Dispose();
         }
     }
@@ -137,6 +138,8 @@ public sealed class Texture2d : Texture2dRegion
                     PixelFormat.Rgba,
                     PixelType.UnsignedByte,
                     ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
+
+        GL.BindTexture(TextureTarget.Texture2D, 0);
     }
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
@@ -216,6 +219,7 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
+        GL.BindTexture(TextureTarget.Texture2D, 0);
         return new(textureId, width, height);
     }
 
@@ -281,6 +285,7 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
+        GL.BindTexture(TextureTarget.Texture2D, 0);
         return new(textureId, width, height);
     }
 

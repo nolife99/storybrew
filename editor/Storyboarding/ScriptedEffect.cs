@@ -2,8 +2,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,10 +9,9 @@ using BrewLib.Util;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Scripting;
 using StorybrewEditor.Util;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class ScriptedEffect : Effect
 {
@@ -27,7 +24,7 @@ public class ScriptedEffect : Effect
     bool multithreaded;
 
     EffectStatus status = EffectStatus.Initializing;
-    PooledList<char> statusMessage;
+    ValueList<char> statusMessage;
 
     long statusStopwatch;
     CancellationTokenSource token;
@@ -49,7 +46,7 @@ public class ScriptedEffect : Effect
     public override EffectStatus Status => status;
 
     public override ReadOnlySpan<char> StatusMessage
-        => statusMessage is null ? default : statusMessage.AsReadOnlySpan();
+        => statusMessage.IsValid ? statusMessage.AsReadOnlySpan() : default;
 
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
@@ -72,87 +69,49 @@ public class ScriptedEffect : Effect
             Project.MapsetManager.Beatmaps,
             newDependencyWatcher);
 
-        var success = false;
-        try
+        Interlocked.Exchange(ref token, cts);
+
+        await changeStatus(EffectStatus.Loading);
+        var scriptResult = scriptContainer.CreateScript(cts);
+
+        if (!scriptResult.Success)
         {
-            Interlocked.Exchange(ref token, cts);
-
-            await changeStatus(EffectStatus.Loading);
-            var script = scriptContainer.CreateScript(cts);
-
-            await changeStatus(EffectStatus.Configuring);
-            await Program.Schedule(state =>
-                {
-                    var (localScript, localEffect) = state;
-
-                    localEffect.beatmapDependent = true;
-                    if (localScript.Identifier != localEffect.configScriptIdentifier)
-                    {
-                        localScript.UpdateConfiguration(localEffect.Config);
-                        localEffect.configScriptIdentifier = localScript.Identifier;
-
-                        localEffect.OnConfigFieldsChanged();
-                    }
-                    else localScript.ApplyConfiguration(localEffect.Config);
-                },
-                (script, this));
-
-            await changeStatus(EffectStatus.Updating);
-
-            script.Generate(context, ControlledExecution.Run, cts.Token);
-
-            foreach (var layer in context.EditorLayers) layer.PostProcess();
-
-            success = true;
-        }
-        catch (ScriptCompilationException e)
-        {
-            await changeStatus(EffectStatus.CompilationFailed, e.Message, context.Log);
+            await updateWatcherWithException(newDependencyWatcher, scriptResult.Error, context);
             return;
         }
-        catch (ScriptLoadingException e)
-        {
-            if (e.InnerException is null) await changeStatus(EffectStatus.LoadingFailed, e.Message, context.Log);
-            else
+
+        await changeStatus(EffectStatus.Configuring);
+
+        var script = scriptResult.Value;
+        await Program.Schedule(state =>
             {
-                ValueTask task;
-                using (var msg = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                    $"{e.Message}: {e.InnerException.Message}"))
-                    task = changeStatus(EffectStatus.LoadingFailed, msg.AsReadOnlySpan(), context.Log);
+                var (localScript, localEffect) = state;
 
-                await task;
-            }
-
-            return;
-        }
-        catch (OperationCanceledException)
-        {
-            await changeStatus(EffectStatus.UpdateCanceled);
-            return;
-        }
-        catch (Exception e)
-        {
-            ValueTask task;
-            using (var msg = getExecutionFailedMessage(e))
-                task = changeStatus(EffectStatus.ExecutionFailed, msg.AsReadOnlySpan(), context.Log);
-
-            await task;
-            return;
-        }
-        finally
-        {
-            if (!success)
-            {
-                if (dependencyWatcher is not null)
+                localEffect.beatmapDependent = true;
+                if (localScript.Identifier != localEffect.configScriptIdentifier)
                 {
-                    dependencyWatcher.Watch(newDependencyWatcher.WatchedFilenames);
+                    localScript.UpdateConfiguration(localEffect.Config);
+                    localEffect.configScriptIdentifier = localScript.Identifier;
 
-                    newDependencyWatcher.Dispose();
-                    newDependencyWatcher = null;
+                    localEffect.OnConfigFieldsChanged();
                 }
-                else dependencyWatcher = newDependencyWatcher;
-            }
+                else localScript.ApplyConfiguration(localEffect.Config);
+            },
+            (script, this));
+
+        await changeStatus(EffectStatus.Updating);
+
+#pragma warning disable SYSLIB0046
+        var scriptException = script.Generate(context, ControlledExecution.Run, cts.Token);
+#pragma warning restore SYSLIB0046
+
+        if (scriptException is not null)
+        {
+            await updateWatcherWithException(newDependencyWatcher, scriptException, context);
+            return;
         }
+
+        foreach (var layer in context.EditorLayers) layer.PostProcess();
 
         await changeStatus(EffectStatus.Ready, log: context.Log);
         if (Disposed)
@@ -176,7 +135,30 @@ public class ScriptedEffect : Effect
             (context, this));
     }
 
-    public override void CancelUpdate() => Interlocked.Exchange(ref token, null).CancelAfter(400);
+    ValueTask updateWatcherWithException(MultiFileWatcher watcher, Exception ex, EditorGeneratorContext context)
+    {
+        if (dependencyWatcher is not null)
+        {
+            dependencyWatcher.Watch(watcher);
+            watcher.Dispose();
+        }
+        else dependencyWatcher = watcher;
+
+        switch (ex)
+        {
+            case OperationCanceledException: return changeStatus(EffectStatus.UpdateCanceled);
+            case ScriptLoadingException: return changeStatus(EffectStatus.LoadingFailed, ex.Message, context.Log);
+
+            case ScriptCompilationException:
+                return changeStatus(EffectStatus.CompilationFailed, ex.Message, context.Log);
+
+            default:
+                using (var msg = StringHelper.Interpolate($"Uncaught error during {status}:\n{ex}"))
+                    return changeStatus(EffectStatus.ExecutionFailed, msg.AsReadOnlySpan(), context.Log);
+        }
+    }
+
+    public override void CancelUpdate() => Interlocked.Exchange(ref token, null).CancelAfter(200);
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
@@ -197,8 +179,8 @@ public class ScriptedEffect : Effect
 
         this.status = status;
 
-        statusMessage ??= new();
-        statusMessage.Clear();
+        if (statusMessage.IsValid) statusMessage.Clear();
+        else statusMessage = ValueList.Create<char>();
 
         if (!message.IsEmpty) statusMessage.AddRange(message);
 
@@ -215,12 +197,6 @@ public class ScriptedEffect : Effect
         return task;
     }
 
-    TempList<char> getExecutionFailedMessage(Exception e)
-        => e is FileNotFoundException exception ?
-            StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}") :
-            StringHelper.Interpolate(CultureInfo.InvariantCulture, $"Uncaught error during {status}:\n{e}");
-
     #region IDisposable Support
 
     bool disposed;
@@ -231,7 +207,7 @@ public class ScriptedEffect : Effect
         {
             if (disposing)
             {
-                statusMessage?.Dispose();
+                statusMessage.Dispose();
                 dependencyWatcher?.Dispose();
                 scriptContainer.OnScriptChanged -= scriptContainer_OnScriptChanged;
             }

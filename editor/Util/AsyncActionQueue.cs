@@ -145,7 +145,15 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     {
                         if (mustSleep)
                         {
-                            await Task.Delay(200, localToken.Token);
+                            try
+                            {
+                                await Task.Delay(200, localToken.Token);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                return;
+                            }
+
                             mustSleep = false;
                         }
 
@@ -189,19 +197,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         localContext.Running.TryAdd(task.UniqueKey, true);
                         if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, true);
 
-                        try
-                        {
-                            await task.Action(localToken);
-                        }
-                        catch (Exception e)
-                        {
-                            if (!localToken.IsCancellationRequested) localContext.TriggerActionFailed(task.Target, e);
-                        }
-                        finally
-                        {
-                            localContext.Running.TryRemove(task.UniqueKey, out _);
-                            if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, false);
-                        }
+                        await task.Action(localToken);
+
+                        if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, false);
+                        localContext.Running.TryRemove(task.UniqueKey, out _);
                     }
                 },
                 this,

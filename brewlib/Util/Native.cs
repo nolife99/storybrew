@@ -17,7 +17,7 @@ using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 using Image = SixLabors.ImageSharp.Image;
 
-public static class Native
+public static partial class Native
 {
     public static NativeWindow Window { get; private set; }
 
@@ -51,26 +51,26 @@ public static class Native
 
     static readonly bool SupportsHighResTimer = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14393);
 
-    [ThreadStatic] static SafeWaitHandle perThreadTimer;
+    [ThreadStatic]
+    static EventWaitHandle perThreadTimer;
 
     const string KERNEL32 = "kernel32.dll";
 
-    [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
-    static extern nint CreateWaitableTimerExW(nint lpTimerAttributes,
+    [LibraryImport(KERNEL32, SetLastError = true), MethodImpl(MethodImplOptions.AggressiveInlining),
+     SuppressGCTransition]
+    private static partial SafeWaitHandle CreateWaitableTimerExW(nint lpTimerAttributes,
         nint lpTimerName,
         uint dwFlags,
         uint dwDesiredAccess);
 
-    [DllImport(KERNEL32, SetLastError = true), SuppressGCTransition]
-    static extern int SetWaitableTimer(nint hTimer,
+    [LibraryImport(KERNEL32, SetLastError = true), MethodImpl(MethodImplOptions.AggressiveInlining),
+     SuppressGCTransition]
+    private static partial int SetWaitableTimer(SafeWaitHandle hTimer,
         nint pDueTime,
         int lPeriod,
         nint pfnCompletionRoutine,
         nint lpArgToCompletionRoutine,
         int fResume);
-
-    [DllImport(KERNEL32, SetLastError = true)]
-    static extern uint WaitForSingleObject(nint hHandle, uint dwMilliseconds);
 
     public static void AccurateSleep(long ticks)
     {
@@ -86,22 +86,20 @@ public static class Native
             const uint CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001,
                 CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002, TIMER_ALL_ACCESS = 0x1F0003;
 
-            var handle = CreateWaitableTimerExW(0,
+            timer = perThreadTimer = new(false, EventResetMode.AutoReset);
+
+            timer.SafeWaitHandle.Dispose();
+            timer.SafeWaitHandle = CreateWaitableTimerExW(0,
                 0,
                 CREATE_WAITABLE_TIMER_MANUAL_RESET | CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                 TIMER_ALL_ACCESS);
-
-            if (handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
-
-            timer = perThreadTimer = new(handle, true);
         }
 
         var relativeTicks = -ticks + TimeSpan.TicksPerMillisecond / 2;
-        var timerHandle = timer.DangerousGetHandle();
-
-        if (SetWaitableTimer(timerHandle, relativeTicks.AsPointer(), 0, 0, 0, 0) == 0 ||
-            WaitForSingleObject(timerHandle, uint.MaxValue) == 0xFFFFFFFF)
+        if (SetWaitableTimer(timer.SafeWaitHandle, relativeTicks.AsPointer(), 0, 0, 0, 0) == 0)
             throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        timer.WaitOne();
     }
 
     #endregion

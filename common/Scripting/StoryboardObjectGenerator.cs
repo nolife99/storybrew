@@ -108,13 +108,10 @@ public abstract class StoryboardObjectGenerator : Script
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
-    public void Generate(GeneratorContext context,
+    public Exception Generate(GeneratorContext context,
         Action<Action, CancellationToken> scriptWrapper,
         CancellationToken token)
     {
-        if (instance.Value is not null)
-            throw new InvalidOperationException("A script is already running in this thread");
-
         this.context = context;
         rnd = new(RandomSeed);
         instance.Value = this;
@@ -122,6 +119,10 @@ public abstract class StoryboardObjectGenerator : Script
         try
         {
             scriptWrapper(Generate, token);
+        }
+        catch (Exception e)
+        {
+            return e;
         }
         finally
         {
@@ -136,6 +137,8 @@ public abstract class StoryboardObjectGenerator : Script
             foreach (var disposable in disposables) disposable.Dispose();
             disposables.Dispose();
         }
+
+        return null;
     }
 
     ///<summary> Main body for storyboard generation. </summary>

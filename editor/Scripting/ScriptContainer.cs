@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading;
 using StorybrewCommon.Scripting;
@@ -96,7 +97,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     public event EventHandler OnScriptChanged;
 
-    public TScript CreateScript(CancellationTokenSource token)
+    public ScriptProcessingResult<TScript> CreateScript(CancellationTokenSource token)
     {
         var localTargetVersion = targetVersion;
         var localCurrentVersion = currentVersion;
@@ -106,34 +107,38 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
             currentVersion = localTargetVersion;
             AssemblyLoadContext scriptDomain = new(null, true);
 
+            ScriptProcessingResult<Assembly> compilationResult;
             try
             {
-                scriptType = ScriptCompiler
-                    .Compile(scriptDomain, SourcePaths, referencedAssemblies.AsReadOnlySpan(), token)
-                    .GetModules()
-                    .AsValueEnumerable()
-                    .SelectMany(m => m.GetTypes())
-                    .First(t => t.IsAssignableTo(typeof(TScript)) && !t.IsAbstract);
+                compilationResult = ScriptCompiler.Compile(scriptDomain,
+                    SourcePaths,
+                    referencedAssemblies.AsReadOnlySpan(),
+                    token);
             }
-            catch (Exception e)
+            catch (OperationCanceledException e)
             {
                 scriptDomain.Unload();
+                currentVersion = localCurrentVersion;
 
-                string details = null;
-                switch (e)
-                {
-                    case ScriptCompilationException: throw;
+                return new(e);
+            }
 
-                    case OperationCanceledException:
-                        currentVersion = localCurrentVersion;
-                        throw;
+            if (!compilationResult.Success)
+            {
+                scriptDomain.Unload();
+                return new(compilationResult.Error);
+            }
 
-                    case InvalidOperationException:
-                        details = "Make sure the script is not abstract and inherits from StoryboardObjectGenerator.\n";
-                        break;
-                }
+            scriptType = compilationResult.Value.GetModules()
+                .AsValueEnumerable()
+                .SelectMany(m => m.GetTypes())
+                .FirstOrDefault(t => t.IsAssignableTo(typeof(TScript)) && !t.IsAbstract);
 
-                throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
+            if (scriptType is null)
+            {
+                scriptDomain.Unload();
+                return new(new ScriptLoadingException(
+                    $"{ScriptTypeName} failed to load.\nFailed to find a type inheriting from {nameof(TScript)}."));
             }
 
             appDomain?.Unload();
@@ -142,7 +147,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
         var script = (TScript)Activator.CreateInstance(scriptType!, true);
         script!.Identifier = Environment.TickCount;
-        return script;
+        return new(script);
     }
 
     public void ReloadScript()

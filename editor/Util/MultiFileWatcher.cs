@@ -1,13 +1,14 @@
 ﻿namespace StorybrewEditor.Util;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using Tiny.PooledCollections.Generic;
 
-public sealed class MultiFileWatcher : IDisposable
+public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
 {
     static readonly Lock fileLock = new();
     readonly PooledDictionary<string, FileSystemWatcher> folderWatchers = new(), recursiveFolderWatchers = new();
@@ -15,8 +16,6 @@ public sealed class MultiFileWatcher : IDisposable
     readonly PooledHashSet<string> watchedFilenames = [];
 
     bool disposed;
-
-    public IEnumerable<string> WatchedFilenames => watchedFilenames;
 
     public void Dispose()
     {
@@ -34,16 +33,25 @@ public sealed class MultiFileWatcher : IDisposable
         disposed = true;
     }
 
+    IEnumerator<string> IEnumerable<string>.GetEnumerator() => watchedFilenames.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
     public event FileSystemEventHandler OnFileChanged;
 
     public void Watch(IEnumerable<string> filenames)
     {
-        foreach (var filename in filenames) Watch(filename);
+        if (filenames is MultiFileWatcher hs)
+            foreach (var filename in hs)
+                Watch(filename);
+        else
+            foreach (var filename in filenames)
+                Watch(filename);
     }
 
-    public void Watch(string filename)
+    public void Watch(string filename) => watchInternal(Path.GetFullPath(filename));
+
+    void watchInternal(string filename)
     {
-        filename = Path.GetFullPath(filename);
         var directoryPath = Path.GetDirectoryName(filename);
 
         watchedFilenames.Add(filename);
@@ -103,4 +111,6 @@ public sealed class MultiFileWatcher : IDisposable
                 Trace.WriteLine($"Watched file {e.ChangeType}: {e.FullPath}");
                 OnFileChanged?.Invoke(sender, e);
             });
+
+    public PooledHashSet<string>.Enumerator GetEnumerator() => watchedFilenames.GetEnumerator();
 }

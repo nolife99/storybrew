@@ -1,5 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
+using System.Runtime.CompilerServices;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -16,9 +17,19 @@ public readonly struct CommandResult<TValue> where TValue : struct, ICommandValu
 
     public readonly float StartTime, EndTime;
 
-    public TValue StartValue => Command.StartValue;
-    public TValue EndValue => Command.EndValue;
+    public TValue StartValue
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Command.StartValue;
+    }
 
+    public TValue EndValue
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Command.EndValue;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal CommandResult(Command<TValue> command, float timeOffset = 0)
     {
         Command = command;
@@ -28,8 +39,10 @@ public readonly struct CommandResult<TValue> where TValue : struct, ICommandValu
         EndTime = command.endTime + timeOffset;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsBefore(CommandResult<TValue> other)
         => StartTime < other.StartTime || StartTime == other.StartTime && EndTime < other.EndTime;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TValue ValueAtTime(float time) => Command.ValueAtTime(time - timeOffset);
 }

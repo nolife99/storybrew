@@ -73,7 +73,7 @@ partial struct ValueList<T> : IDisposable
     ///     Adds the elements of the given <see cref="ReadOnlySpan{T}"/> to the end of this list. If required, the capacity of
     ///     the list is increased to twice the previous capacity or the new size, whichever is larger.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), OverloadResolutionPriority(1)]
     public void AddRange(ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
 
     /// <summary> Copies this List into the given span. </summary>
