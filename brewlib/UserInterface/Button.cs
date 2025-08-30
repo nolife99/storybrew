@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 
 public class Button : Widget, Field
 {
@@ -82,11 +82,11 @@ public class Button : Widget, Field
     public object FieldValue { get => Checked; set => Checked = (bool)value; }
 
     public event EventHandler OnValueChanged;
-    public event Action<Button, MouseButton> OnClick;
+    public event Action<Button, byte> OnClick;
 
-    public void Click(MouseButton button = MouseButton.Left)
+    public void Click(byte button = SDL.ButtonLeft)
     {
-        if (isCheckable && button is MouseButton.Left) Checked = !Checked;
+        if (isCheckable && button == SDL.ButtonLeft) Checked = !Checked;
         OnClick?.Invoke(this, button);
     }
 

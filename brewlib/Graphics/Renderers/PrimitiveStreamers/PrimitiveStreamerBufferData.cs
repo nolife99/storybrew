@@ -1,7 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 
 sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
@@ -9,11 +11,11 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
-    readonly TPrimitive[] primitiveBuffer = GC.AllocateUninitializedArray<TPrimitive>(maxPrimitivesPerBatch);
+    readonly nint primitiveBuffer = Marshal.AllocHGlobal(maxPrimitivesPerBatch * PrimitiveSize);
     int primitiveBufferOffset;
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
-        => primitiveBuffer[primitiveBufferOffset++] = primitive;
+        => (primitiveBuffer + primitiveBufferOffset++ * PrimitiveSize).AsRef<TPrimitive>() = primitive;
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
@@ -32,4 +34,12 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
+
+    protected override void Dispose(bool disposing)
+    {
+        Marshal.FreeHGlobal(primitiveBuffer);
+        base.Dispose(disposing);
+    }
+
+    public new static bool HasCapabilities() => DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }

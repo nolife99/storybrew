@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
@@ -130,6 +131,7 @@ public sealed class LayerManager : IDisposable
         foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
         foreach (var layer in Layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);

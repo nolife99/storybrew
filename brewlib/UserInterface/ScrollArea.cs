@@ -3,7 +3,7 @@
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 
 public class ScrollArea : Widget
 {
@@ -64,7 +64,7 @@ public class ScrollArea : Widget
 
         OnClickDown += (_, e) =>
         {
-            if (e.Button != MouseButton.Left) return false;
+            if (e.Button != SDL.ButtonLeft) return false;
 
             dragged = true;
             return true;
@@ -72,7 +72,7 @@ public class ScrollArea : Widget
 
         OnClickUp += (_, e) =>
         {
-            if (e.Button != MouseButton.Left) return;
+            if (e.Button != SDL.ButtonLeft) return;
 
             dragged = false;
         };
@@ -81,13 +81,13 @@ public class ScrollArea : Widget
         {
             if (!dragged) return;
 
-            scroll(e.DeltaX, e.DeltaY);
+            scroll(e.XRel, e.YRel);
         };
 
         OnMouseWheel += (_, e) =>
         {
-            if (scrollsVertically) scroll(0, e.OffsetY * 64);
-            else if (scrollsHorizontally) scroll(e.OffsetY * 64, 0);
+            if (scrollsVertically) scroll(0, e.Y * 64);
+            else if (scrollsHorizontally) scroll(e.Y * 64, 0);
 
             return true;
         };

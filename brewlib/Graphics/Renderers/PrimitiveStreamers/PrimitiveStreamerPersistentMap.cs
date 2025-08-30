@@ -95,4 +95,8 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
         bufferOffset = 0;
     }
+
+    public new static bool HasCapabilities()
+        => DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect") &&
+            DrawState.Extensions.Contains("GL_ARB_buffer_storage");
 }

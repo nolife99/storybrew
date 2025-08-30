@@ -1,21 +1,19 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using BrewLib.Util;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Common.Input;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using BrewLib.Input;
+using SDL3;
 
 public sealed class ClickBehavior : IDisposable
 {
     readonly Widget widget;
     bool disabled, hovered, pressed;
 
-    MouseButton pressedButton;
+    byte pressedButton;
 
     public ClickBehavior(Widget widget)
     {
-        Native.Window.Cursor = MouseCursor.Default;
+        InputManager.SetCursor(true, SDL.SystemCursor.Default);
 
         this.widget = widget;
 
@@ -41,7 +39,7 @@ public sealed class ClickBehavior : IDisposable
     }
 
     public event EventHandler OnStateChanged;
-    public event EventHandler<MouseButtonEventArgs> OnClick;
+    public event EventHandler<SDL.MouseButtonEvent> OnClick;
 
     void widget_OnHovered(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
@@ -50,10 +48,10 @@ public sealed class ClickBehavior : IDisposable
         hovered = e.Hovered;
         if (!disabled) OnStateChanged?.Invoke(this, EventArgs.Empty);
 
-        Native.Window.Cursor = Hovered ? MouseCursor.PointingHand : MouseCursor.Default;
+        InputManager.SetCursor(hovered, SDL.SystemCursor.Pointer);
     }
 
-    bool widget_OnClickDown(WidgetEvent evt, MouseButtonEventArgs e)
+    bool widget_OnClickDown(WidgetEvent evt, SDL.MouseButtonEvent e)
     {
         if (pressed || disabled) return false;
 
@@ -63,7 +61,7 @@ public sealed class ClickBehavior : IDisposable
         return true;
     }
 
-    void widget_OnClickUp(WidgetEvent evt, MouseButtonEventArgs e)
+    void widget_OnClickUp(WidgetEvent evt, SDL.MouseButtonEvent e)
     {
         if (!pressed || disabled) return;
         if (e.Button != pressedButton) return;
@@ -85,7 +83,7 @@ public sealed class ClickBehavior : IDisposable
         widget.OnClickDown -= widget_OnClickDown;
         widget.OnClickUp -= widget_OnClickUp;
 
-        if (hovered) Native.Window.Cursor = MouseCursor.Default;
+        InputManager.SetCursor(hovered, SDL.SystemCursor.Default);
 
         disposed = true;
     }

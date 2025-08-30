@@ -7,7 +7,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK.Windowing.Common;
+using SDL3;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
@@ -28,7 +28,7 @@ public class Widget(WidgetManager manager) : IDisposable
     public float Opacity = 1;
 
     string styleName;
-    protected WidgetManager Manager => manager;
+    public WidgetManager Manager => manager;
 
     public bool Displayed
     {
@@ -480,36 +480,36 @@ public class Widget(WidgetManager manager) : IDisposable
 
     #region Events
 
-    public event Func<WidgetEvent, MouseButtonEventArgs, bool> OnClickDown;
-    public bool NotifyClickDown(WidgetEvent evt, MouseButtonEventArgs e) => Raise(OnClickDown, evt, e);
+    public event Func<WidgetEvent, SDL.MouseButtonEvent, bool> OnClickDown;
+    public bool NotifyClickDown(WidgetEvent evt, SDL.MouseButtonEvent e) => Raise(OnClickDown, evt, e);
 
-    public event Action<WidgetEvent, MouseButtonEventArgs> OnClickUp;
+    public event Action<WidgetEvent, SDL.MouseButtonEvent> OnClickUp;
 
-    public bool NotifyClickUp(WidgetEvent evt, MouseButtonEventArgs e)
+    public bool NotifyClickUp(WidgetEvent evt, SDL.MouseButtonEvent e)
     {
         OnClickUp?.Invoke(evt, e);
         return false;
     }
 
-    public event Action<WidgetEvent, MouseMoveEventArgs> OnClickMove;
+    public event Action<WidgetEvent, SDL.MouseMotionEvent> OnClickMove;
 
-    public bool NotifyClickMove(WidgetEvent evt, MouseMoveEventArgs e)
+    public bool NotifyClickMove(WidgetEvent evt, SDL.MouseMotionEvent e)
     {
         OnClickMove?.Invoke(evt, e);
         return false;
     }
 
-    public event Func<WidgetEvent, MouseWheelEventArgs, bool> OnMouseWheel;
-    public bool NotifyMouseWheel(WidgetEvent evt, MouseWheelEventArgs e) => Raise(OnMouseWheel, evt, e);
+    public event Func<WidgetEvent, SDL.MouseWheelEvent, bool> OnMouseWheel;
+    public bool NotifyMouseWheel(WidgetEvent evt, SDL.MouseWheelEvent e) => Raise(OnMouseWheel, evt, e);
 
-    public event Func<WidgetEvent, KeyboardKeyEventArgs, bool> OnKeyDown;
-    public bool NotifyKeyDown(WidgetEvent evt, KeyboardKeyEventArgs e) => Raise(OnKeyDown, evt, e);
+    public event Func<WidgetEvent, SDL.KeyboardEvent, bool> OnKeyDown;
+    public bool NotifyKeyDown(WidgetEvent evt, SDL.KeyboardEvent e) => Raise(OnKeyDown, evt, e);
 
-    public event Func<WidgetEvent, KeyboardKeyEventArgs, bool> OnKeyUp;
-    public bool NotifyKeyUp(WidgetEvent evt, KeyboardKeyEventArgs e) => Raise(OnKeyUp, evt, e);
+    public event Func<WidgetEvent, SDL.KeyboardEvent, bool> OnKeyUp;
+    public bool NotifyKeyUp(WidgetEvent evt, SDL.KeyboardEvent e) => Raise(OnKeyUp, evt, e);
 
-    public event Func<WidgetEvent, TextInputEventArgs, bool> OnKeyPress;
-    public bool NotifyKeyPress(WidgetEvent evt, TextInputEventArgs e) => Raise(OnKeyPress, evt, e);
+    public event Func<WidgetEvent, SDL.TextInputEvent, bool> OnKeyPress;
+    public bool NotifyKeyPress(WidgetEvent evt, SDL.TextInputEvent e) => Raise(OnKeyPress, evt, e);
 
     public event Action<WidgetEvent, WidgetHoveredEventArgs> OnHovered;
 

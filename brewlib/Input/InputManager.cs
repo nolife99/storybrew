@@ -1,37 +1,22 @@
 ﻿namespace BrewLib.Input;
 
-using System;
 using System.Numerics;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 
-public sealed class InputManager : IDisposable
+public sealed class InputManager
 {
     readonly IInputHandler handler;
-    readonly NativeWindow window;
+    public readonly nint Window;
 
     bool hasMouseHover;
 
-    public InputManager(NativeWindow window, IInputHandler handler)
+    public InputManager(nint window, IInputHandler handler)
     {
-        this.window = window;
+        Window = window;
         this.handler = handler;
-
-        window.FocusedChanged += window_FocusedChanged;
-        window.MouseEnter += window_MouseEnter;
-        window.MouseLeave += window_MouseLeave;
-
-        window.MouseUp += window_MouseUp;
-        window.MouseDown += window_MouseDown;
-        window.MouseWheel += window_MouseWheel;
-        window.MouseMove += window_MouseMove;
-        window.KeyDown += window_KeyDown;
-        window.KeyUp += window_KeyUp;
-        window.TextInput += window_KeyPress;
     }
 
-    public bool HasMouseFocus => window.IsFocused && hasMouseHover;
+    public bool HasMouseFocus => (SDL.GetWindowFlags(Window) & SDL.WindowFlags.Hidden) == 0 && hasMouseHover;
 
     public Vector2 MousePosition { get; private set; }
 
@@ -47,22 +32,44 @@ public sealed class InputManager : IDisposable
     public bool ControlAltOnly => Control && !Shift && Alt;
     public bool ShiftAltOnly => !Control && Shift && Alt;
 
-    public void Dispose()
+    public void PumpEvents()
     {
-        window.FocusedChanged -= window_FocusedChanged;
-        window.MouseEnter -= window_MouseEnter;
-        window.MouseLeave -= window_MouseLeave;
+        while (SDL.PollEvent(out var e))
+            switch ((SDL.EventType)e.Type)
+            {
+                case SDL.EventType.WindowMouseEnter: window_MouseEnter(); break;
+                case SDL.EventType.WindowMouseLeave: window_MouseLeave(); break;
 
-        window.MouseUp -= window_MouseUp;
-        window.MouseDown -= window_MouseDown;
-        window.MouseWheel -= window_MouseWheel;
-        window.MouseMove += window_MouseMove;
-        window.KeyDown -= window_KeyDown;
-        window.KeyUp -= window_KeyUp;
-        window.TextInput -= window_KeyPress;
+                case SDL.EventType.WindowFocusGained:
+                case SDL.EventType.WindowFocusLost:
+                    window_FocusedChanged();
+                    break;
+
+                case SDL.EventType.KeyDown: window_KeyDown(e.Key); break;
+                case SDL.EventType.KeyUp: window_KeyUp(e.Key); break;
+                case SDL.EventType.TextInput: window_KeyPress(e.Text); break;
+                case SDL.EventType.MouseMotion: window_MouseMove(e.Motion); break;
+                case SDL.EventType.MouseButtonDown: window_MouseDown(e.Button); break;
+                case SDL.EventType.MouseButtonUp: window_MouseUp(e.Button); break;
+                case SDL.EventType.MouseWheel: window_MouseWheel(e.Wheel); break;
+
+                case SDL.EventType.WindowResized: window_Resize(e.Window); break;
+                case SDL.EventType.Quit: window_Close(e.Quit); break;
+            }
     }
 
-    void updateMouseFocus() => handler.OnFocusChanged(new(HasMouseFocus));
+    public static void SetCursor(bool flag, SDL.SystemCursor cursor)
+    {
+        if (flag && SDL.GetCursor() == SDL.GetDefaultCursor() && cursor is not SDL.SystemCursor.Default)
+            SDL.SetCursor(SDL.CreateSystemCursor(cursor));
+        else if (SDL.GetCursor() != SDL.GetDefaultCursor())
+        {
+            SDL.DestroyCursor(SDL.GetCursor());
+            SDL.SetCursor(SDL.GetDefaultCursor());
+        }
+    }
+
+    void updateMouseFocus() => handler.OnFocusChanged(new() { Data1 = HasMouseFocus ? 1 : 0 });
 
     void window_MouseEnter()
     {
@@ -76,39 +83,42 @@ public sealed class InputManager : IDisposable
         updateMouseFocus();
     }
 
-    void window_FocusedChanged(FocusedChangedEventArgs e) => updateMouseFocus();
+    void window_FocusedChanged() => updateMouseFocus();
 
-    void window_MouseDown(MouseButtonEventArgs e) => handler.OnClickDown(e);
-    void window_MouseUp(MouseButtonEventArgs e) => handler.OnClickUp(e);
+    void window_MouseDown(SDL.MouseButtonEvent e) => handler.OnClickDown(e);
+    void window_MouseUp(SDL.MouseButtonEvent e) => handler.OnClickUp(e);
 
-    void window_MouseMove(MouseMoveEventArgs e)
+    void window_MouseMove(SDL.MouseMotionEvent e)
     {
-        var pos = e.Position;
-        MousePosition = new(pos.X, pos.Y);
+        MousePosition = new(e.X, e.Y);
 
         handler.OnMouseMove(e);
     }
 
-    void updateModifierState(KeyboardKeyEventArgs e)
+    void updateModifierState(SDL.KeyboardEvent e)
     {
-        Control = (e.Modifiers & KeyModifiers.Control) != 0;
-        Shift = (e.Modifiers & KeyModifiers.Shift) != 0;
-        Alt = (e.Modifiers & KeyModifiers.Alt) != 0;
+        Control = (e.Mod & SDL.Keymod.Ctrl) != 0;
+        Shift = (e.Mod & SDL.Keymod.Shift) != 0;
+        Alt = (e.Mod & SDL.Keymod.Alt) != 0;
     }
 
-    void window_KeyDown(KeyboardKeyEventArgs e)
+    void window_KeyDown(SDL.KeyboardEvent e)
     {
         updateModifierState(e);
         handler.OnKeyDown(e);
     }
 
-    void window_KeyUp(KeyboardKeyEventArgs e)
+    void window_KeyUp(SDL.KeyboardEvent e)
     {
         updateModifierState(e);
         handler.OnKeyUp(e);
     }
 
-    void window_KeyPress(TextInputEventArgs e) => handler.OnKeyPress(e);
+    void window_KeyPress(SDL.TextInputEvent e) => handler.OnKeyPress(e);
 
-    void window_MouseWheel(MouseWheelEventArgs e) => handler.OnMouseWheel(e);
+    void window_MouseWheel(SDL.MouseWheelEvent e) => handler.OnMouseWheel(e);
+
+    void window_Resize(SDL.WindowEvent e) => handler.OnResize(e);
+
+    void window_Close(SDL.QuitEvent e) => handler.OnClose(e);
 }

@@ -1,18 +1,28 @@
 ﻿namespace BrewLib.Input;
 
 using System.Collections.Generic;
-using OpenTK.Windowing.Common;
+using SDL3;
 
 public sealed class InputDispatcher : IInputHandler
 {
     readonly List<IInputHandler> handlers = [];
 
-    public void OnFocusChanged(FocusedChangedEventArgs e)
+    public void OnClose(SDL.QuitEvent e)
+    {
+        foreach (var handler in handlers) handler.OnClose(e);
+    }
+
+    public void OnResize(SDL.WindowEvent e)
+    {
+        foreach (var handler in handlers) handler.OnResize(e);
+    }
+
+    public void OnFocusChanged(SDL.WindowEvent e)
     {
         foreach (var handler in handlers) handler.OnFocusChanged(e);
     }
 
-    public bool OnClickDown(MouseButtonEventArgs e)
+    public bool OnClickDown(SDL.MouseButtonEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnClickDown(e))
@@ -21,7 +31,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnClickUp(MouseButtonEventArgs e)
+    public bool OnClickUp(SDL.MouseButtonEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnClickUp(e))
@@ -30,7 +40,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnMouseWheel(MouseWheelEventArgs e)
+    public bool OnMouseWheel(SDL.MouseWheelEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnMouseWheel(e))
@@ -39,12 +49,12 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public void OnMouseMove(MouseMoveEventArgs e)
+    public void OnMouseMove(SDL.MouseMotionEvent e)
     {
         foreach (var handler in handlers) handler.OnMouseMove(e);
     }
 
-    public bool OnKeyDown(KeyboardKeyEventArgs e)
+    public bool OnKeyDown(SDL.KeyboardEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyDown(e))
@@ -53,7 +63,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnKeyUp(KeyboardKeyEventArgs e)
+    public bool OnKeyUp(SDL.KeyboardEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyUp(e))
@@ -62,7 +72,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnKeyPress(TextInputEventArgs e)
+    public bool OnKeyPress(SDL.TextInputEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyPress(e))

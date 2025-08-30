@@ -9,8 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.IO;
 using Microsoft.Win32.SafeHandles;
-using OpenTK.Windowing.Common.Input;
-using OpenTK.Windowing.Desktop;
+using SDL3;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Tiny.PooledCollections.Generic.Value;
@@ -19,11 +18,11 @@ using Image = SixLabors.ImageSharp.Image;
 
 public static partial class Native
 {
-    public static NativeWindow Window { get; private set; }
+    static nint windowHandle;
 
     public static Func<Action<object>, object, ValueTask> MainThreadScheduler { get; set; }
 
-    public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
+    public static void InitializeHandle(nint window) => windowHandle = window;
 
     public static Task SetWindowIcon(ResourceContainer container, string iconPath)
     {
@@ -41,8 +40,18 @@ public static partial class Native
 
                 bytes.GetUnsafe(out var array, out _);
 
-                await MainThreadScheduler(x => Window.Icon = (WindowIcon)x,
-                    new WindowIcon(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, array)));
+                var pinned = GCHandle.Alloc(array, GCHandleType.Pinned);
+                var surface = SDL.CreateSurfaceFrom(image.Width,
+                    image.Height,
+                    SDL.PixelFormat.ABGR8888,
+                    pinned.AddrOfPinnedObject(),
+                    image.Width * 4);
+
+                pinned.Free();
+
+                await MainThreadScheduler(x => SDL.SetWindowIcon(windowHandle, (nint)x), surface);
+
+                SDL.DestroySurface(surface);
             },
             r);
     }

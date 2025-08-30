@@ -4,10 +4,10 @@ using System;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
+using BrewLib.Input;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK.Windowing.Common.Input;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -49,7 +49,7 @@ public class Textbox : Widget, Field
         OnHovered += (_, e) =>
         {
             hovered = e.Hovered;
-            Native.Window.Cursor = hovered ? MouseCursor.IBeam : MouseCursor.Default;
+            InputManager.SetCursor(hovered, SDL.SystemCursor.Text);
 
             RefreshStyle();
         };
@@ -61,27 +61,27 @@ public class Textbox : Widget, Field
             var inputManager = manager.InputManager;
             switch (e.Key)
             {
-                case Keys.Escape:
+                case SDL.Keycode.Escape:
                     if (hasFocus) manager.KeyboardFocus = null;
                     break;
 
-                case Keys.Backspace:
+                case SDL.Keycode.Backspace:
                     if (selectionStart > 0 && selectionStart == cursorPosition) --selectionStart;
 
                     ReplaceSelection("");
                     break;
 
-                case Keys.Delete:
+                case SDL.Keycode.Delete:
                     if (selectionStart < Value.Length && selectionStart == cursorPosition) ++cursorPosition;
 
                     ReplaceSelection("");
                     break;
 
-                case Keys.A:
+                case SDL.Keycode.A:
                     if (inputManager.ControlOnly) SelectAll();
                     break;
 
-                case Keys.C:
+                case SDL.Keycode.C:
                     if (inputManager.ControlOnly)
                         ClipboardHelper.SetText(selectionStart != cursorPosition ?
                             Value.Slice(SelectionLeft, SelectionLength) :
@@ -89,7 +89,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Keys.V:
+                case SDL.Keycode.V:
                     if (inputManager.ControlOnly)
                     {
                         var clipboardText = ClipboardHelper.GetText();
@@ -103,7 +103,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Keys.X:
+                case SDL.Keycode.X:
                     if (inputManager.ControlOnly)
                     {
                         if (selectionStart == cursorPosition) SelectAll();
@@ -114,7 +114,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Keys.Left:
+                case SDL.Keycode.Left:
                     if (inputManager.Shift)
                     {
                         if (cursorPosition > 0) --cursorPosition;
@@ -124,7 +124,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Keys.Right:
+                case SDL.Keycode.Right:
                     if (inputManager.Shift)
                     {
                         if (cursorPosition < Value.Length) cursorPosition++;
@@ -134,30 +134,29 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Keys.Up:
+                case SDL.Keycode.Up:
                     cursorPosition = content.GetCharacterIndexAbove(cursorPosition);
 
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Keys.Down:
+                case SDL.Keycode.Down:
                     cursorPosition = content.GetCharacterIndexBelow(cursorPosition);
 
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Keys.Home:
+                case SDL.Keycode.Home:
                     cursorPosition = 0;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Keys.End:
+                case SDL.Keycode.End:
                     cursorPosition = Value.Length;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Keys.Enter:
-                case Keys.KeyPadEnter:
+                case SDL.Keycode.Return:
                     if (AcceptMultiline && (!EnterCommits || inputManager.Shift)) ReplaceSelection("\n");
                     else if (EnterCommits && hasCommitPending)
                     {
@@ -176,7 +175,7 @@ public class Textbox : Widget, Field
         {
             if (!hasFocus) return false;
 
-            ReplaceSelection(e.AsString);
+            ReplaceSelection(e.SDLUtf8ToString(stackalloc char[e.SDLUtf8ToStringLength()]));
             return true;
         };
 
@@ -349,7 +348,7 @@ public class Textbox : Widget, Field
         if (disposing)
         {
             cursorLine.Dispose();
-            if (hovered) Native.Window.Cursor = MouseCursor.Default;
+            InputManager.SetCursor(hovered, SDL.SystemCursor.Default);
         }
 
         base.Dispose(disposing);

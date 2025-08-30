@@ -5,13 +5,12 @@ using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Input;
 using BrewLib.Time;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
+using SDL3;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
-public sealed class ScreenLayerManager : IDisposable
+public sealed class ScreenLayerManager : InputAdapter, IDisposable
 {
     readonly object context;
 
@@ -19,16 +18,16 @@ public sealed class ScreenLayerManager : IDisposable
 
     readonly PooledList<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
 
-    readonly NativeWindow window;
+    readonly nint window;
     ScreenLayer focusedLayer;
 
-    public ScreenLayerManager(NativeWindow window, FrameTimeSource timeSource, object context)
+    public ScreenLayerManager(nint window, FrameTimeSource timeSource, object context)
     {
         this.window = window;
         TimeSource = timeSource;
         this.context = context;
 
-        window.Resize += window_Resize;
+        inputDispatcher.Add(this);
     }
 
     public FrameTimeSource TimeSource { get; }
@@ -42,8 +41,8 @@ public sealed class ScreenLayerManager : IDisposable
 
         layer.Load();
 
-        var size = window.ClientSize;
-        layer.Resize(int.Max(1, size.X), int.Max(1, size.Y));
+        SDL.GetWindowSizeInPixels(window, out var width, out var height);
+        layer.Resize(int.Max(1, width), int.Max(1, height));
     }
 
     public void Set(ScreenLayer layer)
@@ -85,7 +84,7 @@ public sealed class ScreenLayerManager : IDisposable
 
     public void Update(bool isFixedRateUpdate)
     {
-        var active = window.IsFocused;
+        var active = (SDL.GetWindowFlags(window) & SDL.WindowFlags.InputFocus) != 0;
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
@@ -127,8 +126,10 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (layers.Count == 0)
         {
-            window.IsVisible = false;
-            window.Close();
+            SDL.HideWindow(window);
+
+            SDL.Event ev = new() { Type = (uint)SDL.EventType.Quit };
+            SDL.PushEvent(ref ev);
         }
     }
 
@@ -155,10 +156,10 @@ public sealed class ScreenLayerManager : IDisposable
         focusedLayer = layer;
     }
 
-    void window_Resize(ResizeEventArgs e)
+    public override void OnResize(SDL.WindowEvent e)
     {
-        var width = e.Width;
-        var height = e.Height;
+        var width = e.Data1;
+        var height = e.Data2;
 
         if (width == 0 || height == 0) return;
 
@@ -183,7 +184,6 @@ public sealed class ScreenLayerManager : IDisposable
 
         updateQueue.Dispose();
 
-        window.Resize -= window_Resize;
         disposed = true;
     }
 

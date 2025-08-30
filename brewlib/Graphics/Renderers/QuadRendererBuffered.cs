@@ -41,7 +41,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 16384, int primitiveBufferSize = 0)
     {
         this.maxQuadsPerBatch = maxQuadsPerBatch;
         if (shader is null)

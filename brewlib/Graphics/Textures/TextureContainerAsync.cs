@@ -5,8 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using BrewLib.IO;
-using BrewLib.Util;
-using OpenTK.Windowing.Desktop;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -88,50 +87,52 @@ public sealed class TextureContainerAsync : TextureContainer
 sealed class TextureUploadQueue : IDisposable
 {
     const int UPLOAD_THREAD_COUNT = 2;
-    readonly PooledList<NativeWindow> contexts = new();
+    readonly PooledList<nint> contexts = new();
 
     readonly object enqueueSignal = new();
     readonly PooledQueue<QueuedUpload> queuedUploads = [];
 
     readonly PooledList<Thread> threads = new();
+    readonly SDL.EventFilter watch;
 
     public TextureUploadQueue()
     {
         var exiting = false;
-        Native.Window.Closing += _ =>
+
+        watch = (nint _, ref SDL.Event e) =>
         {
+            if (e.Type != (nint)SDL.EventType.Quit) return false;
+
             exiting = true;
             Dispose();
+            return true;
         };
 
-        Native.Window.Context.MakeNoneCurrent();
+        SDL.AddEventWatch(watch, 0);
+
+        var mainContext = SDL.GLGetCurrentContext();
+        if (mainContext == 0) throw new InvalidOperationException($"Unable to get current context: {SDL.GetError()}");
+
+        var currentWindow = SDL.GLGetCurrentWindow();
+        if (currentWindow == 0) throw new InvalidOperationException($"Unable to get current window: {SDL.GetError()}");
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
-            NativeWindow window = new(new()
-            {
-                Title = "storybrew texture loader",
-                Flags = Native.Window.Flags,
-                StartVisible = false,
-                StartFocused = false,
-                SharedContext = Native.Window.Context,
-                AutoLoadBindings = false,
-                ClientSize = new(1),
-                DepthBits = 0,
-                StencilBits = 0,
-                RedBits = 0,
-                GreenBits = 0,
-                BlueBits = 0,
-                AlphaBits = 0
-            });
+            SDL.GLSetAttribute(SDL.GLAttr.ShareWithCurrentContext, 1);
 
-            contexts.Add(window);
+            var ctx = SDL.GLCreateContext(currentWindow);
+            if (ctx == 0) throw new InvalidOperationException($"Unable to create context: {SDL.GetError()}");
 
-            window.Context.MakeNoneCurrent();
+            contexts.Add(ctx);
+
+            if (!SDL.GLMakeCurrent(currentWindow, mainContext))
+                throw new InvalidOperationException($"Unable to unbind context: {SDL.GetError()}");
 
             Thread thread = new(context =>
             {
-                ((IGLFWGraphicsContext)context)!.MakeCurrent();
+                if (!SDL.GLMakeCurrent(currentWindow, (nint)context!))
+                    throw new InvalidOperationException(
+                        $"Unable to make context current on new thread: {SDL.GetError()}");
 
                 while (!exiting)
                 {
@@ -178,21 +179,21 @@ sealed class TextureUploadQueue : IDisposable
 
             threads.Add(thread);
 
-            thread.UnsafeStart(window.Context);
+            thread.UnsafeStart(ctx);
 
             Trace.WriteLine($"Started texture upload thread {i + 1}");
         }
-
-        Native.Window.Context.MakeCurrent();
     }
 
     public void Dispose()
     {
+        SDL.RemoveEventWatch(watch, 0);
+
         Clear();
         Signal();
 
         foreach (var thread in threads) thread.Join();
-        foreach (var context in contexts) context.Dispose();
+        foreach (var context in contexts) SDL.GLDestroyContext(context);
 
         threads.Dispose();
         contexts.Dispose();

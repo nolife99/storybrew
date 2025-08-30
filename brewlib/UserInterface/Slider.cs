@@ -3,12 +3,11 @@
 using System;
 using System.Numerics;
 using BrewLib.UserInterface.Skinning.Styles;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public class Slider : ProgressBar
 {
     bool disabled, hovered, dragged;
-    MouseButton dragButton;
+    byte dragButton;
 
     public float Step;
 
@@ -80,7 +79,7 @@ public class Slider : ProgressBar
         return value;
     }
 
-    protected virtual void DragStart(MouseButton button) { }
-    protected virtual void DragUpdate(MouseButton button) { }
-    protected virtual void DragEnd(MouseButton button) { }
+    protected virtual void DragStart(byte button) { }
+    protected virtual void DragUpdate(byte button) { }
+    protected virtual void DragEnd(byte button) { }
 }

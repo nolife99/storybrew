@@ -5,7 +5,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
@@ -356,18 +356,18 @@ public class TimelineSlider : Slider
 
     public void Snap() => Scroll(0);
 
-    protected override void DragStart(MouseButton button)
+    protected override void DragStart(byte button)
     {
-        if (button != MouseButton.Right) return;
+        if (button != SDL.ButtonRight) return;
 
         dragStart = Value;
         RepeatStart = dragStart;
         RepeatEnd = dragStart;
     }
 
-    protected override void DragUpdate(MouseButton button)
+    protected override void DragUpdate(byte button)
     {
-        if (button != MouseButton.Right) return;
+        if (button != SDL.ButtonRight) return;
 
         var value = Value;
         if (value < dragStart)

@@ -1,15 +1,17 @@
 ﻿namespace BrewLib.Input;
 
-using OpenTK.Windowing.Common;
+using SDL3;
 
 public interface IInputHandler
 {
-    void OnFocusChanged(FocusedChangedEventArgs e);
-    bool OnClickDown(MouseButtonEventArgs e);
-    bool OnClickUp(MouseButtonEventArgs e);
-    bool OnMouseWheel(MouseWheelEventArgs e);
-    void OnMouseMove(MouseMoveEventArgs e);
-    bool OnKeyDown(KeyboardKeyEventArgs e);
-    bool OnKeyUp(KeyboardKeyEventArgs e);
-    bool OnKeyPress(TextInputEventArgs e);
+    void OnClose(SDL.QuitEvent e);
+    void OnResize(SDL.WindowEvent e);
+    void OnFocusChanged(SDL.WindowEvent e);
+    bool OnClickDown(SDL.MouseButtonEvent e);
+    bool OnClickUp(SDL.MouseButtonEvent e);
+    bool OnMouseWheel(SDL.MouseWheelEvent e);
+    void OnMouseMove(SDL.MouseMotionEvent e);
+    bool OnKeyDown(SDL.KeyboardEvent e);
+    bool OnKeyUp(SDL.KeyboardEvent e);
+    bool OnKeyPress(SDL.TextInputEvent e);
 }

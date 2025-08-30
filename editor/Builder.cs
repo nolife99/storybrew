@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,7 +21,7 @@ public static class Builder
 
         try
         {
-            Trace.WriteLine($"\n\nBuilding {archiveName}\n");
+            Console.WriteLine($"\n\nBuilding {archiveName}\n");
 
             var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
 
@@ -42,12 +41,13 @@ public static class Builder
 
             var nativeDllDir = Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native");
             foreach (var path in Directory.EnumerateFiles(nativeDllDir, "*.*", SearchOption.TopDirectoryOnly))
-                addFile(archive, Path.GetFileName(path), nativeDllDir);
+                addFile(archive, Path.GetFileName(path), nativeDllDir, nativeDllDir);
 
             PathHelper.OpenExplorer(appDirectory);
         }
         catch (Exception e)
         {
+            Console.WriteLine(e);
             Environment.FailFast("Build failed", e);
         }
     }
@@ -88,17 +88,13 @@ public static class Builder
         path = Path.Combine(sourceDirectory, path);
 
         var entryName = Path.GetRelativePath(sourceDirectory, path);
-        if (targetPath is not null)
-        {
-            if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
-            entryName = Path.Combine(targetPath, entryName);
-        }
+        if (targetPath is not null) entryName = Path.Combine(targetPath, entryName);
 
         if (ignoredPaths.Contains(entryName)) return;
 
         if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 
-        Trace.WriteLine($"Adding {entryName} to archive");
+        Console.WriteLine($"Adding {entryName} to archive");
         archive.CreateEntryFromFile(path, entryName, CompressionLevel.SmallestSize);
     }
 }

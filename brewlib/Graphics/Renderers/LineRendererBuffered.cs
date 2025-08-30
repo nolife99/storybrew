@@ -126,7 +126,7 @@ public sealed class LineRendererBuffered : ILineRenderer
     {
         var rgba = color.ToPixel<Rgba32>();
         LinePrimitive primitive = new() { from = start, to = end, color1 = rgba, color2 = rgba };
-        primitiveStreamer.AddPrimitive(ref primitive);
+        primitiveStreamer.AddPrimitive(in primitive);
     }
 
     public void Dispose()

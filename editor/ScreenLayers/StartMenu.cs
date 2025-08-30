@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using Tiny;
@@ -123,7 +123,7 @@ public class StartMenu : UiScreenLayer
         closeButton.OnClick += (_, _) => Exit();
         versionLabel.OnClickUp += (_, e) =>
         {
-            if (e.Button is MouseButton.Left) NetHelper.OpenUrl($"https://github.com/{Program.Repository}");
+            if (e.Button == SDL.ButtonLeft) NetHelper.OpenUrl($"https://github.com/{Program.Repository}");
         };
 
         checkLatestVersion();

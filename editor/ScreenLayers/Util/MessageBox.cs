@@ -3,8 +3,7 @@
 using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 
@@ -72,9 +71,9 @@ public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Act
         }
     }
 
-    public override bool OnKeyDown(KeyboardKeyEventArgs e)
+    public override bool OnKeyDown(SDL.KeyboardEvent e)
     {
-        if (e.IsRepeat || e.Key is not Keys.C || !e.Control) return base.OnKeyDown(e);
+        if (e.Repeat || e.Key != SDL.Keycode.C || (e.Mod & SDL.Keymod.Ctrl) == 0) return base.OnKeyDown(e);
 
         ClipboardHelper.SetText(message.AsReadOnlySpan());
         return true;

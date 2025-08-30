@@ -10,8 +10,7 @@ using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Scripting;
 using StorybrewEditor.Storyboarding;
@@ -323,7 +322,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         {
             switch (e)
             {
-                case MouseButton.Left:
+                case SDL.ButtonLeft:
                 {
                     var speed = timeSource.TimeFactor;
                     if (speed > 1) speed = 2;
@@ -333,7 +332,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     break;
                 }
 
-                case MouseButton.Right:
+                case SDL.ButtonRight:
                 {
                     var speed = timeSource.TimeFactor;
                     if (speed < 1) speed = 1;
@@ -343,10 +342,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     break;
                 }
 
-                case MouseButton.Middle: timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8; break;
+                case SDL.ButtonMiddle: timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8; break;
             }
 
-            audioTimeB.Text = $"{timeSource.TimeFactor:P0}";
+            using var str = StringHelper.Interpolate($"{timeSource.TimeFactor:P0}");
+            audioTimeB.Text = str.AsReadOnlySpan();
         };
 
         MakeTabs([settingB, effectB, layerB], [settings, effects, layers]);
@@ -359,14 +359,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         mapFolderB.OnClick += (_, e) =>
         {
             var path = Path.GetFullPath(proj.MapsetPath);
-            if (e is MouseButton.Right || !Directory.Exists(path)) changeMapsetFolder();
+            if (e == SDL.ButtonRight || !Directory.Exists(path)) changeMapsetFolder();
             else PathHelper.OpenExplorer(path);
         };
 
         saveB.OnClick += (_, _) => saveProject();
         exportB.OnClick += (_, e) =>
         {
-            if (e is MouseButton.Right) exportProjectAll();
+            if (e == SDL.ButtonRight) exportProjectAll();
             else exportProject();
         };
 
@@ -391,12 +391,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
     }
 
-    public override bool OnKeyDown(KeyboardKeyEventArgs e)
+    public override bool OnKeyDown(SDL.KeyboardEvent e)
     {
         switch (e.Key)
         {
-            case Keys.Right:
-                if (e.Control)
+            case SDL.Keycode.Right:
+                if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     foreach (var bookmark in proj.MainBeatmap.Bookmarks)
                         if (bookmark > float.Round(timeline.Value * 1000) + 50)
@@ -405,12 +405,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                             break;
                         }
                 }
-                else timeline.Scroll(e.Shift ? 4 : 1);
+                else timeline.Scroll((e.Mod & SDL.Keymod.Shift) != 0 ? 4 : 1);
 
                 return true;
 
-            case Keys.Left:
-                if (e.Control)
+            case SDL.Keycode.Left:
+                if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                     for (var i = proj.MainBeatmap.Bookmarks.Length - 1; i >= 0; --i)
                     {
                         var bookmark = proj.MainBeatmap.Bookmarks[i];
@@ -419,26 +419,27 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                         timeline.Value = bookmark * .001f;
                         break;
                     }
-                else timeline.Scroll(e.Shift ? -4 : -1);
+                else timeline.Scroll((e.Mod & SDL.Keymod.Shift) != 0 ? -4 : -1);
 
                 return true;
         }
 
-        if (e.IsRepeat) return base.OnKeyDown(e);
+        if (e.Repeat) return base.OnKeyDown(e);
 
         switch (e.Key)
         {
-            case Keys.Space:
-            case Keys.K:
+            case SDL.Keycode.Space:
+            case SDL.Keycode.KpSpace:
+            case SDL.Keycode.K:
                 playB.Click();
                 return true;
 
-            case Keys.O:
+            case SDL.Keycode.O:
                 withSavePrompt(Manager.ShowOpenProject);
                 return true;
 
-            case Keys.S:
-                if (e.Control)
+            case SDL.Keycode.S:
+                if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     saveProject();
                     return true;
@@ -446,16 +447,27 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 break;
 
-            case Keys.C:
-                if (e.Control)
+            case SDL.Keycode.C:
+                if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
-                    if (e.Shift)
+                    if ((e.Mod & SDL.Keymod.Shift) != 0)
                         ClipboardHelper.SetText(TimeSpan.FromSeconds(timeSource.Current)
                             .ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
-                    else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
+                    else if ((e.Mod & SDL.Keymod.Alt) != 0)
+                    {
+                        using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                            $"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
+
+                        ClipboardHelper.SetText(str.AsReadOnlySpan());
+                    }
                     else
+                    {
+                        using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                            $"{timeSource.Current * 1000:f0}");
+
                         ClipboardHelper.SetText(
                             (timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                    }
 
                     return true;
                 }
@@ -466,7 +478,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         return base.OnKeyDown(e);
     }
 
-    public override void OnMouseMove(MouseMoveEventArgs e)
+    public override void OnMouseMove(SDL.MouseMotionEvent e)
     {
         base.OnMouseMove(e);
 
@@ -477,10 +489,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.Width) * .5f;
     }
 
-    public override bool OnMouseWheel(MouseWheelEventArgs e)
+    public override bool OnMouseWheel(SDL.MouseWheelEvent e)
     {
         var inputManager = Manager.GetContext<Editor>().InputManager;
-        timeline.Scroll(-e.OffsetY * (inputManager.Shift ? 4 : 1));
+        timeline.Scroll(-e.Y * (inputManager.Shift ? 4 : 1));
         return true;
     }
 

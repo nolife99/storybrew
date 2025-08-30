@@ -9,7 +9,6 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
@@ -57,7 +56,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
-        var forceVisible = !sprite.InDisplayInterval(time) && Native.Window.KeyboardState.IsKeyDown(Keys.LeftAlt);
+        var forceVisible = !sprite.InDisplayInterval(time) && drawContext.Get<Editor>().InputManager.Alt;
 
         var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
         if (forceVisible) fade = float.Max(fade, .5f);

@@ -13,9 +13,8 @@ using BrewLib.Audio;
 using BrewLib.Util;
 using ManagedBass;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -66,71 +65,87 @@ public static class Program
 
     static void startEditor()
     {
-        Settings = new();
-        Updater.NotifyEditorRun();
-        Native.MainThreadScheduler = Schedule;
+        SDL.Init(SDL.InitFlags.Video);
 
-        var audioCreateTask = Task.Run(createAudioManager);
-
-        var displayDevice = Monitors.GetPrimaryMonitor();
-        using (var window = createWindow(displayDevice))
+        var audioCreateTask = Task.Run(() =>
         {
-            using Editor editor = new(window);
-            using (NetHelper.Client = new())
-            {
-                NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
-                editor.Initialize(displayDevice);
+            Settings = new();
+            Native.MainThreadScheduler = Schedule;
+            Updater.NotifyEditorRun();
 
-                var iconSetTask = Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
-                using (AudioManager = audioCreateTask.Result)
-                {
-                    window.Move += _ => refresh();
-                    window.Resize += _ => refresh();
+            return createAudioManager();
+        });
 
-                    runMainLoop(window,
-                        editor,
-                        TimeSpan.TicksPerSecond / (Settings.UpdateRate > 0 ?
-                            Settings.UpdateRate :
-                            displayDevice.CurrentVideoMode.RefreshRate),
-                        TimeSpan.TicksPerSecond / (Settings.FrameRate > 0 ?
-                            Settings.FrameRate :
-                            displayDevice.CurrentVideoMode.RefreshRate));
+        var primaryDisplay = SDL.GetPrimaryDisplay();
+        if (primaryDisplay == 0)
+            throw new InvalidOperationException($"Unable to get primary display: {SDL.GetError()}");
 
-                    void refresh() => Bass.UpdateThreads = 1;
-                }
+        var displayDevice = SDL.GetDesktopDisplayMode(primaryDisplay);
+        if (!displayDevice.HasValue)
+            throw new InvalidOperationException($"Unable to get display device: {SDL.GetError()}");
 
-                iconSetTask.Wait();
-            }
+        var window = createWindow(out var context);
+
+        using Editor editor = new(window);
+        using (NetHelper.Client = new())
+        {
+            var displayDeviceVal = displayDevice.Value;
+
+            NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
+            editor.Initialize(displayDeviceVal);
+
+            var iconSetTask = Native.SetWindowIcon(editor.ResourceContainer, "icon.ico");
+            using (AudioManager = audioCreateTask.Result)
+                runMainLoop(window,
+                    editor,
+                    (long)(TimeSpan.TicksPerSecond /
+                        (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDeviceVal.RefreshRate)),
+                    (long)(TimeSpan.TicksPerSecond / (Settings.FrameRate > 0 ?
+                        Settings.FrameRate :
+                        displayDeviceVal.RefreshRate)));
+
+            iconSetTask.Wait();
         }
+
+        SDL.GLDestroyContext(context);
+        SDL.GLUnloadLibrary();
+        SDL.DestroyWindow(window);
+        SDL.Quit();
 
         Settings.Save();
     }
 
-    static NativeWindow createWindow(MonitorInfo displayDevice)
+    static nint createWindow(out nint glContext)
     {
-        const ContextFlags debugContext =
-#if DEBUG
-            ContextFlags.Debug | ContextFlags.ForwardCompatible;
-#else
-            ContextFlags.ForwardCompatible;
+        if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
 
-        GLFW.WindowHint(WindowHintBool.ContextNoError, true);
+        const SDL.GLContextFlag debugContext =
+#if DEBUG
+            SDL.GLContextFlag.Debug | SDL.GLContextFlag.ForwardCompatible;
+#else
+            SDL.GLContextFlag.ForwardCompatible;
+
+        SDL.GLSetAttribute(SDL.GLAttr.ContextNoError, 1);
 #endif
 
-        NativeWindow window = new(new()
-        {
-            Flags = debugContext,
-            CurrentMonitor = displayDevice.Handle,
-            Title = Name,
-            StartVisible = false,
-            StartFocused = false,
-            DepthBits = 0,
-            StencilBits = 0,
-            AutoLoadBindings = false
-        });
+        SDL.GLSetAttribute(SDL.GLAttr.ContextProfileMask, (int)SDL.GLProfile.Core);
+        SDL.GLSetAttribute(SDL.GLAttr.ContextFlags, (int)debugContext);
+        SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 3);
+        SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 3);
 
-        GL.LoadBindings(new GLFWBindingsContext());
+        var window = SDL.CreateWindow(Name,
+            0,
+            0,
+            SDL.WindowFlags.OpenGL | SDL.WindowFlags.Resizable | SDL.WindowFlags.Hidden);
+
+        glContext = SDL.GLCreateContext(window);
+        SDL.GLMakeCurrent(window, glContext);
+        SDL.GLSetSwapInterval(0);
+
+        GL.LoadBindings(new SDLBindingsContext());
         Native.InitializeHandle(window);
+
+        SDL.GLResetAttributes();
 
         if (Vector.IsHardwareAccelerated) Trace.WriteLine($"SIMD Vector Alignment: {Vector<byte>.Count} bytes");
 
@@ -146,25 +161,23 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(NativeWindow window, Editor editor, long fixedRateUpdate, long targetFrame)
+    static void runMainLoop(nint window, Editor editor, long fixedRateUpdate, long targetFrame)
     {
         long prev = Stopwatch.GetTimestamp(), fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0,
             statsUpdate = targetFrame * 5;
 
-        var windowContext = window.Context;
-
         var exiting = false;
-        window.Closing += _ => exiting = true;
+        editor.Closing += () => exiting = true;
 
-        window.IsVisible = true;
-        window.Focus();
+        SDL.RaiseWindow(window);
+        SDL.ShowWindow(window);
 
         while (!exiting)
         {
             var cur = Stopwatch.GetTimestamp();
             var fixedUpdates = 0;
 
-            GLFW.PollEvents();
+            editor.InputManager.PumpEvents();
             AudioManager.Update(targetFrame);
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
@@ -173,11 +186,12 @@ public static class Program
                 editor.Update(fixedRate / (float)TimeSpan.TicksPerSecond);
             }
 
-            if (window.IsFocused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
+            var windowFocus = (SDL.GetWindowFlags(window) & SDL.WindowFlags.InputFocus) != 0;
+            if (windowFocus && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
                 editor.Update(cur / (float)TimeSpan.TicksPerSecond, false);
 
             var draws = editor.Draw();
-            windowContext.SwapBuffers();
+            SDL.GLSwapWindow(window);
 
             using (var snapshot = TempList.Create<IDisposable>())
             {
@@ -191,20 +205,18 @@ public static class Program
             }
 
             var active = Stopwatch.GetTimestamp() - cur;
-            var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
+            var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0)
-            {
-                Native.AccurateSleep(sleepTime);
-                Bass.UpdateThreads = 0;
-            }
+            if (sleepTime > 0) Native.AccurateSleep(sleepTime);
             else Bass.UpdateThreads = 1;
 
             var frameTime = cur - prev;
             prev = cur;
             if (lastStat + statsUpdate > cur) continue;
 
-            av = (frameTime + av) / 2;
+            if (sleepTime > 0) Bass.UpdateThreads = 0;
+
+            av = frameTime;
             avActive = (active + avActive) / 2;
             longest = long.Max(frameTime, longest);
 

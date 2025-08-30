@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
@@ -144,6 +145,7 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
         if (Visible) segment.TriggerEvents(fromTime, toTime);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
         if (Visible)

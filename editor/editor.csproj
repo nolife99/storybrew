@@ -4,7 +4,7 @@
         <OutputType>WinExe</OutputType>
         <RootNamespace>StorybrewEditor</RootNamespace>
         <AssemblyName>StorybrewEditor</AssemblyName>
-        <Platforms>x86;x64</Platforms>
+        <Platforms>AnyCPU;x64</Platforms>
         <Version>1.95</Version>
         <TargetFramework>net9.0-windows</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
@@ -24,7 +24,7 @@
         <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
         <Optimize>True</Optimize>
         <DebugType>embedded</DebugType>
     </PropertyGroup>
@@ -33,7 +33,7 @@
         <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
         <DebugType>embedded</DebugType>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
         <DebugType>embedded</DebugType>
     </PropertyGroup>

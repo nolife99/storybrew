@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using BrewLib.Memory;
+using SDL3;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
@@ -81,6 +82,7 @@ public static class StringHelper
         return TempArray.Create<char>(temp[..written]);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Append(this scoped ref readonly TempList<char> list,
         IFormatProvider provider,
         [InterpolatedStringHandlerArgument(nameof(provider))] scoped ref PoolingInterpolatedStringHandler handler)
@@ -88,16 +90,19 @@ public static class StringHelper
         using (handler) Unsafe.AsRef(in list).AddRange(handler.Result);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Append(this scoped ref readonly TempList<char> list,
         scoped ref PoolingInterpolatedStringHandler handler)
     {
         using (handler) Unsafe.AsRef(in list).AddRange(handler.Result);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempList<char> Interpolate(IFormatProvider provider,
         [InterpolatedStringHandlerArgument(nameof(provider))] scoped ref PoolingInterpolatedStringHandler handler)
         => handler.buffer;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempList<char> Interpolate(scoped ref PoolingInterpolatedStringHandler handler) => handler.buffer;
 
     public static void AppendFormatted<T>(this scoped ref readonly TempList<char> list,
@@ -150,4 +155,17 @@ public static class StringHelper
 
         return list;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe int SDLUtf8ToStringLength(this SDL.TextInputEvent text) => strlen(null, (byte*)text.Text);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe Span<char> SDLUtf8ToString(this SDL.TextInputEvent text, Span<char> buffer)
+    {
+        Encoding.UTF8.GetChars(new Span<byte>((void*)text.Text, strlen(null, (byte*)text.Text)), buffer);
+        return buffer;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+    static extern unsafe int strlen(string c, byte* ptr);
 }

@@ -9,15 +9,14 @@ using BrewLib.Input;
 using BrewLib.ScreenLayers;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
-    readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
+    readonly PooledDictionary<byte, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
@@ -64,7 +63,12 @@ public sealed class WidgetManager : IInputHandler, IDisposable
             keyboardFocus = value;
 
             if (keyboardFocus is not null)
+            {
+                SDL.StartTextInput(InputManager.Window);
+
                 fire((w, evt, _) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus, 0);
+            }
+            else SDL.StopTextInput(InputManager.Window);
         }
     }
 
@@ -255,7 +259,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     Drawable dragDrawable;
     Vector2 dragOffset, dragSize;
     Widget hoveredDraggableWidget;
-    readonly PooledDictionary<MouseButton, object> dragData = [];
+    readonly PooledDictionary<byte, object> dragData = [];
 
     public bool IsDragging
     {
@@ -269,7 +273,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         }
     }
 
-    void startDragAndDrop(MouseButton button)
+    void startDragAndDrop(byte button)
     {
         if (hoveredDraggableWidget is null || dragData.TryGetValue(button, out var data) && data is not null) return;
 
@@ -278,7 +282,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         dragData[button] = hoveredDraggableWidget.GetDragData();
     }
 
-    void endDragAndDrop(MouseButton button)
+    void endDragAndDrop(byte button)
     {
         if (!dragData.TryGetValue(button, out var data) || data is null) return;
 
@@ -319,9 +323,13 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     public void DisableGamepadEvents(Widget widget) => gamepadTargets.Remove(widget);
 
-    public void OnFocusChanged(FocusedChangedEventArgs e) => RefreshHover();
+    public void OnClose(SDL.QuitEvent e) { }
 
-    public bool OnClickDown(MouseButtonEventArgs e)
+    public void OnResize(SDL.WindowEvent e) { }
+
+    public void OnFocusChanged(SDL.WindowEvent e) => RefreshHover();
+
+    public bool OnClickDown(SDL.MouseButtonEvent e)
     {
         var target = HoveredWidget ?? rootContainer;
         if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
@@ -333,7 +341,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         return widgetEvent.Handled;
     }
 
-    public bool OnClickUp(MouseButtonEventArgs e)
+    public bool OnClickUp(SDL.MouseButtonEvent e)
     {
         endDragAndDrop(e.Button);
         if (clickTargets.TryGetValue(e.Button, out var clickTarget)) clickTargets[e.Button] = null;
@@ -342,7 +350,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         return fire((w, evt, ev) => w.NotifyClickUp(evt, ev), target, HoveredWidget ?? rootContainer, e).Handled;
     }
 
-    public void OnMouseMove(MouseMoveEventArgs e)
+    public void OnMouseMove(SDL.MouseMotionEvent e)
     {
         RefreshHover();
         foreach (var (key, clickTarget) in clickTargets)
@@ -354,18 +362,18 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         }
     }
 
-    public bool OnMouseWheel(MouseWheelEventArgs e)
+    public bool OnMouseWheel(SDL.MouseWheelEvent e)
         => fire((w, evt, ev) => w.NotifyMouseWheel(evt, ev), HoveredWidget ?? rootContainer, state: e).Handled;
 
-    public bool OnKeyDown(KeyboardKeyEventArgs e)
+    public bool OnKeyDown(SDL.KeyboardEvent e)
         => fire((w, evt, ev) => w.NotifyKeyDown(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 
-    public bool OnKeyUp(KeyboardKeyEventArgs e)
+    public bool OnKeyUp(SDL.KeyboardEvent e)
         => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 
-    public bool OnKeyPress(TextInputEventArgs e)
+    public bool OnKeyPress(SDL.TextInputEvent e)
         => fire((w, evt, ev) => w.NotifyKeyPress(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 

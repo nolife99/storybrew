@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using BrewLib.IO;
 using ManagedBass;
+using SDL3;
 using Tiny.PooledCollections.Generic;
 
 public sealed class AudioManager : IDisposable
@@ -43,7 +44,21 @@ public sealed class AudioManager : IDisposable
         }
         finally
         {
-            if (initialized) Bass.UpdateThreads = 0;
+            if (initialized)
+            {
+                Bass.UpdateThreads = 0;
+                Bass.UpdatePeriod = 15;
+
+                SDL.AddEventWatch((nint _, ref SDL.Event @event) =>
+                    {
+                        if (@event.Type != (uint)SDL.EventType.WindowExposed) return false;
+
+                        Bass.UpdateThreads = 1;
+
+                        return true;
+                    },
+                    0);
+            }
 
             Bass.GetInfo(out var info);
             Bass.PlaybackBufferLength = info.MinBufferLength * 3;

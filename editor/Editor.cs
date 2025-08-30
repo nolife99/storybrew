@@ -1,9 +1,9 @@
 ﻿namespace StorybrewEditor;
 
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
@@ -17,12 +17,11 @@ using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
+using SDL3;
 using StorybrewEditor.ScreenLayers;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public sealed class Editor(NativeWindow window) : IDisposable
+public sealed class Editor(nint window) : InputAdapter, IDisposable
 {
     readonly FrameClock clock = new();
 
@@ -37,19 +36,17 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
     public void Dispose()
     {
-        window.Resize -= resizeToWindow;
-        window.Closing -= window_Closing;
-
         screenLayerManager.Dispose();
         overlay.Dispose();
         overlayCamera.Dispose();
-        InputManager.Dispose();
         drawContext.Dispose();
         Skin.Dispose();
         DrawState.Cleanup();
     }
 
-    public void Initialize(MonitorInfo displayDevice)
+    public event Action Closing;
+
+    public void Initialize(SDL.DisplayMode displayDevice)
     {
         ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly,
             $"{nameof(StorybrewEditor)}.Resources",
@@ -68,9 +65,8 @@ public sealed class Editor(NativeWindow window) : IDisposable
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
         drawContext.Freeze();
 
-        var size = window.ClientSize;
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(ResourceContainer, textureContainer, size.X, size.Y);
+        DrawState.Initialize(ResourceContainer, textureContainer);
 
         try
         {
@@ -114,37 +110,47 @@ public sealed class Editor(NativeWindow window) : IDisposable
         screenLayerManager = new(window, clock, this);
         inputDispatcher.Add(createOverlay(screenLayerManager));
         inputDispatcher.Add(screenLayerManager.InputHandler);
+        inputDispatcher.Add(this);
 
-        window.Resize += resizeToWindow;
-        window.Closing += window_Closing;
+        if (!SDL.GetDisplayUsableBounds(displayDevice.DisplayID, out var workArea))
+            throw new InvalidOperationException($"Unable to get display usable bounds: {SDL.GetError()}");
 
-        var workArea = displayDevice.WorkArea;
-        var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
-        var dpiScale = displayDevice.VerticalScale;
+        var ratio = displayDevice.W / (float)displayDevice.H;
+        var dpiScale = SDL.GetDisplayContentScale(displayDevice.DisplayID);
 
         float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
-        if (windowHeight >= workArea.Max.Y)
+        if (windowHeight >= workArea.Y + workArea.H)
         {
             windowWidth = 1024 * dpiScale;
             windowHeight = windowWidth / ratio;
 
-            if (windowWidth >= workArea.Max.X)
+            if (windowWidth >= workArea.X + workArea.W)
             {
                 windowWidth = 896 * dpiScale;
                 windowHeight = windowWidth / ratio;
             }
         }
 
-        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
+        if (!SDL.SetWindowSize(window, (int)windowWidth, (int)windowHeight))
+            throw new InvalidOperationException($"Unable to set window size: {SDL.GetError()}");
+
+        if (!SDL.GetWindowBordersSize(window, out var top, out var left, out var bottom, out var right))
+            throw new InvalidOperationException($"Unable to get window borders size: {SDL.GetError()}");
+
+        var pos = Vector2.Round(new(workArea.X + (workArea.W - windowWidth + left) * .5f,
+            workArea.Y + (workArea.H - windowHeight + top) * .5f));
+
+        if (pos.X < 0 || pos.Y < 0)
+        {
+            SDL.SetWindowSize(window, workArea.W, workArea.H);
+            SDL.MaximizeWindow(window);
+        }
+        else if (!SDL.SetWindowPosition(window, (int)pos.X, (int)pos.Y))
+            throw new InvalidOperationException($"Unable to set window location: {SDL.GetError()}");
+
         Trace.WriteLine($"Window dpi scale: {dpiScale}");
 
-        var location = window.Location;
-        if (location.X < 0 || location.Y < 0)
-        {
-            window.ClientRectangle = workArea;
-            window.WindowState = WindowState.Maximized;
-        }
-
+        OnResize(new() { Data1 = (int)windowWidth, Data2 = (int)windowHeight });
         Restart();
     }
 
@@ -240,7 +246,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         {
             if (!InputManager.AltOnly) return false;
 
-            volumeSlider.Value += e.OffsetY * .05f;
+            volumeSlider.Value += e.Y * .05f;
             return true;
         };
     }
@@ -268,12 +274,16 @@ public sealed class Editor(NativeWindow window) : IDisposable
         altOverlayTop.Displayed = altOpacity > 0;
     }
 
-    void window_Closing(CancelEventArgs e) => screenLayerManager.Close();
-
-    void resizeToWindow(ResizeEventArgs e)
+    public override void OnClose(SDL.QuitEvent e)
     {
-        var width = e.Width;
-        var height = e.Height;
+        screenLayerManager.Close();
+        Closing?.Invoke();
+    }
+
+    public override void OnResize(SDL.WindowEvent e)
+    {
+        var width = e.Data1;
+        var height = e.Data2;
 
         DrawState.Viewport = new(0, 0, width, height);
 

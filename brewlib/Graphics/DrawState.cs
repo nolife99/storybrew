@@ -62,10 +62,7 @@ public static class DrawState
         return SearchValues.Create(extensions.Span, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static void Initialize(ResourceContainer resourceContainer,
-        TextureContainer textureContainer,
-        int width,
-        int height)
+    public static void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer)
     {
         if (Extensions.Contains("GL_KHR_debug"))
         {
@@ -160,8 +157,6 @@ public static class DrawState
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
-
-        Viewport = new(0, 0, width, height);
     }
 
     public static void Cleanup()
