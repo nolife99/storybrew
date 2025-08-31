@@ -37,13 +37,13 @@ public class NewProjectMenu : UiScreenLayer
                 {
                     LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre
                 },
-                mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
-                {
-                    Value = OsuHelper.GetOsuSongFolder(),
-                    LabelText = "Mapset Path",
-                    AnchorFrom = BoxAlignment.Centre,
-                    Filter = [new(".osu files", "osu")]
-                },
+                mapsetPathSelector =
+                    new(WidgetManager, PathSelectorMode.OpenDirectory, [new("beatmap files (.osu)", "osu")])
+                    {
+                        Value = OsuHelper.GetOsuSongFolder(),
+                        LabelText = "Mapset Path",
+                        AnchorFrom = BoxAlignment.Centre
+                    },
                 new LinearLayout(WidgetManager)
                 {
                     Horizontal = true,

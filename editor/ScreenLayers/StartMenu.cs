@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.ScreenLayers;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -106,15 +105,12 @@ public class StartMenu : UiScreenLayer
             newProjectButton.Disabled = true;
             openProjectButton.Disabled = true;
 
-            Trace.WriteLine(
+            SDL.LogWarn(SDL.LogCategory.System,
                 $".NET SDK {Environment.Version} not found at {sdkPath} from {RuntimeEnvironment.GetRuntimeDirectory()}");
 
             Manager.ShowMessage(
-                $".NET SDK {Environment.Version} x64 (or more recent) is required, do you want to install it?",
-                () => Process.Start(new ProcessStartInfo
-                {
-                    FileName = "https://dotnet.microsoft.com/en-us/download/dotnet/9.0", UseShellExecute = true
-                }),
+                $".NET SDK {Environment.Version} (or more recent) is required, do you want to install it?",
+                () => SDL.OpenURL("https://dotnet.microsoft.com/en-us/download/dotnet/9.0"),
                 true);
         }
 
@@ -246,7 +242,7 @@ public class StartMenu : UiScreenLayer
 
     ValueTask handleLatestVersionException(Exception exception)
     {
-        Trace.TraceError(
+        SDL.LogWarn(SDL.LogCategory.Application,
             $"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
 
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message

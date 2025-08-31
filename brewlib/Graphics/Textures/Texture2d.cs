@@ -2,13 +2,13 @@
 
 using System;
 using System.Buffers;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
@@ -150,7 +150,7 @@ public sealed class Texture2d : Texture2dRegion
 
         if (stream is not null) return Image.Load<Rgba32>(stream);
 
-        Trace.TraceWarning($"Texture not found: {filename}");
+        SDL.LogWarn(SDL.LogCategory.Video, $"Texture not found: {filename}");
         return null;
     }
 

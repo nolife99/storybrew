@@ -1,12 +1,12 @@
 ﻿namespace BrewLib.IO;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using BrewLib.Util;
+using SDL3;
 
 public sealed class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
     : ResourceContainer
@@ -43,7 +43,7 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
             }
         }
 
-        Trace.TraceWarning($"Not found: {path} ({sources})");
+        SDL.LogWarn(SDL.LogCategory.Application, $"Not found: {path} ({sources})");
         return null;
     }
 

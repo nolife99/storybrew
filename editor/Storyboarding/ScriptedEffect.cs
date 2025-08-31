@@ -1,11 +1,11 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Diagnostics;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Util;
+using SDL3;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Scripting;
 using StorybrewEditor.Util;
@@ -174,7 +174,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.ExecutionFailed:
                     break;
 
-                default: Trace.WriteLine($"{Name}: {this.status} took {duration}ms"); break;
+                default: SDL.LogInfo(SDL.LogCategory.Test, $"{Name}: {this.status} took {duration}ms"); break;
             }
 
         this.status = status;

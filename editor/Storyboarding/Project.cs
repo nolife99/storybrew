@@ -1,8 +1,6 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -19,6 +17,7 @@ using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
 using OpenTK.Mathematics;
+using SDL3;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
@@ -46,10 +45,11 @@ public sealed partial class Project : IDisposable
 
     public static readonly string ProjectsFolder = Path.GetFullPath("projects");
 
-    public static readonly KeyValuePair<string, string>[] FileFilter =
-    [
-        new("project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')))
-    ];
+    static readonly string fileFilterStr = string.Join(';',
+        BinaryExtension.TrimStart('.'),
+        TextExtension.TrimStart('.'));
+
+    public static readonly DialogFileFilter[] FileFilter = [new($"project files ({fileFilterStr})", fileFilterStr)];
 
     public static readonly Encoding Encoding = Encoding.ASCII;
     readonly string CommonScriptsPath, projectPath;
@@ -80,8 +80,9 @@ public sealed partial class Project : IDisposable
         var scriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
         if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
-        Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
-        }");
+        SDL.LogInfo(SDL.LogCategory.Test,
+            $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
+            }");
 
         initializeAssetWatcher();
         using (var referencedAss = DefaultAssemblies.AsValueEnumerable()
@@ -94,8 +95,8 @@ public sealed partial class Project : IDisposable
                 scriptsLibraryPath,
                 referencedAss.Span);
 
-        effectUpdateQueue.OnActionFailed += (effect, e)
-            => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
+        effectUpdateQueue.OnActionFailed += (effect, e) => SDL.LogError(SDL.LogCategory.Test,
+            $"'{effect}' action: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += sender =>
@@ -500,10 +501,10 @@ public sealed partial class Project : IDisposable
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
-        assetWatcher.Error += (_, e) => Trace.TraceError($"Watcher (assets): {e.GetException()}");
+        assetWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher (assets): {e.GetException()}");
 
         assetWatcher.EnableRaisingEvents = true;
-        Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
+        SDL.LogInfo(SDL.LogCategory.Test, $"Watching (assets): {assetsFolderPath}");
     }
 
     void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e)
@@ -1005,7 +1006,7 @@ public sealed partial class Project : IDisposable
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
         {
-            Trace.WriteLine($"Exporting diff specific events to {osuPath}");
+            SDL.LogInfo(SDL.LogCategory.Test, $"Exporting diff specific events to {osuPath}");
             await using SafeWriteStream stream = new(osuPath);
             await using StreamWriter writer = new(stream, Encoding, leaveOpen: true);
             using StreamReader reader = new(osuPath, Encoding);
@@ -1053,7 +1054,7 @@ public sealed partial class Project : IDisposable
         diffSpecific.Dispose();
         if (exportOsb && sbLayer.Count != 0)
         {
-            Trace.WriteLine($"Exporting osb to {osbPath}");
+            SDL.LogInfo(SDL.LogCategory.Test, $"Exporting osb to {osbPath}");
             await using StreamWriter writer = new(osbPath, false, Encoding);
             await writer.WriteLineAsync("[Events]");
             await writer.WriteLineAsync("//Background and Video events");

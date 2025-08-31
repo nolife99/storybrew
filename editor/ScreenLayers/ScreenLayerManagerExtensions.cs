@@ -1,4 +1,4 @@
-﻿namespace StorybrewEditor.ScreenLayers;
+namespace StorybrewEditor.ScreenLayers;
 
 using System;
 using System.Collections.Generic;
@@ -6,51 +6,126 @@ using System.IO;
 using System.Threading.Tasks;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
-using NfdExt;
+using SDL3;
 using StorybrewEditor.ScreenLayers.Util;
 using StorybrewEditor.Storyboarding;
 
 public static class ScreenLayerManagerExtensions
 {
+    static readonly ValueTaskSource<string> sharedTaskSource = new(true);
+
     public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
-        string initialValue,
+        scoped ReadOnlySpan<char> initialValue,
         Action<string> callback)
-        => screenLayer.AsyncLoading("Select a folder",
+    {
+        var valueTaskSource = sharedTaskSource;
+        valueTaskSource.Reset();
+
+        screenLayer.AsyncLoading("Select a folder",
             async () =>
             {
-                var selectedPath = NFD.PickFolder(initialValue);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+                var selectedPath = await valueTaskSource.Task;
                 if (!string.IsNullOrEmpty(selectedPath))
                     await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
             });
 
+        SDL.ShowOpenFolderDialog((_, filelist, _) =>
+            {
+                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
+                else valueTaskSource.SetResult(null);
+            },
+            0,
+            0,
+            initialValue,
+            false);
+
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+    }
+
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
-        string initialValue,
-        string initialDirectory,
-        IReadOnlyCollection<KeyValuePair<string, string>> filter,
+        scoped ReadOnlySpan<char> initialValue,
+        scoped ReadOnlySpan<char> initialDirectory,
+        ReadOnlySpan<DialogFileFilter> filter,
         Action<string> callback)
-        => screenLayer.AsyncLoading("Select a file",
+    {
+        var valueTaskSource = sharedTaskSource;
+        valueTaskSource.Reset();
+
+        screenLayer.AsyncLoading("Select a file",
             async () =>
             {
-                var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
-                if (!string.IsNullOrEmpty(fileName))
-                    await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
+                var selectedPath = await valueTaskSource.Task;
+                if (!string.IsNullOrEmpty(selectedPath))
+                    await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
             });
 
+        scoped ReadOnlySpan<char> path;
+        if (initialValue.IsWhiteSpace())
+        {
+            var length = initialDirectory.Length;
+            if (length > 0 && initialDirectory[length - 1] != Path.DirectorySeparatorChar)
+            {
+                Span<char> initialDirectorySpan = stackalloc char[length + 1];
+                initialDirectory.CopyTo(initialDirectorySpan);
+                initialDirectorySpan[length] = Path.DirectorySeparatorChar;
+
+                path = initialDirectorySpan;
+            }
+            else path = initialDirectory;
+        }
+        else if (initialDirectory.IsWhiteSpace()) path = initialValue;
+        else
+        {
+            Span<char> joinSpan = stackalloc char[255];
+            if (Path.TryJoin(initialDirectory, initialValue, joinSpan, out var written)) path = joinSpan[..written];
+            else path = Path.Join(initialDirectory, initialValue);
+        }
+
+        SDL.ShowOpenFileDialog((_, filelist, _) =>
+            {
+                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
+                else valueTaskSource.SetResult(null);
+            },
+            0,
+            0,
+            filter,
+            path,
+            false);
+
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+    }
+
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
-        string initialValue,
-        string extension,
-        IReadOnlyCollection<KeyValuePair<string, string>> filter,
+        scoped ReadOnlySpan<char> initialValue,
+        ReadOnlySpan<DialogFileFilter> filter,
         Action<string> callback)
-        => screenLayer.AsyncLoading("Select a location",
+    {
+        var valueTaskSource = sharedTaskSource;
+        valueTaskSource.Reset();
+
+        screenLayer.AsyncLoading("Select a location",
             async () =>
             {
-                var fileName = NFD.SaveDialog(initialValue, extension, filter);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
-                if (!string.IsNullOrEmpty(fileName))
-                    await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
+                var selectedPath = await valueTaskSource.Task;
+                if (!string.IsNullOrEmpty(selectedPath))
+                    await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
             });
+
+        SDL.ShowSaveFileDialog((_, filelist, _) =>
+            {
+                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
+                else valueTaskSource.SetResult(null);
+            },
+            0,
+            0,
+            filter,
+            initialValue);
+
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, false, true);
+    }
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> message,
@@ -102,7 +177,8 @@ public static class ScreenLayerManagerExtensions
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {
         if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
-        screenLayer.OpenFilePicker("",
+        OpenFilePicker(screenLayer,
+            "",
             Project.ProjectsFolder,
             Project.FileFilter,
             projectPath =>

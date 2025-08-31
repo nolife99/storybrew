@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Scripting;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -9,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using BrewLib.Memory;
 using BrewLib.Util;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
@@ -21,6 +21,7 @@ using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
 using ZLinq;
+using Image = SixLabors.ImageSharp.Image;
 
 ///<summary> Defines a storyboard script to be generated. </summary>
 public abstract class StoryboardObjectGenerator : Script
@@ -149,13 +150,13 @@ public abstract class StoryboardObjectGenerator : Script
     internal readonly PooledDictionary<string, Image<Rgba32>> bitmaps = new();
     internal readonly PooledList<IDisposable> disposables = new();
 
-    /// <summary> Returns a <see cref="Image"/> from the project's directory. </summary>
+    /// <summary> Returns a <see cref="SixLabors.ImageSharp.Image"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Image<Rgba32> GetProjectBitmap(string path, bool watch = true)
         => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
 
-    /// <summary> Returns a <see cref="Image"/> from the mapset's directory. </summary>
+    /// <summary> Returns a <see cref="SixLabors.ImageSharp.Image"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true)
@@ -402,7 +403,8 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Updating configuration for {field.Name} with type {fieldType}:\n{e}");
+                SDL.LogError(SDL.LogCategory.Test,
+                    $"Updating configuration for {field.Name} with type {fieldType}:\n{e}");
             }
         }
 
@@ -424,7 +426,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Applying configuration for {field.Name}:\n{e}");
+                SDL.LogError(SDL.LogCategory.Test, $"Applying configuration for {field.Name}:\n{e}");
             }
         }
     }

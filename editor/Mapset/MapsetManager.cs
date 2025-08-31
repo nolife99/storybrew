@@ -1,8 +1,8 @@
 ﻿namespace StorybrewEditor.Mapset;
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using SDL3;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
@@ -47,7 +47,7 @@ public sealed class MapsetManager : IDisposable
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions) Trace.TraceError($"Loading beatmap: {e}");
+                if (logLoadingExceptions) SDL.LogError(SDL.LogCategory.Application, $"Loading beatmap: {e}");
                 else throw;
             }
     }
@@ -84,10 +84,11 @@ public sealed class MapsetManager : IDisposable
         fileWatcher.Created += mapsetFileWatcher_Changed;
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
-        fileWatcher.Error += (_, e) => Trace.TraceError($"Watcher (mapset): {e.GetException()}");
+        fileWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Application,
+            $"Watcher (mapset): {e.GetException()}");
 
         fileWatcher.EnableRaisingEvents = true;
-        Trace.WriteLine($"Watching (mapset): {path}");
+        SDL.LogInfo(SDL.LogCategory.Application, $"Watching (mapset): {path}");
     }
 
     void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e)
@@ -95,7 +96,7 @@ public sealed class MapsetManager : IDisposable
             _ =>
             {
                 if (Path.GetExtension(e.Name) == ".osu")
-                    Trace.WriteLine($"Watched mapset file {e.ChangeType}: {e.FullPath}");
+                    SDL.LogInfo(SDL.LogCategory.Application, $"Watched mapset file {e.ChangeType}: {e.FullPath}");
 
                 OnFileChanged?.Invoke(sender, e);
             });

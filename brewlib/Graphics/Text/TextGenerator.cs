@@ -1,12 +1,12 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
+using SDL3;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -90,7 +90,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         else
         {
             font = SystemFonts.CreateFont(name, emSize, style);
-            Trace.WriteLine($"Using system font for {name}");
+            SDL.LogWarn(SDL.LogCategory.Application, $"Using system font for {name}");
         }
 
         return fonts[id] = font;
@@ -113,7 +113,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             fontFamily = fontCollection.Add(copyStream, CultureInfo.InvariantCulture);
         }
 
-        Trace.WriteLine($"Loaded font {fontFamily.Name} for {name}");
+        SDL.LogInfo(SDL.LogCategory.Application, $"Loaded font {fontFamily.Name} for {name}");
 
         return families[name] = fontFamily;
     }

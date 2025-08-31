@@ -1,13 +1,13 @@
 ﻿namespace StorybrewEditor.Scripting;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
 using BrewLib.IO;
 using BrewLib.Util;
+using SDL3;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
@@ -58,9 +58,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         scriptWatcher.Changed += scriptWatcher_Changed;
         scriptWatcher.Renamed += scriptWatcher_Changed;
         scriptWatcher.Deleted += scriptWatcher_Changed;
-        scriptWatcher.Error += (_, e) => Trace.TraceError($"Watcher error (script): {e.GetException()}");
+        scriptWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test,
+            $"Watcher error (script): {e.GetException()}");
+
         scriptWatcher.EnableRaisingEvents = true;
-        Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
+        SDL.LogInfo(SDL.LogCategory.Test, $"Watching (script): {scriptsSourcePath}");
 
         libraryWatcher = new()
         {
@@ -74,9 +76,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         libraryWatcher.Changed += libraryWatcher_Changed;
         libraryWatcher.Renamed += libraryWatcher_Changed;
         libraryWatcher.Deleted += libraryWatcher_Changed;
-        libraryWatcher.Error += (_, e) => Trace.WriteLine($"Watcher error (library): {e.GetException()}");
+        libraryWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test,
+            $"Watcher error (library): {e.GetException()}");
+
         libraryWatcher.EnableRaisingEvents = true;
-        Trace.WriteLine($"Watching (library): {scriptsLibraryPath}");
+        SDL.LogInfo(SDL.LogCategory.Test, $"Watching (library): {scriptsLibraryPath}");
     }
 
     public ReadOnlySpan<string> ReferencedAssemblies
@@ -133,7 +137,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Trace.WriteLine($"Watched script file {e.ChangeType}: {e.FullPath}");
+        SDL.LogInfo(SDL.LogCategory.Test, $"Watched script file {e.ChangeType}: {e.FullPath}");
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
@@ -148,7 +152,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Trace.WriteLine($"Watched library file {e.ChangeType}: {e.FullPath}");
+        SDL.LogInfo(SDL.LogCategory.Test, $"Watched library file {e.ChangeType}: {e.FullPath}");
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
@@ -172,7 +176,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     void updateSolutionFiles()
     {
-        Trace.WriteLine("Updating solution files");
+        SDL.LogInfo(SDL.LogCategory.Test, "Updating solution files");
 
         using (var slnStream = File.Create(Path.Combine(ScriptsPath, "storyboard.sln")))
         using (var resourceStream = resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded))
@@ -208,7 +212,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Updating scripts.csproj: {e}");
+            SDL.LogError(SDL.LogCategory.Test, $"Updating scripts.csproj: {e}");
         }
     }
 

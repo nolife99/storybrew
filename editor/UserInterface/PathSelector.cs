@@ -1,24 +1,26 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
+using SDL3;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.UserInterface.Skinning.Styles;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public class PathSelector : Widget
 {
-    const string SaveExtension = "";
     readonly Button button;
     readonly LinearLayout layout;
     readonly Textbox textbox;
 
-    public IReadOnlyCollection<KeyValuePair<string, string>> Filter;
+    ValueArray<DialogFileFilter> filter;
 
-    public PathSelector(WidgetManager manager, PathSelectorMode mode) : base(manager)
+    public PathSelector(WidgetManager manager, PathSelectorMode mode, scoped ReadOnlySpan<DialogFileFilter> filters) :
+        base(manager)
     {
         Add(layout = new(manager)
         {
@@ -46,34 +48,35 @@ public class PathSelector : Widget
 
         textbox.OnValueChanged += (_, _) => OnValueChanged?.Invoke(this, EventArgs.Empty);
         textbox.OnValueCommited += (_, _) => OnValueCommited?.Invoke(this, EventArgs.Empty);
+
+        filter = ValueArray.Create(filters);
         button.OnClick += (_, _) =>
         {
             switch (mode)
             {
                 case PathSelectorMode.Folder:
-                    Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value.ToString(), path => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value, path => textbox.Value = path);
                     break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value.ToString(),
-                        "",
-                        Filter,
+                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value,
+                        default,
+                        filter.AsReadOnlySpan(),
                         path => textbox.Value = path);
 
                     break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker("",
-                        textbox.Value.ToString(),
-                        Filter,
+                    Manager.ScreenLayerManager.OpenFilePicker(default,
+                        textbox.Value,
+                        filter.AsReadOnlySpan(),
                         path => textbox.Value = path);
 
                     break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value.ToString(),
-                        SaveExtension,
-                        Filter,
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value,
+                        filter.AsReadOnlySpan(),
                         path => textbox.Value = path);
 
                     break;
@@ -107,6 +110,12 @@ public class PathSelector : Widget
     {
         base.Layout();
         layout.Size = Size;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) filter.Dispose();
+        base.Dispose(disposing);
     }
 }
 

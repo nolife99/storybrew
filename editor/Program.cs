@@ -5,20 +5,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
 using ManagedBass;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.Desktop;
 using SDL3;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Vector = System.Numerics.Vector;
 
 public static class Program
 {
@@ -65,7 +61,8 @@ public static class Program
 
     static void startEditor()
     {
-        SDL.Init(SDL.InitFlags.Video);
+        if (!SDL.Init(SDL.InitFlags.Video))
+            throw new InvalidOperationException($"Unable to initialize SDL video subsystem: {SDL.GetError()}");
 
         var audioCreateTask = Task.Run(() =>
         {
@@ -84,13 +81,12 @@ public static class Program
         if (!displayDevice.HasValue)
             throw new InvalidOperationException($"Unable to get display device: {SDL.GetError()}");
 
-        var window = createWindow(out var context);
+        var displayDeviceVal = displayDevice.Value;
+        var window = createWindow(displayDeviceVal, out var context);
 
         using Editor editor = new(window);
         using (NetHelper.Client = new())
         {
-            var displayDeviceVal = displayDevice.Value;
-
             NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
             editor.Initialize(displayDeviceVal);
 
@@ -115,7 +111,7 @@ public static class Program
         Settings.Save();
     }
 
-    static nint createWindow(out nint glContext)
+    static nint createWindow(SDL.DisplayMode displayDevice, out nint glContext)
     {
         if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
 
@@ -133,21 +129,35 @@ public static class Program
         SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 3);
         SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 3);
 
+        ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
+        SDL.GLSetAttribute(SDL.GLAttr.RedSize, format.RBits);
+        SDL.GLSetAttribute(SDL.GLAttr.GreenSize, format.GBits);
+        SDL.GLSetAttribute(SDL.GLAttr.BlueSize, format.BBits);
+        SDL.GLSetAttribute(SDL.GLAttr.AlphaSize, format.ABits);
+        SDL.GLSetAttribute(SDL.GLAttr.DepthSize, 0);
+
+        SDL.LogInfo(SDL.LogCategory.System,
+            $"Display info: R{format.RBits} G{format.GBits} B{format.BBits} A{format.ABits}");
+
         var window = SDL.CreateWindow(Name,
             0,
             0,
             SDL.WindowFlags.OpenGL | SDL.WindowFlags.Resizable | SDL.WindowFlags.Hidden);
 
+        if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
+
         glContext = SDL.GLCreateContext(window);
-        SDL.GLMakeCurrent(window, glContext);
+        if (glContext == 0) throw new InvalidOperationException($"Unable to create OpenGL context: {SDL.GetError()}");
+
+        if (!SDL.GLMakeCurrent(window, glContext))
+            throw new InvalidOperationException($"Unable to bind OpenGL context to window: {SDL.GetError()}");
+
         SDL.GLSetSwapInterval(0);
 
         GL.LoadBindings(new SDLBindingsContext());
         Native.InitializeHandle(window);
 
         SDL.GLResetAttributes();
-
-        if (Vector.IsHardwareAccelerated) Trace.WriteLine($"SIMD Vector Alignment: {Vector<byte>.Count} bytes");
 
         return window;
     }
@@ -163,21 +173,40 @@ public static class Program
 
     static void runMainLoop(nint window, Editor editor, long fixedRateUpdate, long targetFrame)
     {
-        long prev = Stopwatch.GetTimestamp(), fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0,
+        long prev = Stopwatch.GetTimestamp(), fixedRate = 0, avActive = 0, longest = 0, lastStat = 0,
             statsUpdate = targetFrame * 5;
 
-        var exiting = false;
-        editor.Closing += () => exiting = true;
-
-        SDL.RaiseWindow(window);
         SDL.ShowWindow(window);
+        SDL.SetWindowMouseGrab(window, true);
+        SDL.SetWindowMouseGrab(window, false);
 
-        while (!exiting)
+        SDL.WindowEvent resize = default;
+
+        var exiting = false;
+        SDL.EventFilter filter = (nint _, ref SDL.Event @event) =>
+        {
+            if (@event.Type == (uint)SDL.EventType.Quit) return exiting = true;
+            if (@event.Type != (uint)SDL.EventType.WindowExposed) return false;
+
+            if (SDL.GetWindowSize(window, out var w, out var h) && resize.Data1 != w || resize.Data2 != h)
+                editor.InputManager.Handler.OnResize(resize = new() { Data1 = w, Data2 = h });
+
+            Redraw(false);
+            return true;
+        };
+
+        SDL.AddEventWatch(filter, 0);
+        while (!exiting) Redraw(true);
+
+        SDL.RemoveEventWatch(filter, 0);
+        return;
+
+        void Redraw(bool pumpEvents)
         {
             var cur = Stopwatch.GetTimestamp();
             var fixedUpdates = 0;
 
-            editor.InputManager.PumpEvents();
+            if (pumpEvents) editor.InputManager.PumpEvents();
             AudioManager.Update(targetFrame);
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
@@ -191,7 +220,8 @@ public static class Program
                 editor.Update(cur / (float)TimeSpan.TicksPerSecond, false);
 
             var draws = editor.Draw();
-            SDL.GLSwapWindow(window);
+            if (!SDL.GLSwapWindow(window))
+                throw new InvalidOperationException($"Unable to swap framebuffer: {SDL.GetError()}");
 
             using (var snapshot = TempList.Create<IDisposable>())
             {
@@ -212,15 +242,14 @@ public static class Program
 
             var frameTime = cur - prev;
             prev = cur;
-            if (lastStat + statsUpdate > cur) continue;
+            if (lastStat + statsUpdate > cur) return;
 
             if (sleepTime > 0) Bass.UpdateThreads = 0;
 
-            av = frameTime;
             avActive = (active + avActive) / 2;
             longest = long.Max(frameTime, longest);
 
-            buildStatsMessage(editor, av, avActive, longest, draws);
+            buildStatsMessage(editor, frameTime, avActive, longest, draws);
 
             lastStat = cur;
         }
@@ -230,11 +259,11 @@ public static class Program
     {
         if (!editor.statsLabel.Visible) return;
 
-        const long ticks = TimeSpan.TicksPerSecond;
+        const float ticks = TimeSpan.TicksPerSecond;
         const float millis = TimeSpan.TicksPerMillisecond;
 
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{ticks / av}/{ticks / avActive}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws");
+            $"{ticks / av:f0}/{ticks / avActive:f0}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }
@@ -248,7 +277,7 @@ public static class Program
 
     public static ValueTask Schedule<TState>(Action<TState> action, TState state = default)
     {
-        if (GLFWProvider.IsOnMainThread)
+        if (SDL.IsMainThread())
         {
             action(state);
             return ValueTask.CompletedTask;
@@ -271,32 +300,22 @@ public static class Program
 
     static void setupLogging(string logsPath = null, string commonLogFilename = null)
     {
+        SDL.SetLogPriorities(SDL.LogPriority.Trace);
+
         logsPath ??= DefaultLogPath;
+
         var tracePath = Path.Combine(logsPath, commonLogFilename ?? "trace.log");
-
         var exceptionPath = Path.Combine(logsPath, commonLogFilename ?? "exception.log");
-
         var crashPath = Path.Combine(logsPath, commonLogFilename ?? "crash.log");
 
         if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
         else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
-        TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
+        SDL.LogInfo(SDL.LogCategory.Application, FullName);
 
         var domain = AppDomain.CurrentDomain;
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
-
-        Trace.Listeners.Add(listener);
-        Trace.WriteLine(FullName);
-
-        Timer timer = new(s => ((TraceListener)s)!.Flush(), listener, 5000, 1000);
-
-        domain.ProcessExit += (_, _) =>
-        {
-            timer.Dispose();
-            listener.Dispose();
-        };
     }
 
     static void logError(Exception e, string filename, bool show)
@@ -318,14 +337,20 @@ public static class Program
 
                 if (!show) return;
 
-                var result = MessageBox.Show(
-                    $"An error occurred:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                using MessageBoxData data = new(MessageBoxFlags.Error,
+                    0,
                     FullName,
-                    MessageBoxButton.OKCancel,
-                    MessageBoxImage.Error);
+                    $"An error occurred:\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                    [
+                        new(MessageBoxButtonFlags.EscapekeyDefault, 1, "Cancel"),
+                        new(MessageBoxButtonFlags.ReturnkeyDefault, 0, "OK")
+                    ],
+                    default);
 
-                if (result is MessageBoxResult.OK)
-                    Process.Start(new ProcessStartInfo { FileName = DiscordUrl, UseShellExecute = true });
+                if (!SDL.ShowMessageBox(in data, out var id))
+                    throw new InvalidOperationException($"Cannot create message box: {SDL.GetError()}");
+
+                if (id == 0) SDL.OpenURL(DiscordUrl);
             }
             catch (Exception e2)
             {
@@ -335,6 +360,7 @@ public static class Program
             }
             finally
             {
+                if (show) Environment.FailFast(null, e);
                 insideErrorHandler = false;
             }
         }

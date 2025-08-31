@@ -2,7 +2,6 @@
 
 using System;
 using System.Buffers;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -13,6 +12,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -75,7 +75,7 @@ public static class DrawState
                     Encoding.UTF8.GetChars(bytes, chars);
 
                     using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                        $"[OpenGL] {chars} (Source: {source switch
+                        $"{chars} (Source: {source switch
                         {
                             DebugSource.DebugSourceApi => "API",
                             DebugSource.DebugSourceWindowSystem => "Window System",
@@ -105,9 +105,21 @@ public static class DrawState
                     _ => ""
                 }})\n");
 
-                    Trace.Write(str.AsReadOnlySpan().ToString());
-                    if (severity is DebugSeverity.DebugSeverityHigh)
-                        throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
+                    switch (severity)
+                    {
+                        case DebugSeverity.DebugSeverityHigh:
+                            SDL.LogError(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
+
+                        case DebugSeverity.DebugSeverityMedium:
+                        case DebugSeverity.DebugSeverityLow:
+                            SDL.LogWarn(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            break;
+
+                        case DebugSeverity.DebugSeverityNotification:
+                            SDL.LogInfo(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            break;
+                    }
                 },
                 0);
         }
@@ -125,7 +137,7 @@ public static class DrawState
                 SetCapability(EnableCap.FramebufferSrgb, true);
                 ColorCorrected = true;
             }
-            else Trace.TraceWarning("The default framebuffer isn't sRgb");
+            else SDL.LogWarn(SDL.LogCategory.Render, "The default framebuffer isn't sRgb");
         }
 
         UseTextureCompression &= Extensions.Contains("GL_EXT_texture_compression_s3tc");
@@ -140,11 +152,11 @@ public static class DrawState
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
         MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
 
-        Trace.WriteLine(
+        SDL.LogInfo(SDL.LogCategory.Render,
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
 
-        Trace.WriteLine($"max texture size: {MaxTextureSize}");
-        Trace.WriteLine($"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"max texture size: {MaxTextureSize}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
 
         if (!Texture2d.BindlessTexturesSupported)
         {
@@ -396,17 +408,17 @@ public static class DrawState
     {
         var glVerStr = GL.GetString(StringName.Version);
         glVer = new(glVerStr.Split(' ')[0]);
-        Trace.WriteLine($"OpenGL v{glVerStr}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"OpenGL v{glVerStr}");
 
         var rendererName = GL.GetString(StringName.Renderer);
         var rendererVendor = GL.GetString(StringName.Vendor);
-        Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
         if (glVer < new Version(3, 3))
             throw new NotSupportedException(
                 $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
-        Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
     #endregion

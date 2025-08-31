@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.Graphics;
@@ -43,8 +42,6 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         Skin.Dispose();
         DrawState.Cleanup();
     }
-
-    public event Action Closing;
 
     public void Initialize(SDL.DisplayMode displayDevice)
     {
@@ -100,7 +97,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Loading skin: {e}");
+            SDL.LogError(SDL.LogCategory.Application, $"Loading skin: {e}");
             Skin = new(textureContainer);
         }
 
@@ -148,9 +145,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         else if (!SDL.SetWindowPosition(window, (int)pos.X, (int)pos.Y))
             throw new InvalidOperationException($"Unable to set window location: {SDL.GetError()}");
 
-        Trace.WriteLine($"Window dpi scale: {dpiScale}");
-
-        OnResize(new() { Data1 = (int)windowWidth, Data2 = (int)windowHeight });
+        inputDispatcher.OnResize(new() { Data1 = (int)windowWidth, Data2 = (int)windowHeight });
         Restart();
     }
 
@@ -274,11 +269,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         altOverlayTop.Displayed = altOpacity > 0;
     }
 
-    public override void OnClose(SDL.QuitEvent e)
-    {
-        screenLayerManager.Close();
-        Closing?.Invoke();
-    }
+    public override void OnClose(SDL.QuitEvent e) => screenLayerManager.Close();
 
     public override void OnResize(SDL.WindowEvent e)
     {

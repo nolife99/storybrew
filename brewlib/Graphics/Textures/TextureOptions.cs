@@ -3,10 +3,10 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using BrewLib.IO;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using Tiny;
 using Tiny.Formats.Json;
 
@@ -88,7 +88,7 @@ public class TextureOptions : IEquatable<TextureOptions>
                 {
                     var parser = getFieldParser(fieldType);
                     if (parser is not null) field.SetValue(obj, parser(fieldData));
-                    else Trace.TraceWarning($"No parser for {fieldType}");
+                    else SDL.LogWarn(SDL.LogCategory.Application, $"No parser for {fieldType}");
                 }
             }
 

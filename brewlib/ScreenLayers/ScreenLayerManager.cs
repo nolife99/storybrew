@@ -18,12 +18,12 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
 
     readonly PooledList<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
 
-    readonly nint window;
+    public readonly nint Window;
     ScreenLayer focusedLayer;
 
     public ScreenLayerManager(nint window, FrameTimeSource timeSource, object context)
     {
-        this.window = window;
+        Window = window;
         TimeSource = timeSource;
         this.context = context;
 
@@ -41,7 +41,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
 
         layer.Load();
 
-        SDL.GetWindowSizeInPixels(window, out var width, out var height);
+        SDL.GetWindowSizeInPixels(Window, out var width, out var height);
         layer.Resize(int.Max(1, width), int.Max(1, height));
     }
 
@@ -84,7 +84,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
 
     public void Update(bool isFixedRateUpdate)
     {
-        var active = (SDL.GetWindowFlags(window) & SDL.WindowFlags.InputFocus) != 0;
+        var active = (SDL.GetWindowFlags(Window) & SDL.WindowFlags.InputFocus) != 0;
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
@@ -126,7 +126,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
 
         if (layers.Count == 0)
         {
-            SDL.HideWindow(window);
+            SDL.HideWindow(Window);
 
             SDL.Event ev = new() { Type = (uint)SDL.EventType.Quit };
             SDL.PushEvent(ref ev);

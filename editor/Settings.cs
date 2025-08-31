@@ -1,11 +1,11 @@
 ﻿namespace StorybrewEditor;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using BrewLib.IO;
 using BrewLib.UserInterface;
+using SDL3;
 using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;
 
@@ -33,7 +33,7 @@ public class Settings
             return;
         }
 
-        Trace.WriteLine($"Loading settings from '{path}'");
+        SDL.LogInfo(SDL.LogCategory.Application, $"Loading settings from '{path}'");
 
         var type = GetType();
         try
@@ -51,21 +51,21 @@ public class Settings
                     }
                     catch (Exception e)
                     {
-                        Trace.TraceError($"Loading setting {key} with value {value}: {e}");
+                        SDL.LogError(SDL.LogCategory.Application, $"Loading setting {key} with value {value}: {e}");
                     }
                 },
                 (type, this));
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Loading settings: {e}");
+            SDL.LogError(SDL.LogCategory.Application, $"Loading settings: {e}");
             Save();
         }
     }
 
     public void Save()
     {
-        Trace.WriteLine($"Saving settings at '{path}'");
+        SDL.LogInfo(SDL.LogCategory.Application, $"Saving settings at '{path}'");
 
         using SafeWriteStream stream = new(path);
         using StreamWriter writer = new(stream, Project.Encoding, leaveOpen: true);

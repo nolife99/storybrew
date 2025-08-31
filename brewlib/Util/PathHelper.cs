@@ -2,9 +2,10 @@
 
 using System;
 using System.Buffers;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using SDL3;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public static class PathHelper
 {
@@ -48,7 +49,10 @@ public static class PathHelper
         '\u001f');
 
     public static void OpenExplorer(string path)
-        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+    {
+        using var str = StringHelper.Interpolate($"file:///{path}");
+        SDL.OpenURL(str.AsReadOnlySpan());
+    }
 
     public static void SafeDelete(string path)
     {

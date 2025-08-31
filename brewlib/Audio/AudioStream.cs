@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Audio;
 
-using System.Diagnostics;
 using System.IO;
 using BrewLib.IO;
 using BrewLib.Util;
 using ManagedBass;
 using ManagedBass.Fx;
+using SDL3;
 
 public class AudioStream : AudioChannel
 {
@@ -35,7 +35,7 @@ public class AudioStream : AudioChannel
 
         if (decodeStream == 0)
         {
-            Trace.TraceError($"Loading audio stream ({path}): {Bass.LastError}");
+            SDL.LogError(SDL.LogCategory.Audio, $"Loading audio stream ({path}): {Bass.LastError}");
 
             return;
         }

@@ -3,9 +3,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using SDL3;
 using Tiny.PooledCollections.Generic;
 
 public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
@@ -69,7 +69,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
             watcher.Created += watcher_Changed;
             watcher.Changed += watcher_Changed;
             watcher.Renamed += watcher_Changed;
-            watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
+            watcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher: {e.GetException()}");
             watcher.EnableRaisingEvents = true;
         }
         else
@@ -93,7 +93,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
             watcher.Created += watcher_Changed;
             watcher.Changed += watcher_Changed;
             watcher.Renamed += watcher_Changed;
-            watcher.Error += (_, e) => Trace.TraceError($"Watcher: {e.GetException()}");
+            watcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher: {e.GetException()}");
             watcher.EnableRaisingEvents = true;
         }
     }
@@ -108,7 +108,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
                     if (!watchedFilenames.Contains(e.FullPath))
                         return;
 
-                Trace.WriteLine($"Watched file {e.ChangeType}: {e.FullPath}");
+                SDL.LogInfo(SDL.LogCategory.Test, $"Watched file {e.ChangeType}: {e.FullPath}");
                 OnFileChanged?.Invoke(sender, e);
             });
 

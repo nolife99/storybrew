@@ -6,9 +6,8 @@
         <AssemblyName>StorybrewEditor</AssemblyName>
         <Platforms>AnyCPU;x64</Platforms>
         <Version>1.95</Version>
-        <TargetFramework>net9.0-windows</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
-        <UseWpf>true</UseWpf>
         <LangVersion>default</LangVersion>
         <DebugType>embedded</DebugType>
         <IsPackable>false</IsPackable>
@@ -75,7 +74,6 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0"/>
-        <PackageReference Include="NfdExt" Version="1.2.4"/>
         <PackageReference Include="SkipLocalsInit" Version="1.1.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

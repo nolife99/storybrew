@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using BrewLib.IO;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SDL3;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
@@ -412,7 +413,7 @@ public partial class EffectList : Widget
                 paths.Add(Path.Combine(path, "code"));
                 paths.Add(Path.Combine(path, "code-insiders"));
             }
-            else Trace.TraceWarning($"Invalid path in environment variables: {path}");
+            else SDL.LogWarn(SDL.LogCategory.Application, $"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
@@ -422,7 +423,7 @@ public partial class EffectList : Widget
             {
                 if (!File.Exists(path)) continue;
 
-                Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
+                SDL.LogInfo(SDL.LogCategory.Application, $"Opening vscode with \"{path} {arguments}\"");
                 Process.Start(new ProcessStartInfo(path, arguments)
                     {
                         UseShellExecute = true,
@@ -436,7 +437,7 @@ public partial class EffectList : Widget
             }
             catch (Exception e)
             {
-                Trace.TraceWarning($"Could not open vscode:\n{e}");
+                SDL.LogError(SDL.LogCategory.Application, $"Could not open vscode:\n{e}");
             }
 
         Manager.ScreenLayerManager.ShowMessage(
@@ -455,9 +456,12 @@ public partial class EffectList : Widget
         return str;
     }
 
-    [GeneratedRegex(@"([A-Z])")] private static partial Regex AlphabetRegex();
+    [GeneratedRegex(@"([A-Z])")]
+    private static partial Regex AlphabetRegex();
 
-    [GeneratedRegex(@"[^0-9a-zA-Z]")] private static partial Regex NotLetterNorNumberRegex();
+    [GeneratedRegex(@"[^0-9a-zA-Z]")]
+    private static partial Regex NotLetterNorNumberRegex();
 
-    [GeneratedRegex(@"^[\d-]*")] private static partial Regex ZeroOrMoreDigitsPrefixRegex();
+    [GeneratedRegex(@"^[\d-]*")]
+    private static partial Regex ZeroOrMoreDigitsPrefixRegex();
 }

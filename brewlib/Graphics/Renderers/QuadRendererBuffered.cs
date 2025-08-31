@@ -1,10 +1,8 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -12,6 +10,7 @@ using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 
@@ -76,11 +75,10 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                 indices);
         }
 
-        ssbo = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
+        GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferStorageFlags.DynamicStorageBit);
 
-        Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
-
-        combinedMatrices = Marshal.AllocHGlobal(ssboSize);
+        combinedMatrices = SDL.Malloc((nuint)ssboSize);
         var nextSlice = combinedMatrices + Unsafe.SizeOf<Matrix4x4>() * maxQuadsPerBatch;
 
         if (Texture2d.BindlessTexturesSupported)
@@ -89,6 +87,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
             clipRegions = bindlessTextures + sizeof(long) * maxQuadsPerBatch;
         }
         else clipRegions = nextSlice;
+
+        SDL.LogInfo(SDL.LogCategory.Render,
+            $"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 
     public Matrix4x4 TransformMatrix
@@ -153,8 +154,10 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        var ssboWritten = ssboSize - Unsafe.SizeOf<Vector4>() * (maxQuadsPerBatch - queuedRenders);
-        GL.BufferData(BufferTarget.ShaderStorageBuffer, ssboWritten, combinedMatrices, BufferUsageHint.StaticDraw);
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
+            0,
+            queuedRenders * Unsafe.SizeOf<Matrix4x4>(),
+            combinedMatrices);
 
         if (!Texture2d.BindlessTexturesSupported)
         {
@@ -165,6 +168,16 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                 currentSamplerUnit = samplerUnit;
             }
         }
+        else
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
+                bindlessTextures - combinedMatrices,
+                queuedRenders * sizeof(long),
+                bindlessTextures);
+
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
+            clipRegions - combinedMatrices,
+            queuedRenders * Unsafe.SizeOf<Vector4>(),
+            clipRegions);
 
         primitiveStreamer.Render(PrimitiveType.Triangles, VertexPerQuad);
 
@@ -265,7 +278,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         if (rendering) ((IRenderer)this).EndRendering();
         GL.DeleteBuffer(ssbo);
 
-        Marshal.FreeHGlobal(combinedMatrices);
+        SDL.Free(combinedMatrices);
 
         if (!disposing) return;
 

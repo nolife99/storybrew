@@ -47,11 +47,10 @@ public static partial class Native
                     pinned.AddrOfPinnedObject(),
                     image.Width * 4);
 
-                pinned.Free();
-
-                await MainThreadScheduler(x => SDL.SetWindowIcon(windowHandle, (nint)x), surface);
+                SDL.RunOnMainThread(x => SDL.SetWindowIcon(windowHandle, x), surface, true);
 
                 SDL.DestroySurface(surface);
+                pinned.Free();
             },
             r);
     }
@@ -85,7 +84,7 @@ public static partial class Native
     {
         if (!SupportsHighResTimer)
         {
-            Thread.Sleep((int)(ticks / TimeSpan.TicksPerMillisecond));
+            SDL.DelayNS((ulong)(ticks * TimeSpan.NanosecondsPerTick));
             return;
         }
 
@@ -104,7 +103,7 @@ public static partial class Native
                 TIMER_ALL_ACCESS);
         }
 
-        var relativeTicks = -ticks + TimeSpan.TicksPerMillisecond / 2;
+        var relativeTicks = -ticks + TimeSpan.TicksPerMillisecond / 4;
         if (SetWaitableTimer(timer.SafeWaitHandle, relativeTicks.AsPointer(), 0, 0, 0, 0) == 0)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 

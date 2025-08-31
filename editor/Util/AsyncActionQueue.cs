@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,7 +48,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (runner.UniqueKey == uniqueKey)
                     return;
 
-        context.Queue.Enqueue(new(target, uniqueKey, action, mustRunAlone));
+        context.Queue.Enqueue(new(uniqueKey, action, mustRunAlone));
         context.Signal();
     }
 
@@ -61,10 +60,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             Task.CompletedTask;
     }
 
-    sealed record ActionContainer(T Target,
-        int UniqueKey,
-        Func<CancellationTokenSource, ValueTask> Action,
-        bool MustRunAlone);
+    sealed record ActionContainer(int UniqueKey, Func<CancellationTokenSource, ValueTask> Action, bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
@@ -130,15 +126,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
             thread = Task.Factory.StartNew(async actionRunner =>
                 {
                     var runner = (ActionRunner)actionRunner;
-                    var threadId = runner.thread.Id;
                     var localToken = runner.tokenSrc;
                     var localContext = runner.context;
-
-                    Trace.WriteLine($"Started thread {threadId}");
-
-                    await using var registration = localToken.Token.UnsafeRegister(_
-                            => Trace.WriteLine($"Aborting thread {threadId}"),
-                        null);
 
                     var mustSleep = false;
                     while (!localToken.IsCancellationRequested)
@@ -159,11 +148,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         while (!localContext.Enabled || localContext.Queue.IsEmpty)
                         {
-                            if (runner.thread is null)
-                            {
-                                Trace.WriteLine($"Exiting thread {threadId}");
-                                return;
-                            }
+                            if (runner.thread is null) return;
 
                             await localContext.WaitForSignal();
                         }

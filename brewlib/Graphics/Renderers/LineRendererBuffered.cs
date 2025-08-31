@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,6 +9,7 @@ using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -53,7 +53,8 @@ public sealed class LineRendererBuffered : ILineRenderer
         combinedMatricesBuffer = GL.GenBuffer();
         combinedMatrices = new();
 
-        Trace.WriteLine($"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
+        SDL.LogInfo(SDL.LogCategory.Render,
+            $"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 
     public Matrix4x4 TransformMatrix

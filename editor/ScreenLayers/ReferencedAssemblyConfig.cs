@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SDL3;
 using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
@@ -15,7 +16,7 @@ using ZLinq;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
-    static readonly KeyValuePair<string, string>[] fileFilter = [new(".NET Assemblies", "dll")];
+    static readonly DialogFileFilter[] fileFilter = [new(".NET Assemblies (.dll)", "dll")];
 
     readonly PooledList<string> selectedAssemblies = new(project.ImportedAssemblies);
 

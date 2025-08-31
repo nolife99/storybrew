@@ -2,10 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
@@ -97,7 +97,7 @@ public class EditorBeatmap(string path) : Beatmap
 
     public static EditorBeatmap Load(string path)
     {
-        Trace.WriteLine($"Loading beatmap {path}");
+        SDL.LogInfo(SDL.LogCategory.Application, $"Loading beatmap {path}");
         try
         {
             EditorBeatmap beatmap = new(path);

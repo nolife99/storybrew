@@ -2,10 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
@@ -68,7 +68,7 @@ public class ShaderBuilder
         fragmentShaderCode.InsertRange(0, commonCodeSpan);
 
         if (log)
-            Trace.WriteLine(
+            SDL.LogInfo(SDL.LogCategory.Render,
                 $"--- VERTEX ---\n{vertexShaderCode.AsReadOnlySpan()}\n--- FRAGMENT ---\n{fragmentShaderCode.AsReadOnlySpan()}");
 
         return new(vertexShaderCode.AsReadOnlySpan().ToString(), fragmentShaderCode.AsReadOnlySpan().ToString());

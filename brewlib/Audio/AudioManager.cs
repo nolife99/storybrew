@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Diagnostics;
 using BrewLib.IO;
 using ManagedBass;
 using SDL3;
@@ -19,14 +18,14 @@ public sealed class AudioManager : IDisposable
         var initialized = false;
         try
         {
-            Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
+            SDL.LogInfo(SDL.LogCategory.Audio, $"Initializing audio - Bass {Bass.Version}");
             if (Bass.Init(Flags: flags))
             {
                 initialized = true;
                 return;
             }
 
-            Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
+            SDL.LogError(SDL.LogCategory.Audio, $"Initializing audio with default device: {Bass.LastError}");
 
             for (var i = 0; i < Bass.DeviceCount; ++i)
             {
@@ -39,7 +38,7 @@ public sealed class AudioManager : IDisposable
                     return;
                 }
 
-                Trace.WriteLine($"Failed to initialize audio with device {i}: {Bass.LastError}");
+                SDL.LogError(SDL.LogCategory.Audio, $"Initializing audio with device {i}: {Bass.LastError}");
             }
         }
         finally

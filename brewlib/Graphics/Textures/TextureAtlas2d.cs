@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -12,6 +13,9 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
     readonly Texture2d texture = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>(), width, height, textureOptions);
 
     bool wasMerged;
+
+    public float Fragmentation
+        => (float)freeRegions.Sum(region => region.Width * region.Height) / texture.Width / texture.Height * 100;
 
     public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
     {

@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SDL3;
 using StorybrewEditor.Util;
 
 public class UpdateMenu(string downloadUrl) : UiScreenLayer
@@ -52,7 +53,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
 
                 if (exception is not null)
                 {
-                    Trace.TraceError($"Failed to download the new version.\n\n{exception}");
+                    SDL.LogError(SDL.LogCategory.Application, $"Failed to download the new version.\n\n{exception}");
                     Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
                         Updater.OpenLatestReleasePage);
 
@@ -77,11 +78,11 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
 
                             if (!Directory.Exists(entryFolder))
                             {
-                                Trace.WriteLine($"Creating {entryFolder}");
+                                SDL.LogInfo(SDL.LogCategory.Application, $"Creating {entryFolder}");
                                 Directory.CreateDirectory(entryFolder);
                             }
 
-                            Trace.WriteLine($"Extracting {entryPath}");
+                            SDL.LogInfo(SDL.LogCategory.Application, $"Extracting {entryPath}");
                             entry.ExtractToFile(entryPath);
 
                             if (Path.GetExtension(entryPath) == ".exe") executablePath = entryPath;
@@ -91,12 +92,11 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                     actionLabel.Text = "Updating";
 
                     var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
-                    using Process process = new()
+                    using Process process = new();
+
+                    process.StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
                     {
-                        StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
-                        {
-                            UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
-                        }
+                        UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
                     };
 
                     if (process.Start()) Manager.Exit();
@@ -110,7 +110,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError($"Failed to start the update process.\n\n{e}");
+                    SDL.LogError(SDL.LogCategory.Application, $"Failed to start the update process.\n\n{e}");
                     Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
                         Updater.OpenLatestReleasePage);
 

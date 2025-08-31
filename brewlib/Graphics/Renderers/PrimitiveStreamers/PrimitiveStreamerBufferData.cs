@@ -1,17 +1,17 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
+using SDL3;
 
 sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
-    readonly nint primitiveBuffer = Marshal.AllocHGlobal(maxPrimitivesPerBatch * PrimitiveSize);
+    readonly nint primitiveBuffer = SDL.Malloc((nuint)(maxPrimitivesPerBatch * PrimitiveSize));
     int primitiveBufferOffset;
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
@@ -37,7 +37,7 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 
     protected override void Dispose(bool disposing)
     {
-        Marshal.FreeHGlobal(primitiveBuffer);
+        SDL.Free(primitiveBuffer);
         base.Dispose(disposing);
     }
 

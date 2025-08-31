@@ -27,8 +27,8 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
             queuedAction.TaskSource.SetException(e);
         }
 
-        lock (ValueTaskSourceHolderShared.PoolLock)
-            ValueTaskSourceHolderShared.TaskSourcePool.Enqueue(queuedAction.TaskSource);
+        lock (ValueTaskSourceHolderShared<bool>.PoolLock)
+            ValueTaskSourceHolderShared<bool>.TaskSourcePool.Enqueue(queuedAction.TaskSource);
 
         queuedAction = default;
         lock (PoolLock) Pool.Enqueue(this);
@@ -36,12 +36,12 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
 
     public static ValueTaskSourceHolder<TState> Get(Action<TState> action, TState state)
     {
-        ValueTaskSourceHolderShared.PoolLock.Enter();
+        ValueTaskSourceHolderShared<bool>.PoolLock.Enter();
 
-        if (!ValueTaskSourceHolderShared.TaskSourcePool.TryDequeue(out var taskSource)) taskSource = new(true);
+        if (!ValueTaskSourceHolderShared<bool>.TaskSourcePool.TryDequeue(out var taskSource)) taskSource = new(true);
         else taskSource.Reset();
 
-        ValueTaskSourceHolderShared.PoolLock.Exit();
+        ValueTaskSourceHolderShared<bool>.PoolLock.Exit();
 
         PoolLock.Enter();
         if (!Pool.TryDequeue(out var holder)) holder = new();
@@ -54,8 +54,8 @@ sealed class ValueTaskSourceHolder<TState> : IDisposable
     readonly record struct QueuedAction(Action<TState> Action, TState State, ValueTaskSource<bool> TaskSource);
 }
 
-static class ValueTaskSourceHolderShared
+static class ValueTaskSourceHolderShared<T>
 {
-    public static readonly Queue<ValueTaskSource<bool>> TaskSourcePool = new([new(true)]);
+    public static readonly Queue<ValueTaskSource<T>> TaskSourcePool = new([new(true)]);
     public static readonly Lock PoolLock = new();
 }

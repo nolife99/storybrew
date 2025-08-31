@@ -2,23 +2,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using SDL3;
 
 public static class NetHelper
 {
     internal static HttpClient Client;
 
-    public static void OpenUrl(string url)
-        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })?.Dispose();
+    public static void OpenUrl(string url) => SDL.OpenURL(url.Replace("&", "^&"));
 
     public static async void Request(string url, Func<string, Exception, Task> action)
     {
         try
         {
-            Trace.WriteLine($"Requesting {url}");
+            SDL.LogInfo(SDL.LogCategory.Application, $"Requesting {url}");
 
             var result = await Client.GetStringAsync(url);
             await action.Invoke(result, null);
@@ -33,7 +32,7 @@ public static class NetHelper
     {
         try
         {
-            Trace.WriteLine($"Post {url}");
+            SDL.LogInfo(SDL.LogCategory.Application, $"Post {url}");
 
             FormUrlEncodedContent content = new(data);
             using var response = await Client.PostAsync(url, content);
@@ -55,7 +54,7 @@ public static class NetHelper
     {
         try
         {
-            Trace.WriteLine($"Post {url}");
+            SDL.LogInfo(SDL.LogCategory.Application, $"Post {url}");
 
             FormUrlEncodedContent content = new(data);
             var response = Client.PostAsync(url, content).Result;
@@ -83,7 +82,7 @@ public static class NetHelper
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             else if (File.Exists(filename)) File.Delete(filename);
 
-            Trace.WriteLine($"Downloading {url}");
+            SDL.LogInfo(SDL.LogCategory.Application, $"Downloading {url}");
 
             using (var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {

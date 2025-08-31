@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Frozen;
-using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using BrewLib.Graphics.Drawables;
@@ -10,6 +9,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
+using SDL3;
 using SixLabors.ImageSharp;
 using Tiny;
 using Tiny.Formats.Json;
@@ -120,11 +120,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
             catch (TypeLoadException)
             {
-                Trace.TraceWarning($"Skin - Drawable type for {name} doesn't exist");
+                SDL.LogWarn(SDL.LogCategory.Application, $"Skin - Drawable type for {name} doesn't exist");
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Skin - Loading drawable {name}: {e}");
+                SDL.LogError(SDL.LogCategory.Application, $"Skin - Loading drawable {name}: {e}");
             }
     }
 
@@ -215,21 +215,24 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     }
                     catch (InvalidDataException e)
                     {
-                        Trace.TraceWarning($"Skin - Invalid style {styleTypeName}.'{styleName}': {e.Message}");
+                        SDL.LogWarn(SDL.LogCategory.Application,
+                            $"Skin - Invalid style {styleTypeName}.'{styleName}': {e.Message}");
                     }
                     catch (Exception e)
                     {
-                        Trace.TraceError($"Skin - Loading style {styleTypeName}.'{styleName}': {e}");
+                        SDL.LogError(SDL.LogCategory.Application,
+                            $"Skin - Loading style {styleTypeName}.'{styleName}': {e}");
                     }
                 }
             }
             catch (TypeLoadException)
             {
-                Trace.TraceWarning($"Skin - Widget type {styleTypeName} doesn't exist or isn't skinnable");
+                SDL.LogWarn(SDL.LogCategory.Application,
+                    $"Skin - Widget type {styleTypeName} doesn't exist or isn't skinnable");
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Skin - Loading {styleTypeName} styles: {e}");
+                SDL.LogError(SDL.LogCategory.Application, $"Skin - Loading {styleTypeName} styles: {e}");
             }
         }
     }
@@ -248,7 +251,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     var parser = getFieldParser(fieldType);
 
                     if (parser is not null) field.SetValue(skinnable, parser(fieldData, constants, this));
-                    else Trace.TraceWarning($"Skin - No parser for {fieldType}");
+                    else SDL.LogWarn(SDL.LogCategory.Application, $"Skin - No parser for {fieldType}");
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
             }

@@ -1,11 +1,13 @@
 ﻿namespace BrewLib.Input;
 
+using System;
 using System.Numerics;
+using BrewLib.Util;
 using SDL3;
 
 public sealed class InputManager
 {
-    readonly IInputHandler handler;
+    public readonly IInputHandler Handler;
     public readonly nint Window;
 
     bool hasMouseHover;
@@ -13,7 +15,7 @@ public sealed class InputManager
     public InputManager(nint window, IInputHandler handler)
     {
         Window = window;
-        this.handler = handler;
+        Handler = handler;
     }
 
     public bool HasMouseFocus => (SDL.GetWindowFlags(Window) & SDL.WindowFlags.Hidden) == 0 && hasMouseHover;
@@ -34,7 +36,21 @@ public sealed class InputManager
 
     public void PumpEvents()
     {
-        while (SDL.PollEvent(out var e))
+        SDL.PumpEvents();
+        Span<SDL.Event> events = stackalloc SDL.Event[SDL.PeepEvents(0,
+            int.MaxValue,
+            SDL.EventAction.PeekEvent,
+            (uint)SDL.EventType.First,
+            (uint)SDL.EventType.Last)];
+
+        if (SDL.PeepEvents(events.AsPointer(),
+                events.Length,
+                SDL.EventAction.GetEvent,
+                (uint)SDL.EventType.First,
+                (uint)SDL.EventType.Last) ==
+            -1) throw new InvalidOperationException($"Unable to get events: {SDL.GetError()}");
+
+        foreach (var e in events)
             switch ((SDL.EventType)e.Type)
             {
                 case SDL.EventType.WindowMouseEnter: window_MouseEnter(); break;
@@ -69,7 +85,7 @@ public sealed class InputManager
         }
     }
 
-    void updateMouseFocus() => handler.OnFocusChanged(new() { Data1 = HasMouseFocus ? 1 : 0 });
+    void updateMouseFocus() => Handler.OnFocusChanged(new() { Data1 = HasMouseFocus ? 1 : 0 });
 
     void window_MouseEnter()
     {
@@ -85,14 +101,14 @@ public sealed class InputManager
 
     void window_FocusedChanged() => updateMouseFocus();
 
-    void window_MouseDown(SDL.MouseButtonEvent e) => handler.OnClickDown(e);
-    void window_MouseUp(SDL.MouseButtonEvent e) => handler.OnClickUp(e);
+    void window_MouseDown(SDL.MouseButtonEvent e) => Handler.OnClickDown(e);
+    void window_MouseUp(SDL.MouseButtonEvent e) => Handler.OnClickUp(e);
 
     void window_MouseMove(SDL.MouseMotionEvent e)
     {
         MousePosition = new(e.X, e.Y);
 
-        handler.OnMouseMove(e);
+        Handler.OnMouseMove(e);
     }
 
     void updateModifierState(SDL.KeyboardEvent e)
@@ -105,20 +121,20 @@ public sealed class InputManager
     void window_KeyDown(SDL.KeyboardEvent e)
     {
         updateModifierState(e);
-        handler.OnKeyDown(e);
+        Handler.OnKeyDown(e);
     }
 
     void window_KeyUp(SDL.KeyboardEvent e)
     {
         updateModifierState(e);
-        handler.OnKeyUp(e);
+        Handler.OnKeyUp(e);
     }
 
-    void window_KeyPress(SDL.TextInputEvent e) => handler.OnKeyPress(e);
+    void window_KeyPress(SDL.TextInputEvent e) => Handler.OnKeyPress(e);
 
-    void window_MouseWheel(SDL.MouseWheelEvent e) => handler.OnMouseWheel(e);
+    void window_MouseWheel(SDL.MouseWheelEvent e) => Handler.OnMouseWheel(e);
 
-    void window_Resize(SDL.WindowEvent e) => handler.OnResize(e);
+    void window_Resize(SDL.WindowEvent e) => Handler.OnResize(e);
 
-    void window_Close(SDL.QuitEvent e) => handler.OnClose(e);
+    void window_Close(SDL.QuitEvent e) => Handler.OnClose(e);
 }

@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using System.Diagnostics;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -544,7 +543,8 @@ public class Widget(WidgetManager manager) : IDisposable
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"Event handler '{handler.Method}' for '{handler.Target}':\n{ex}");
+                SDL.LogError(SDL.LogCategory.Application,
+                    $"Event handler '{handler.Method}' for '{handler.Target}':\n{ex}");
             }
 
         return evt.Handled;

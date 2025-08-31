@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface.Components;
 
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
@@ -11,6 +10,7 @@ using System.Text.RegularExpressions;
 using BrewLib.Memory;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SDL3;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -461,7 +461,7 @@ public class EffectConfigUi : Widget
         catch (Exception e)
         {
             memory.Dispose();
-            Trace.WriteLine($"Cannot copy clipboard data: {e}");
+            SDL.LogWarn(SDL.LogCategory.Application, $"Cannot copy clipboard data: {e}");
         }
 
         (ClipboardHelper.GetData() as IDisposable)?.Dispose();
@@ -494,13 +494,13 @@ public class EffectConfigUi : Widget
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceError($"Paste '{name}': {ex}");
+                    SDL.LogError(SDL.LogCategory.Application, $"Paste '{name}': {ex}");
                 }
             }
         }
         catch (Exception ex)
         {
-            Trace.WriteLine($"Cannot paste clipboard data: {ex}");
+            SDL.LogWarn(SDL.LogCategory.Application, $"Cannot paste clipboard data: {ex}");
         }
 
         if (!changed) return;

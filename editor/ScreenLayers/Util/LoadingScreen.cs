@@ -1,11 +1,11 @@
 ﻿namespace StorybrewEditor.ScreenLayers.Util;
 
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SDL3;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
@@ -29,7 +29,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> acti
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError(
+                    SDL.LogError(SDL.LogCategory.Application,
                         $"{loadingScreen.title.AsReadOnlySpan()} failed ({loadingScreen.action.Method.Name}): {e}");
 
                     await Program.Schedule(state =>

@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using BrewLib.IO;
@@ -9,8 +8,6 @@ using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
-using Image = SixLabors.ImageSharp.Image;
-using Monitor = System.Threading.Monitor;
 
 public sealed class TextureContainerAsync : TextureContainer
 {
@@ -118,7 +115,8 @@ sealed class TextureUploadQueue : IDisposable
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
-            SDL.GLSetAttribute(SDL.GLAttr.ShareWithCurrentContext, 1);
+            if (!SDL.GLSetAttribute(SDL.GLAttr.ShareWithCurrentContext, 1))
+                throw new NotSupportedException($"Unable to share context: {SDL.GetError()}");
 
             var ctx = SDL.GLCreateContext(currentWindow);
             if (ctx == 0) throw new InvalidOperationException($"Unable to create context: {SDL.GetError()}");
@@ -148,14 +146,10 @@ sealed class TextureUploadQueue : IDisposable
 
                     Monitor.Exit(queuedUploads);
 
-                    var filename = queued.FileName;
-
-                    Stream stream;
+                    Image<Rgba32> bitmap;
                     try
                     {
-                        stream = File.Exists(filename) ?
-                            File.OpenRead(filename) :
-                            queued.Container?.GetStream(filename, ResourceSource.Embedded);
+                        bitmap = Texture2d.LoadBitmap(queued.FileName);
                     }
                     catch (IOException)
                     {
@@ -165,15 +159,10 @@ sealed class TextureUploadQueue : IDisposable
                         continue;
                     }
 
-                    if (stream is null)
-                    {
-                        Trace.TraceWarning($"Texture not found: {filename}");
-                        continue;
-                    }
+                    if (bitmap is null) continue;
 
-                    using var bitmap = Image.Load<Rgba32>(stream);
-                    stream.Dispose();
                     queued.Result = Texture2d.Load(bitmap, queued.Options);
+                    bitmap.Dispose();
                 }
             });
 
@@ -181,7 +170,7 @@ sealed class TextureUploadQueue : IDisposable
 
             thread.UnsafeStart(ctx);
 
-            Trace.WriteLine($"Started texture upload thread {i + 1}");
+            SDL.LogInfo(SDL.LogCategory.Video, $"Started texture upload thread {i + 1}");
         }
     }
 

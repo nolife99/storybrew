@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
-using System.Diagnostics;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -221,7 +220,6 @@ public static class CommandSplitter
                         var loopSegmentStartTime = loopCommand.StartTime +
                             loopCommand.CommandsDuration * loopStartIndex;
 
-                        Debug.Assert(loopCount > 0);
                         if (loopCount == 1)
                             foreach (var c in loopCommand.Commands)
                                 segmentSprite.AddCommand(c, loopSegmentStartTime);

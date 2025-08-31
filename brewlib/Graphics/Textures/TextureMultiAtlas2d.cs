@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Diagnostics;
+using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -35,19 +35,22 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (bitmap.Width * bitmap.Height > width * height) return loadOversized(bitmap);
 
+        var fragmentation = 0f;
         foreach (var atlas in atlases)
         {
             var region = atlas.AddRegion(bitmap);
             if (region is not null) return region;
+
+            fragmentation = float.Max(fragmentation, atlas.Fragmentation);
         }
 
-        Trace.WriteLine($"{description} full, adding an atlas");
+        SDL.LogInfo(SDL.LogCategory.Video, $"{description} full, adding an atlas (max {fragmentation:P2} fragmented)");
         return pushAtlas().AddRegion(bitmap);
     }
 
     Texture2d loadOversized(Image<Rgba32> bitmap)
     {
-        Trace.TraceWarning($"Bitmap \"{bitmap.Size}\" doesn't fit in this atlas");
+        SDL.LogWarn(SDL.LogCategory.Video, $"Bitmap \"{bitmap.Size}\" doesn't fit in this atlas");
 
         var texture = Texture2d.Load(bitmap, textureOptions);
         (oversizeTextures ??= []).Add(texture);
