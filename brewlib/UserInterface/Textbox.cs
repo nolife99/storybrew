@@ -175,7 +175,7 @@ public class Textbox : Widget, Field
         {
             if (!hasFocus) return false;
 
-            ReplaceSelection(e.SDLUtf8ToString(stackalloc char[e.SDLUtf8ToStringLength()]));
+            ReplaceSelection(e.GetUnicodeText(stackalloc char[e.TextLength]));
             return true;
         };
 

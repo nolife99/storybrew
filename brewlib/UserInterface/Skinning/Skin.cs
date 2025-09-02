@@ -319,13 +319,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             [typeof(double)] = (data, _, _) => data.Value<double>(),
             [typeof(int)] = (data, _, _) => data.Value<int>(),
             [typeof(bool)] = (data, _, _) => data.Value<bool>(),
-            [typeof(Texture2dRegion)] = (data, _, skin) =>
-            {
-                using var image = Imag
-
-                object result;
-                return skin.TextureContainer.Get(data.Value<string>());
-            },
+            [typeof(Texture2dRegion)] = (data, _, skin) => skin.TextureContainer.Get(data.Value<string>()),
             [typeof(Drawable)] = (data, constants, skin) => skin.loadDrawable(data.Value<TinyToken>(), constants),
             [typeof(Vector2)] = (data, constants, _) =>
             {

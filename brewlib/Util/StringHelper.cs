@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using BrewLib.Memory;
-using SDL3;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
@@ -155,17 +154,4 @@ public static class StringHelper
 
         return list;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe int SDLUtf8ToStringLength(this SDL.TextInputEvent text) => strlen(null, (byte*)text.Text);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe Span<char> SDLUtf8ToString(this SDL.TextInputEvent text, Span<char> buffer)
-    {
-        Encoding.UTF8.GetChars(new Span<byte>((void*)text.Text, strlen(null, (byte*)text.Text)), buffer);
-        return buffer;
-    }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
-    static extern unsafe int strlen(string c, byte* ptr);
 }

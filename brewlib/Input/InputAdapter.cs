@@ -13,5 +13,5 @@ public abstract class InputAdapter : IInputHandler
     public virtual void OnMouseMove(SDL.MouseMotionEvent e) { }
     public virtual bool OnKeyDown(SDL.KeyboardEvent e) => false;
     public virtual bool OnKeyUp(SDL.KeyboardEvent e) => false;
-    public virtual bool OnKeyPress(SDL.TextInputEvent e) => false;
+    public virtual bool OnKeyPress(TextInputEvent e) => false;
 }

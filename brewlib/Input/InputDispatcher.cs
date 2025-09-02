@@ -72,7 +72,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnKeyPress(SDL.TextInputEvent e)
+    public bool OnKeyPress(TextInputEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyPress(e))

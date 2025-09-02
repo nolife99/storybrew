@@ -340,8 +340,7 @@ public static class Program
                     [
                         new(MessageBoxButtonFlags.EscapekeyDefault, 1, "Cancel"),
                         new(MessageBoxButtonFlags.ReturnkeyDefault, 0, "OK")
-                    ],
-                    default);
+                    ]);
 
                 if (!SDL.ShowMessageBox(in data, out var id))
                     throw new InvalidOperationException($"Cannot create message box: {SDL.GetError()}");

@@ -507,8 +507,8 @@ public class Widget(WidgetManager manager) : IDisposable
     public event Func<WidgetEvent, SDL.KeyboardEvent, bool> OnKeyUp;
     public bool NotifyKeyUp(WidgetEvent evt, SDL.KeyboardEvent e) => Raise(OnKeyUp, evt, e);
 
-    public event Func<WidgetEvent, SDL.TextInputEvent, bool> OnKeyPress;
-    public bool NotifyKeyPress(WidgetEvent evt, SDL.TextInputEvent e) => Raise(OnKeyPress, evt, e);
+    public event Func<WidgetEvent, TextInputEvent, bool> OnKeyPress;
+    public bool NotifyKeyPress(WidgetEvent evt, TextInputEvent e) => Raise(OnKeyPress, evt, e);
 
     public event Action<WidgetEvent, WidgetHoveredEventArgs> OnHovered;
 

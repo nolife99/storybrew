@@ -373,7 +373,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 
-    public bool OnKeyPress(SDL.TextInputEvent e)
+    public bool OnKeyPress(TextInputEvent e)
         => fire((w, evt, ev) => w.NotifyKeyPress(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 

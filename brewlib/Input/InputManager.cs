@@ -119,7 +119,7 @@ public sealed class InputManager(nint window, IInputHandler handler)
         Handler.OnKeyUp(e);
     }
 
-    void window_KeyPress(SDL.TextInputEvent e) => Handler.OnKeyPress(e);
+    void window_KeyPress(TextInputEvent e) => Handler.OnKeyPress(e);
 
     void window_MouseWheel(SDL.MouseWheelEvent e) => Handler.OnMouseWheel(e);
 

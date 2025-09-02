@@ -13,5 +13,5 @@ public interface IInputHandler
     void OnMouseMove(SDL.MouseMotionEvent e);
     bool OnKeyDown(SDL.KeyboardEvent e);
     bool OnKeyUp(SDL.KeyboardEvent e);
-    bool OnKeyPress(SDL.TextInputEvent e);
+    bool OnKeyPress(TextInputEvent e);
 }

@@ -8,7 +8,6 @@
     <Copyright>Copyright © Damnae 2016</Copyright>
     <Version>1.1</Version>
     <Company>storybrew</Company>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <LangVersion>default</LangVersion>
