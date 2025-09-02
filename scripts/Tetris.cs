@@ -9,27 +9,52 @@ using StorybrewCommon.Storyboarding.CommandValues;
 
 class Tetris : StoryboardObjectGenerator
 {
-    [Configurable] public float BeatDivisor = 1;
-    [Configurable] public int BlockLength = 4;
-    [Configurable] public int Blocks = 1;
+    [Configurable]
+    public float BeatDivisor = 1;
+
+    [Configurable]
+    public int BlockLength = 4;
+
+    [Configurable]
+    public int Blocks = 1;
+
     Cell[,] cells;
-    [Configurable] public float CellSize = 20;
-    [Configurable] public Rgba32 Color = new(Vector3.One);
-    [Configurable] public bool Dumb = false;
-    [Configurable] public int EndTime = 0;
-    [Configurable] public int GridHeight = 20;
-    [Configurable] public int GridWidth = 10;
-    [Configurable] public float Rotation = 0;
 
-    [Group("Grid"), Configurable] public Vector2 ShadowOffset = new(4);
+    [Configurable]
+    public float CellSize = 20;
 
-    [Group("Sprite"), Configurable] public string SpritePath = "sb/sq.png";
+    [Configurable]
+    public Rgba32 Color = new(Vector3.One);
 
-    [Configurable] public float SpriteScale = .625f;
+    [Configurable]
+    public bool Dumb = false;
 
-    [Group("Timing"), Configurable] public int StartTime = 0;
+    [Configurable]
+    public int EndTime = 0;
 
-    [Group("AI"), Configurable] public bool Wait = true;
+    [Configurable]
+    public int GridHeight = 20;
+
+    [Configurable]
+    public int GridWidth = 10;
+
+    [Configurable]
+    public float Rotation = 0;
+
+    [Group("Grid"), Configurable]
+    public Vector2 ShadowOffset = new(4);
+
+    [Group("Sprite"), Configurable]
+    public string SpritePath = "sb/sq.png";
+
+    [Configurable]
+    public float SpriteScale = .625f;
+
+    [Group("Timing"), Configurable]
+    public int StartTime = 0;
+
+    [Group("AI"), Configurable]
+    public bool Wait = true;
 
     protected override void Generate()
     {

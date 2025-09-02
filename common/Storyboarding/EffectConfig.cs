@@ -91,7 +91,8 @@ public partial class EffectConfig
     [GeneratedRegex(@"(\P{Ll})(\P{Ll}\p{Ll})")]
     private static partial Regex UpperCaseAfterUpperCase();
 
-    [GeneratedRegex(@"(\p{Ll})(\P{Ll})")] private static partial Regex LowerUpperTransition();
+    [GeneratedRegex(@"(\p{Ll})(\P{Ll})")]
+    private static partial Regex LowerUpperTransition();
 
     public struct ConfigField
     {

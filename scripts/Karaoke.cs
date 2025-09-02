@@ -14,8 +14,11 @@ using StorybrewCommon.Subtitles;
 
 class Karaoke : StoryboardObjectGenerator
 {
-    [Configurable] public bool EffectsOnly = false;
-    [Configurable] public Rgba32 FontColor = Color.White.ToPixel<Rgba32>();
+    [Configurable]
+    public bool EffectsOnly = false;
+
+    [Configurable]
+    public Rgba32 FontColor = Color.White.ToPixel<Rgba32>();
 
     [Group("Font"),
      Description(
@@ -31,25 +34,37 @@ class Karaoke : StoryboardObjectGenerator
     [Description("The Size of the font.\nIncreasing the font size creates larger images."), Configurable]
     public int FontSize = 26;
 
-    [Configurable] public FontStyle FontStyle = FontStyle.Regular;
-    [Configurable] public bool GlowAdditive = true;
-    [Configurable] public Rgba32 GlowColor = new(255, 255, 255, 100);
+    [Configurable]
+    public FontStyle FontStyle = FontStyle.Regular;
 
-    [Group("Glow"), Configurable] public int GlowRadius = 0;
+    [Configurable]
+    public bool GlowAdditive = true;
 
-    [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
-    [Configurable] public Rgba32 OutlineColor = new(50, 50, 50, 200);
+    [Configurable]
+    public Rgba32 GlowColor = new(255, 255, 255, 100);
 
-    [Group("Outline"), Configurable] public int OutlineThickness = 3;
+    [Group("Glow"), Configurable]
+    public int GlowRadius = 0;
+
+    [Configurable]
+    public OsbOrigin Origin = OsbOrigin.Centre;
+
+    [Configurable]
+    public Rgba32 OutlineColor = new(50, 50, 50, 200);
+
+    [Group("Outline"), Configurable]
+    public int OutlineThickness = 3;
 
     [Description(
          "How much extra space is allocated around the text when generating it.\nShould be increased when characters look cut off."),
      Configurable]
     public Vector2 Padding = Vector2.Zero;
 
-    [Configurable] public Rgba32 ShadowColor = new(0, 0, 0, 100);
+    [Configurable]
+    public Rgba32 ShadowColor = new(0, 0, 0, 100);
 
-    [Group("Shadow"), Configurable] public int ShadowThickness = 0;
+    [Group("Shadow"), Configurable]
+    public int ShadowThickness = 0;
 
     [Description("A path inside your mapset's folder where lyrics images will be generated."), Configurable]
     public string SpritesPath = "sb/f";
@@ -59,9 +74,11 @@ class Karaoke : StoryboardObjectGenerator
      Configurable]
     public string SubtitlesPath = "lyrics.srt";
 
-    [Configurable] public float SubtitleY = 400;
+    [Configurable]
+    public float SubtitleY = 400;
 
-    [Group("Misc"), Configurable] public bool TrimTransparency = true;
+    [Group("Misc"), Configurable]
+    public bool TrimTransparency = true;
 
     protected override void Generate()
     {

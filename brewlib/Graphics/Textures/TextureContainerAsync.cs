@@ -90,7 +90,7 @@ sealed class TextureUploadQueue : IDisposable
     readonly PooledQueue<QueuedUpload> queuedUploads = [];
 
     readonly PooledList<Thread> threads = new();
-    readonly SDL.EventFilter watch;
+    readonly EventFilter watch;
 
     public TextureUploadQueue()
     {
@@ -98,7 +98,7 @@ sealed class TextureUploadQueue : IDisposable
 
         watch = (nint _, ref SDL.Event e) =>
         {
-            if (e.Type != (nint)SDL.EventType.Quit) return false;
+            if (e.Type is not SDL.EventType.Quit) return false;
 
             exiting = true;
             Dispose();
@@ -115,7 +115,7 @@ sealed class TextureUploadQueue : IDisposable
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
-            if (!SDL.GLSetAttribute(SDL.GLAttr.ShareWithCurrentContext, 1))
+            if (!SDL.GLSetAttribute(GLAttr.ShareWithCurrentContext, 1))
                 throw new NotSupportedException($"Unable to share context: {SDL.GetError()}");
 
             var ctx = SDL.GLCreateContext(currentWindow);

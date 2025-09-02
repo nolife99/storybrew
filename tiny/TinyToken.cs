@@ -46,7 +46,8 @@ public abstract class TinyToken
     public static implicit operator TinyToken(decimal value) => new TinyValue(value);
     public static implicit operator TinyToken(decimal? value) => new TinyValue(value);
 
-    [OverloadResolutionPriority(1)] public abstract T Value<T>(scoped ReadOnlySpan<char> key);
+    [OverloadResolutionPriority(1)]
+    public abstract T Value<T>(scoped ReadOnlySpan<char> key);
 
     public abstract T Value<T>(object key);
 

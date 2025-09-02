@@ -325,9 +325,9 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     public void OnClose(SDL.QuitEvent e) { }
 
-    public void OnResize(SDL.WindowEvent e) { }
+    public void OnResize(WindowEvent e) { }
 
-    public void OnFocusChanged(SDL.WindowEvent e) => RefreshHover();
+    public void OnFocusChanged(WindowEvent e) => RefreshHover();
 
     public bool OnClickDown(SDL.MouseButtonEvent e)
     {

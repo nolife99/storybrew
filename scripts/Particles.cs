@@ -9,7 +9,8 @@ using Vector2 = System.Numerics.Vector2;
 
 class Particles : StoryboardObjectGenerator
 {
-    [Configurable] public bool Additive = false;
+    [Configurable]
+    public bool Additive = false;
 
     [Group("Motion"),
      Description(
@@ -20,7 +21,8 @@ class Particles : StoryboardObjectGenerator
     [Description("The spread in degrees around Angle."), Configurable]
     public float AngleSpread = 60;
 
-    [Configurable] public Color Color = Color.White;
+    [Configurable]
+    public Color Color = Color.White;
 
     [Description("Varies the saturation and brightness of the selected Color for each particle."), Configurable]
     public float ColorVariance = .6f;
@@ -28,18 +30,26 @@ class Particles : StoryboardObjectGenerator
     [Description("Eases the motion of particles."), Configurable]
     public OsbEasing Easing = OsbEasing.None;
 
-    [Configurable] public int EndTime;
-    [Configurable] public float Lifetime = 1000;
-    [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
+    [Configurable]
+    public int EndTime;
 
-    [Group("Spawn"), Configurable] public int ParticleCount = 32;
+    [Configurable]
+    public float Lifetime = 1000;
 
-    [Group("Sprite"), Configurable] public string Path = "sb/particle.png";
+    [Configurable]
+    public OsbOrigin Origin = OsbOrigin.Centre;
+
+    [Group("Spawn"), Configurable]
+    public int ParticleCount = 32;
+
+    [Group("Sprite"), Configurable]
+    public string Path = "sb/particle.png";
 
     [Description("Rotation of the sprite; does not influences particle motion direction."), Configurable]
     public float Rotation = 0;
 
-    [Configurable] public Vector2 Scale = Vector2.One;
+    [Configurable]
+    public Vector2 Scale = Vector2.One;
 
     [Description("The point around which particles will be created."), Configurable]
     public Vector2 SpawnOrigin = new(420, 0);
@@ -50,7 +60,8 @@ class Particles : StoryboardObjectGenerator
     [Description("The speed at which particles move, in osupixels."), Configurable]
     public float Speed = 480;
 
-    [Group("Timing"), Configurable] public int StartTime;
+    [Group("Timing"), Configurable]
+    public int StartTime;
 
     protected override void Generate()
     {

@@ -5,8 +5,8 @@ using SDL3;
 public interface IInputHandler
 {
     void OnClose(SDL.QuitEvent e);
-    void OnResize(SDL.WindowEvent e);
-    void OnFocusChanged(SDL.WindowEvent e);
+    void OnResize(WindowEvent e);
+    void OnFocusChanged(WindowEvent e);
     bool OnClickDown(SDL.MouseButtonEvent e);
     bool OnClickUp(SDL.MouseButtonEvent e);
     bool OnMouseWheel(SDL.MouseWheelEvent e);

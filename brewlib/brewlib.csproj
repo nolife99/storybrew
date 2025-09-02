@@ -1,57 +1,58 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Library</OutputType>
-        <RootNamespace>BrewLib</RootNamespace>
-        <AssemblyName>BrewLib</AssemblyName>
-        <TargetFramework>net9.0</TargetFramework>
-        <Copyright>Copyright © Damnae 2016</Copyright>
-        <Version>1.1</Version>
-        <Company>storybrew</Company>
-        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-        <EnableNETAnalyzers>True</EnableNETAnalyzers>
-        <AnalysisLevel>latest-recommended</AnalysisLevel>
-        <LangVersion>default</LangVersion>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>BrewLib</RootNamespace>
+    <AssemblyName>BrewLib</AssemblyName>
+    <TargetFramework>net9.0</TargetFramework>
+    <Copyright>Copyright © Damnae 2016</Copyright>
+    <Version>1.1</Version>
+    <Company>storybrew</Company>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <LangVersion>default</LangVersion>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <Optimize>true</Optimize>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>true</Optimize>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <None Include="runtimes\**" Pack="false" CopyToOutputDirectory="PreserveNewest"/>
-    </ItemGroup>
+  <ItemGroup>
+    <None Include="runtimes\**" Pack="false" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="ManagedBass.Fx" Version="3.1.4"/>
-        <PackageReference Include="OpenTK.Graphics" Version="4.9.4"/>
-        <PackageReference Include="SDL3-CS.Native" Version="3.2.20">
-            <IncludeAssets>native</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3"/>
-        <PackageReference Include="SkipLocalsInit" Version="1.1.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ManagedBass.Fx" Version="3.1.4"/>
+    <PackageReference Include="OpenTK.Graphics" Version="4.9.4"/>
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3"/>
+    <PackageReference Include="SkipLocalsInit" Version="1.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\tiny\tiny.csproj"/>
-        <ProjectReference Include="..\SDL3-CS\SDL3-CS\SDL3-CS.csproj"/>
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\tiny\tiny.csproj"/>
+    <ProjectReference Include="..\SDL3-CS\SDL3-CS\SDL3-CS.csproj"/>
+    <ProjectReference Include="..\SDL3-CS\SDL3-CS.Native\SDL3-CS.Native.csproj">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </ProjectReference>
+  </ItemGroup>
 
 </Project>

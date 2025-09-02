@@ -5,8 +5,8 @@ using SDL3;
 public abstract class InputAdapter : IInputHandler
 {
     public virtual void OnClose(SDL.QuitEvent e) { }
-    public virtual void OnResize(SDL.WindowEvent e) { }
-    public virtual void OnFocusChanged(SDL.WindowEvent e) { }
+    public virtual void OnResize(WindowEvent e) { }
+    public virtual void OnFocusChanged(WindowEvent e) { }
     public virtual bool OnClickDown(SDL.MouseButtonEvent e) => false;
     public virtual bool OnClickUp(SDL.MouseButtonEvent e) => false;
     public virtual bool OnMouseWheel(SDL.MouseWheelEvent e) => false;

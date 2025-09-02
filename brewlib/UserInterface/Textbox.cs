@@ -313,7 +313,10 @@ public class Textbox : Widget, Field
         Vector2 position = new(bounds.X, bounds.Y + bounds.Height * .15f),
             scale = new(Manager.PixelSize, bounds.Height * .8f);
 
-        cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);
+        cursorLine.Draw(drawContext,
+            Manager.Camera,
+            new(position.X, position.Y, scale.X, scale.Y),
+            actualOpacity * float.Ceiling(float.Sin(Environment.TickCount64 * .006f)));
     }
 
     protected override void Layout()

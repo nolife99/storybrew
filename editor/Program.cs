@@ -111,38 +111,35 @@ public static class Program
         Settings.Save();
     }
 
-    static nint createWindow(SDL.DisplayMode displayDevice, out nint glContext)
+    static nint createWindow(DisplayMode displayDevice, out nint glContext)
     {
         if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
 
-        const SDL.GLContextFlag debugContext =
+        const GLContextFlag debugContext =
 #if DEBUG
-            SDL.GLContextFlag.Debug | SDL.GLContextFlag.ForwardCompatible;
+            GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 #else
-            SDL.GLContextFlag.ForwardCompatible;
+            GLContextFlag.ForwardCompatible;
 
-        SDL.GLSetAttribute(SDL.GLAttr.ContextNoError, 1);
+        SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
 #endif
 
-        SDL.GLSetAttribute(SDL.GLAttr.ContextProfileMask, (int)SDL.GLProfile.Core);
-        SDL.GLSetAttribute(SDL.GLAttr.ContextFlags, (int)debugContext);
-        SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 3);
-        SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 3);
+        SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
+        SDL.GLSetAttribute(GLAttr.ContextFlags, (int)debugContext);
+        SDL.GLSetAttribute(GLAttr.ContextMajorVersion, 3);
+        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 3);
 
         ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
-        SDL.GLSetAttribute(SDL.GLAttr.RedSize, format.RBits);
-        SDL.GLSetAttribute(SDL.GLAttr.GreenSize, format.GBits);
-        SDL.GLSetAttribute(SDL.GLAttr.BlueSize, format.BBits);
-        SDL.GLSetAttribute(SDL.GLAttr.AlphaSize, format.ABits);
-        SDL.GLSetAttribute(SDL.GLAttr.DepthSize, 0);
+        SDL.GLSetAttribute(GLAttr.RedSize, format.RBits);
+        SDL.GLSetAttribute(GLAttr.GreenSize, format.GBits);
+        SDL.GLSetAttribute(GLAttr.BlueSize, format.BBits);
+        SDL.GLSetAttribute(GLAttr.AlphaSize, format.ABits);
+        SDL.GLSetAttribute(GLAttr.DepthSize, 0);
 
         SDL.LogInfo(SDL.LogCategory.System,
             $"Display info: R{format.RBits} G{format.GBits} B{format.BBits} A{format.ABits}");
 
-        var window = SDL.CreateWindow(Name,
-            0,
-            0,
-            SDL.WindowFlags.OpenGL | SDL.WindowFlags.Resizable | SDL.WindowFlags.Hidden);
+        var window = SDL.CreateWindow(Name, 0, 0, WindowFlags.OpenGL | WindowFlags.Resizable | WindowFlags.Hidden);
 
         if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
 
@@ -180,13 +177,13 @@ public static class Program
         SDL.SetWindowMouseGrab(window, true);
         SDL.SetWindowMouseGrab(window, false);
 
-        SDL.WindowEvent resize = default;
+        WindowEvent resize = default;
 
         var exiting = false;
-        SDL.EventFilter filter = (nint _, ref SDL.Event @event) =>
+        EventFilter filter = (nint _, ref SDL.Event e) =>
         {
-            if (@event.Type == (uint)SDL.EventType.Quit) return exiting = true;
-            if (@event.Type != (uint)SDL.EventType.WindowExposed) return false;
+            if (e.Type is SDL.EventType.Quit) return exiting = true;
+            if (e.Type is not SDL.EventType.WindowExposed) return false;
 
             if (SDL.GetWindowSize(window, out var w, out var h) && resize.Data1 != w || resize.Data2 != h)
                 editor.InputManager.Handler.OnResize(resize = new() { Data1 = w, Data2 = h });
@@ -215,7 +212,7 @@ public static class Program
                 editor.Update(fixedRate / (float)TimeSpan.TicksPerSecond);
             }
 
-            var windowFocus = (SDL.GetWindowFlags(window) & SDL.WindowFlags.InputFocus) != 0;
+            var windowFocus = (SDL.GetWindowFlags(window) & WindowFlags.InputFocus) != 0;
             if (windowFocus && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
                 editor.Update(cur / (float)TimeSpan.TicksPerSecond, false);
 
@@ -300,8 +297,6 @@ public static class Program
 
     static void setupLogging(string logsPath = null, string commonLogFilename = null)
     {
-        SDL.SetLogPriorities(SDL.LogPriority.Trace);
-
         logsPath ??= DefaultLogPath;
 
         var tracePath = Path.Combine(logsPath, commonLogFilename ?? "trace.log");
@@ -311,11 +306,12 @@ public static class Program
         if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
         else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
-        SDL.LogInfo(SDL.LogCategory.Application, FullName);
-
         var domain = AppDomain.CurrentDomain;
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
+
+        SDL.SetLogPriorities(SDL.LogPriority.Trace);
+        SDL.LogInfo(SDL.LogCategory.Application, FullName);
     }
 
     static void logError(Exception e, string filename, bool show)
@@ -360,7 +356,12 @@ public static class Program
             }
             finally
             {
-                if (show) Environment.FailFast(null, e);
+                if (show)
+                {
+                    SDL.Quit();
+                    Environment.FailFast(null, e);
+                }
+
                 insideErrorHandler = false;
             }
         }

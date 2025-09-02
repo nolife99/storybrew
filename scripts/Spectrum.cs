@@ -9,28 +9,50 @@ using StorybrewCommon.Storyboarding;
 ///<summary> An example of a spectrum effect. </summary>
 class Spectrum : StoryboardObjectGenerator
 {
-    [Configurable] public int BarCount = 96;
-    [Configurable] public int BeatDivisor = 16;
-    [Configurable] public int CommandDecimals = 1;
-    [Configurable] public int EndTime = 10000;
-    [Configurable] public OsbEasing FftEasing = OsbEasing.InExpo;
-    [Configurable] public int FrequencyCutOff = 16000;
-    [Configurable] public int LogScale = 600;
-    [Configurable] public float MinimalHeight = .05f;
+    [Configurable]
+    public int BarCount = 96;
 
-    [Group("Bars"), Configurable] public Vector2 Position = new(0, 400);
+    [Configurable]
+    public int BeatDivisor = 16;
 
-    [Configurable] public OsbOrigin SpriteOrigin = OsbOrigin.BottomLeft;
+    [Configurable]
+    public int CommandDecimals = 1;
 
-    [Group("Sprite"), Configurable] public string SpritePath = "sb/bar.png";
+    [Configurable]
+    public int EndTime = 10000;
 
-    [Configurable] public Vector2 SpriteScale = new(1, 100);
+    [Configurable]
+    public OsbEasing FftEasing = OsbEasing.InExpo;
 
-    [Group("Timing"), Configurable] public int StartTime;
+    [Configurable]
+    public int FrequencyCutOff = 16000;
 
-    [Group("Optimization"), Configurable] public float Tolerance = .2f;
+    [Configurable]
+    public int LogScale = 600;
 
-    [Configurable] public float Width = 640;
+    [Configurable]
+    public float MinimalHeight = .05f;
+
+    [Group("Bars"), Configurable]
+    public Vector2 Position = new(0, 400);
+
+    [Configurable]
+    public OsbOrigin SpriteOrigin = OsbOrigin.BottomLeft;
+
+    [Group("Sprite"), Configurable]
+    public string SpritePath = "sb/bar.png";
+
+    [Configurable]
+    public Vector2 SpriteScale = new(1, 100);
+
+    [Group("Timing"), Configurable]
+    public int StartTime;
+
+    [Group("Optimization"), Configurable]
+    public float Tolerance = .2f;
+
+    [Configurable]
+    public float Width = 640;
 
     protected override void Generate()
     {

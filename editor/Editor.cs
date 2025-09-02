@@ -43,7 +43,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         DrawState.Cleanup();
     }
 
-    public void Initialize(SDL.DisplayMode displayDevice)
+    public void Initialize(DisplayMode displayDevice)
     {
         ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly,
             $"{nameof(StorybrewEditor)}.Resources",
@@ -134,8 +134,8 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         if (!SDL.GetWindowBordersSize(window, out var top, out var left, out var bottom, out var right))
             throw new InvalidOperationException($"Unable to get window borders size: {SDL.GetError()}");
 
-        var pos = Vector2.Round(new(workArea.X + (workArea.W - windowWidth + left) * .5f,
-            workArea.Y + (workArea.H - windowHeight + top) * .5f));
+        var pos = Vector2.Round(new(workArea.X + (workArea.W + right - windowWidth + left) * .5f,
+            workArea.Y + (workArea.H + bottom - windowHeight + top) * .5f));
 
         if (pos.X < 0 || pos.Y < 0)
         {
@@ -271,7 +271,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
     public override void OnClose(SDL.QuitEvent e) => screenLayerManager.Close();
 
-    public override void OnResize(SDL.WindowEvent e)
+    public override void OnResize(WindowEvent e)
     {
         var width = e.Data1;
         var height = e.Data2;

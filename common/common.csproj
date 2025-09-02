@@ -1,47 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Library</OutputType>
-        <RootNamespace>StorybrewCommon</RootNamespace>
-        <AssemblyName>StorybrewCommon</AssemblyName>
-        <TargetFramework>net9.0</TargetFramework>
-        <Company>storybrew</Company>
-        <Copyright>Copyright © Damnae 2016</Copyright>
-        <Version>1.1</Version>
-        <GenerateDocumentationFile>True</GenerateDocumentationFile>
-        <EnableNETAnalyzers>True</EnableNETAnalyzers>
-        <AnalysisLevel>latest-recommended</AnalysisLevel>
-        <LangVersion>default</LangVersion>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>StorybrewCommon</RootNamespace>
+    <AssemblyName>StorybrewCommon</AssemblyName>
+    <TargetFramework>net9.0</TargetFramework>
+    <Company>storybrew</Company>
+    <Copyright>Copyright © Damnae 2016</Copyright>
+    <Version>1.1</Version>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <LangVersion>default</LangVersion>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <Optimize>true</Optimize>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>true</Optimize>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\brewlib\brewlib.csproj"/>
-        <ProjectReference Include="..\tiny\tiny.csproj"/>
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\brewlib\brewlib.csproj"/>
+    <ProjectReference Include="..\tiny\tiny.csproj"/>
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="SkipLocalsInit" Version="1.1.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="SkipLocalsInit" Version="1.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
 </Project>

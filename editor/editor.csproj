@@ -1,98 +1,99 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <RootNamespace>StorybrewEditor</RootNamespace>
-        <AssemblyName>StorybrewEditor</AssemblyName>
-        <Platforms>AnyCPU;x64</Platforms>
-        <Version>1.95</Version>
-        <TargetFramework>net9.0</TargetFramework>
-        <PublishReadyToRun>true</PublishReadyToRun>
-        <LangVersion>default</LangVersion>
-        <DebugType>embedded</DebugType>
-        <IsPackable>false</IsPackable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>StorybrewEditor</RootNamespace>
+    <AssemblyName>StorybrewEditor</AssemblyName>
+    <Platforms>AnyCPU;x64</Platforms>
+    <Version>1.95</Version>
+    <TargetFramework>net9.0</TargetFramework>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <LangVersion>default</LangVersion>
+    <DebugType>embedded</DebugType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
 
-    <PropertyGroup>
-        <StartupObject>StorybrewEditor.Program</StartupObject>
-        <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
-        <Product>storybrew editor</Product>
-        <Company>storybrew</Company>
-        <Copyright>Copyright © Damnae 2016</Copyright>
-        <AnalysisLevel>latest-recommended</AnalysisLevel>
-        <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
-    </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>StorybrewEditor.Program</StartupObject>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <Product>storybrew editor</Product>
+    <Company>storybrew</Company>
+    <Copyright>Copyright © Damnae 2016</Copyright>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <Optimize>True</Optimize>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <Optimize>True</Optimize>
-        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
+    <Prefer32bit>true</Prefer32bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Optimize>True</Optimize>
+    <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <EmbeddedResource Include="Resources\Asap-Light.woff2"/>
-        <EmbeddedResource Include="Resources\Asap-Regular.woff2"/>
-        <EmbeddedResource Include="Resources\icon.ico"/>
-        <EmbeddedResource Include="Resources\MaterialIcons.ttf"/>
-        <EmbeddedResource Include="Resources\project\scripttemplate.csx"/>
-        <EmbeddedResource Include="Resources\skin.json"/>
-        <EmbeddedResource Include="Resources\skin_constants.json"/>
-        <EmbeddedResource Include="Resources\skin_drawables.json"/>
-        <EmbeddedResource Include="Resources\skin_drawables_debug.json"/>
-        <EmbeddedResource Include="Resources\skin_styles.json"/>
-        <EmbeddedResource Include="Resources\ui-line.png"/>
-        <EmbeddedResource Include="Resources\ui-line-opt.json"/>
-        <EmbeddedResource Include="Resources\ui-rounded-borders.png"/>
-        <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json"/>
-        <EmbeddedResource Include="Resources\ui-stripes.png"/>
-        <EmbeddedResource Include="Resources\ui-stripes-opt.json"/>
-        <EmbeddedResource Include="Resources\project\scripts.csproj"/>
-        <EmbeddedResource Include="Resources\project\storyboard.sln"/>
-    </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Asap-Light.woff2"/>
+    <EmbeddedResource Include="Resources\Asap-Regular.woff2"/>
+    <EmbeddedResource Include="Resources\icon.ico"/>
+    <EmbeddedResource Include="Resources\MaterialIcons.ttf"/>
+    <EmbeddedResource Include="Resources\project\scripttemplate.csx"/>
+    <EmbeddedResource Include="Resources\skin.json"/>
+    <EmbeddedResource Include="Resources\skin_constants.json"/>
+    <EmbeddedResource Include="Resources\skin_drawables.json"/>
+    <EmbeddedResource Include="Resources\skin_drawables_debug.json"/>
+    <EmbeddedResource Include="Resources\skin_styles.json"/>
+    <EmbeddedResource Include="Resources\ui-line.png"/>
+    <EmbeddedResource Include="Resources\ui-line-opt.json"/>
+    <EmbeddedResource Include="Resources\ui-rounded-borders.png"/>
+    <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json"/>
+    <EmbeddedResource Include="Resources\ui-stripes.png"/>
+    <EmbeddedResource Include="Resources\ui-stripes-opt.json"/>
+    <EmbeddedResource Include="Resources\project\scripts.csproj"/>
+    <EmbeddedResource Include="Resources\project\storyboard.sln"/>
+  </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\brewlib\brewlib.csproj"/>
-        <ProjectReference Include="..\common\common.csproj"/>
-        <ProjectReference Include="..\tiny\tiny.csproj"/>
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\brewlib\brewlib.csproj"/>
+    <ProjectReference Include="..\common\common.csproj"/>
+    <ProjectReference Include="..\tiny\tiny.csproj"/>
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0"/>
-        <PackageReference Include="SkipLocalsInit" Version="1.1.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0"/>
+    <PackageReference Include="SkipLocalsInit" Version="1.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
-    <UsingTask TaskName="CompressEmbeddedResources" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-        <ParameterGroup>
-            <Resources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
-            <TempDir ParameterType="System.String" Required="true"/>
-            <CompressedResources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
-        </ParameterGroup>
-        <Task>
-            <Using Namespace="System"/>
-            <Using Namespace="System.IO"/>
-            <Using Namespace="System.IO.Compression"/>
-            <Using Namespace="Microsoft.Build.Framework"/>
-            <Code Type="Fragment" Language="cs">
-                <![CDATA[
+  <UsingTask TaskName="CompressEmbeddedResources" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Resources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+      <TempDir ParameterType="System.String" Required="true"/>
+      <CompressedResources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System"/>
+      <Using Namespace="System.IO"/>
+      <Using Namespace="System.IO.Compression"/>
+      <Using Namespace="Microsoft.Build.Framework"/>
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
 if (!Directory.Exists(TempDir))
     Directory.CreateDirectory(TempDir);
 
@@ -135,53 +136,53 @@ foreach (var resource in Resources)
 
 CompressedResources = compressedItems.ToArray();
 ]]>
-            </Code>
-        </Task>
-    </UsingTask>
+      </Code>
+    </Task>
+  </UsingTask>
 
-    <UsingTask TaskName="CleanTempDirectory" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-        <ParameterGroup>
-            <TempDir ParameterType="System.String" Required="true"/>
-        </ParameterGroup>
-        <Task>
-            <Using Namespace="System"/>
-            <Using Namespace="System.IO"/>
-            <Code Type="Fragment" Language="cs">
-                <![CDATA[
+  <UsingTask TaskName="CleanTempDirectory" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <TempDir ParameterType="System.String" Required="true"/>
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System"/>
+      <Using Namespace="System.IO"/>
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
 if (Directory.Exists(TempDir))
 {
     Directory.Delete(TempDir, true);
 }
 ]]>
-            </Code>
-        </Task>
-    </UsingTask>
+      </Code>
+    </Task>
+  </UsingTask>
 
-    <PropertyGroup>
-        <TempResourcesDir>$(IntermediateOutputPath)compressed_resources\</TempResourcesDir>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TempResourcesDir>$(IntermediateOutputPath)compressed_resources\</TempResourcesDir>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 
-    <Target Name="CompressResourcesBeforeBuild" BeforeTargets="BeforeBuild">
-        <ItemGroup>
-            <EmbeddedResourceToCompress Include="@(EmbeddedResource)"/>
-        </ItemGroup>
+  <Target Name="CompressResourcesBeforeBuild" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <EmbeddedResourceToCompress Include="@(EmbeddedResource)"/>
+    </ItemGroup>
 
-        <CompressEmbeddedResources Resources="@(EmbeddedResourceToCompress)" TempDir="$(TempResourcesDir)">
-            <Output TaskParameter="CompressedResources" ItemName="CompressedEmbeddedResources"/>
-        </CompressEmbeddedResources>
+    <CompressEmbeddedResources Resources="@(EmbeddedResourceToCompress)" TempDir="$(TempResourcesDir)">
+      <Output TaskParameter="CompressedResources" ItemName="CompressedEmbeddedResources"/>
+    </CompressEmbeddedResources>
 
-        <ItemGroup>
-            <EmbeddedResource Remove="@(EmbeddedResourceToCompress)"/>
-            <EmbeddedResource Include="@(CompressedEmbeddedResources)"/>
-        </ItemGroup>
-    </Target>
+    <ItemGroup>
+      <EmbeddedResource Remove="@(EmbeddedResourceToCompress)"/>
+      <EmbeddedResource Include="@(CompressedEmbeddedResources)"/>
+    </ItemGroup>
+  </Target>
 
-    <Target Name="CleanCompressedResources" AfterTargets="AfterBuild">
-        <CleanTempDirectory TempDir="$(TempResourcesDir)"/>
-    </Target>
+  <Target Name="CleanCompressedResources" AfterTargets="AfterBuild">
+    <CleanTempDirectory TempDir="$(TempResourcesDir)"/>
+  </Target>
 
 </Project>

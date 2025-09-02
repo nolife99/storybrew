@@ -5,13 +5,17 @@ using StorybrewCommon.Storyboarding;
 
 class Background : StoryboardObjectGenerator
 {
-    [Configurable] public int EndTime;
-    [Configurable] public float Opacity = .2f;
+    [Configurable]
+    public int EndTime;
+
+    [Configurable]
+    public float Opacity = .2f;
 
     [Group("Sprite"), Description("Leave empty to automatically use the map's background."), Configurable]
     public string SpritePath = "";
 
-    [Group("Timing"), Configurable] public int StartTime = 0;
+    [Group("Timing"), Configurable]
+    public int StartTime = 0;
 
     protected override void Generate()
     {

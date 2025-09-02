@@ -5,10 +5,17 @@ using System.Runtime.CompilerServices;
 
 public readonly ref struct TempStackInternalsRef<T>
 {
-    [NonSerialized] public readonly int Size;
-    [NonSerialized] public readonly int Version;
-    [NonSerialized] public readonly bool ClearArray;
-    [NonSerialized] public readonly ReadOnlySpan<T> Array;
+    [NonSerialized]
+    public readonly int Size;
+
+    [NonSerialized]
+    public readonly int Version;
+
+    [NonSerialized]
+    public readonly bool ClearArray;
+
+    [NonSerialized]
+    public readonly ReadOnlySpan<T> Array;
 
     internal TempStackInternalsRef(scoped ref readonly TempStack<T> source)
     {

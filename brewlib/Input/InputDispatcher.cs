@@ -12,12 +12,12 @@ public sealed class InputDispatcher : IInputHandler
         foreach (var handler in handlers) handler.OnClose(e);
     }
 
-    public void OnResize(SDL.WindowEvent e)
+    public void OnResize(WindowEvent e)
     {
         foreach (var handler in handlers) handler.OnResize(e);
     }
 
-    public void OnFocusChanged(SDL.WindowEvent e)
+    public void OnFocusChanged(WindowEvent e)
     {
         foreach (var handler in handlers) handler.OnFocusChanged(e);
     }

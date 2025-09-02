@@ -84,7 +84,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
 
     public void Update(bool isFixedRateUpdate)
     {
-        var active = (SDL.GetWindowFlags(Window) & SDL.WindowFlags.InputFocus) != 0;
+        var active = (SDL.GetWindowFlags(Window) & WindowFlags.InputFocus) != 0;
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
@@ -128,7 +128,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
         {
             SDL.HideWindow(Window);
 
-            SDL.Event ev = new() { Type = (uint)SDL.EventType.Quit };
+            SDL.Event ev = new() { Type = SDL.EventType.Quit };
             SDL.PushEvent(ref ev);
         }
     }
@@ -156,7 +156,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
         focusedLayer = layer;
     }
 
-    public override void OnResize(SDL.WindowEvent e)
+    public override void OnResize(WindowEvent e)
     {
         var width = e.Data1;
         var height = e.Data2;

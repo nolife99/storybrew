@@ -48,19 +48,9 @@ public sealed class AudioManager : IDisposable
                 Bass.UpdateThreads = 0;
                 Bass.UpdatePeriod = 15;
 
-                SDL.AddEventWatch((nint _, ref SDL.Event @event) =>
-                    {
-                        if (@event.Type != (uint)SDL.EventType.WindowExposed) return false;
-
-                        Bass.UpdateThreads = 1;
-
-                        return true;
-                    },
-                    0);
+                Bass.GetInfo(out var info);
+                Bass.PlaybackBufferLength = info.MinBufferLength * 3;
             }
-
-            Bass.GetInfo(out var info);
-            Bass.PlaybackBufferLength = info.MinBufferLength * 3;
         }
 
         if (!initialized) throw new BassException(Bass.LastError);

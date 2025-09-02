@@ -9,16 +9,26 @@ using StorybrewCommon.Storyboarding.Util;
 
 class HitObjectHighlight : StoryboardObjectGenerator
 {
-    [Configurable] public bool Additive = true;
-    [Configurable] public int BeatDivisor = 480;
-    [Configurable] public int EndTime = 0;
-    [Configurable] public float FadeDuration = 1000;
+    [Configurable]
+    public bool Additive = true;
 
-    [Group("Sprite"), Configurable] public string SpritePath = "sb/glow.png";
+    [Configurable]
+    public int BeatDivisor = 480;
 
-    [Configurable] public float SpriteScale = 1;
+    [Configurable]
+    public int EndTime = 0;
 
-    [Group("Timing"), Configurable] public int StartTime = 0;
+    [Configurable]
+    public float FadeDuration = 1000;
+
+    [Group("Sprite"), Configurable]
+    public string SpritePath = "sb/glow.png";
+
+    [Configurable]
+    public float SpriteScale = 1;
+
+    [Group("Timing"), Configurable]
+    public int StartTime = 0;
 
     protected override void Generate()
     {

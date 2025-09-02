@@ -9,27 +9,50 @@ using StorybrewCommon.Storyboarding;
 ///<summary> An example of a radial spectrum effect, using movement instead of scaling. </summary>
 class RadialSpectrum : StoryboardObjectGenerator
 {
-    [Configurable] public int BarCount = 20;
-    [Configurable] public int BeatDivisor = 8;
-    [Configurable] public int CommandDecimals = 0;
-    [Configurable] public int EndTime = 10000;
-    [Configurable] public OsbEasing FftEasing = OsbEasing.InExpo;
-    [Configurable] public int FrequencyCutOff = 16000;
-    [Configurable] public int LogScale = 600;
+    [Configurable]
+    public int BarCount = 20;
 
-    [Group("Bars"), Configurable] public Vector2 Position = new(320, 240);
+    [Configurable]
+    public int BeatDivisor = 8;
 
-    [Configurable] public int Radius = 50;
-    [Configurable] public float Scale = 50;
-    [Configurable] public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
+    [Configurable]
+    public int CommandDecimals = 0;
 
-    [Group("Sprite"), Configurable] public string SpritePath = "sb/bar.png";
+    [Configurable]
+    public int EndTime = 10000;
 
-    [Configurable] public Vector2 SpriteScale = Vector2.One;
+    [Configurable]
+    public OsbEasing FftEasing = OsbEasing.InExpo;
 
-    [Group("Timing"), Configurable] public int StartTime;
+    [Configurable]
+    public int FrequencyCutOff = 16000;
 
-    [Group("Optimization"), Configurable] public float Tolerance = 2;
+    [Configurable]
+    public int LogScale = 600;
+
+    [Group("Bars"), Configurable]
+    public Vector2 Position = new(320, 240);
+
+    [Configurable]
+    public int Radius = 50;
+
+    [Configurable]
+    public float Scale = 50;
+
+    [Configurable]
+    public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
+
+    [Group("Sprite"), Configurable]
+    public string SpritePath = "sb/bar.png";
+
+    [Configurable]
+    public Vector2 SpriteScale = Vector2.One;
+
+    [Group("Timing"), Configurable]
+    public int StartTime;
+
+    [Group("Optimization"), Configurable]
+    public float Tolerance = 2;
 
     protected override void Generate()
     {
