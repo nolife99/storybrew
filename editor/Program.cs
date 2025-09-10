@@ -1,10 +1,15 @@
 namespace StorybrewEditor;
 
 using System;
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
@@ -12,6 +17,8 @@ using BrewLib.Util;
 using ManagedBass;
 using OpenTK.Graphics.OpenGL;
 using SDL3;
+using SixLabors.ImageSharp.Diagnostics;
+using SixLabors.ImageSharp.Memory;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -25,15 +32,81 @@ public static class Program
 
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
+    static readonly ConcurrentDictionary<nint, (IMemoryOwner<byte>, MemoryHandle, StackTrace)> managedAllocs = new();
+
     public static AudioManager AudioManager { get; private set; }
     public static Settings Settings { get; private set; }
 
     static void Main(string[] args)
     {
+        SDL.SetMemoryFunctions(cb =>
+            {
+                var memory = MemoryAllocator.Default.Allocate<byte>((int)cb);
+                var pinned = memory.Memory.Pin();
+                var addr = memory.Memory.Span.AsPointer();
+
+                managedAllocs.TryAdd(addr, (memory, pinned, new(true)));
+                return addr;
+            },
+            (c, s) =>
+            {
+                var memory = MemoryAllocator.Default.Allocate<byte>((int)(c * s));
+                var span = memory.Memory.Span;
+                span.Clear();
+
+                var pinned = memory.Memory.Pin();
+                var addr = span.AsPointer();
+
+                managedAllocs.TryAdd(addr, (memory, pinned, new(true)));
+                return addr;
+            },
+            (addr, cb) =>
+            {
+                IMemoryOwner<byte> oldArr = null;
+                if (managedAllocs.TryRemove(addr, out var arrayToFree))
+                {
+                    oldArr = arrayToFree.Item1;
+                    arrayToFree.Item2.Dispose();
+                }
+
+                var memory = MemoryAllocator.Default.Allocate<byte>((int)cb);
+                var span = memory.Memory.Span;
+
+                if (oldArr is not null)
+                {
+                    oldArr.Memory.Span.CopyTo(span);
+                    oldArr.Dispose();
+                }
+
+                var pinned = memory.Memory.Pin();
+                var newAddr = span.AsPointer();
+
+                managedAllocs.TryAdd(newAddr, (memory, pinned, new(true)));
+                return newAddr;
+            },
+            addr =>
+            {
+                if (!managedAllocs.TryRemove(addr, out var arrayToFree))
+                    throw new InvalidMemoryOperationException($"Attempted to free invalid memory: {addr}");
+
+                arrayToFree.Item2.Dispose();
+                arrayToFree.Item1.Dispose();
+            });
+
         if (args.Length != 0 && handleArguments(args)) return;
 
         setupLogging();
         startEditor();
+
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+        GC.WaitForPendingFinalizers();
+
+        if (managedAllocs.IsEmpty) return;
+
+        throw new AggregateException(managedAllocs.Values.Select(p
+            => ExceptionDispatchInfo.SetRemoteStackTrace(
+                new InvalidMemoryOperationException(p.Item1.Memory.Length.ToString()),
+                p.Item3.ToString())));
     }
 
     static bool handleArguments(string[] args)
@@ -94,21 +167,22 @@ public static class Program
             using (AudioManager = audioCreateTask.Result)
                 runMainLoop(window,
                     editor,
-                    (long)(TimeSpan.TicksPerSecond /
-                        (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDeviceVal.RefreshRate)),
-                    (long)(TimeSpan.TicksPerSecond / (Settings.FrameRate > 0 ?
+                    (ulong)(SDL.NsPerSecond / (Settings.UpdateRate > 0 ?
+                        Settings.UpdateRate :
+                        displayDeviceVal.RefreshRate)),
+                    (ulong)(SDL.NsPerSecond / (Settings.FrameRate > 0 ?
                         Settings.FrameRate :
                         displayDeviceVal.RefreshRate)));
 
             iconSetTask.Wait();
         }
 
+        Settings.Save();
+
         SDL.GLDestroyContext(context);
         SDL.GLUnloadLibrary();
         SDL.DestroyWindow(window);
         SDL.Quit();
-
-        Settings.Save();
     }
 
     static nint createWindow(DisplayMode displayDevice, out nint glContext)
@@ -149,13 +223,12 @@ public static class Program
         if (!SDL.GLMakeCurrent(window, glContext))
             throw new InvalidOperationException($"Unable to bind OpenGL context to window: {SDL.GetError()}");
 
-        SDL.GLSetSwapInterval(0);
-
         GL.LoadBindings(new SDLBindingsContext());
-        Native.InitializeHandle(window);
 
+        SDL.GLSetSwapInterval(0);
         SDL.GLResetAttributes();
 
+        Native.InitializeHandle(window);
         return window;
     }
 
@@ -168,53 +241,31 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(nint window, Editor editor, long fixedRateUpdate, long targetFrame)
+    static void runMainLoop(nint window, Editor editor, ulong fixedRateUpdate, ulong targetFrame)
     {
-        long prev = Stopwatch.GetTimestamp(), fixedRate = 0, avActive = 0, longest = 0, lastStat = 0,
+        ulong prev = SDL.GetTicksNS(), fixedRate = 0, avActive = 0, longest = 0, lastStat = 0,
             statsUpdate = targetFrame * 5;
 
-        SDL.ShowWindow(window);
-        SDL.SetWindowMouseGrab(window, true);
-        SDL.SetWindowMouseGrab(window, false);
-
-        WindowEvent resize = default;
-
-        var exiting = false;
-        EventFilter filter = (nint _, ref SDL.Event e) =>
+        (int X, int Y) resize = default;
+        var redraw = (bool pumpEvents) =>
         {
-            if (e.Type is SDL.EventType.Quit) return exiting = true;
-            if (e.Type is not SDL.EventType.WindowExposed) return false;
-
-            if (SDL.GetWindowSize(window, out var w, out var h) && resize.Data1 != w || resize.Data2 != h)
-                editor.InputManager.Handler.OnResize(resize = new() { Data1 = w, Data2 = h });
-
-            Redraw(false);
-            return true;
-        };
-
-        SDL.AddEventWatch(filter, 0);
-        while (!exiting) Redraw(true);
-
-        SDL.RemoveEventWatch(filter, 0);
-        return;
-
-        void Redraw(bool pumpEvents)
-        {
-            var cur = Stopwatch.GetTimestamp();
+            var cur = SDL.GetTicksNS();
             var fixedUpdates = 0;
 
-            if (pumpEvents) editor.InputManager.PumpEvents();
+            if (!pumpEvents && SDL.GetWindowSize(window, out var w, out var h) && (resize.X != w || resize.Y != h))
+                editor.InputManager.Handler.OnResize(new() { Data1 = resize.X = w, Data2 = resize.Y = h });
+
             AudioManager.Update(targetFrame);
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
             {
                 fixedRate += fixedRateUpdate;
-                editor.Update(fixedRate / (float)TimeSpan.TicksPerSecond);
+                editor.Update(fixedRate / (float)SDL.NsPerSecond);
             }
 
             var windowFocus = (SDL.GetWindowFlags(window) & WindowFlags.InputFocus) != 0;
             if (windowFocus && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
-                editor.Update(cur / (float)TimeSpan.TicksPerSecond, false);
+                editor.Update(cur / (float)SDL.NsPerSecond, false);
 
             var draws = editor.Draw();
             if (!SDL.GLSwapWindow(window))
@@ -231,10 +282,10 @@ public static class Program
                 foreach (var action in snapshot) action.Dispose();
             }
 
-            var active = Stopwatch.GetTimestamp() - cur;
+            var active = SDL.GetTicksNS() - cur;
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Native.AccurateSleep(sleepTime);
+            if (sleepTime > 0) SDL.DelayNS(sleepTime);
             else Bass.UpdateThreads = 1;
 
             var frameTime = cur - prev;
@@ -244,23 +295,48 @@ public static class Program
             if (sleepTime > 0) Bass.UpdateThreads = 0;
 
             avActive = (active + avActive) / 2;
-            longest = long.Max(frameTime, longest);
+            longest = ulong.Max(frameTime, longest);
 
             buildStatsMessage(editor, frameTime, avActive, longest, draws);
 
             lastStat = cur;
+        };
+
+        var state = (false, GCHandle.Alloc(redraw));
+        EventFilter filter = (nint s, ref Event e) =>
+        {
+            ref var localState = ref s.AsRef<(bool, GCHandle)>();
+
+            if (e.Type is EventType.Quit) return localState.Item1 = true;
+            if (e.Type is not EventType.WindowExposed || !SDL.IsMainThread()) return false;
+
+            ((Action<bool>)localState.Item2.Target!)(false);
+            return true;
+        };
+
+        SDL.AddEventWatch(filter, state.AsPointer());
+
+        SDL.ShowWindow(window);
+        while (true)
+        {
+            editor.InputManager.Update();
+            if (state.Item1) break;
+
+            redraw(true);
         }
+
+        SDL.RemoveEventWatch(filter, state.AsPointer());
+        state.Item2.Free();
     }
 
-    static void buildStatsMessage(Editor editor, long av, long avActive, long longest, int draws)
+    static void buildStatsMessage(Editor editor, ulong av, ulong avActive, ulong longest, int draws)
     {
         if (!editor.statsLabel.Visible) return;
 
-        const float ticks = TimeSpan.TicksPerSecond;
-        const float millis = TimeSpan.TicksPerMillisecond;
+        const float ticks = SDL.NsPerSecond, millis = SDL.NsPerMs;
 
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{ticks / av:f0}/{ticks / avActive:f0}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws");
+            $"{float.Round(ticks / av):f0}/{float.Round(ticks / avActive):f0}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }
@@ -311,7 +387,10 @@ public static class Program
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
 
         SDL.SetLogPriorities(SDL.LogPriority.Trace);
-        SDL.LogInfo(SDL.LogCategory.Application, FullName);
+
+        SDL.SetAppMetadataProperty(SDL.Props.AppMetadataNameString, Name);
+        SDL.SetAppMetadataProperty(SDL.Props.AppMetadataVersionString, Version.ToString());
+        SDL.SetAppMetadataProperty(SDL.Props.AppMetadataURLString, Repository);
     }
 
     static void logError(Exception e, string filename, bool show)
@@ -329,7 +408,7 @@ public static class Program
                 w.WriteLine(e);
                 w.WriteLine();
 
-                Trace.Flush();
+                w.Flush();
 
                 if (!show) return;
 

@@ -391,11 +391,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
     }
 
-    public override bool OnKeyDown(SDL.KeyboardEvent e)
+    public override bool OnKeyDown(KeyboardEvent e)
     {
         switch (e.Key)
         {
-            case SDL.Keycode.Right:
+            case Keycode.Right:
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     foreach (var bookmark in proj.MainBeatmap.Bookmarks)
@@ -409,7 +409,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 return true;
 
-            case SDL.Keycode.Left:
+            case Keycode.Left:
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                     for (var i = proj.MainBeatmap.Bookmarks.Length - 1; i >= 0; --i)
                     {
@@ -428,17 +428,17 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         switch (e.Key)
         {
-            case SDL.Keycode.Space:
-            case SDL.Keycode.KpSpace:
-            case SDL.Keycode.K:
+            case Keycode.Space:
+            case Keycode.KpSpace:
+            case Keycode.K:
                 playB.Click();
                 return true;
 
-            case SDL.Keycode.O:
+            case Keycode.O:
                 withSavePrompt(Manager.ShowOpenProject);
                 return true;
 
-            case SDL.Keycode.S:
+            case Keycode.S:
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     saveProject();
@@ -447,7 +447,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 break;
 
-            case SDL.Keycode.C:
+            case Keycode.C:
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     if ((e.Mod & SDL.Keymod.Shift) != 0)

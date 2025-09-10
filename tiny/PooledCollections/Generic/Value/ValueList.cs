@@ -728,22 +728,17 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>
     // Removes a range of elements from this list.
     public void RemoveRange(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-        if (count > 0)
-        {
-            _size -= count;
-            if (index < _size) Array.Copy(_items, index + count, _items, index, _size - index);
+        if (count <= 0) return;
 
-            _version++;
-            if (s_clearItems) Array.Clear(_items, _size, count);
-        }
+        _size -= count;
+        if (index < _size) Array.Copy(_items, index + count, _items, index, _size - index);
+
+        ++_version;
+        if (s_clearItems) Array.Clear(_items, _size, count);
     }
 
     // Reverses the elements in this list.

@@ -8,6 +8,8 @@ interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmana
 {
     int QueuedRenders { get; }
     int PrimitivesInBatch { get; }
+    GpuCommandSync FrameSync { get; }
+
     void AddPrimitive(scoped ref readonly TPrimitive primitive);
 
     void Bind(Shader shader);

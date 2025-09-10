@@ -6,6 +6,7 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Memory;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
@@ -30,7 +31,7 @@ public class CommandGenerator
 
     readonly KeyframedValue<CommandScale> scales = new(CommandScale.Lerp), finalScales = new(CommandScale.Lerp);
 
-    readonly List<State> states = [];
+    PoolingMemoryStream states;
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -61,43 +62,56 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref readonly State StartState => ref CollectionsMarshal.AsSpan(states).GetPinnableReference();
+    public ref readonly State StartState
+        => ref MemoryMarshal.Cast<byte, State>(states.WrittenSpan).GetPinnableReference();
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
     public ref readonly State EndState
-        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref CollectionsMarshal.AsSpan(states)[^1];
+        => ref (states?.Length ?? 0) == 0 ?
+            ref Unsafe.NullRef<State>() :
+            ref MemoryMarshal.Cast<byte, State>(states.WrittenSpan)[^1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
-        var count = states.Count;
+        states ??= new();
 
-        if (count == 0 || states[count - 1].Time <= state.Time)
+        var span = MemoryMarshal.Cast<byte, State>(states.WrittenSpan);
+        var count = span.Length;
+
+        if (count == 0 || span[count - 1].Time <= state.Time)
         {
-            states.Add(state);
+            states.Write(MemoryMarshal.AsBytes<State>(new(ref state)));
             return;
         }
 
-        var i = states.BinarySearch(state, State.Comparer);
+        var i = span.BinarySearch(state, State.Comparer);
         if (i >= 0)
-            while (i < count - 1 && states[i + 1].Time <= state.Time)
+            while (i < count - 1 && span[i + 1].Time <= state.Time)
                 ++i;
         else i = ~i;
 
-        states.Insert(i, state);
+        states.Write(MemoryMarshal.AsBytes<State>(new(ref state)));
+
+        var newSpan = MemoryMarshal.CreateSpan(
+            ref Unsafe.As<byte, State>(ref Unsafe.AsRef(in states.WrittenSpan.GetPinnableReference())),
+            count + 1);
+
+        newSpan.Slice(i, span.Length - i).CopyTo(newSpan[(i + 1)..]);
+        newSpan[i] = state;
     }
 
     /// <summary> Generates commands on a sprite based on this generator's states. </summary>
     /// <param name="sprite"> The <see cref="OsbSprite"/> to have commands generated on. </param>
     /// <param name="action"> Encapsulates a group of commands to be generated on <paramref name="sprite"/>. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the command generation. Can be left <see langword="null"/> if
-    ///     <see cref="State.Time"/> is used.
+    /// The explicit start time of the command generation. Can be left <see langword="null"/> if
+    /// <see cref="State.Time"/> is used.
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the command generation. Can be left <see langword="null"/> if
-    ///     <see cref="State.Time"/> is used.
+    /// The explicit end time of the command generation. Can be left <see langword="null"/> if
+    /// <see cref="State.Time"/> is used.
     /// </param>
     /// <param name="timeOffset"> The time offset of the command times. </param>
     /// <param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
@@ -109,13 +123,16 @@ public class CommandGenerator
         float timeOffset = 0,
         bool loopable = false)
     {
-        if (states.Count == 0) return;
+        if ((states?.Length ?? 0) == 0) return;
 
         ref readonly var previousState = ref Unsafe.NullRef<State>();
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref readonly var state in CollectionsMarshal.AsSpan(states))
+        var span = MemoryMarshal.Cast<byte, State>(states.WrittenSpan);
+        ensureKeyframes(span.Length);
+
+        foreach (ref readonly var state in span)
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -281,6 +298,18 @@ public class CommandGenerator
         additive.Add(time, state.Additive);
     }
 
+    void ensureKeyframes(int stateCount)
+    {
+        positions.keyframes.EnsureCapacity(positions.keyframes.Count + stateCount);
+        scales.keyframes.EnsureCapacity(scales.keyframes.Count + stateCount);
+        rotations.keyframes.EnsureCapacity(rotations.keyframes.Count + stateCount);
+        colors.keyframes.EnsureCapacity(colors.keyframes.Count + stateCount);
+        fades.keyframes.EnsureCapacity(fades.keyframes.Count + stateCount);
+        flipH.keyframes.EnsureCapacity(flipH.keyframes.Count + stateCount);
+        flipV.keyframes.EnsureCapacity(flipV.keyframes.Count + stateCount);
+        additive.keyframes.EnsureCapacity(additive.keyframes.Count + stateCount);
+    }
+
     void clearKeyframes()
     {
         positions.Clear(true);
@@ -297,8 +326,7 @@ public class CommandGenerator
         flipV.Clear(true);
         additive.Clear(true);
 
-        states.Clear();
-        states.TrimExcess();
+        states.Dispose();
     }
 
     internal static Vector2 BitmapDimensions(string path)
@@ -363,12 +391,12 @@ public record struct State
     public bool FlipV { get => (flags & 4) != 0; set => flags = (byte)(value ? flags | 4 : flags & ~4); }
 
     /// <summary>
-    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
-    ///     <see cref="OsbOrigin"/>.
+    /// Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
+    /// <see cref="OsbOrigin"/>.
     /// </summary>
     /// <returns>
-    ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>
-    ///     .
+    /// <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>
+    /// .
     /// </returns>
     public bool IsVisible(Vector2 imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {

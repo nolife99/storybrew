@@ -104,9 +104,12 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         switch (collection)
         {
             case KeyframedValue<TValue> keyframedValue:
-                foreach (var keyframe in keyframedValue.keyframes)
-                    if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
-                    else keyframes.Insert(indexFor(keyframe, false), keyframe);
+                if (keyframes.Count == 0 || keyframes[^1].Time < keyframedValue.keyframes[0].Time)
+                    keyframes.AddRange(keyframedValue.keyframes);
+                else
+                    foreach (var keyframe in keyframedValue.keyframes)
+                        if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
+                        else keyframes.Insert(indexFor(keyframe, false), keyframe);
 
                 break;
 

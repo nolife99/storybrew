@@ -18,6 +18,8 @@ class ShaderFieldVariable(ShaderContext context, ShaderVariable baseVariable, Sh
 
     new class Reference(ShaderVariable variable, ShaderType.Field field) : ShaderVariable.Reference(variable)
     {
+        readonly ShaderVariable variable = variable;
+
         public override string this[ReadOnlySpan<char> index] => $"{variable.Name}.{field.Name}[{index}]";
         public override string ToString() => $"{base.ToString()}.{field.Name}";
     }

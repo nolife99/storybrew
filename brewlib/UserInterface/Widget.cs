@@ -501,11 +501,11 @@ public class Widget(WidgetManager manager) : IDisposable
     public event Func<WidgetEvent, SDL.MouseWheelEvent, bool> OnMouseWheel;
     public bool NotifyMouseWheel(WidgetEvent evt, SDL.MouseWheelEvent e) => Raise(OnMouseWheel, evt, e);
 
-    public event Func<WidgetEvent, SDL.KeyboardEvent, bool> OnKeyDown;
-    public bool NotifyKeyDown(WidgetEvent evt, SDL.KeyboardEvent e) => Raise(OnKeyDown, evt, e);
+    public event Func<WidgetEvent, KeyboardEvent, bool> OnKeyDown;
+    public bool NotifyKeyDown(WidgetEvent evt, KeyboardEvent e) => Raise(OnKeyDown, evt, e);
 
-    public event Func<WidgetEvent, SDL.KeyboardEvent, bool> OnKeyUp;
-    public bool NotifyKeyUp(WidgetEvent evt, SDL.KeyboardEvent e) => Raise(OnKeyUp, evt, e);
+    public event Func<WidgetEvent, KeyboardEvent, bool> OnKeyUp;
+    public bool NotifyKeyUp(WidgetEvent evt, KeyboardEvent e) => Raise(OnKeyUp, evt, e);
 
     public event Func<WidgetEvent, TextInputEvent, bool> OnKeyPress;
     public bool NotifyKeyPress(WidgetEvent evt, TextInputEvent e) => Raise(OnKeyPress, evt, e);

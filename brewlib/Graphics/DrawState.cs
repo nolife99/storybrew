@@ -27,12 +27,24 @@ public static class DrawState
     static IRenderer renderer;
 
     static bool flushingRenderer;
-    static int drawCalls;
+    static int drawCalls, activeTextureUnit;
     public static bool UseTextureCompression { get; set; }
 
     public static bool CanInvalidate { get; private set; }
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
+
+    public static int ActiveTextureUnit
+    {
+        get => activeTextureUnit;
+        set
+        {
+            if (activeTextureUnit == value) return;
+
+            GL.ActiveTexture(TextureUnit.Texture0 + value);
+            activeTextureUnit = value;
+        }
+    }
 
     public static IRenderer Renderer
     {
@@ -108,16 +120,19 @@ public static class DrawState
                     switch (severity)
                     {
                         case DebugSeverity.DebugSeverityHigh:
-                            SDL.LogError(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            SDL.LogError(SDL.LogCategory.Render, str.AsReadOnlySpan());
                             throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
 
                         case DebugSeverity.DebugSeverityMedium:
+                            SDL.LogWarn(SDL.LogCategory.Render, str.AsReadOnlySpan());
+                            break;
+
                         case DebugSeverity.DebugSeverityLow:
-                            SDL.LogWarn(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            SDL.LogInfo(SDL.LogCategory.Render, str.AsReadOnlySpan());
                             break;
 
                         case DebugSeverity.DebugSeverityNotification:
-                            SDL.LogInfo(SDL.LogCategory.Render, str.AsReadOnlySpan().ToString());
+                            SDL.LogDebug(SDL.LogCategory.Render, str.AsReadOnlySpan());
                             break;
                     }
                 },
@@ -158,11 +173,8 @@ public static class DrawState
         SDL.LogInfo(SDL.LogCategory.Render, $"max texture size: {MaxTextureSize}");
         SDL.LogInfo(SDL.LogCategory.Render, $"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
 
-        if (!Texture2d.BindlessTexturesSupported)
-        {
-            samplerTextureIds = new int[maxTextureImageUnits];
-            samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
-        }
+        samplerTextureIds = new int[maxTextureImageUnits];
+        samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
         WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>());
         TransparentPixel = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>());
@@ -231,14 +243,18 @@ public static class DrawState
         previousMode = mode;
     }
 
+    public static void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
+        => BindTexture(textureId, 0, mode);
+
     static void BindTexture(int textureId, int samplerIndex, TextureTarget mode = TextureTarget.Texture2D)
     {
+        ActiveTextureUnit = samplerIndex;
         SetTexturingMode(samplerIndex, mode);
 
         ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
         if (samplerTextureId == textureId) return;
 
-        GL.BindTextureUnit(samplerIndex, textureId);
+        GL.BindTexture(mode, textureId);
         samplerTextureId = textureId;
     }
 
@@ -293,13 +309,15 @@ public static class DrawState
         return samplerIndexes[0];
     }
 
-    static void UnbindTexture(int textureId)
+    public static void UnbindTexture(int textureId)
     {
         var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
         if (i == -1) return;
 
-        GL.BindTextureUnit(i, 0);
         samplerTextureIds[i] = 0;
+
+        ActiveTextureUnit = i;
+        GL.BindTexture(samplerTexturingModes[i], 0);
     }
 
     #endregion

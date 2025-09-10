@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
+using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
@@ -17,9 +18,10 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     bool Bound;
 
     ValueList<byte> commandBuffer;
+    nint commandBufferMap;
 
-    protected int totalQueuedPrimitives, queuedRenders;
-    int vertexArrayId = -1, commandBufferId = -1;
+    protected int totalQueuedPrimitives, queuedRenders, commandBufferOffset;
+    int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
         int maxPrimitivesPerBatch,
@@ -35,7 +37,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
             Unsafe.SizeOf<MultiDrawArraysIndirectCommand>() :
             Unsafe.SizeOf<MultiDrawElementsIndirectCommand>();
 
-        initializeDrawCommandBuffer();
+        initializeDrawCommandBuffer(maxPrimitivesPerBatch);
 
         if (!indices.IsEmpty) initializeIndexBuffer(indices);
     }
@@ -44,6 +46,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     protected int VertexBufferId { get; private set; } = -1;
     protected int IndexBufferId { get; private set; } = -1;
     protected int MaxPrimitivesPerBatch { get; set; }
+
+    public GpuCommandSync FrameSync { get; } = new();
 
     public void AddPrimitive(scoped ref readonly TPrimitive primitive)
     {
@@ -72,21 +76,27 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     {
         if (!Bound) return;
 
-        GL.BindVertexArray(0);
         Bound = false;
+        GL.BindVertexArray(0);
     }
 
     public void Render(PrimitiveType type, int vertexCount)
     {
-        if (!Bound) return;
+        if (!Bound || totalQueuedPrimitives == 0) return;
 
-        GL.BufferData(BufferTarget.DrawIndirectBuffer,
-            commandBuffer.Count,
-            ref MemoryMarshal.GetReference(commandBuffer.AsReadOnlySpan()),
-            BufferUsageHint.StaticDraw);
+        if (commandBufferOffset + commandBuffer.Count >= commandBufferSize) commandBufferOffset = 0;
+
+        FrameSync.WaitAndLockRange(commandBufferId, commandBufferOffset, queuedRenders * commandSize);
+
+        Unsafe.CopyBlock(ref (commandBufferMap + commandBufferOffset).AsRef<byte>(),
+            in commandBuffer.AsReadOnlySpan().GetPinnableReference(),
+            (uint)commandBuffer.Count);
 
         internalRender(type, vertexCount);
 
+        FrameSync.CommitPending();
+
+        commandBufferOffset += commandBuffer.Count;
         commandBuffer.Clear();
 
         queuedRenders = 0;
@@ -153,12 +163,23 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
             BufferUsageHint.StaticDraw);
     }
 
-    void initializeDrawCommandBuffer()
+    void initializeDrawCommandBuffer(int minRenderableVertexCount)
     {
         if (commandBufferId != -1) GL.DeleteBuffer(commandBufferId);
 
-        commandBufferId = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId = GL.GenBuffer());
+        GL.BufferStorage(BufferTarget.DrawIndirectBuffer,
+            commandBufferSize = minRenderableVertexCount * commandSize,
+            0,
+            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
+
         commandBuffer = ValueList.Create<byte>();
+        commandBufferMap = GL.MapBufferRange(BufferTarget.DrawIndirectBuffer,
+            0,
+            commandBufferSize,
+            MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
+            MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
+            MapBufferAccessMask.MapUnsynchronizedBit);
 
         initializeVertexBuffer();
     }
@@ -191,7 +212,9 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
 
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
 
-        if (disposing) commandBuffer.Dispose();
+        if (!disposing) return;
+
+        commandBuffer.Dispose();
     }
 
     public static bool HasCapabilities() => DrawState.Extensions.Contains("ARB_draw_indirect");

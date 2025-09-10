@@ -71,9 +71,9 @@ public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Act
         }
     }
 
-    public override bool OnKeyDown(SDL.KeyboardEvent e)
+    public override bool OnKeyDown(KeyboardEvent e)
     {
-        if (e.Repeat || e.Key != SDL.Keycode.C || (e.Mod & SDL.Keymod.Ctrl) == 0) return base.OnKeyDown(e);
+        if (e.Repeat || e.Key != Keycode.C || (e.Mod & SDL.Keymod.Ctrl) == 0) return base.OnKeyDown(e);
 
         ClipboardHelper.SetText(message.AsReadOnlySpan());
         return true;

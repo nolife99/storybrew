@@ -54,7 +54,7 @@ public sealed class InputDispatcher : IInputHandler
         foreach (var handler in handlers) handler.OnMouseMove(e);
     }
 
-    public bool OnKeyDown(SDL.KeyboardEvent e)
+    public bool OnKeyDown(KeyboardEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyDown(e))
@@ -63,7 +63,7 @@ public sealed class InputDispatcher : IInputHandler
         return false;
     }
 
-    public bool OnKeyUp(SDL.KeyboardEvent e)
+    public bool OnKeyUp(KeyboardEvent e)
     {
         foreach (var handler in handlers)
             if (handler.OnKeyUp(e))

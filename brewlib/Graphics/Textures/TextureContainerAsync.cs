@@ -1,9 +1,11 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using BrewLib.IO;
+using BrewLib.Util;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -72,7 +74,7 @@ public sealed class TextureContainerAsync : TextureContainer
         if (disposed) return;
 
         uploadQueue.Clear();
-        foreach (var texture in textures.Values) texture.Result?.Dispose();
+        foreach (var texture in textures.Values) Interlocked.Exchange(ref texture.Result, null)?.Dispose();
 
         textures.Dispose();
         disposed = true;
@@ -84,10 +86,9 @@ public sealed class TextureContainerAsync : TextureContainer
 sealed class TextureUploadQueue : IDisposable
 {
     const int UPLOAD_THREAD_COUNT = 2;
-    readonly PooledList<nint> contexts = new();
 
     readonly object enqueueSignal = new();
-    readonly PooledQueue<QueuedUpload> queuedUploads = [];
+    readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
 
     readonly PooledList<Thread> threads = new();
     readonly EventFilter watch;
@@ -95,17 +96,16 @@ sealed class TextureUploadQueue : IDisposable
     public TextureUploadQueue()
     {
         var exiting = false;
+        SDL.AddEventWatch(watch = (nint _, ref Event e) =>
+            {
+                if (e.Type is not EventType.Quit) return false;
 
-        watch = (nint _, ref SDL.Event e) =>
-        {
-            if (e.Type is not SDL.EventType.Quit) return false;
+                exiting = true;
+                Native.MainThreadScheduler(target => ((IDisposable)target).Dispose(), this);
 
-            exiting = true;
-            Dispose();
-            return true;
-        };
-
-        SDL.AddEventWatch(watch, 0);
+                return true;
+            },
+            0);
 
         var mainContext = SDL.GLGetCurrentContext();
         if (mainContext == 0) throw new InvalidOperationException($"Unable to get current context: {SDL.GetError()}");
@@ -119,32 +119,24 @@ sealed class TextureUploadQueue : IDisposable
                 throw new NotSupportedException($"Unable to share context: {SDL.GetError()}");
 
             var ctx = SDL.GLCreateContext(currentWindow);
-            if (ctx == 0) throw new InvalidOperationException($"Unable to create context: {SDL.GetError()}");
-
-            contexts.Add(ctx);
+            if (ctx == 0) throw new InvalidOperationException($"Unable to create shared context: {SDL.GetError()}");
 
             if (!SDL.GLMakeCurrent(currentWindow, mainContext))
-                throw new InvalidOperationException($"Unable to unbind context: {SDL.GetError()}");
+                throw new InvalidOperationException($"Unable to unbind shared context: {SDL.GetError()}");
 
             Thread thread = new(context =>
             {
                 if (!SDL.GLMakeCurrent(currentWindow, (nint)context!))
                     throw new InvalidOperationException(
-                        $"Unable to make context current on new thread: {SDL.GetError()}");
+                        $"Unable to make shared context current on new thread: {SDL.GetError()}");
 
                 while (!exiting)
                 {
-                    Monitor.Enter(queuedUploads);
-
                     if (!queuedUploads.TryDequeue(out var queued))
                     {
-                        Monitor.Exit(queuedUploads);
                         lock (enqueueSignal) Monitor.Wait(enqueueSignal);
-
                         continue;
                     }
-
-                    Monitor.Exit(queuedUploads);
 
                     Image<Rgba32> bitmap;
                     try
@@ -153,7 +145,7 @@ sealed class TextureUploadQueue : IDisposable
                     }
                     catch (IOException)
                     {
-                        lock (queuedUploads) queuedUploads.Enqueue(queued);
+                        queuedUploads.Enqueue(queued);
 
                         // Happens when another process is writing to the file, will try again later.
                         continue;
@@ -164,6 +156,8 @@ sealed class TextureUploadQueue : IDisposable
                     queued.Result = Texture2d.Load(bitmap, queued.Options);
                     bitmap.Dispose();
                 }
+
+                SDL.GLDestroyContext((nint)context);
             });
 
             threads.Add(thread);
@@ -182,15 +176,13 @@ sealed class TextureUploadQueue : IDisposable
         Signal();
 
         foreach (var thread in threads) thread.Join();
-        foreach (var context in contexts) SDL.GLDestroyContext(context);
 
         threads.Dispose();
-        contexts.Dispose();
     }
 
     public void Clear()
     {
-        lock (queuedUploads) queuedUploads.Clear();
+        queuedUploads.Clear();
         Signal();
     }
 
@@ -202,7 +194,7 @@ sealed class TextureUploadQueue : IDisposable
     public QueuedUpload Enqueue(string filename, ResourceContainer container, TextureOptions options)
     {
         QueuedUpload toQueue = new(filename, container, options);
-        lock (queuedUploads) queuedUploads.Enqueue(toQueue);
+        queuedUploads.Enqueue(toQueue);
 
         Signal();
 
@@ -211,7 +203,7 @@ sealed class TextureUploadQueue : IDisposable
 
     public record QueuedUpload(string FileName, ResourceContainer Container, TextureOptions Options)
     {
-        public volatile Texture2d Result;
+        public Texture2d Result;
         public bool IsLoaded => Result?.Wait(false) ?? false;
     }
 }

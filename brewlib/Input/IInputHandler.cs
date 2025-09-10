@@ -11,7 +11,7 @@ public interface IInputHandler
     bool OnClickUp(SDL.MouseButtonEvent e);
     bool OnMouseWheel(SDL.MouseWheelEvent e);
     void OnMouseMove(SDL.MouseMotionEvent e);
-    bool OnKeyDown(SDL.KeyboardEvent e);
-    bool OnKeyUp(SDL.KeyboardEvent e);
+    bool OnKeyDown(KeyboardEvent e);
+    bool OnKeyUp(KeyboardEvent e);
     bool OnKeyPress(TextInputEvent e);
 }

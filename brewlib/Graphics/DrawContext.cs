@@ -3,9 +3,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using SixLabors.ImageSharp.Memory;
 using Tiny.PooledCollections.Generic;
 
 public sealed class DrawContext : IDisposable
@@ -13,15 +11,6 @@ public sealed class DrawContext : IDisposable
     readonly PooledList<IDisposable> disposables = new();
     FrozenDictionary<Type, object> frozenReferences;
     Dictionary<Type, object> references = new();
-
-    public DrawContext()
-    {
-        // Prevent LOH allocations
-        var allocator = MemoryAllocator.Default;
-        allocator.GetType()
-            .GetField("sharedArrayPoolThresholdInBytes", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?.SetValue(allocator, 65536);
-    }
 
     public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
 

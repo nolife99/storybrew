@@ -1,3 +1,3 @@
 ﻿namespace BrewLib.Util;
 
-public record ChangedEventArgs(string PropertyName);
+public record struct ChangedEventArgs(string PropertyName);

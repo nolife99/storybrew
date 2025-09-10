@@ -29,12 +29,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
     public bool Running => !context.Queue.IsEmpty || !context.Running.IsEmpty;
     public int TaskCount => context.Queue.Count + context.Running.Count;
 
-    public event Action<T, Exception> OnActionFailed
-    {
-        add => context.OnActionFailed += value;
-        remove => context.OnActionFailed -= value;
-    }
-
     public void Queue(T target,
         int uniqueKey,
         Func<CancellationTokenSource, ValueTask> action,
@@ -90,9 +84,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
             => Interlocked.Exchange(ref tcs, new(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
 
         public Task WaitForSignal() => tcs.Task;
-
-        public event Action<T, Exception> OnActionFailed;
-        public void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
     sealed class ActionRunner(ActionQueueContext context)

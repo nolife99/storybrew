@@ -122,6 +122,9 @@ public sealed partial class Shader : IDisposable
 
     int compileShader(OpenTK.Graphics.OpenGL.ShaderType type, string code)
     {
+        if (DrawState.Extensions.Contains("GL_ARB_parallel_shader_compile"))
+            GL.Arb.MaxShaderCompilerThreads(Environment.ProcessorCount - 1);
+
         var id = GL.CreateShader(type);
         GL.ShaderSource(id, code);
         GL.CompileShader(id);

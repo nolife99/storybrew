@@ -3,8 +3,10 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.IO.Hashing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using BrewLib.Memory;
 using BrewLib.Util;
@@ -50,8 +52,8 @@ public abstract class StoryboardObjectGenerator : Script
     public static StoryboardObjectGenerator Current => instance.Value;
 
     /// <summary>
-    ///     Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating in
-    ///     parallel to this one.
+    /// Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating in
+    /// parallel to this one.
     /// </summary>
     protected bool Multithreaded { get; set; }
 
@@ -114,7 +116,7 @@ public abstract class StoryboardObjectGenerator : Script
         CancellationToken token)
     {
         this.context = context;
-        rnd = new(RandomSeed);
+        rnd = Crc64.HashToUInt64(MemoryMarshal.AsBytes<int>(new(ref RandomSeed)));
         instance.Value = this;
 
         try
@@ -212,31 +214,33 @@ public abstract class StoryboardObjectGenerator : Script
     [Group("Common"), Description("Changes the result of Random(...) calls."), Configurable]
     public int RandomSeed;
 
-    Random rnd;
+    ulong rnd;
 
     /// <summary> Gets a random integer between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
-    public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Random(int minValue, int maxValue) => minValue + SDL.RandR(ref rnd, maxValue - minValue);
 
-    /// <summary> Gets a random integer between 0 and <paramref name="maxValue"/>. </summary>
-    public int Random(int maxValue) => rnd.Next(maxValue);
+    /// <summary> Gets a random integer less than <paramref name="maxValue"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Random(int maxValue) => SDL.RandR(ref rnd, maxValue);
 
     /// <summary>
-    ///     Gets a random double-precision floating-point number between <paramref name="minValue"/> and
-    ///     <paramref name="maxValue"/>.
+    /// Gets a random double-precision floating-point number between <paramref name="minValue"/> and
+    /// <paramref name="maxValue"/>.
     /// </summary>
-    public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * rnd.NextDouble();
+    public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * SDL.RandFR(ref rnd);
 
     /// <summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
-    public double Random(double maxValue) => rnd.NextDouble() * maxValue;
+    public double Random(double maxValue) => SDL.RandFR(ref rnd) * maxValue;
 
     /// <summary>
-    ///     Gets a random single-precision floating-point number between <paramref name="minValue"/> and
-    ///     <paramref name="maxValue"/>.
+    /// Gets a random single-precision floating-point number between <paramref name="minValue"/> and
+    /// <paramref name="maxValue"/>.
     /// </summary>
-    public float Random(float minValue, float maxValue) => (float)(minValue + (maxValue - minValue) * rnd.NextDouble());
+    public float Random(float minValue, float maxValue) => minValue + (maxValue - minValue) * SDL.RandFR(ref rnd);
 
     /// <summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
-    public float Random(float maxValue) => (float)(rnd.NextDouble() * maxValue);
+    public float Random(float maxValue) => SDL.RandFR(ref rnd) * maxValue;
 
     #endregion
 

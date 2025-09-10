@@ -95,9 +95,6 @@ public sealed partial class Project : IDisposable
                 scriptsLibraryPath,
                 referencedAss.Span);
 
-        effectUpdateQueue.OnActionFailed += (effect, e) => SDL.LogError(SDL.LogCategory.Test,
-            $"'{effect}' action: {e.GetType()} ({e.Message})");
-
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += sender =>
         {

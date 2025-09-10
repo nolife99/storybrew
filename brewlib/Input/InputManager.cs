@@ -27,39 +27,39 @@ public sealed class InputManager(nint window, IInputHandler handler)
     public bool ControlAltOnly => Control && !Shift && Alt;
     public bool ShiftAltOnly => !Control && Shift && Alt;
 
-    public void PumpEvents()
+    public void Update()
     {
         SDL.PumpEvents();
-        Span<SDL.Event> events = stackalloc SDL.Event[SDL.PeepEvents(0,
-            int.MaxValue,
-            SDL.EventAction.PeekEvent,
-            (uint)SDL.EventType.First,
-            (uint)SDL.EventType.Last)];
+        Span<Event> events = stackalloc Event[SDL.PeepEvents(0,
+            0,
+            EventAction.PeekEvent,
+            EventType.First,
+            EventType.Last)];
 
-        if (SDL.PeepEvents(events, SDL.EventAction.GetEvent, (uint)SDL.EventType.First, (uint)SDL.EventType.Last) == -1)
+        if (SDL.PeepEvents(events, EventAction.GetEvent, EventType.First, EventType.Last) == -1)
             throw new InvalidOperationException($"Unable to get events: {SDL.GetError()}");
 
         foreach (var e in events)
             switch (e.Type)
             {
-                case SDL.EventType.WindowMouseEnter: window_MouseEnter(); break;
-                case SDL.EventType.WindowMouseLeave: window_MouseLeave(); break;
+                case EventType.WindowMouseEnter: window_MouseEnter(); break;
+                case EventType.WindowMouseLeave: window_MouseLeave(); break;
 
-                case SDL.EventType.WindowFocusGained:
-                case SDL.EventType.WindowFocusLost:
+                case EventType.WindowFocusGained:
+                case EventType.WindowFocusLost:
                     window_FocusedChanged();
                     break;
 
-                case SDL.EventType.KeyDown: window_KeyDown(e.Key); break;
-                case SDL.EventType.KeyUp: window_KeyUp(e.Key); break;
-                case SDL.EventType.TextInput: window_KeyPress(e.Text); break;
-                case SDL.EventType.MouseMotion: window_MouseMove(e.Motion); break;
-                case SDL.EventType.MouseButtonDown: window_MouseDown(e.Button); break;
-                case SDL.EventType.MouseButtonUp: window_MouseUp(e.Button); break;
-                case SDL.EventType.MouseWheel: window_MouseWheel(e.Wheel); break;
+                case EventType.KeyDown: window_KeyDown(e.Key); break;
+                case EventType.KeyUp: window_KeyUp(e.Key); break;
+                case EventType.TextInput: window_KeyPress(e.Text); break;
+                case EventType.MouseMotion: window_MouseMove(e.Motion); break;
+                case EventType.MouseButtonDown: window_MouseDown(e.Button); break;
+                case EventType.MouseButtonUp: window_MouseUp(e.Button); break;
+                case EventType.MouseWheel: window_MouseWheel(e.Wheel); break;
 
-                case SDL.EventType.WindowResized: window_Resize(e.Window); break;
-                case SDL.EventType.Quit: window_Close(e.Quit); break;
+                case EventType.WindowResized: window_Resize(e.Window); break;
+                case EventType.Quit: window_Close(e.Quit); break;
             }
     }
 
@@ -100,20 +100,20 @@ public sealed class InputManager(nint window, IInputHandler handler)
         Handler.OnMouseMove(e);
     }
 
-    void updateModifierState(SDL.KeyboardEvent e)
+    void updateModifierState(KeyboardEvent e)
     {
         Control = (e.Mod & SDL.Keymod.Ctrl) != 0;
         Shift = (e.Mod & SDL.Keymod.Shift) != 0;
         Alt = (e.Mod & SDL.Keymod.Alt) != 0;
     }
 
-    void window_KeyDown(SDL.KeyboardEvent e)
+    void window_KeyDown(KeyboardEvent e)
     {
         updateModifierState(e);
         Handler.OnKeyDown(e);
     }
 
-    void window_KeyUp(SDL.KeyboardEvent e)
+    void window_KeyUp(KeyboardEvent e)
     {
         updateModifierState(e);
         Handler.OnKeyUp(e);

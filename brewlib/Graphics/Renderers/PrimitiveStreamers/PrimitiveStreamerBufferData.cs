@@ -1,21 +1,20 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
-using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using SDL3;
 
 sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
-    readonly nint primitiveBuffer = SDL.Malloc((nuint)(maxPrimitivesPerBatch * PrimitiveSize));
-    int primitiveBufferOffset;
+    readonly TPrimitive[] primitiveBuffer = GC.AllocateUninitializedArray<TPrimitive>(maxPrimitivesPerBatch);
 
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
-        => (primitiveBuffer + primitiveBufferOffset++ * PrimitiveSize).AsRef<TPrimitive>() = primitive;
+        => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer), totalQueuedPrimitives) = primitive;
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
@@ -25,21 +24,13 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
             BufferUsageHint.StaticDraw);
 
         if (IndexBufferId != -1)
-            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
-        else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, queuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, commandBufferOffset, queuedRenders, 0);
 
         if (DrawState.CanInvalidate) GL.InvalidateBufferData(VertexBufferId);
-
-        primitiveBufferOffset = 0;
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-
-    protected override void Dispose(bool disposing)
-    {
-        SDL.Free(primitiveBuffer);
-        base.Dispose(disposing);
-    }
 
     public new static bool HasCapabilities() => DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }

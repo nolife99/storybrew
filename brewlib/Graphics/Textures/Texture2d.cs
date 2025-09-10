@@ -29,8 +29,6 @@ public sealed class Texture2d : Texture2dRegion
     {
         _textureId = textureId;
         fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-
-        GL.Flush();
     }
 
     public int TextureId
@@ -94,7 +92,7 @@ public sealed class Texture2d : Texture2dRegion
 
             span.Fill(color);
 
-            GL.BindTexture(TextureTarget.Texture2D, _textureId);
+            DrawState.BindPrimaryTexture(_textureId);
             GL.TexSubImage2D(TextureTarget.Texture2D,
                 0,
                 x,
@@ -105,7 +103,8 @@ public sealed class Texture2d : Texture2dRegion
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(span));
 
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+
             spanOwner?.Dispose();
         }
     }
@@ -114,7 +113,7 @@ public sealed class Texture2d : Texture2dRegion
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
-        GL.BindTexture(TextureTarget.Texture2D, _textureId);
+        DrawState.BindPrimaryTexture(_textureId);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1)
@@ -139,7 +138,7 @@ public sealed class Texture2d : Texture2dRegion
                     PixelType.UnsignedByte,
                     ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
 
-        GL.BindTexture(TextureTarget.Texture2D, 0);
+        fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
     }
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
@@ -180,7 +179,8 @@ public sealed class Texture2d : Texture2dRegion
         }
 
         var textureId = GL.GenTexture();
-        GL.BindTexture(TextureTarget.Texture2D, textureId);
+        DrawState.BindTexture(textureId);
+
         GL.TexStorage2D(TextureTarget2d.Texture2D,
             1,
             textureOptions.Srgb && DrawState.ColorCorrected ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8,
@@ -219,7 +219,7 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        GL.BindTexture(TextureTarget.Texture2D, 0);
+        DrawState.UnbindTexture(textureId);
         return new(textureId, width, height);
     }
 
@@ -236,7 +236,7 @@ public sealed class Texture2d : Texture2dRegion
             compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
-        GL.BindTexture(TextureTarget.Texture2D, textureId);
+        DrawState.BindTexture(textureId);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
@@ -285,7 +285,7 @@ public sealed class Texture2d : Texture2dRegion
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        GL.BindTexture(TextureTarget.Texture2D, 0);
+        DrawState.UnbindTexture(textureId);
         return new(textureId, width, height);
     }
 
@@ -296,7 +296,7 @@ public sealed class Texture2d : Texture2dRegion
 
         if (canBlock)
         {
-            GL.ClientWaitSync(fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+            GL.ClientWaitSync(fence, ClientWaitSyncFlags.SyncFlushCommandsBit, ulong.MaxValue);
             GL.DeleteSync(fence);
             fenceId = -1;
 
@@ -333,8 +333,14 @@ public sealed class Texture2d : Texture2dRegion
 
     static void Free(Texture2d texture)
     {
+        if (texture.fenceId > 0)
+        {
+            GL.ClientWaitSync(texture.fenceId, ClientWaitSyncFlags.None, ulong.MaxValue);
+            GL.DeleteSync(texture.fenceId);
+        }
+
+        DrawState.UnbindTexture(texture._textureId);
         GL.DeleteTexture(texture._textureId);
-        if (texture.fenceId != -1) GL.DeleteSync(texture.fenceId);
     }
 
     #endregion

@@ -8,8 +8,6 @@ using Tiny.PooledCollections.Generic;
 
 public sealed class TextureMultiAtlas2d : IDisposable
 {
-    static bool firstOversize = true;
-
     readonly PooledList<TextureAtlas2d> atlases = [];
     readonly string description;
     readonly TextureOptions textureOptions;

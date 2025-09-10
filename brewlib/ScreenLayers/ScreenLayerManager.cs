@@ -128,7 +128,7 @@ public sealed class ScreenLayerManager : InputAdapter, IDisposable
         {
             SDL.HideWindow(Window);
 
-            SDL.Event ev = new() { Type = SDL.EventType.Quit };
+            Event ev = new() { Type = EventType.Quit };
             SDL.PushEvent(ref ev);
         }
     }

@@ -98,9 +98,9 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     public virtual void Close() => Exit();
 
-    public override bool OnKeyDown(SDL.KeyboardEvent e)
+    public override bool OnKeyDown(KeyboardEvent e)
     {
-        if (e.Key is not SDL.Keycode.Escape) return base.OnKeyDown(e);
+        if (e.Key is not Keycode.Escape) return base.OnKeyDown(e);
 
         Close();
         return true;

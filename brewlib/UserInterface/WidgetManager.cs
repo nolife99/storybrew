@@ -365,11 +365,11 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     public bool OnMouseWheel(SDL.MouseWheelEvent e)
         => fire((w, evt, ev) => w.NotifyMouseWheel(evt, ev), HoveredWidget ?? rootContainer, state: e).Handled;
 
-    public bool OnKeyDown(SDL.KeyboardEvent e)
+    public bool OnKeyDown(KeyboardEvent e)
         => fire((w, evt, ev) => w.NotifyKeyDown(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 
-    public bool OnKeyUp(SDL.KeyboardEvent e)
+    public bool OnKeyUp(KeyboardEvent e)
         => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev), keyboardFocus ?? HoveredWidget ?? rootContainer, state: e)
             .Handled;
 
