@@ -126,9 +126,7 @@ sealed class TextureUploadQueue : IDisposable
 
             Thread thread = new(context =>
             {
-                if (!SDL.GLMakeCurrent(currentWindow, (nint)context!))
-                    throw new InvalidOperationException(
-                        $"Unable to make shared context current on new thread: {SDL.GetError()}");
+                while (!SDL.GLMakeCurrent(currentWindow, (nint)context!)) { }
 
                 while (!exiting)
                 {
@@ -160,9 +158,8 @@ sealed class TextureUploadQueue : IDisposable
                 SDL.GLDestroyContext((nint)context);
             });
 
-            threads.Add(thread);
-
             thread.UnsafeStart(ctx);
+            threads.Add(thread);
 
             SDL.LogInfo(SDL.LogCategory.Video, $"Started texture upload thread {i + 1}");
         }

@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Runtime.CompilerServices;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
@@ -12,57 +11,65 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
     nint bufferAddr;
-    int bufferOffset, vertexBufferSize, baseVertex;
+    int bufferOffset, primitivesInCurrentRegion, vertexBufferSize;
 
     (int Start, int ClientStart) needsFlush;
 
-    protected override void internalQueueRender(ref int baseIndex) => baseIndex += baseVertex;
-
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
     {
-        var writePosition = bufferOffset + totalQueuedPrimitives * PrimitiveSize;
-        if (writePosition == vertexBufferSize)
+        var writePosition = bufferOffset + primitivesInCurrentRegion * PrimitiveSize;
+        if (writePosition + PrimitiveSize > vertexBufferSize)
         {
-            needsFlush = (bufferOffset, totalQueuedPrimitives);
+            DrawState.FlushRenderer();
+            needsFlush = (bufferOffset, primitivesInCurrentRegion);
 
             bufferOffset = 0;
-            baseVertex = 0;
+            primitivesInCurrentRegion = 0;
+
+            writePosition = 0;
         }
 
         FrameSync.WaitForRange(VertexBufferId, writePosition, PrimitiveSize);
-        Unsafe.Add(ref (bufferAddr + bufferOffset).AsRef<TPrimitive>(), totalQueuedPrimitives) = primitive;
+        (bufferAddr + writePosition).AsRef<TPrimitive>() = primitive;
+
+        ++primitivesInCurrentRegion;
+    }
+
+    protected override void internalQueueRender(ref int baseIndex, int vertexCount)
+    {
+        var primitiveStart = baseIndex / vertexCount;
+        var vertexStride = PrimitiveSize / vertexCount;
+
+        baseIndex = needsFlush.ClientStart != 0 && primitiveStart < needsFlush.ClientStart ?
+            needsFlush.Start / vertexStride + primitiveStart * vertexCount :
+            bufferOffset / vertexStride + (primitiveStart - needsFlush.ClientStart) * vertexCount;
     }
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
-        var flushVertexSize = needsFlush.ClientStart * PrimitiveSize;
-        var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
+        var flushPreBytes = needsFlush.ClientStart * PrimitiveSize;
+        var currentRegionBytes = primitivesInCurrentRegion * PrimitiveSize;
 
-        if (flushVertexSize != 0)
+        if (flushPreBytes != 0)
         {
-            FrameSync.WaitAndLockRange(VertexBufferId, needsFlush.Start, flushVertexSize);
-
-            Unsafe.CopyBlock(ref (bufferAddr + bufferOffset).AsRef<byte>(),
-                ref (bufferAddr + needsFlush.Start).AsRef<byte>(),
-                (uint)flushVertexSize);
-
-            GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, needsFlush.Start, flushVertexSize);
+            FrameSync.LockRange(VertexBufferId, needsFlush.Start, flushPreBytes);
+            GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, needsFlush.Start, flushPreBytes);
         }
 
-        if (vertexDataSize != 0)
+        if (currentRegionBytes != 0)
         {
-            FrameSync.LockRange(VertexBufferId, bufferOffset, vertexDataSize);
-            GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
+            FrameSync.LockRange(VertexBufferId, bufferOffset, currentRegionBytes);
+            GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, currentRegionBytes);
         }
 
         if (IndexBufferId != -1)
-            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, queuedRenders, 0);
-        else GL.MultiDrawArraysIndirect(type, commandBufferOffset, queuedRenders, 0);
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, QueuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, commandBufferOffset, QueuedRenders, 0);
+
+        bufferOffset += currentRegionBytes;
 
         needsFlush = default;
-
-        bufferOffset += vertexDataSize;
-        baseVertex += totalQueuedPrimitives * vertexCount;
+        primitivesInCurrentRegion = 0;
     }
 
     protected override void initializeVertexBuffer()
@@ -84,8 +91,4 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-
-    public new static bool HasCapabilities()
-        => DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect") &&
-            DrawState.Extensions.Contains("GL_ARB_buffer_storage");
 }

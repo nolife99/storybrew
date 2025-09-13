@@ -172,7 +172,15 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
 
-        return DrawState.CompleteFrame();
+        var draws = DrawState.CompleteFrame();
+
+        if (DrawState.CanInvalidate)
+        {
+            var attachments = FramebufferAttachment.Color;
+            GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer, 1, ref attachments);
+        }
+
+        return draws;
     }
 
     #region Overlay

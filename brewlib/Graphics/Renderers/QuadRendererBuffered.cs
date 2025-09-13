@@ -25,7 +25,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         ClipUniformName = "u_clipRect", StorageBufferOffsetUniformName = "u_ssboOffset";
 
     static readonly bool supportsRegionalBarrier = DrawState.Extensions.Contains("GL_ARB_ES3_1_compatibility"),
-        supportsBarrier = DrawState.Extensions.Contains("GL_ARB_shader_image_load_store");
+        supportsBarrier = supportsRegionalBarrier || DrawState.Extensions.Contains("GL_ARB_shader_image_load_store");
 
     static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(false),
         VertexAttribute.CreateDiffuseCoord(true),
@@ -50,7 +50,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 16384, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
     {
         this.maxQuadsPerBatch = maxQuadsPerBatch;
         if (shader is null)
@@ -173,7 +173,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        if (ssboOffset + queuedRenders > maxQuadsPerBatch) ssboOffset = 0;
+        if (ssboOffset + queuedRenders >= maxQuadsPerBatch) ssboOffset = 0;
 
         if (supportsBarrier) BufferSSBO();
         else BufferSSBOCompat();
@@ -247,6 +247,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
             span = MemoryMarshal.AsBytes(bindlessTextures.AsReadOnlySpan());
             writeOffset = ssboOffset * sizeof(long);
 
+            primitiveStreamer.FrameSync.WaitAndLockRange(ssbo, section + writeOffset, span.Length);
+
             span.CopyTo(ssboSpan[(section + writeOffset)..]);
             GL.FlushMappedBufferRange(BufferTarget.ShaderStorageBuffer, section + writeOffset, span.Length);
 
@@ -255,6 +257,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
         span = MemoryMarshal.AsBytes(combinedMatrices.AsReadOnlySpan());
         writeOffset = ssboOffset * Unsafe.SizeOf<Matrix4x4>();
+
+        primitiveStreamer.FrameSync.WaitAndLockRange(ssbo, section + writeOffset, span.Length);
 
         span.CopyTo(ssboSpan[(section + writeOffset)..]);
         GL.FlushMappedBufferRange(BufferTarget.ShaderStorageBuffer, section + writeOffset, span.Length);

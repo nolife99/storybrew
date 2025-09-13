@@ -37,8 +37,6 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (_textureId == 0) throw new InvalidOperationException("Texture not created");
 
-            ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
-
             Wait(true);
 
             return _textureId;
@@ -49,7 +47,11 @@ public sealed class Texture2d : Texture2dRegion
     {
         get
         {
-            if (bindlessId != -1) return bindlessId;
+            if (bindlessId != -1)
+            {
+                Wait(true);
+                return bindlessId;
+            }
 
             if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
@@ -65,48 +67,33 @@ public sealed class Texture2d : Texture2dRegion
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
-        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
-            GL.ClearTexSubImage(_textureId,
-                0,
-                x,
-                y,
-                0,
-                width,
-                height,
-                1,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref color);
+        IMemoryOwner<Rgba32> spanOwner = null;
+        scoped Span<Rgba32> span;
+
+        var area = width * height;
+        if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
         else
         {
-            IMemoryOwner<Rgba32> spanOwner = null;
-            scoped Span<Rgba32> span;
-
-            var area = width * height;
-            if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
-            else
-            {
-                spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
-                span = spanOwner.Memory.Span;
-            }
-
-            span.Fill(color);
-
-            DrawState.BindPrimaryTexture(_textureId);
-            GL.TexSubImage2D(TextureTarget.Texture2D,
-                0,
-                x,
-                y,
-                width,
-                height,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref MemoryMarshal.GetReference(span));
-
-            fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-
-            spanOwner?.Dispose();
+            spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
+            span = spanOwner.Memory.Span;
         }
+
+        span.Fill(color);
+
+        DrawState.BindPrimaryTexture(_textureId);
+        GL.TexSubImage2D(TextureTarget.Texture2D,
+            0,
+            x,
+            y,
+            width,
+            height,
+            PixelFormat.Rgba,
+            PixelType.UnsignedByte,
+            ref MemoryMarshal.GetReference(span));
+
+        fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+
+        spanOwner?.Dispose();
     }
 
     public void Update(Image<Rgba32> bitmap, int x, int y)
@@ -178,43 +165,33 @@ public sealed class Texture2d : Texture2dRegion
             color = new((byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio), color.A);
         }
 
+        IMemoryOwner<Rgba32> spanOwner = null;
+        scoped Span<Rgba32> span;
+
+        var area = width * height;
+        if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
+        else
+        {
+            spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
+            span = spanOwner.Memory.Span;
+        }
+
+        span.Fill(color);
+
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        GL.TexStorage2D(TextureTarget2d.Texture2D,
-            1,
-            textureOptions.Srgb && DrawState.ColorCorrected ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8,
+        GL.TexImage2D(TextureTarget.Texture2D,
+            0,
+            textureOptions.Srgb && DrawState.ColorCorrected ? PixelInternalFormat.Srgb8 : PixelInternalFormat.Rgba8,
             width,
-            height);
+            height,
+            0,
+            PixelFormat.Rgba,
+            PixelType.UnsignedByte,
+            ref MemoryMarshal.GetReference(span));
 
-        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
-            GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
-        else
-        {
-            IMemoryOwner<Rgba32> spanOwner = null;
-            scoped Span<Rgba32> span;
-
-            var area = width * height;
-            if (area <= StackAllocThreshold) span = stackalloc Rgba32[area];
-            else
-            {
-                spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height);
-                span = spanOwner.Memory.Span;
-            }
-
-            span.Fill(color);
-            GL.TexSubImage2D(TextureTarget.Texture2D,
-                0,
-                0,
-                0,
-                width,
-                height,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref MemoryMarshal.GetReference(span));
-
-            spanOwner?.Dispose();
-        }
+        spanOwner?.Dispose();
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -257,16 +234,14 @@ public sealed class Texture2d : Texture2dRegion
             var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
             GL.BufferStorage(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferStorageFlags.MapWriteBit);
 
-            ref var addr = ref GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
+            var mapped = GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
                     0,
                     dataSize,
                     MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapInvalidateBufferBit |
                     MapBufferAccessMask.MapUnsynchronizedBit)
-                .AsRef<Rgba32>();
+                .AsSpan<Rgba32>(width * height);
 
-            for (var i = 0; i < height; ++i)
-                buffer.DangerousGetRowSpan(i)[..width]
-                    .CopyTo(MemoryMarshal.CreateSpan(ref Unsafe.Add(ref addr, i * width), width));
+            for (var i = 0; i < height; ++i) buffer.DangerousGetRowSpan(i)[..width].CopyTo(mapped[(i * width)..]);
 
             GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
             GL.TexImage2D(TextureTarget.Texture2D,
@@ -333,11 +308,7 @@ public sealed class Texture2d : Texture2dRegion
 
     static void Free(Texture2d texture)
     {
-        if (texture.fenceId > 0)
-        {
-            GL.ClientWaitSync(texture.fenceId, ClientWaitSyncFlags.None, ulong.MaxValue);
-            GL.DeleteSync(texture.fenceId);
-        }
+        if (texture.fenceId != -1) GL.DeleteSync(texture.fenceId);
 
         DrawState.UnbindTexture(texture._textureId);
         GL.DeleteTexture(texture._textureId);

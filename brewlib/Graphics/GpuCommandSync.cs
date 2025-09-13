@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Graphics;
+namespace BrewLib.Graphics;
 
 using System;
 using System.Runtime.CompilerServices;
@@ -47,12 +47,7 @@ public sealed class GpuCommandSync : IDisposable
 
     // Guard a written range for a buffer by the next CommitPending call: <[offset, offset+size) in bytes>
     public void LockRange(int bufferId, int offset, int size)
-    {
-        if (size <= 0) return;
-
-        ref var list = ref GetOrCreateRanges(ref pending, bufferId);
-        AddMerged(ref list, new() { Start = offset, End = offset + size });
-    }
+        => GetOrCreateRanges(ref pending, bufferId).Add(new() { Start = offset, End = offset + size });
 
     // Extension for ring buffers where a write may wrap around
     public void LockRangeWrap(int bufferId, int offset, int size, int bufferSize)
@@ -78,26 +73,20 @@ public sealed class GpuCommandSync : IDisposable
 
         // Walk active fences in order, only wait on those that actually protect overlapping ranges for this buffer
         var count = active.Count;
-        for (var i = 0; i < count; i++)
+        for (var i = 0; i < count; ++i)
         {
-            var record = active.Peek();
-
-            if (IsFenceSignaled(record.Fence))
-            {
-                PopAndDeleteFrontFence();
-                continue;
-            }
+            var record = active.Dequeue();
 
             if (record.RangesByBuffer.TryGetValue(bufferId, out var ranges) && OverlapsAny(in ranges, target))
             {
                 GL.ClientWaitSync(record.Fence, ClientWaitSyncFlags.SyncFlushCommandsBit, ulong.MaxValue);
-                PopAndDeleteFrontFence();
+                record.Free();
 
                 // Continue checking in case later fences also overlap (extremely unlikely)
             }
 
-            // This fence doesn't guard this range, rotate it to the back and continue
-            else active.Enqueue(active.Dequeue());
+            // This fence doesn't guard this range, rotate it to the back
+            else active.Enqueue(record);
         }
     }
 
@@ -120,21 +109,20 @@ public sealed class GpuCommandSync : IDisposable
     // Should only be called directly after a GL command that reads from unsynchronized buffers!
     public void CommitPending()
     {
-        if (pending.Count != 0)
+        TrimSignaledFences();
+
+        if (pending.Count == 0) return;
+
+        FenceRecord rec = new();
+        foreach (var (bufferId, ranges) in pending)
         {
-            FenceRecord rec = new();
-            foreach (var (bufferId, ranges) in pending)
-            {
-                if (ranges.Count == 0) continue;
+            if (ranges.Count == 0) continue;
 
-                rec.RangesByBuffer[bufferId] = ranges;
-            }
-
-            pending.Clear(); // Don't clear the transferred inner lists
-            active.Enqueue(rec);
+            rec.RangesByBuffer[bufferId] = ranges;
         }
 
-        TrimSignaledFences(); // Prevent buildup
+        pending.Clear(); // Don't clear the transferred inner lists
+        active.Enqueue(rec);
     }
 
     public void WaitForAll()
@@ -155,30 +143,6 @@ public sealed class GpuCommandSync : IDisposable
         return ref list;
     }
 
-    static void AddMerged(scoped ref ValueList<Range> list, Range r)
-    {
-        // Insert-and-merge to keep the list small (won't be a problem in the long run, is this necessary?)
-        var i = 0;
-        while (i < list.Count && list[i].End < r.Start) ++i;
-
-        // Merge with any overlapping ranges
-        var startIndex = i;
-        while (i < list.Count && Range.Overlaps(list[i], r))
-        {
-            r.Start = Math.Min(r.Start, list[i].Start);
-            r.End = Math.Max(r.End, list[i].End);
-            ++i;
-        }
-
-        if (startIndex == i) list.Insert(i, r); // No overlap; insert at position i to roughly keep order
-        else
-        {
-            // Replace [startIndex, i) with merged r
-            list[startIndex] = r;
-            list.RemoveRange(startIndex + 1, i - (startIndex + 1));
-        }
-    }
-
     static bool OverlapsAny(scoped ref readonly ValueList<Range> ranges, Range target)
     {
         foreach (var t in ranges)
@@ -195,14 +159,11 @@ public sealed class GpuCommandSync : IDisposable
         return status == 0x9119; // GL_SIGNALED = 0x9119
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void PopAndDeleteFrontFence() => active.Dequeue().Free();
-
     void TrimSignaledFences()
     {
         var count = active.Count;
-        for (var i = 0; i < count; i++)
-            if (IsFenceSignaled(active.Peek().Fence)) PopAndDeleteFrontFence();
+        for (var i = 0; i < count; ++i)
+            if (IsFenceSignaled(active.Peek().Fence)) active.Dequeue().Free();
             else break;
 
         // Stop at the first unsignaled fence; insertion order means later ones cannot be signaled earlier

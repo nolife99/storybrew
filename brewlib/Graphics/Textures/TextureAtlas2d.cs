@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -59,7 +60,12 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
     {
         if (disposed) return;
 
-        freeRegions.Add(new(region.X, region.Y, region.Width + padding, region.Height + padding));
+        Rectangle freed = new(region.X, region.Y, region.Width + padding, region.Height + padding);
+        freeRegions.Add(freed);
+
+        if (DrawState.CanInvalidate)
+            GL.InvalidateTexSubImage(texture.TextureId, 0, freed.X, freed.Y, 0, freed.Width, freed.Height, 1);
+
         wasMerged = false;
     }
 
