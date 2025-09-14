@@ -7,10 +7,10 @@ public class FrameStats
 {
     public readonly HashSet<string> LoadedPaths = [];
     public readonly List<OsbSprite> OverlappedSprites = [], IncompatibleSprites = [], ProlongedSprites = [];
-    public float GpuPixelsFrame, ScreenFill;
+    public float ScreenFill;
+    public long GpuPixelsFrame;
     public bool LastBlendingMode;
     public string LastTexture;
 
     public int SpriteCount, Batches, CommandCount, EffectiveCommandCount;
-    public float GpuMemoryFrameMb => GpuPixelsFrame / 1024 / 1024 * 4;
 }

@@ -37,19 +37,19 @@ public sealed class TextureContainerAtlas : TextureContainer
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
-    public float UncompressedMemoryUseMb
+    public long UncompressedMemoryUse
     {
         get
         {
-            var sum = 0f;
+            var sum = 0L;
             foreach (var texture in textures.Values)
                 if (texture is not null)
                 {
                     var size = texture.Size;
-                    sum += size.X * size.Y;
+                    sum += (long)(size.X * size.Y);
                 }
 
-            return sum / 1024 / 1024;
+            return sum * 4;
         }
     }
 

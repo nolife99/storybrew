@@ -11,7 +11,7 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
     : IDisposable
 {
     readonly PooledList<Rectangle> freeRegions = [new(0, 0, width, height)];
-    readonly Texture2d texture = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>(), width, height, textureOptions);
+    readonly Texture2d texture = Texture2d.Create(Color.Transparent, width, height, textureOptions);
 
     bool wasMerged;
 
@@ -111,7 +111,7 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
         wasMerged = true;
     }
 
-    class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent)
+    sealed class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent)
         : Texture2dRegion(texture, bounds)
     {
         protected override void Dispose(bool disposing)

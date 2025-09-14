@@ -16,19 +16,23 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
         => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer), totalQueuedPrimitives) = primitive;
 
-    protected override void internalRender(PrimitiveType type, int vertexCount)
+    protected override void internalRender(PrimitiveType type)
     {
         GL.BufferData(BufferTarget.ArrayBuffer,
             totalQueuedPrimitives * PrimitiveSize,
             primitiveBuffer,
             BufferUsageHint.StreamDraw);
 
-        if (IndexBufferId != -1)
+        if (indexBufferId != -1)
             GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, QueuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, commandBufferOffset, QueuedRenders, 0);
 
-        if (DrawState.CanInvalidate) GL.InvalidateBufferData(VertexBufferId);
+        if (DrawState.CanInvalidate) GL.InvalidateBufferData(vertexBufferId);
     }
 
-    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
+    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
+
+    public new static bool HasCapabilities()
+        => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
+            DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }

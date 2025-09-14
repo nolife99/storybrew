@@ -372,8 +372,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         proj.LayerManager.OnLayersChanged += (_, _) =>
         {
+            using var bytes = StringHelper.ToByteSize(proj.LayerManager.Layers.Sum(l => l.EstimatedSize));
             using var text = StringHelper.Interpolate(
-                $"Export to .osb ({StringHelper.ToByteSize(proj.LayerManager.Layers.Sum(l => l.EstimatedSize))})\n(Right click to export once for each diff)");
+                $"Export to .osb ({bytes.AsReadOnlySpan()})\n(Right click to export once for each diff)");
 
             exportB.Tooltip = text.AsReadOnlySpan();
         };
@@ -739,22 +740,28 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             warnings.Add('\n');
         }
 
-        var frameGpuMemory = stats.GpuMemoryFrameMb;
-        var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
+        var frameGpuMemory = stats.GpuPixelsFrame * 4;
+        var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUse;
 
-        var showMemoryWarning = frameGpuMemory >= 32 || totalGpuMemory >= 256;
+        var showMemoryWarning = frameGpuMemory >= 32000000 || totalGpuMemory >= 256000000;
         if (showMemoryWarning || proj.DisplayDebugWarning && (frameGpuMemory > 0 || totalGpuMemory > 0))
         {
             if (showMemoryWarning) warnings.AddRange("\ue002 ");
             if (frameGpuMemory > 0)
             {
-                warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
+                using var bytes = StringHelper.ToByteSize(frameGpuMemory);
+                bytes.Remove(' ');
+
+                warnings.Append(CultureInfo.InvariantCulture, $"{bytes.AsReadOnlySpan()} Frame Texture Memory");
                 if (totalGpuMemory > 0) warnings.AddRange(" (");
             }
 
             if (totalGpuMemory > 0)
             {
-                warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
+                using var bytes = StringHelper.ToByteSize(totalGpuMemory);
+                bytes.Remove(' ');
+
+                warnings.Append(CultureInfo.InvariantCulture, $"{bytes.AsReadOnlySpan()} Total Texture Memory");
                 if (frameGpuMemory > 0) warnings.Add(')');
             }
 
@@ -766,7 +773,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         return warnings;
 
-        void AppendPlural(scoped ref TempList<char> builder, int count, string plural = "s")
+        static void AppendPlural(scoped ref TempList<char> builder, int count, string plural = "s")
         {
             if (count != 1) builder.AddRange(plural);
         }

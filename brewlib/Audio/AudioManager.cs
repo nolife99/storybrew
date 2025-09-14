@@ -45,11 +45,11 @@ public sealed class AudioManager : IDisposable
         {
             if (initialized)
             {
-                Bass.UpdateThreads = 0;
-                Bass.UpdatePeriod = 15;
+                Bass.UpdateThreads = 1;
+                Bass.UpdatePeriod = 5;
 
                 Bass.GetInfo(out var info);
-                Bass.PlaybackBufferLength = info.MinBufferLength * 3;
+                Bass.PlaybackBufferLength = info.MinBufferLength;
             }
         }
 
@@ -73,7 +73,7 @@ public sealed class AudioManager : IDisposable
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
-            if (!channel.Completed && channel.Playing)
+            if (Bass.UpdateThreads == 0 && !channel.Completed && channel.Playing)
                 Bass.ChannelUpdate(channel.Channel, (int)(targetFrame * 1.5f / SDL.NsPerSecond));
 
             if (!channel.Temporary || !channel.Completed)

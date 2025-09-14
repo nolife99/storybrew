@@ -24,8 +24,10 @@ public sealed class QuadRendererBuffered : IQuadRenderer
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture",
         ClipUniformName = "u_clipRect", StorageBufferOffsetUniformName = "u_ssboOffset";
 
-    static readonly bool supportsRegionalBarrier = DrawState.Extensions.Contains("GL_ARB_ES3_1_compatibility"),
-        supportsBarrier = supportsRegionalBarrier || DrawState.Extensions.Contains("GL_ARB_shader_image_load_store");
+    static readonly bool supportsRegionalBarrier =
+            DrawState.SupportsImmutable && DrawState.Extensions.Contains("GL_ARB_ES3_1_compatibility"),
+        supportsBarrier = supportsRegionalBarrier ||
+            DrawState.SupportsImmutable && DrawState.Extensions.Contains("GL_ARB_shader_image_load_store");
 
     static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(false),
         VertexAttribute.CreateDiffuseCoord(true),
@@ -93,20 +95,24 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                 indices);
         }
 
-        var flags = supportsBarrier ?
-            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit :
-            BufferStorageFlags.DynamicStorageBit;
-
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
-        GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, flags);
+        if (DrawState.SupportsImmutable)
+        {
+            var flags = supportsBarrier ?
+                BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit :
+                BufferStorageFlags.DynamicStorageBit;
 
-        if (supportsBarrier)
-            ssboMap = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer,
-                0,
-                ssboSize,
-                MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
-                MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
-                MapBufferAccessMask.MapUnsynchronizedBit);
+            GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, flags);
+
+            if (supportsBarrier)
+                ssboMap = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer,
+                    0,
+                    ssboSize,
+                    MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
+                    MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
+                    MapBufferAccessMask.MapUnsynchronizedBit);
+        }
+        else GL.BufferData(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferUsageHint.DynamicDraw);
 
         SDL.LogInfo(SDL.LogCategory.Render,
             $"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
@@ -173,7 +179,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        if (ssboOffset + queuedRenders >= maxQuadsPerBatch) ssboOffset = 0;
+        if (ssboOffset + queuedRenders > maxQuadsPerBatch) ssboOffset = 0;
 
         if (supportsBarrier) BufferSSBO();
         else BufferSSBOCompat();

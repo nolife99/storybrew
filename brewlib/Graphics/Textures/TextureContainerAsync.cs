@@ -1,26 +1,21 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Threading;
+using System.Linq;
+using System.Threading.Tasks;
 using BrewLib.IO;
 using BrewLib.Util;
-using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 
 public sealed class TextureContainerAsync : TextureContainer
 {
-    static readonly TextureUploadQueue uploadQueue = new();
     readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
 
-    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures;
-
-    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload>.AlternateLookup<ReadOnlySpan<char>>
-        texturesLookup;
+    readonly PooledDictionary<string, Task<Texture2d>> textures;
+    readonly PooledDictionary<string, Task<Texture2d>>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
 
     public TextureContainerAsync(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
     {
@@ -31,19 +26,19 @@ public sealed class TextureContainerAsync : TextureContainer
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
-    public float UncompressedMemoryUseMb
+    public long UncompressedMemoryUse
     {
         get
         {
-            var pixels = 0f;
+            var pixels = 0L;
             foreach (var texture in textures.Values)
-                if (texture.Result is not null)
+                if (texture.IsCompleted && texture.Result is not null)
                 {
                     var size = texture.Result.Size;
-                    pixels += size.X * size.Y;
+                    pixels += (long)(size.X * size.Y);
                 }
 
-            return pixels / 1024 / 1024 * 4;
+            return pixels * 4;
         }
     }
 
@@ -51,11 +46,21 @@ public sealed class TextureContainerAsync : TextureContainer
     {
         switch (texturesLookup.TryGetValue(filename, out var texture))
         {
-            case true when texture.IsLoaded: return texture.Result;
+            case true when texture.IsCompleted: return texture.Result;
 
             case false:
                 var str = filename.ToString();
-                textures[str] = uploadQueue.Enqueue(str, resourceContainer, textureOptions);
+                var bitmap = Texture2d.LoadBitmapAsync(str, resourceContainer);
+
+                if (bitmap.IsCompleted && bitmap.Result is null) return null;
+
+                textures[str] = bitmap.ContinueWith((b, opt) =>
+                    {
+                        using var img = b.Result;
+                        return Texture2d.LoadAsync(img, (TextureOptions)opt).Result;
+                    },
+                    textureOptions);
+
                 break;
         }
 
@@ -73,134 +78,14 @@ public sealed class TextureContainerAsync : TextureContainer
     {
         if (disposed) return;
 
-        uploadQueue.Clear();
-        foreach (var texture in textures.Values) Interlocked.Exchange(ref texture.Result, null)?.Dispose();
+        Task.WhenAll(textures.Select(x
+                => x.Value.ContinueWith(async t
+                    => await Native.MainThreadScheduler(a => ((Texture2d)a).Dispose(), await t))))
+            .Wait();
 
         textures.Dispose();
         disposed = true;
     }
 
     #endregion
-}
-
-sealed class TextureUploadQueue : IDisposable
-{
-    const int UPLOAD_THREAD_COUNT = 2;
-
-    readonly object enqueueSignal = new();
-    readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
-
-    readonly PooledList<Thread> threads = new();
-    readonly EventFilter watch;
-
-    public TextureUploadQueue()
-    {
-        var exiting = false;
-        SDL.AddEventWatch(watch = (nint _, ref Event e) =>
-            {
-                if (e.Type is not EventType.Quit) return false;
-
-                exiting = true;
-                Native.MainThreadScheduler(target => ((IDisposable)target).Dispose(), this);
-
-                return true;
-            },
-            0);
-
-        var mainContext = SDL.GLGetCurrentContext();
-        if (mainContext == 0) throw new InvalidOperationException($"Unable to get current context: {SDL.GetError()}");
-
-        var currentWindow = SDL.GLGetCurrentWindow();
-        if (currentWindow == 0) throw new InvalidOperationException($"Unable to get current window: {SDL.GetError()}");
-
-        for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
-        {
-            if (!SDL.GLSetAttribute(GLAttr.ShareWithCurrentContext, 1))
-                throw new NotSupportedException($"Unable to share context: {SDL.GetError()}");
-
-            var ctx = SDL.GLCreateContext(currentWindow);
-            if (ctx == 0) throw new InvalidOperationException($"Unable to create shared context: {SDL.GetError()}");
-
-            if (!SDL.GLMakeCurrent(currentWindow, mainContext))
-                throw new InvalidOperationException($"Unable to unbind shared context: {SDL.GetError()}");
-
-            Thread thread = new(context =>
-            {
-                while (!SDL.GLMakeCurrent(currentWindow, (nint)context!)) { }
-
-                while (!exiting)
-                {
-                    if (!queuedUploads.TryDequeue(out var queued))
-                    {
-                        lock (enqueueSignal) Monitor.Wait(enqueueSignal);
-                        continue;
-                    }
-
-                    Image<Rgba32> bitmap;
-                    try
-                    {
-                        bitmap = Texture2d.LoadBitmap(queued.FileName);
-                    }
-                    catch (IOException)
-                    {
-                        queuedUploads.Enqueue(queued);
-
-                        // Happens when another process is writing to the file, will try again later.
-                        continue;
-                    }
-
-                    if (bitmap is null) continue;
-
-                    queued.Result = Texture2d.Load(bitmap, queued.Options);
-                    bitmap.Dispose();
-                }
-
-                SDL.GLDestroyContext((nint)context);
-            });
-
-            thread.UnsafeStart(ctx);
-            threads.Add(thread);
-
-            SDL.LogInfo(SDL.LogCategory.Video, $"Started texture upload thread {i + 1}");
-        }
-    }
-
-    public void Dispose()
-    {
-        SDL.RemoveEventWatch(watch, 0);
-
-        Clear();
-        Signal();
-
-        foreach (var thread in threads) thread.Join();
-
-        threads.Dispose();
-    }
-
-    public void Clear()
-    {
-        queuedUploads.Clear();
-        Signal();
-    }
-
-    void Signal()
-    {
-        lock (enqueueSignal) Monitor.PulseAll(enqueueSignal);
-    }
-
-    public QueuedUpload Enqueue(string filename, ResourceContainer container, TextureOptions options)
-    {
-        QueuedUpload toQueue = new(filename, container, options);
-        queuedUploads.Enqueue(toQueue);
-
-        Signal();
-
-        return toQueue;
-    }
-
-    public record QueuedUpload(string FileName, ResourceContainer Container, TextureOptions Options)
-    {
-        public Texture2d Result;
-        public bool IsLoaded => Result?.Wait(false) ?? false;
-    }
 }

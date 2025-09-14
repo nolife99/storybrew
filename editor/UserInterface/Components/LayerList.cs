@@ -242,7 +242,8 @@ public class LayerList : Widget
     {
         var str = TempList.Create("using ");
         if (layer.EstimatedSize > 30720)
-            str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})");
+            using (var bytes = StringHelper.ToByteSize(layer.EstimatedSize))
+                str.Append($"{effect.BaseName} ({bytes.AsReadOnlySpan()})");
         else str.AddRange(effect.BaseName);
 
         return str;

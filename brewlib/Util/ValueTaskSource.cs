@@ -4,14 +4,14 @@ using System;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-public class ValueTaskSource<T>(bool runContinuationsAsynchronously) : IValueTaskSource<T>, IValueTaskSource
+public sealed class ValueTaskSource<T>(bool runContinuationsAsynchronously) : IValueTaskSource<T>, IValueTaskSource
 {
     ManualResetValueTaskSourceCore<T> _core = new() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
 
     public ValueTask<T> Task => new(this, _core.Version);
     public ValueTask VoidTask => new(this, _core.Version);
 
-    void IValueTaskSource.GetResult(short token) => _core.GetResult(token);
+    void IValueTaskSource.GetResult(short token) { }
 
     public T GetResult(short token) => _core.GetResult(token);
 

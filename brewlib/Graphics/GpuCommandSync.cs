@@ -31,14 +31,12 @@ public sealed class GpuCommandSync : IDisposable
     }
 
     // Utility method for less boilerplate
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WaitAndLockRange(int bufferId, int offset, int size)
     {
         WaitForRange(bufferId, offset, size);
         LockRange(bufferId, offset, size);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WaitAndLockRangeWrap(int bufferId, int offset, int size, int bufferSize)
     {
         WaitForRangeWrap(bufferId, offset, size, bufferSize);

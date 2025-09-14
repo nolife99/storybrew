@@ -10,6 +10,7 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
+    MapBufferAccessMask accessMask;
     nint bufferAddr;
     int bufferOffset, primitivesInCurrentRegion, vertexBufferSize;
 
@@ -29,7 +30,7 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             writePosition = 0;
         }
 
-        FrameSync.WaitForRange(VertexBufferId, writePosition, PrimitiveSize);
+        FrameSync.WaitForRange(vertexBufferId, writePosition, PrimitiveSize);
         (bufferAddr + writePosition).AsRef<TPrimitive>() = primitive;
 
         ++primitivesInCurrentRegion;
@@ -45,28 +46,33 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             bufferOffset / vertexStride + (primitiveStart - needsFlush.ClientStart) * vertexCount;
     }
 
-    protected override void internalRender(PrimitiveType type, int vertexCount)
+    protected override void internalRender(PrimitiveType type)
     {
         var flushPreBytes = needsFlush.ClientStart * PrimitiveSize;
         var currentRegionBytes = primitivesInCurrentRegion * PrimitiveSize;
 
         if (flushPreBytes != 0)
         {
-            FrameSync.LockRange(VertexBufferId, needsFlush.Start, flushPreBytes);
+            FrameSync.LockRange(vertexBufferId, needsFlush.Start, flushPreBytes);
             GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, needsFlush.Start, flushPreBytes);
         }
 
         if (currentRegionBytes != 0)
         {
-            FrameSync.LockRange(VertexBufferId, bufferOffset, currentRegionBytes);
+            FrameSync.LockRange(vertexBufferId, bufferOffset, currentRegionBytes);
             GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, currentRegionBytes);
         }
 
-        if (IndexBufferId != -1)
+        var intermittent = (accessMask & MapBufferAccessMask.MapPersistentBit) == 0;
+        if (intermittent) GL.UnmapBuffer(BufferTarget.ArrayBuffer);
+
+        if (indexBufferId != -1)
             GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, QueuedRenders, 0);
         else GL.MultiDrawArraysIndirect(type, commandBufferOffset, QueuedRenders, 0);
 
         bufferOffset += currentRegionBytes;
+
+        if (intermittent) bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, accessMask);
 
         needsFlush = default;
         primitivesInCurrentRegion = 0;
@@ -77,18 +83,26 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         base.initializeVertexBuffer();
         vertexBufferSize = MaxPrimitivesPerBatch * PrimitiveSize;
 
-        GL.BufferStorage(BufferTarget.ArrayBuffer,
-            vertexBufferSize,
-            0,
-            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
+        accessMask = MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapFlushExplicitBit |
+            MapBufferAccessMask.MapInvalidateBufferBit | MapBufferAccessMask.MapUnsynchronizedBit;
 
-        bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer,
-            0,
-            vertexBufferSize,
-            MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
-            MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
-            MapBufferAccessMask.MapUnsynchronizedBit);
+        if (DrawState.SupportsImmutable)
+        {
+            GL.BufferStorage(BufferTarget.ArrayBuffer,
+                vertexBufferSize,
+                0,
+                BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
+
+            accessMask |= MapBufferAccessMask.MapPersistentBit;
+        }
+        else GL.BufferData(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferUsageHint.DynamicDraw);
+
+        bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, accessMask);
     }
 
-    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
+    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
+
+    public new static bool HasCapabilities()
+        => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
+            DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }

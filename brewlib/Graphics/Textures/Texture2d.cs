@@ -3,8 +3,10 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using BrewLib.IO;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
@@ -25,10 +27,10 @@ public sealed class Texture2d : Texture2dRegion
 
     nint fenceId;
 
-    Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height))
+    Texture2d(int textureId, int width, int height, nint fence = 0) : base(null, new(0, 0, width, height))
     {
         _textureId = textureId;
-        fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+        fenceId = fence == 0 ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : fence;
     }
 
     public int TextureId
@@ -63,9 +65,29 @@ public sealed class Texture2d : Texture2dRegion
         }
     }
 
-    public void Update(Rgba32 color, int x, int y, int width, int height)
+    public void Update(Color color, int x, int y, int width, int height)
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+
+        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
+        {
+            var pix = color.ToPixel<Rgba32>();
+            GL.ClearTexSubImage(_textureId,
+                0,
+                x,
+                y,
+                0,
+                width,
+                height,
+                1,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref pix);
+
+            fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+
+            return;
+        }
 
         IMemoryOwner<Rgba32> spanOwner = null;
         scoped Span<Rgba32> span;
@@ -78,7 +100,7 @@ public sealed class Texture2d : Texture2dRegion
             span = spanOwner.Memory.Span;
         }
 
-        span.Fill(color);
+        span.Fill(color.ToPixel<Rgba32>());
 
         DrawState.BindPrimaryTexture(_textureId);
         GL.TexSubImage2D(TextureTarget.Texture2D,
@@ -140,6 +162,25 @@ public sealed class Texture2d : Texture2dRegion
         return null;
     }
 
+    public static Task<Image<Rgba32>> LoadBitmapAsync(string filename, ResourceContainer resourceContainer = null)
+    {
+        var stream = File.Exists(filename) ?
+            File.OpenRead(filename) :
+            resourceContainer?.GetStream(filename, ResourceSource.Embedded);
+
+        if (stream is not null)
+            return Image.LoadAsync<Rgba32>(stream)
+                .ContinueWith((t, s) =>
+                    {
+                        ((Stream)s).Dispose();
+                        return t.Result;
+                    },
+                    stream);
+
+        SDL.LogWarn(SDL.LogCategory.Video, $"Texture not found: {filename}");
+        return Task.FromResult<Image<Rgba32>>(null);
+    }
+
     public static TextureOptions LoadTextureOptions(string forBitmapFilename,
         ResourceContainer resourceContainer = null)
         => TextureOptions.Load(TextureOptions.GetOptionsFilename(forBitmapFilename), resourceContainer);
@@ -154,15 +195,40 @@ public sealed class Texture2d : Texture2dRegion
             null;
     }
 
-    public static Texture2d Create(Rgba32 color, int width = 1, int height = 1, TextureOptions textureOptions = null)
+    public static Texture2d Create(Color color, int width = 1, int height = 1, TextureOptions textureOptions = null)
     {
         if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 
         textureOptions ??= TextureOptions.Default;
         if (textureOptions.PreMultiply)
         {
-            var ratio = color.A / 255f;
-            color = new((byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio), color.A);
+            var vec = color.ToScaledVector4();
+            color = Color.FromScaledVector(new(vec.AsVector3() * vec.W, vec.W));
+        }
+
+        var textureId = GL.GenTexture();
+        DrawState.BindTexture(textureId, false);
+
+        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
+        {
+            GL.TexImage2D(TextureTarget.Texture2D,
+                0,
+                textureOptions.Srgb && DrawState.ColorCorrected ? PixelInternalFormat.Srgb8 : PixelInternalFormat.Rgba8,
+                width,
+                height,
+                0,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                0);
+
+            var pix = color.ToPixel<Rgba32>();
+            GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref pix);
+
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            textureOptions.ApplyParameters(TextureTarget.Texture2D);
+
+            DrawState.UnbindTexture(textureId);
+            return new(textureId, width, height);
         }
 
         IMemoryOwner<Rgba32> spanOwner = null;
@@ -176,10 +242,7 @@ public sealed class Texture2d : Texture2dRegion
             span = spanOwner.Memory.Span;
         }
 
-        span.Fill(color);
-
-        var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
+        span.Fill(color.ToPixel<Rgba32>());
 
         GL.TexImage2D(TextureTarget.Texture2D,
             0,
@@ -200,6 +263,76 @@ public sealed class Texture2d : Texture2dRegion
         return new(textureId, width, height);
     }
 
+    public static async Task<Texture2d> LoadAsync(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
+    {
+        textureOptions ??= TextureOptions.Default;
+        var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
+        var compress = DrawState.UseTextureCompression;
+
+        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
+
+        var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
+        var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
+
+        var buffer = bitmap.Frames.RootFrame.PixelBuffer;
+        var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
+
+        int textureId = 0, pbo = 0;
+        nint mapped = 0, fence = 0;
+
+        await Native.MainThreadScheduler(_ =>
+            {
+                pbo = GL.GenBuffer();
+                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+                GL.BufferData(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferUsageHint.DynamicDraw);
+
+                mapped = GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
+                    0,
+                    dataSize,
+                    MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapInvalidateBufferBit |
+                    MapBufferAccessMask.MapUnsynchronizedBit);
+
+                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
+            },
+            "");
+
+        var span = mapped.AsSpan<Rgba32>(width * height);
+        for (var i = 0; i < height; ++i) buffer.DangerousGetRowSpan(i)[..width].CopyTo(span[(i * width)..]);
+
+        await Native.MainThreadScheduler(opt =>
+            {
+                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+                GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
+
+                textureId = GL.GenTexture();
+                DrawState.BindTexture(textureId, false);
+
+                GL.TexImage2D(TextureTarget.Texture2D,
+                    0,
+                    format,
+                    width,
+                    height,
+                    0,
+                    PixelFormat.Rgba,
+                    PixelType.UnsignedByte,
+                    0);
+
+                GL.DeleteBuffer(pbo);
+                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
+
+                var options = (TextureOptions)opt;
+                if (options.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                options.ApplyParameters(TextureTarget.Texture2D);
+
+                DrawState.UnbindTexture(textureId);
+                fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+            },
+            textureOptions);
+
+        return new(textureId, width, height, fence);
+    }
+
     public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
     {
         var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
@@ -213,7 +346,7 @@ public sealed class Texture2d : Texture2dRegion
             compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
+        DrawState.BindTexture(textureId, false);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)

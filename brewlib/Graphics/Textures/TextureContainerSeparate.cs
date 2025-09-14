@@ -22,19 +22,19 @@ public sealed class TextureContainerSeparate : TextureContainer
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
-    public float UncompressedMemoryUseMb
+    public long UncompressedMemoryUse
     {
         get
         {
-            var pixels = 0f;
+            var pixels = 0L;
             foreach (var texture in textures.Values)
                 if (texture is not null)
                 {
                     var size = texture.Size;
-                    pixels += size.X * size.Y;
+                    pixels += (long)(size.X * size.Y);
                 }
 
-            return pixels / 1024 / 1024 * 4;
+            return pixels * 4;
         }
     }
 

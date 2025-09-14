@@ -450,7 +450,8 @@ public partial class EffectList : Widget
     {
         var str = TempList.Create("using ");
         if (effect.EstimatedSize > 30720)
-            str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})");
+            using (var bytes = StringHelper.ToByteSize(effect.EstimatedSize))
+                str.Append($"{effect.BaseName} ({bytes.AsReadOnlySpan()})");
         else str.AddRange(effect.BaseName);
 
         return str;

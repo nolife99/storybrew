@@ -14,15 +14,14 @@ using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using ZLinq;
 
 public static class DrawState
 {
-    public static readonly bool UseSrgb;
     public static readonly SearchValues<string> Extensions = getExtensions();
+    public static readonly bool UseSrgb, SupportsImmutable = Extensions.Contains("GL_ARB_buffer_storage");
 
     static IRenderer renderer;
 
@@ -167,6 +166,22 @@ public static class DrawState
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
         MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
 
+        GL.GetInternalformat(ImageTarget.Texture2D,
+            SizedInternalFormat.Rgba8,
+            InternalFormatParameter.TextureImageFormat,
+            1,
+            out int preferredFormat);
+
+        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)preferredFormat)}");
+
+        GL.GetInternalformat(ImageTarget.Texture2D,
+            SizedInternalFormat.Rgba8,
+            InternalFormatParameter.TextureImageType,
+            1,
+            out preferredFormat);
+
+        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture type: {preferredFormat:x}");
+
         SDL.LogInfo(SDL.LogCategory.Render,
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
 
@@ -176,8 +191,8 @@ public static class DrawState
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
-        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>());
-        TransparentPixel = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>());
+        WhitePixel = Texture2d.Create(Color.White);
+        TransparentPixel = Texture2d.Create(Color.Transparent);
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
@@ -243,12 +258,14 @@ public static class DrawState
         previousMode = mode;
     }
 
-    public static void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
-        => BindTexture(textureId, 0, mode);
+    public static void BindPrimaryTexture(int textureId,
+        TextureTarget mode = TextureTarget.Texture2D,
+        bool activate = false)
+        => BindTexture(textureId, 0, mode, activate);
 
-    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode = TextureTarget.Texture2D)
+    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode, bool activate)
     {
-        ActiveTextureUnit = samplerIndex;
+        if (activate) ActiveTextureUnit = samplerIndex;
         SetTexturingMode(samplerIndex, mode);
 
         ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
@@ -258,9 +275,9 @@ public static class DrawState
         samplerTextureId = textureId;
     }
 
-    public static int BindTexture(int textureId) => BindTextures([textureId]);
+    public static int BindTexture(int textureId, bool activate = true) => BindTextures([textureId], activate);
 
-    static int BindTextures(scoped ReadOnlySpan<int> textures)
+    static int BindTextures(scoped ReadOnlySpan<int> textures, bool activate)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         for (var i = 0; i < textures.Length; ++i)
@@ -299,7 +316,7 @@ public static class DrawState
 
                 if (!isFreeSamplerUnit) continue;
 
-                BindTexture(textures[i], samplerIndex);
+                BindTexture(textures[i], samplerIndex, TextureTarget.Texture2D, activate);
                 samplerIndexes[i] = samplerIndex;
                 lastRecycledTextureUnit = samplerIndex;
                 break;

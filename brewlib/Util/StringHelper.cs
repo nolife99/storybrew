@@ -14,19 +14,21 @@ using Tiny.PooledCollections.Generic.Value;
 
 public static class StringHelper
 {
-    static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
+    static readonly string[] sizeOrders = ["B", "kB", "MB", "GB", "TB"];
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
 
-    public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
+    public static TempList<char> ToByteSize(long byteCount)
     {
         var order = 0;
-        while (byteCount >= 1024 && order < sizeOrders.Length - 1)
+        var bytesDecimal = (double)byteCount;
+
+        while (bytesDecimal >= 1024 && order < sizeOrders.Length - 1)
         {
             ++order;
-            byteCount /= 1024;
+            bytesDecimal /= 1024;
         }
 
-        return string.Format(CultureInfo.InvariantCulture, format, byteCount, sizeOrders[order]);
+        return Interpolate(CultureInfo.InvariantCulture, $"{bytesDecimal:f2} {sizeOrders[order]}");
     }
 
     public static string StripUtf8Bom(this string s)

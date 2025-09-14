@@ -14,7 +14,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Util;
-using ManagedBass;
 using OpenTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp.Diagnostics;
@@ -193,9 +192,9 @@ public static class Program
 #if DEBUG
             GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 #else
-            GLContextFlag.ForwardCompatible;
+            GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 
-        SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
+        // SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
 #endif
 
         SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
@@ -286,13 +285,10 @@ public static class Program
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
             if (sleepTime > 0) SDL.DelayNS(sleepTime);
-            else Bass.UpdateThreads = 1;
 
             var frameTime = cur - prev;
             prev = cur;
             if (lastStat + statsUpdate > cur) return;
-
-            if (sleepTime > 0) Bass.UpdateThreads = 0;
 
             avActive = (active + avActive) / 2;
             longest = ulong.Max(frameTime, longest);

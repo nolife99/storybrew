@@ -141,7 +141,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 ++frameStats.Batches;
 
                 if (frameStats.LoadedPaths.Add(texturePath))
-                    frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
+                    frameStats.GpuPixelsFrame += (long)(texture.Size.X * texture.Size.Y);
             }
             else if (frameStats.LastBlendingMode != additive)
             {
