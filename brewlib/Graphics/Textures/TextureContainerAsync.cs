@@ -46,7 +46,7 @@ public sealed class TextureContainerAsync : TextureContainer
     {
         switch (texturesLookup.TryGetValue(filename, out var texture))
         {
-            case true when texture.IsCompleted: return texture.Result;
+            case true when texture.IsCompleted && texture.Result.Wait(false): return texture.Result;
 
             case false:
                 var str = filename.ToString();

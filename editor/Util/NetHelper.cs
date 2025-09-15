@@ -4,14 +4,31 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using SDL3;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public static class NetHelper
 {
     internal static HttpClient Client;
 
-    public static void OpenUrl(string url) => SDL.OpenURL(url.Replace("&", "^&"));
+    public static void OpenUrl(scoped ReadOnlySpan<char> url)
+    {
+        var temp = ValueList.Create(url);
+        for (var i = 0; i < temp.Count; i++)
+            if (temp[i] == '&')
+                temp.Insert(i, '^');
+
+        ThreadPool.UnsafeQueueUserWorkItem(s =>
+            {
+                SDL.OpenURL(s.AsReadOnlySpan());
+                s.Dispose();
+            },
+            temp,
+            false);
+    }
 
     public static async void Request(string url, Func<string, Exception, Task> action)
     {

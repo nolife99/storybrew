@@ -110,7 +110,7 @@ public class StartMenu : UiScreenLayer
 
             Manager.ShowMessage(
                 $".NET SDK {Environment.Version} (or more recent) is required, do you want to install it?",
-                () => SDL.OpenURL("https://dotnet.microsoft.com/en-us/download/dotnet/9.0"),
+                () => NetHelper.OpenUrl("https://dotnet.microsoft.com/en-us/download/dotnet/9.0"),
                 true);
         }
 

@@ -192,9 +192,9 @@ public static class Program
 #if DEBUG
             GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 #else
-            GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
+            GLContextFlag.ForwardCompatible;
 
-        // SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
+        SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
 #endif
 
         SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
@@ -420,7 +420,7 @@ public static class Program
                 if (!SDL.ShowMessageBox(in data, out var id))
                     throw new InvalidOperationException($"Cannot create message box: {SDL.GetError()}");
 
-                if (id == 0) SDL.OpenURL(DiscordUrl);
+                if (id == 0) NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {

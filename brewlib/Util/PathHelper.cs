@@ -4,8 +4,11 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using SDL3;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public static class PathHelper
 {
@@ -48,10 +51,18 @@ public static class PathHelper
         '\u001e',
         '\u001f');
 
-    public static void OpenExplorer(string path)
+    public static void OpenExplorer(scoped ReadOnlySpan<char> path)
     {
-        using var str = StringHelper.Interpolate($"file:///{path}");
-        SDL.OpenURL(str.AsReadOnlySpan());
+        var temp = ValueList.Create("file:///");
+        temp.AddRange(path);
+
+        ThreadPool.UnsafeQueueUserWorkItem(s =>
+            {
+                SDL.OpenURL(s.AsReadOnlySpan());
+                s.Dispose();
+            },
+            temp,
+            false);
     }
 
     public static void SafeDelete(string path)

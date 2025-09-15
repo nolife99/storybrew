@@ -96,6 +96,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         {
             FrameSync.WaitAndLockRange(commandBufferId, commandBufferOffset, span.Length);
             span.CopyTo(commandBufferMap.AsSpan<byte>(commandBufferSize)[commandBufferOffset..]);
+
+            GL.FlushMappedBufferRange(BufferTarget.DrawIndirectBuffer, commandBufferOffset, span.Length);
         }
         else
             GL.BufferSubData(BufferTarget.DrawIndirectBuffer,
@@ -234,5 +236,5 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         FrameSync.Dispose();
     }
 
-    public static bool HasCapabilities() => DrawState.Extensions.Contains("GL_ARB_draw_indirect");
+    protected static bool HasCapabilities() => DrawState.Extensions.Contains("GL_ARB_draw_indirect");
 }

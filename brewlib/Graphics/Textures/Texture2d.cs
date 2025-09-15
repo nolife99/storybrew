@@ -265,13 +265,6 @@ public sealed class Texture2d : Texture2dRegion
 
     public static async Task<Texture2d> LoadAsync(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
     {
-        textureOptions ??= TextureOptions.Default;
-        var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
-        var compress = DrawState.UseTextureCompression;
-
-        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
-
         var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
         var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
 
@@ -283,34 +276,36 @@ public sealed class Texture2d : Texture2dRegion
 
         await Native.MainThreadScheduler(_ =>
             {
-                pbo = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
-                GL.BufferData(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferUsageHint.DynamicDraw);
+                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo = GL.GenBuffer());
+                GL.BufferData(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferUsageHint.StreamDraw);
 
-                mapped = GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
-                    0,
-                    dataSize,
-                    MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapInvalidateBufferBit |
-                    MapBufferAccessMask.MapUnsynchronizedBit);
-
+                mapped = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly);
                 GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
             },
             "");
 
         var span = mapped.AsSpan<Rgba32>(width * height);
-        for (var i = 0; i < height; ++i) buffer.DangerousGetRowSpan(i)[..width].CopyTo(span[(i * width)..]);
+        if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
+            MemoryMarshal.CreateReadOnlySpan(ref buffer.DangerousGetRowSpan(0).GetPinnableReference(), width * height)
+                .CopyTo(span);
+        else
+            for (var i = 0; i < height; ++i)
+                buffer.DangerousGetRowSpan(i)[..width].CopyTo(span[(i * width)..]);
 
         await Native.MainThreadScheduler(opt =>
             {
+                var options = (TextureOptions)opt ?? TextureOptions.Default;
+                var compress = DrawState.UseTextureCompression;
+
                 GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
                 GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
 
-                textureId = GL.GenTexture();
-                DrawState.BindTexture(textureId, false);
-
+                DrawState.BindTexture(textureId = GL.GenTexture(), false);
                 GL.TexImage2D(TextureTarget.Texture2D,
                     0,
-                    format,
+                    options.Srgb && DrawState.ColorCorrected ?
+                        compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
+                        compress ? PixelInternalFormat.CompressedRgba : PixelInternalFormat.Rgba8,
                     width,
                     height,
                     0,
@@ -321,7 +316,6 @@ public sealed class Texture2d : Texture2dRegion
                 GL.DeleteBuffer(pbo);
                 GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
 
-                var options = (TextureOptions)opt;
                 if (options.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                 options.ApplyParameters(TextureTarget.Texture2D);
 
@@ -342,8 +336,8 @@ public sealed class Texture2d : Texture2dRegion
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
         var compress = DrawState.UseTextureCompression;
 
-        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
+        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
+            compress ? PixelInternalFormat.CompressedRgba : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId, false);
@@ -365,13 +359,9 @@ public sealed class Texture2d : Texture2dRegion
             GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
 
             var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
-            GL.BufferStorage(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferStorageFlags.MapWriteBit);
+            GL.BufferData(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferUsageHint.StreamDraw);
 
-            var mapped = GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
-                    0,
-                    dataSize,
-                    MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapInvalidateBufferBit |
-                    MapBufferAccessMask.MapUnsynchronizedBit)
+            var mapped = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly)
                 .AsSpan<Rgba32>(width * height);
 
             for (var i = 0; i < height; ++i) buffer.DangerousGetRowSpan(i)[..width].CopyTo(mapped[(i * width)..]);
