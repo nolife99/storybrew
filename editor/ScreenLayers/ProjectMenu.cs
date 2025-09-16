@@ -32,7 +32,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     EffectConfigUi effectUI;
     LayerList layers;
-    float? pendingSeek;
+    TimeSpan? pendingSeek;
     SettingsMenu settings;
     Label statusIcon, statusMessage, warningsLabel;
 
@@ -291,7 +291,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             });
 
         resizeTimeline();
-        timeline.OnValueChanged += (_, _) => pendingSeek = timeline.Value;
+        timeline.OnValueChanged += (_, _) => pendingSeek = TimeSpan.FromSeconds(timeline.Value);
         timeline.OnValueCommited += (sender, _) => ((TimelineSlider)sender).Snap();
         timeline.OnHovered += (_, e) => previewContainer.Displayed = e.Hovered;
 
@@ -452,8 +452,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     if ((e.Mod & SDL.Keymod.Shift) != 0)
-                        ClipboardHelper.SetText(TimeSpan.FromSeconds(timeSource.Current)
-                            .ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
+                        ClipboardHelper.SetText(timeSource.Current.ToString(Program.Settings.TimeCopyFormat,
+                            CultureInfo.InvariantCulture));
                     else if ((e.Mod & SDL.Keymod.Alt) != 0)
                     {
                         using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
@@ -576,29 +576,30 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (timeSource.Playing)
         {
             if (timeline.RepeatStart != timeline.RepeatEnd &&
-                (time < timeline.RepeatStart - .005f || timeline.RepeatEnd < time))
-                pendingSeek = time = timeline.RepeatStart;
-            else if (timeSource.Current > timeline.MaxValue)
+                (time < TimeSpan.FromSeconds(timeline.RepeatStart) - TimeSpan.FromMilliseconds(5) ||
+                    TimeSpan.FromSeconds(timeline.RepeatEnd) < time))
+                pendingSeek = time = TimeSpan.FromSeconds(timeline.RepeatStart);
+            else if (timeSource.Current > TimeSpan.FromSeconds(timeline.MaxValue))
             {
                 timeSource.Playing = false;
-                pendingSeek = timeline.MaxValue;
+                pendingSeek = TimeSpan.FromSeconds(timeline.MaxValue);
             }
         }
 
-        timeline.SetValueSilent(time);
+        timeline.SetValueSilent((float)time.TotalSeconds);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             using (var temp = TempList.Create<char>())
             {
                 if (Manager.GetContext<Editor>().InputManager.Alt)
                     temp.Append($"{storyboardPosition.X:f0}, {storyboardPosition.Y:f0}");
-                else temp.Append($@"{TimeSpan.FromSeconds(time):mm\:ss\.fff}");
+                else temp.Append($@"{time:mm\:ss\.fff}");
 
                 timeB.Text = temp.AsReadOnlySpan();
             }
 
             using (var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                $"Current time ({time * 1000:f0})\nCtrl-C to copy")) timeB.Tooltip = text.AsReadOnlySpan();
+                $"Current time ({time.Milliseconds:f0})\nCtrl-C to copy")) timeB.Tooltip = text.AsReadOnlySpan();
 
             using (var text = buildWarningMessage()) warningsLabel.Text = text.AsReadOnlySpan();
 
@@ -616,8 +617,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         storyboardDrawable.Time = time;
         storyboardDrawable.Clip = !Manager.GetContext<Editor>().InputManager.Alt;
         if (previewContainer.Visible)
-            previewDrawable.Time =
-                timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
+            previewDrawable.Time = TimeSpan.FromSeconds(
+                timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition));
     }
 
     TempList<char> buildWarningMessage()
@@ -811,7 +812,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     void resizeTimeline()
     {
         timeline.MinValue = float.Min(0, proj.StartTime * .001f);
-        timeline.MaxValue = float.Max(audio.Duration, proj.EndTime * .001f);
+        timeline.MaxValue = float.Max((float)audio.Duration.TotalSeconds, proj.EndTime * .001f);
     }
 
     public override void Close()

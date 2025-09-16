@@ -42,7 +42,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         FrameStats frameStats,
         OsbSprite sprite)
     {
-        var time = project.DisplayTime * 1000;
+        var time = (float)project.DisplayTime.TotalMilliseconds;
         if (!sprite.IsActive(time)) return;
 
         var texturePath = sprite.GetTexturePathAt(time);

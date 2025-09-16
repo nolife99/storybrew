@@ -1,9 +1,11 @@
 ﻿namespace BrewLib.Time;
 
-public class TimeSourceExtender(TimeSource timeSource) : TimeSource
+using System;
+
+public sealed class TimeSourceExtender(TimeSource timeSource) : TimeSource
 {
     readonly Clock clock = new();
-    public float Current => timeSource.Playing ? timeSource.Current : clock.Current;
+    public TimeSpan Current => timeSource.Playing ? timeSource.Current : clock.Current;
 
     public bool Playing
     {
@@ -27,7 +29,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
         }
     }
 
-    public bool Seek(float time)
+    public bool Seek(TimeSpan time)
     {
         if (!timeSource.Seek(time)) timeSource.Playing = false;
         return clock.Seek(time);
@@ -36,6 +38,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
     public void Update()
     {
         timeSource.Playing = clock.Playing && (timeSource.Playing || timeSource.Seek(clock.Current));
-        if (timeSource.Playing && float.Abs(clock.Current - timeSource.Current) > .005f) clock.Seek(timeSource.Current);
+        if (timeSource.Playing && (clock.Current - timeSource.Current).Duration() > TimeSpan.FromMilliseconds(5))
+            clock.Seek(timeSource.Current);
     }
 }

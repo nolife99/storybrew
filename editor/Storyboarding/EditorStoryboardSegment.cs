@@ -47,11 +47,11 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         Project project,
         FrameStats frameStats)
     {
-        var displayTime = project.DisplayTime * 1000;
+        var displayTime = project.DisplayTime.TotalMilliseconds;
         if (displayTime < StartTime || EndTime < displayTime) return;
 
         if (layer.Highlight || effect.Highlight)
-            opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
+            opacity *= ((float)double.Sin(drawContext.Get<Editor>().TimeSource.Current.TotalSeconds * 4) + 1) * .5f;
 
         StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
         foreach (var o in displayableObjects)
@@ -193,7 +193,7 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         if (segment.Name is not null) namedSegments.Remove(segment.Name);
     }
 
-    public void TriggerEvents(float fromTime, float toTime)
+    public void TriggerEvents(TimeSpan fromTime, TimeSpan toTime)
     {
         foreach (var eventObject in eventObjects)
             if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime)

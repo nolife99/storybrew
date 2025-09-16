@@ -166,12 +166,12 @@ public static class Program
             using (AudioManager = audioCreateTask.Result)
                 runMainLoop(window,
                     editor,
-                    (ulong)(SDL.NsPerSecond / (Settings.UpdateRate > 0 ?
+                    TimeSpan.FromSeconds(1) / (Settings.UpdateRate > 0 ?
                         Settings.UpdateRate :
-                        displayDeviceVal.RefreshRate)),
-                    (ulong)(SDL.NsPerSecond / (Settings.FrameRate > 0 ?
+                        displayDeviceVal.RefreshRate),
+                    TimeSpan.FromSeconds(1) / (Settings.FrameRate > 0 ?
                         Settings.FrameRate :
-                        displayDeviceVal.RefreshRate)));
+                        displayDeviceVal.RefreshRate));
 
             iconSetTask.Wait();
         }
@@ -240,15 +240,17 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(nint window, Editor editor, ulong fixedRateUpdate, ulong targetFrame)
+    static void runMainLoop(nint window, Editor editor, TimeSpan fixedRateUpdate, TimeSpan targetFrame)
     {
-        ulong prev = SDL.GetTicksNS(), fixedRate = 0, avActive = 0, longest = 0, lastStat = 0,
-            statsUpdate = targetFrame * 5;
+        var startT = Stopwatch.GetTimestamp();
+
+        TimeSpan prev = Stopwatch.GetElapsedTime(startT), fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero,
+            longest = TimeSpan.Zero, lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
 
         (int X, int Y) resize = default;
         var redraw = (bool pumpEvents) =>
         {
-            var cur = SDL.GetTicksNS();
+            var cur = Stopwatch.GetElapsedTime(startT);
             var fixedUpdates = 0;
 
             if (!pumpEvents && SDL.GetWindowSize(window, out var w, out var h) && (resize.X != w || resize.Y != h))
@@ -257,41 +259,36 @@ public static class Program
             AudioManager.Update(targetFrame);
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
-            {
-                fixedRate += fixedRateUpdate;
-                editor.Update(fixedRate / (float)SDL.NsPerSecond);
-            }
+                editor.Update(fixedRate += fixedRateUpdate);
 
             var windowFocus = (SDL.GetWindowFlags(window) & WindowFlags.InputFocus) != 0;
             if (windowFocus && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
-                editor.Update(cur / (float)SDL.NsPerSecond, false);
+                editor.Update(cur, false);
 
             var draws = editor.Draw();
             if (!SDL.GLSwapWindow(window))
                 throw new InvalidOperationException($"Unable to swap framebuffer: {SDL.GetError()}");
 
-            using (var snapshot = TempList.Create<IDisposable>())
+            if (schedulerLock.TryEnter())
             {
-                lock (schedulerLock)
-                {
-                    snapshot.AddRange(scheduledActions);
-                    scheduledActions.Clear();
-                }
+                using var snapshot = TempList.Create(scheduledActions);
+                scheduledActions.Clear();
 
+                schedulerLock.Exit();
                 foreach (var action in snapshot) action.Dispose();
             }
 
-            var active = SDL.GetTicksNS() - cur;
+            var active = Stopwatch.GetElapsedTime(startT) - cur;
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) SDL.DelayNS(sleepTime);
+            if (sleepTime != TimeSpan.Zero) SDL.DelayNS((ulong)(sleepTime.Ticks * TimeSpan.NanosecondsPerTick));
 
             var frameTime = cur - prev;
             prev = cur;
             if (lastStat + statsUpdate > cur) return;
 
             avActive = (active + avActive) / 2;
-            longest = ulong.Max(frameTime, longest);
+            longest = new(long.Max(frameTime.Ticks, longest.Ticks));
 
             buildStatsMessage(editor, frameTime, avActive, longest, draws);
 
@@ -325,14 +322,13 @@ public static class Program
         state.Item2.Free();
     }
 
-    static void buildStatsMessage(Editor editor, ulong av, ulong avActive, ulong longest, int draws)
+    static void buildStatsMessage(Editor editor, TimeSpan av, TimeSpan avActive, TimeSpan longest, int draws)
     {
         if (!editor.statsLabel.Visible) return;
 
-        const float ticks = SDL.NsPerSecond, millis = SDL.NsPerMs;
-
+        var ticks = TimeSpan.FromSeconds(1);
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{float.Round(ticks / av):f0}/{float.Round(ticks / avActive):f0}fps (act:{avActive / millis:f2} avg:{av / millis:f2} hi:{longest / millis:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
+            $"{ticks / av:f0}/{ticks / avActive:f0}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }

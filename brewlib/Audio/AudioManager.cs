@@ -68,13 +68,13 @@ public sealed class AudioManager : IDisposable
         }
     }
 
-    public void Update(ulong targetFrame)
+    public void Update(TimeSpan targetFrame)
     {
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
             if (Bass.UpdateThreads == 0 && !channel.Completed && channel.Playing)
-                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame * 1.5f / SDL.NsPerSecond));
+                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame.TotalMilliseconds * 1.5f));
 
             if (!channel.Temporary || !channel.Completed)
             {

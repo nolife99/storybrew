@@ -156,7 +156,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         if (!message.IsEmpty) screenLayerManager.ShowMessage(message);
     }
 
-    public void Update(float time, bool isFixedRateUpdate = true)
+    public void Update(TimeSpan time, bool isFixedRateUpdate = true)
     {
         IsFixedRateUpdate = isFixedRateUpdate;
         clock.AdvanceFrameTo(time);

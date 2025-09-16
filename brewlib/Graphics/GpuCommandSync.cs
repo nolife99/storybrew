@@ -77,7 +77,7 @@ public sealed class GpuCommandSync : IDisposable
 
             if (record.RangesByBuffer.TryGetValue(bufferId, out var ranges) && OverlapsAny(in ranges, target))
             {
-                GL.ClientWaitSync(record.Fence, ClientWaitSyncFlags.SyncFlushCommandsBit, ulong.MaxValue);
+                GL.ClientWaitSync(record.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
                 record.Free();
 
                 // Continue checking in case later fences also overlap (extremely unlikely)
@@ -127,7 +127,7 @@ public sealed class GpuCommandSync : IDisposable
     {
         while (active.TryDequeue(out var rec))
         {
-            GL.ClientWaitSync(rec.Fence, ClientWaitSyncFlags.SyncFlushCommandsBit, ulong.MaxValue);
+            GL.ClientWaitSync(rec.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
             rec.Free();
         }
     }
@@ -176,10 +176,18 @@ public sealed class GpuCommandSync : IDisposable
         public static bool Overlaps(Range a, Range b) => a.Start < b.End && b.Start < a.End;
     }
 
-    struct FenceRecord()
+    struct FenceRecord
     {
-        public ValueDictionary<int, ValueList<Range>> RangesByBuffer = ValueDictionary.Create<int, ValueList<Range>>();
-        public readonly nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+        public ValueDictionary<int, ValueList<Range>> RangesByBuffer;
+        public readonly nint Fence;
+
+        public FenceRecord()
+        {
+            Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+            GL.Flush();
+
+            RangesByBuffer = ValueDictionary.Create<int, ValueList<Range>>();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Free()

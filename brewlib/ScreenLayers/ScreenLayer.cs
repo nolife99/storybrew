@@ -16,7 +16,10 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     bool hasStarted;
 
-    protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
+    protected TimeSpan TransitionInDuration = TimeSpan.FromMilliseconds(250),
+        TransitionOutDuration = TimeSpan.FromMilliseconds(250);
+
+    protected float TransitionProgress;
 
     public State CurrentState { get; private set; } = State.Hidden;
     public ScreenLayerManager Manager { get; set; }
@@ -114,12 +117,13 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
         OnExit();
 
-        if (TransitionOutDuration == 0) Manager.Remove(this);
+        if (TransitionOutDuration == TimeSpan.Zero) Manager.Remove(this);
     }
 
-    bool updateTransition(float delta, float duration, int direction)
+    bool updateTransition(TimeSpan delta, TimeSpan duration, int direction)
     {
-        var progress = duration > 0 ? delta / duration : 1;
+        var progress = duration > TimeSpan.Zero ? (float)(delta / duration) : 1;
+
         TransitionProgress += progress * direction;
 
         switch (TransitionProgress)

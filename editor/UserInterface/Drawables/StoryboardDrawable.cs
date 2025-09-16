@@ -1,5 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface.Drawables;
 
+using System;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
@@ -13,7 +14,7 @@ public sealed class StoryboardDrawable(Project project) : Drawable
     static readonly RenderStates linesRenderStates = new();
     public bool Clip = true, UpdateFrameStats;
 
-    public float Time;
+    public TimeSpan Time;
     public Vector2 MinSize => Vector2.Zero;
     public Vector2 PreferredSize => new(854, 480);
 

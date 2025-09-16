@@ -160,7 +160,7 @@ public sealed partial class Project : IDisposable
         OsbLayer.Background, OsbLayer.Fail, OsbLayer.Pass, OsbLayer.Foreground, OsbLayer.Overlay
     ];
 
-    public float DisplayTime { get; internal set; }
+    public TimeSpan DisplayTime { get; internal set; }
     public float DimFactor { get; internal set; }
 
     public TextureContainer TextureContainer { get; private set; }
@@ -168,7 +168,7 @@ public sealed partial class Project : IDisposable
 
     public readonly FrameStats FrameStats = new();
 
-    public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
+    public void TriggerEvents(TimeSpan startTime, TimeSpan endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, bool updateFrameStats)
     {

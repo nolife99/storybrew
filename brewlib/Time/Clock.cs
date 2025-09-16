@@ -1,15 +1,17 @@
 ﻿namespace BrewLib.Time;
 
+using System;
 using System.Diagnostics;
 
-public class Clock : TimeSource
+public sealed class Clock : TimeSource
 {
     readonly Stopwatch stopwatch = new();
 
     bool playing;
-    float timeFactor = 1, timeOrigin;
+    float timeFactor = 1;
 
-    public float Current => timeOrigin + stopwatch.ElapsedTicks * timeFactor / Stopwatch.Frequency;
+    TimeSpan timeOrigin;
+    public TimeSpan Current => timeOrigin + stopwatch.Elapsed * timeFactor;
 
     public float TimeFactor
     {
@@ -18,7 +20,7 @@ public class Clock : TimeSource
         {
             if (timeFactor == value) return;
 
-            var elapsed = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency;
+            var elapsed = stopwatch.Elapsed;
             var previousTime = timeOrigin + elapsed * timeFactor;
             timeFactor = value;
             timeOrigin = previousTime - elapsed * timeFactor;
@@ -39,9 +41,9 @@ public class Clock : TimeSource
         }
     }
 
-    public bool Seek(float time)
+    public bool Seek(TimeSpan time)
     {
-        timeOrigin = time - stopwatch.ElapsedTicks * timeFactor / Stopwatch.Frequency;
+        timeOrigin = time - stopwatch.Elapsed * timeFactor;
         return true;
     }
 }

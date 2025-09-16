@@ -29,25 +29,29 @@ public class AudioChannel : IDisposable
             if (channel == 0) return;
 
             Bass.ChannelGetAttribute(channel, ChannelAttribute.Frequency, out frequency);
-            Duration = (float)Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetLength(channel));
+            Duration = TimeSpan.FromSeconds(Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetLength(channel)));
 
             UpdateVolume();
             updateTimeFactor();
         }
     }
 
-    public float Time
+    public TimeSpan Time
     {
-        get => channel != 0 ? (float)Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetPosition(channel)) : 0;
+        get => channel != 0 ?
+            TimeSpan.FromSeconds(Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetPosition(channel))) :
+            TimeSpan.Zero;
         set
         {
             if (channel == 0) return;
 
-            Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value), PositionFlags.Scan);
+            Bass.ChannelSetPosition(channel,
+                Bass.ChannelSeconds2Bytes(channel, value.TotalSeconds),
+                PositionFlags.Scan);
         }
     }
 
-    public float Duration { get; set; }
+    public TimeSpan Duration { get; set; }
 
     public bool Playing
     {

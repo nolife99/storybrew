@@ -1,7 +1,9 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
+using System;
+
 public interface IEvent
 {
-    float EventTime { get; }
-    void TriggerEvent(Project project, float currentTime);
+    TimeSpan EventTime { get; }
+    void TriggerEvent(Project project, TimeSpan currentTime);
 }

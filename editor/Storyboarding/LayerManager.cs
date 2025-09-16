@@ -126,7 +126,7 @@ public sealed class LayerManager : IDisposable
                 layerToMove.Name}'");
     }
 
-    public void TriggerEvents(float startTime, float endTime)
+    public void TriggerEvents(TimeSpan startTime, TimeSpan endTime)
     {
         foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
     }

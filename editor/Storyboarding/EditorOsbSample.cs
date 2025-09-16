@@ -8,11 +8,11 @@ using StorybrewCommon.Storyboarding;
 
 public class EditorOsbSample : OsbSample, IEvent
 {
-    public float EventTime => Time * .001f;
+    public TimeSpan EventTime => TimeSpan.FromMilliseconds(Time);
 
-    public void TriggerEvent(Project project, float currentTime)
+    public void TriggerEvent(Project project, TimeSpan currentTime)
     {
-        if (EventTime + 1 < currentTime) return;
+        if (EventTime + TimeSpan.FromSeconds(1) < currentTime) return;
 
         Span<char> span = stackalloc char[project.MapsetPath.Length + AudioPath.Length + 1];
 

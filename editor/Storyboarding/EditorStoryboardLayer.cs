@@ -140,7 +140,7 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
     public override StoryboardSegment GetSegment(string identifier) => segment.GetSegment(identifier);
     public override void Discard(StoryboardObject storyboardObject) => segment.Discard(storyboardObject);
 
-    public void TriggerEvents(float fromTime, float toTime)
+    public void TriggerEvents(TimeSpan fromTime, TimeSpan toTime)
     {
         if (Visible) segment.TriggerEvents(fromTime, toTime);
     }
