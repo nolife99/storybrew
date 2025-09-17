@@ -464,10 +464,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     else
                     {
                         using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                            $"{timeSource.Current * 1000:f0}");
+                            $"{timeSource.Current.TotalMilliseconds:f0}");
 
                         ClipboardHelper.SetText(
-                            (timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                            timeSource.Current.TotalMilliseconds.ToString("f0", CultureInfo.InvariantCulture));
                     }
 
                     return true;
@@ -599,7 +599,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             }
 
             using (var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                $"Current time ({time.Milliseconds:f0})\nCtrl-C to copy")) timeB.Tooltip = text.AsReadOnlySpan();
+                $"Current time ({time.TotalMilliseconds:f0})\nCtrl-C to copy")) timeB.Tooltip = text.AsReadOnlySpan();
 
             using (var text = buildWarningMessage()) warningsLabel.Text = text.AsReadOnlySpan();
 

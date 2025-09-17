@@ -78,8 +78,10 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     {
         if (!Bound) return;
 
-        Bound = false;
         GL.BindVertexArray(0);
+        GL.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
+
+        Bound = false;
     }
 
     public void Render(PrimitiveType type, int vertexCount)
@@ -172,6 +174,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
             ref MemoryMarshal.GetReference(indices),
             BufferUsageHint.StaticDraw);
 
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+
         commandBufferIndexed = ValueList.Create<MultiDrawElementsIndirectCommand>();
     }
 
@@ -197,7 +201,10 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         }
         else GL.BufferData(BufferTarget.DrawIndirectBuffer, commandBufferSize, 0, BufferUsageHint.DynamicDraw);
 
+        GL.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
+
         initializeVertexBuffer();
+        GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
 
     void setupVertexArray(Shader shader)

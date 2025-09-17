@@ -41,8 +41,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         rootContainer.Add(Root = new StackLayout(this) { FitChildren = true });
 
         rootContainer.Add(tooltipOverlay = new(this) { Hoverable = false });
-
-        initializeDragAndDrop();
+        dragDrawable = Skin.GetDrawable("dragCursor");
     }
 
     public Vector2 Size { get => rootContainer.Size; set => rootContainer.Size = value; }
@@ -98,7 +97,9 @@ public sealed class WidgetManager : IInputHandler, IDisposable
             mousePosition = new(fromScreen.X, fromScreen.Y);
             changeHoveredWidget(rootContainer.GetWidgetAt(fromScreen.X, fromScreen.Y));
 
-            updateHoveredDraggable();
+            hoveredDraggableWidget = HoveredWidget;
+            while (hoveredDraggableWidget is not null && hoveredDraggableWidget.GetDragData is null)
+                hoveredDraggableWidget = hoveredDraggableWidget.Parent;
         }
         else changeHoveredWidget(null);
     }
@@ -119,7 +120,11 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     public void Draw(DrawContext drawContext)
     {
         if (rootContainer.Visible) rootContainer.Draw(drawContext, 1);
-        drawDragIndicator(drawContext);
+        if (!IsDragging) return;
+
+        dragDrawable.Draw(drawContext,
+            camera,
+            new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }
 
     #region Tooltip
@@ -256,7 +261,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     #region Drag and Drop
 
-    Drawable dragDrawable;
+    readonly Drawable dragDrawable;
     Vector2 dragOffset, dragSize;
     Widget hoveredDraggableWidget;
     readonly PooledDictionary<byte, object> dragData = [];
@@ -295,24 +300,6 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
             dropTarget = dropTarget.Parent;
         }
-    }
-
-    void initializeDragAndDrop() => dragDrawable = Skin.GetDrawable("dragCursor");
-
-    void updateHoveredDraggable()
-    {
-        hoveredDraggableWidget = HoveredWidget;
-        while (hoveredDraggableWidget is not null && hoveredDraggableWidget.GetDragData is null)
-            hoveredDraggableWidget = hoveredDraggableWidget.Parent;
-    }
-
-    void drawDragIndicator(DrawContext drawContext)
-    {
-        if (!IsDragging) return;
-
-        dragDrawable.Draw(drawContext,
-            camera,
-            new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }
 
     #endregion

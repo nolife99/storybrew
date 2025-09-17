@@ -11,7 +11,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
 
     public string Name => name;
     public float Size => size;
-    public int LineHeight => GetGlyph(' ').Height;
+    public int LineHeight => GetGlyph(' ').height;
 
     public FontGlyph GetGlyph(char c)
     {

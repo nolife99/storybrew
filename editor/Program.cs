@@ -279,9 +279,9 @@ public static class Program
             }
 
             var active = Stopwatch.GetElapsedTime(startT) - cur;
-            var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
+            var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active - TimeSpan.FromTicks(1);
 
-            if (sleepTime != TimeSpan.Zero) SDL.DelayNS((ulong)(sleepTime.Ticks * TimeSpan.NanosecondsPerTick));
+            if (sleepTime > TimeSpan.Zero) SDL.DelayPrecise((ulong)(sleepTime.Ticks * TimeSpan.NanosecondsPerTick));
 
             var frameTime = cur - prev;
             prev = cur;
@@ -326,9 +326,9 @@ public static class Program
     {
         if (!editor.statsLabel.Visible) return;
 
-        var ticks = TimeSpan.FromSeconds(1);
+        var r = TimeSpan.FromSeconds(1);
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{ticks / av:f0}/{ticks / avActive:f0}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
+            $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }

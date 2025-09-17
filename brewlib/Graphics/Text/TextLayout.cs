@@ -1,15 +1,17 @@
-﻿namespace BrewLib.Graphics.Text;
+namespace BrewLib.Graphics.Text;
 
 using System;
+using System.Buffers;
 using System.Numerics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 
-public sealed class TextLayout : IDisposable
+public struct TextLayout : IDisposable
 {
-    ValueList<TextLayoutLine> _lines = ValueList.Create<TextLayoutLine>();
+    ValueList<TextLayoutLine> _lines;
+    readonly float[] size;
 
     public TextLayout(scoped ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
@@ -17,10 +19,13 @@ public sealed class TextLayout : IDisposable
         var width = 0f;
         var height = 0f;
 
-        using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
+        _lines = ValueList.Create<TextLayoutLine>();
+        size = ArrayPool<float>.Shared.Rent(2);
+
+        using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).width))
             foreach (var (start, length) in lineBreaks)
             {
-                TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
+                TextLayoutLine line = new(size, height, alignment, _lines.Count == 0);
 
                 var span = text.Slice(start, length);
                 foreach (var c in span) line.Add(font.GetGlyph(c), glyphIndex++);
@@ -30,25 +35,33 @@ public sealed class TextLayout : IDisposable
                 height += line.Height;
             }
 
-        if (_lines.Count == 0) _lines.Add(new(this, 0, alignment, true));
-        var lastLine = _lines[^1];
+        if (_lines.Count == 0) _lines.Add(new(size, 0, alignment, true));
+        ref var lastLine = ref _lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
         lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
 
-        Size = new(width, height);
+        size[0] = width;
+        size[1] = height;
     }
 
-    public Vector2 Size { get; }
+    public bool IsValid => _lines.IsValid;
 
-    public ReadOnlySpan<TextLayoutLine> Lines => _lines.AsReadOnlySpan();
+    public readonly Vector2 Size => Vector2.Create(size);
+
+    public readonly ReadOnlySpan<TextLayoutLine> Lines => _lines.AsReadOnlySpan();
 
     public void Dispose()
     {
         foreach (var line in _lines) line.Dispose();
         _lines.Dispose();
+
+        ArrayPool<float>.Shared.Return(size);
     }
 
-    public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
+    public readonly void ForTextBounds<TState>(int startIndex,
+        int endIndex,
+        Action<RectangleF, TState> action,
+        TState state)
     {
         var index = 0;
         foreach (var line in _lines)
@@ -73,7 +86,7 @@ public sealed class TextLayout : IDisposable
         }
     }
 
-    public int GetCharacterIndexAt(Vector2 position)
+    public readonly int GetCharacterIndexAt(Vector2 position)
     {
         var index = 0;
         foreach (var line in _lines)
@@ -81,7 +94,7 @@ public sealed class TextLayout : IDisposable
             var lineMatches = position.Y < line.Position.Y + line.Height;
             foreach (var glyph in line.Glyphs)
             {
-                if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
+                if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.width * .5f) return index;
 
                 ++index;
             }
@@ -92,7 +105,7 @@ public sealed class TextLayout : IDisposable
         return index - 1;
     }
 
-    public int GetCharacterIndexAbove(int index)
+    public readonly int GetCharacterIndexAbove(int index)
     {
         for (var i = 0; i < _lines.Count; ++i)
         {
@@ -111,7 +124,7 @@ public sealed class TextLayout : IDisposable
         return getLastGlyph().Index;
     }
 
-    public int GetCharacterIndexBelow(int index)
+    public readonly int GetCharacterIndexBelow(int index)
     {
         for (var i = 0; i < _lines.Count; ++i)
         {
@@ -135,7 +148,7 @@ public sealed class TextLayout : IDisposable
         return getLastGlyph().Index;
     }
 
-    public TextLayoutGlyph GetGlyph(int index)
+    public readonly TextLayoutGlyph GetGlyph(int index)
     {
         foreach (var line in _lines)
         {
@@ -147,53 +160,85 @@ public sealed class TextLayout : IDisposable
         return getLastGlyph();
     }
 
-    TextLayoutGlyph getLastGlyph()
+    readonly TextLayoutGlyph getLastGlyph()
     {
         var lastLine = _lines[^1];
         return lastLine.GetGlyph(lastLine.GlyphCount - 1);
     }
 }
 
-public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmpty)
-    : IDisposable
+public struct TextLayoutLine : IDisposable
 {
-    ValueList<TextLayoutGlyph> _glyphs = ValueList.Create<TextLayoutGlyph>();
-    bool advance = advanceOnEmpty;
+    ValueList<TextLayoutGlyph> _glyphs;
+    readonly int[] widthRef;
 
-    public ReadOnlySpan<TextLayoutGlyph> Glyphs => _glyphs.AsReadOnlySpan();
+    bool advance;
+    readonly float[] layout;
+    readonly float y;
+    readonly BoxAlignment alignment;
 
-    public int GlyphCount => _glyphs.Count;
+    internal TextLayoutLine(float[] layout, float y, BoxAlignment alignment, bool advanceOnEmpty)
+    {
+        this.layout = layout;
+        this.y = y;
+        this.alignment = alignment;
+        advance = advanceOnEmpty;
 
-    public int Width { get; private set; }
+        _glyphs = ValueList.Create<TextLayoutGlyph>();
+        widthRef = ArrayPool<int>.Shared.Rent(1);
+        widthRef[0] = 0;
+    }
+
+    public readonly ReadOnlySpan<TextLayoutGlyph> Glyphs => _glyphs.AsReadOnlySpan();
+
+    public readonly int GlyphCount => _glyphs.Count;
+
+    public readonly int Width => widthRef[0];
     public int Height { get; private set; }
 
-    public Vector2 Position
+    public readonly Vector2 Position
         => new((alignment & BoxAlignment.Left) > 0 ? 0 :
-            (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
+            (alignment & BoxAlignment.Right) > 0 ? layout[0] - Width : layout[0] * .5f - Width * .5f,
             y);
 
-    public void Dispose() => _glyphs.Dispose();
+    public void Dispose()
+    {
+        _glyphs.Dispose();
+        ArrayPool<int>.Shared.Return(widthRef);
+    }
 
     internal void Add(FontGlyph glyph, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
-        _glyphs.Add(new(this, glyph, glyphIndex, Width));
-        if (advance) Width += glyph.Width;
-        if (glyph.Height > Height) Height = glyph.Height;
+        _glyphs.Add(new((alignment, layout, widthRef), glyph, glyphIndex, new(Width, y)));
+        if (advance) widthRef[0] += glyph.width;
+        if (glyph.height > Height) Height = glyph.height;
     }
 
-    public TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
+    public readonly TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
 }
 
-public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, int Index, float X)
+public readonly struct TextLayoutGlyph
 {
-    public Vector2 Position
+    readonly (BoxAlignment alignment, float[] layout, int[] widthRef) line;
+    readonly Vector2 pos;
+
+    public readonly FontGlyph Glyph;
+    public readonly int Index;
+
+    internal TextLayoutGlyph((BoxAlignment, float[], int[]) line, FontGlyph glyph, int index, Vector2 pos)
     {
-        get
-        {
-            var linePosition = Line.Position;
-            return new(linePosition.X + X, linePosition.Y);
-        }
+        this.line = line;
+        this.pos = pos;
+
+        Glyph = glyph;
+        Index = index;
     }
+
+    public Vector2 Position
+        => new(((line.alignment & BoxAlignment.Left) > 0 ? 0 :
+                (line.alignment & BoxAlignment.Right) > 0 ? line.layout[0] - line.widthRef[0] :
+                line.layout[0] * .5f - line.widthRef[0] * .5f) + pos.X,
+            pos.Y);
 }

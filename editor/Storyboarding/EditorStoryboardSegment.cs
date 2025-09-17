@@ -236,7 +236,7 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
 
         using ByteCountingTextWriter writer = new(Project.Encoding);
         foreach (var sbo in storyboardObjects)
-            sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
+            sbo.WriteOsb(writer, exportSettings, osbLayer, in StoryboardTransform.Identity);
 
         return (int)writer.ByteCount;
     }

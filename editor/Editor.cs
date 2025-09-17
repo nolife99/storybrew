@@ -167,7 +167,8 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
     public int Draw()
     {
-        GL.Clear(ClearBufferMask.ColorBufferBit);
+        Span<float> clearColor = [0, 0, 0, 1];
+        GL.ClearBuffer(ClearBuffer.Color, 0, ref clearColor.GetPinnableReference());
 
         screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
@@ -176,8 +177,10 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
         if (DrawState.CanInvalidate)
         {
-            var attachments = FramebufferAttachment.Color;
-            GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer, 1, ref attachments);
+            Span<FramebufferAttachment> attachments = [FramebufferAttachment.Color];
+            GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer,
+                attachments.Length,
+                ref attachments.GetPinnableReference());
         }
 
         return draws;

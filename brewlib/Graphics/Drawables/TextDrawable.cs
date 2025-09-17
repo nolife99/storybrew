@@ -7,13 +7,12 @@ using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Text;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
-    readonly PooledList<char> text = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
     public Color Color;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
@@ -23,6 +22,7 @@ public sealed class TextDrawable : Drawable
     string fontName = "Tahoma";
 
     Vector2 maxSize;
+    ValueList<char> text = ValueList.Create<char>();
     TextLayout textLayout;
 
     public Vector2 Size
@@ -149,7 +149,7 @@ public sealed class TextDrawable : Drawable
             var y = bounds.Y + position.Y * inverseScaling;
             if (y > clipRegion.Bottom) break;
 
-            if (y + glyph.Height * inverseScaling < clipRegion.Y) continue;
+            if (y + glyph.height * inverseScaling < clipRegion.Y) continue;
 
             var texture = glyph.Texture;
             renderer.Draw(texture,
@@ -165,9 +165,9 @@ public sealed class TextDrawable : Drawable
 
     public void Dispose()
     {
-        textLayout?.Dispose();
-        font?.Dispose();
+        if (textLayout.IsValid) textLayout.Dispose();
 
+        font?.Dispose();
         text.Dispose();
     }
 
@@ -180,7 +180,7 @@ public sealed class TextDrawable : Drawable
         var glyph = layoutGlyph.Glyph;
         var position = layoutGlyph.Position * inverseScaling;
 
-        return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
+        return new(position.X, position.Y, glyph.width * inverseScaling, glyph.height * inverseScaling);
     }
 
     public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
@@ -217,13 +217,15 @@ public sealed class TextDrawable : Drawable
 
     void invalidate()
     {
-        textLayout?.Dispose();
-        textLayout = null;
+        if (!textLayout.IsValid) return;
+
+        textLayout.Dispose();
+        textLayout = default;
     }
 
     void validate()
     {
-        if (textLayout is not null) return;
+        if (textLayout.IsValid) return;
 
         if (font is null || font.Name != fontName || currentFontSize != fontSize || currentScaling != scaling)
         {

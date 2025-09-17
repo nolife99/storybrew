@@ -8,6 +8,8 @@ using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class GpuCommandSync : IDisposable
 {
+    static readonly bool Nv = DrawState.Extensions.Contains("GL_NV_fence");
+
     // Active fences with their guarded sorted ranges
     ValueQueue<FenceRecord> active = ValueQueue<FenceRecord>.Create();
 
@@ -75,9 +77,12 @@ public sealed class GpuCommandSync : IDisposable
         {
             var record = active.Dequeue();
 
-            if (record.RangesByBuffer.TryGetValue(bufferId, out var ranges) && OverlapsAny(in ranges, target))
+            if (record.RangesByBuffer.TryGetValue(bufferId, out var ranges) &&
+                OverlapsAny(ranges.AsReadOnlySpan(), target))
             {
-                GL.ClientWaitSync(record.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+                if (Nv) GL.NV.FinishFence(unchecked((int)record.Fence));
+                else GL.ClientWaitSync(record.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+
                 record.Free();
 
                 // Continue checking in case later fences also overlap (extremely unlikely)
@@ -127,7 +132,9 @@ public sealed class GpuCommandSync : IDisposable
     {
         while (active.TryDequeue(out var rec))
         {
-            GL.ClientWaitSync(rec.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+            if (Nv) GL.NV.FinishFence(unchecked((int)rec.Fence));
+            else GL.ClientWaitSync(rec.Fence, ClientWaitSyncFlags.None, ulong.MaxValue);
+
             rec.Free();
         }
     }
@@ -141,7 +148,7 @@ public sealed class GpuCommandSync : IDisposable
         return ref list;
     }
 
-    static bool OverlapsAny(scoped ref readonly ValueList<Range> ranges, Range target)
+    static bool OverlapsAny(ReadOnlySpan<Range> ranges, Range target)
     {
         foreach (var t in ranges)
             if (Range.Overlaps(t, target))
@@ -153,7 +160,9 @@ public sealed class GpuCommandSync : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static bool IsFenceSignaled(nint fence)
     {
-        GL.GetSync(fence, SyncParameterName.SyncStatus, sizeof(int), out _, out var status);
+        if (Nv) return GL.NV.TestFence(unchecked((int)fence));
+
+        GL.GetSync(fence, SyncParameterName.SyncStatus, 1, out _, out var status);
         return status == 0x9119; // GL_SIGNALED = 0x9119
     }
 
@@ -183,16 +192,26 @@ public sealed class GpuCommandSync : IDisposable
 
         public FenceRecord()
         {
+            RangesByBuffer = ValueDictionary.Create<int, ValueList<Range>>();
+
+            if (Nv)
+            {
+                var fence = GL.NV.GenFence();
+                GL.NV.SetFence(fence, FenceConditionNv.AllCompletedNv);
+
+                Fence = fence;
+                return;
+            }
+
             Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
             GL.Flush();
-
-            RangesByBuffer = ValueDictionary.Create<int, ValueList<Range>>();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Free()
         {
-            GL.DeleteSync(Fence);
+            if (Nv) GL.NV.DeleteFence(unchecked((int)Fence));
+            else GL.DeleteSync(Fence);
 
             foreach (var list in RangesByBuffer.Values) list.Dispose();
             RangesByBuffer.Dispose();

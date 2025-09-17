@@ -144,9 +144,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
     void IRenderer.BeginRendering()
     {
-        shader.Begin();
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, ssbo);
 
+        shader.Begin();
         primitiveStreamer.Bind(shader);
 
         rendering = true;
@@ -157,7 +157,8 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         primitiveStreamer.Unbind();
         shader.End();
 
-        currentTextureHandle = 0;
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, 0);
+
         rendering = false;
     }
 

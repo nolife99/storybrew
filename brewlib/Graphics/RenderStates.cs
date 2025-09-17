@@ -70,7 +70,9 @@ public readonly record struct BlendingFactorState
 
     public void Apply()
     {
+        if (!enabled) return;
+
         DrawState.SetCapability(EnableCap.Blend, enabled);
-        if (enabled) GL.BlendFuncSeparate(src, dest, alphaSrc, alphaDest);
+        GL.BlendFuncSeparate(src, dest, alphaSrc, alphaDest);
     }
 }
