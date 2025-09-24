@@ -9,11 +9,12 @@ using SDL3;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public class ShaderBuilder
+public sealed class ShaderBuilder
 {
-    public const int MinVersion = 330;
+    public const int MinVersion = 150;
     public readonly ShaderContext Context = new();
-    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlFragCoord, GlDrawID;
+    readonly ShaderVariable glDrawID;
+    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlFragCoord;
     readonly ProgramScope ProgramScope = new();
 
     readonly List<string> requiredExt = [];
@@ -30,7 +31,18 @@ public class ShaderBuilder
         GlPointSize = new(Context, "gl_PointSize", ActiveUniformType.Float);
         GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", ActiveUniformType.FloatVec4, true);
         GlFragDepth = new(Context, "gl_FragDepth", ActiveUniformType.Float);
-        GlDrawID = new(Context, "gl_DrawIDARB", ActiveUniformType.Int);
+        glDrawID = new(Context, "gl_DrawIDARB", ActiveUniformType.Int);
+    }
+
+    public ShaderVariable GlDrawId
+    {
+        get
+        {
+            const string ext = "GL_ARB_shader_draw_parameters";
+            if (!requiredExt.Contains(ext)) requiredExt.Add(ext);
+
+            return glDrawID;
+        }
     }
 
     public ShaderVariable AddUniform(string name, ActiveUniformType shaderTypeName, int count = -1)
@@ -47,9 +59,15 @@ public class ShaderBuilder
 
     public void AddRequiredExtension(params ReadOnlySpan<string> extensionName) => requiredExt.AddRange(extensionName);
 
-    public ShaderStorageType AddSSBO(int bindingIndex) => ProgramScope.AddSSBO(bindingIndex);
+    public ShaderStorageType AddSSBO()
+    {
+        const string ssbo = "GL_ARB_shader_storage_buffer_object";
+        if (!requiredExt.Contains(ssbo)) requiredExt.Add(ssbo);
 
-    public Shader Build(bool log = false)
+        return ProgramScope.AddSSBO();
+    }
+
+    public Shader Build(bool log = true)
     {
         Context.VertexDeclaration = VertexDeclaration;
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context),
@@ -58,11 +76,11 @@ public class ShaderBuilder
             GlPointSize,
             GlFragDepth);
 
-        using var commonCode = buildCommon();
-        var commonCodeSpan = commonCode.AsReadOnlySpan();
-
         using var vertexShaderCode = buildVertexShader();
         using var fragmentShaderCode = buildFragmentShader();
+
+        using var commonCode = buildCommon();
+        var commonCodeSpan = commonCode.AsReadOnlySpan();
 
         vertexShaderCode.InsertRange(0, commonCodeSpan);
         fragmentShaderCode.InsertRange(0, commonCodeSpan);

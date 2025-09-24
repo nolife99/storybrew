@@ -1,10 +1,9 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using OpenTK.Graphics.OpenGL;
 
-public sealed class VertexDeclaration : IEnumerable<VertexAttribute>
+public sealed class VertexDeclaration
 {
     readonly VertexAttribute[] vertexAttributes;
     public readonly int VertexSize;
@@ -58,12 +57,6 @@ public sealed class VertexDeclaration : IEnumerable<VertexAttribute>
         }
     }
 
-    #region Enumerable
-
-    public IEnumerator<VertexAttribute> GetEnumerator()
-        => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    #endregion
+    public ReadOnlySpan<VertexAttribute>.Enumerator GetEnumerator()
+        => ((ReadOnlySpan<VertexAttribute>)vertexAttributes).GetEnumerator();
 }

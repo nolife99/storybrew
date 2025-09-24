@@ -17,8 +17,8 @@ public sealed partial class Shader : IDisposable
     PooledDictionary<string, Property<ActiveAttribType>> attributes;
 
     bool isInitialized, started;
+    int SortId = -1;
     PooledDictionary<string, Property<ActiveUniformType>> uniforms;
-    int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode)
     {
@@ -111,19 +111,19 @@ public sealed partial class Shader : IDisposable
     {
         dispose();
 
-        vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
-        fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
+        var vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
+        var fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
 
         if (vertexShaderId == -1 || fragmentShaderId == -1) return;
 
-        SortId = linkProgram();
+        SortId = linkProgram(vertexShaderId, fragmentShaderId);
         isInitialized = SortId != -1;
     }
 
     int compileShader(OpenTK.Graphics.OpenGL.ShaderType type, string code)
     {
-        if (DrawState.Extensions.Contains("GL_ARB_parallel_shader_compile"))
-            GL.Arb.MaxShaderCompilerThreads(Environment.ProcessorCount - 1);
+        if (DrawState.Extensions.Contains("GL_KHR_parallel_shader_compile"))
+            GL.Khr.MaxShaderCompilerThreads(GL.GetInteger((GetPName)All.MaxShaderCompilerThreadsKhr));
 
         var id = GL.CreateShader(type);
         GL.ShaderSource(id, code);
@@ -138,15 +138,19 @@ public sealed partial class Shader : IDisposable
         return -1;
     }
 
-    int linkProgram()
+    int linkProgram(params ReadOnlySpan<int> shaders)
     {
         var id = GL.CreateProgram();
-        GL.AttachShader(id, vertexShaderId);
-        GL.AttachShader(id, fragmentShaderId);
+        foreach (var shader in shaders) GL.AttachShader(id, shader);
         GL.LinkProgram(id);
-        GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
+        foreach (var shader in shaders) GL.DetachShader(id, shader);
 
-        if (linkStatus != 0) return id;
+        GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
+        if (linkStatus != 0)
+        {
+            foreach (var shader in shaders) GL.DeleteShader(shader);
+            return id;
+        }
 
         log.AppendLine(GL.GetProgramInfoLog(id));
         return -1;
@@ -187,8 +191,6 @@ public sealed partial class Shader : IDisposable
         if (started) End();
 
         if (SortId != -1) GL.DeleteProgram(SortId);
-        if (vertexShaderId != -1) GL.DeleteShader(vertexShaderId);
-        if (fragmentShaderId != -1) GL.DeleteShader(fragmentShaderId);
     }
 
     static string addLineExtracts(string log, string code)
@@ -224,8 +226,6 @@ public sealed partial class Shader : IDisposable
 
         return sb.AsReadOnlySpan().ToString();
     }
-
-    public override string ToString() => $"program:{SortId} vs:{vertexShaderId} fs:{fragmentShaderId}";
 
     [GeneratedRegex(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ErrRegex();

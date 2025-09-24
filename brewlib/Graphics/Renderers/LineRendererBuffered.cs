@@ -141,9 +141,8 @@ public sealed class LineRendererBuffered : ILineRenderer
     static Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
 
-        var combinedMatrices = sb.AddSSBO(0);
+        var combinedMatrices = sb.AddSSBO();
         var combinedMatrix = combinedMatrices.FieldAsVariable(
             new(sb.Context, combinedMatrices.Name, ActiveUniformType.FloatMat4, 0),
             combinedMatrices.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, 0));
@@ -152,7 +151,7 @@ public sealed class LineRendererBuffered : ILineRenderer
         sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(sb.GlPosition,
                 ()
-                    => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                    => $"{combinedMatrix.Ref[sb.GlDrawId.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                     }, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref}"));

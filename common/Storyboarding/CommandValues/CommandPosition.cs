@@ -35,14 +35,14 @@ public readonly record struct CommandPosition : ICommandValue<CommandPosition>,
     public CommandDecimal X
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => internalVec.GetElement(0);
+        get => internalVec.ToScalar();
     }
 
     ///<summary> Gets the Y value of this instance. </summary>
     public CommandDecimal Y
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => internalVec.GetElement(1);
+        get => internalVec.GetUpper().ToScalar();
     }
 
     TempList<char> ICommandValue<CommandPosition>.ToOsbString(ExportSettings exportSettings)

@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public static class ValueDictionary
 {
@@ -390,41 +391,21 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         if (!_buckets.IsNullOrEmpty())
         {
             var comparer = _comparer;
-            if (comparer is null)
+            if (typeof(TKey).IsValueType && comparer is null)
             {
-                var hashCode = (uint)key.GetHashCode();
+                var hashCode = (uint)EqualityComparer<TKey>.Default.GetHashCode(key);
                 var i = GetBucket(hashCode);
                 var entries = _entries;
                 uint collisionCount = 0;
-                if (typeof(TKey).IsValueType)
-                {
-                    i--;
-                    do
-                    {
-                        if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
-
-                        entry = ref entries[i];
-                        if (entry.HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
-                            goto ReturnFound;
-
-                        i = entry.Next;
-
-                        collisionCount++;
-                    }
-                    while (collisionCount <= (uint)entries.Length);
-
-                    goto ConcurrentOperation;
-                }
-
-                var defaultComparer = EqualityComparer<TKey>.Default;
 
                 i--;
                 do
                 {
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
-                    entry = ref entries[i];
-                    if (entry.HashCode == hashCode && defaultComparer.Equals(entry.Key, key)) goto ReturnFound;
+                    entry = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(entries), i);
+                    if (entry.HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entry.Key, key))
+                        goto ReturnFound;
 
                     i = entry.Next;
 
@@ -445,7 +426,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
                 {
                     if ((uint)i >= (uint)entries.Length) goto ReturnNotFound;
 
-                    entry = ref entries[i];
+                    entry = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(entries), i);
                     if (entry.HashCode == hashCode && comparer.Equals(entry.Key, key)) goto ReturnFound;
 
                     i = entry.Next;
@@ -848,13 +829,13 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
             var i = bucket - 1;
             while (i >= 0)
             {
-                ref var entry = ref entries[i];
+                ref var entry = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(entries), i);
 
                 if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Key, key) ??
                     EqualityComparer<TKey>.Default.Equals(entry.Key, key)))
                 {
                     if (last < 0) bucket = entry.Next + 1;
-                    else entries[last].Next = entry.Next;
+                    else Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(entries), last).Next = entry.Next;
 
                     value = entry.Value;
 
@@ -895,6 +876,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
     bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
@@ -970,9 +952,9 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     {
         var buckets = _buckets!;
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-        return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
+        return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buckets), HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier));
 #else
-        return ref buckets[hashCode % (uint)buckets.Length];
+        return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buckets), hashCode % (uint)buckets.Length);
 #endif
     }
 

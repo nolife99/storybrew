@@ -2,10 +2,12 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.IO;
 using BrewLib.Util;
@@ -23,14 +25,17 @@ public sealed class Texture2d : Texture2dRegion
     public static readonly bool BindlessTexturesSupported = DrawState.Extensions.Contains("GL_ARB_bindless_texture");
     int _textureId;
 
-    long bindlessId = -1;
+    long bindlessId = -1, lastResetTime;
 
     nint fenceId;
+    Timer swapTimer;
 
     Texture2d(int textureId, int width, int height, nint fence = 0) : base(null, new(0, 0, width, height))
     {
         _textureId = textureId;
+
         fenceId = fence == 0 ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : fence;
+        GL.Flush();
     }
 
     public int TextureId
@@ -49,17 +54,37 @@ public sealed class Texture2d : Texture2dRegion
     {
         get
         {
+            var swapInterval = TimeSpan.FromSeconds(1);
             if (bindlessId != -1)
             {
                 Wait(true);
+
+                if (Stopwatch.GetElapsedTime(lastResetTime) + TimeSpan.FromMilliseconds(50) >= swapInterval)
+                {
+                    swapTimer.Change(swapInterval, Timeout.InfiniteTimeSpan);
+                    lastResetTime = Stopwatch.GetTimestamp();
+                }
+
                 return bindlessId;
             }
 
             if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
             GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
-            if (!BitConverter.IsLittleEndian)
-                bindlessId = (long)(uint)(bindlessId & 0xFFFFFFFF) << 32 | (uint)(bindlessId >> 32 & 0xFFFFFFFF);
+
+            swapTimer ??= new(t => Native.MainThreadScheduler(opt =>
+                    {
+                        var tex = (Texture2d)opt!;
+                        GL.Arb.MakeTextureHandleNonResident(tex.bindlessId);
+                        tex.bindlessId = -1;
+                    },
+                    t),
+                this,
+                Timeout.InfiniteTimeSpan,
+                Timeout.InfiniteTimeSpan);
+
+            swapTimer.Change(swapInterval, Timeout.InfiniteTimeSpan);
+            lastResetTime = Stopwatch.GetTimestamp();
 
             return bindlessId;
         }
@@ -113,6 +138,7 @@ public sealed class Texture2d : Texture2dRegion
             PixelType.UnsignedByte,
             ref MemoryMarshal.GetReference(span));
 
+        DrawState.UnbindTexture(_textureId);
         fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
 
         spanOwner?.Dispose();
@@ -147,6 +173,7 @@ public sealed class Texture2d : Texture2dRegion
                     PixelType.UnsignedByte,
                     ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
 
+        DrawState.UnbindTexture(_textureId);
         fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
     }
 
@@ -207,7 +234,7 @@ public sealed class Texture2d : Texture2dRegion
         }
 
         var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId, false);
+        DrawState.BindTexture(textureId);
 
         if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
         {
@@ -286,7 +313,8 @@ public sealed class Texture2d : Texture2dRegion
 
         var span = mapped.AsSpan<Rgba32>(width * height);
         if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
-            MemoryMarshal.CreateReadOnlySpan(ref buffer.DangerousGetRowSpan(0).GetPinnableReference(), width * height)
+            MemoryMarshal
+                .CreateReadOnlySpan(ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)), width * height)
                 .CopyTo(span);
         else
             for (var i = 0; i < height; ++i)
@@ -300,12 +328,12 @@ public sealed class Texture2d : Texture2dRegion
                 GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
                 GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
 
-                DrawState.BindTexture(textureId = GL.GenTexture(), false);
+                DrawState.BindTexture(textureId = GL.GenTexture());
                 GL.TexImage2D(TextureTarget.Texture2D,
                     0,
                     options.Srgb && DrawState.ColorCorrected ?
                         compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
-                        compress ? PixelInternalFormat.CompressedRgba : PixelInternalFormat.Rgba8,
+                        compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8,
                     width,
                     height,
                     0,
@@ -337,10 +365,10 @@ public sealed class Texture2d : Texture2dRegion
         var compress = DrawState.UseTextureCompression;
 
         var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgba : PixelInternalFormat.Rgba8;
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId, false);
+        DrawState.BindTexture(textureId);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
@@ -418,6 +446,7 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (disposing)
             {
+                swapTimer?.Dispose();
                 Free(this);
 
                 _textureId = 0;

@@ -167,7 +167,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
     public int Draw()
     {
-        Span<float> clearColor = [0, 0, 0, 1];
+        Span<float> clearColor = [0, 0, 0, 0];
         GL.ClearBuffer(ClearBuffer.Color, 0, ref clearColor.GetPinnableReference());
 
         screenLayerManager.Draw(drawContext);

@@ -2,15 +2,10 @@
 
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using BrewLib.IO;
 using SDL3;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using Tiny.PooledCollections.Generic.Value;
-using Tiny.PooledCollections.Generic.Value.Internals;
 using Image = SixLabors.ImageSharp.Image;
 
 public static class Native
@@ -30,24 +25,17 @@ public static class Native
             {
                 await using var iconResource = (Stream)streamObj;
                 using var image = await Image.LoadAsync<Rgba32>(iconResource);
-                image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
 
-                using var bytes = ValueArray.Create<byte>(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
-                image.CopyPixelDataTo(bytes.AsSpan());
+                ref var surface = ref SDL.CreateSurface(image.Width, image.Height, SDL.PixelFormat.ABGR8888)
+                    .AsRef<SDL.Surface>();
 
-                bytes.GetUnsafe(out var array, out _);
+                SDL.LockSurface(surface.AsPointer());
+                image.CopyPixelDataTo(surface.Pixels.AsSpan<Rgba32>(image.Width * image.Height));
 
-                var pinned = GCHandle.Alloc(array, GCHandleType.Pinned);
-                var surface = SDL.CreateSurfaceFrom(image.Width,
-                    image.Height,
-                    SDL.PixelFormat.ABGR8888,
-                    pinned.AddrOfPinnedObject(),
-                    image.Width * 4);
+                SDL.RunOnMainThread(x => SDL.SetWindowIcon(windowHandle, x), surface.AsPointer(), true);
 
-                SDL.RunOnMainThread(x => SDL.SetWindowIcon(windowHandle, x), surface, true);
-
-                SDL.DestroySurface(surface);
-                pinned.Free();
+                SDL.UnlockSurface(surface.AsPointer());
+                SDL.DestroySurface(surface.AsPointer());
             },
             r);
     }

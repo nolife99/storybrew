@@ -1,11 +1,10 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System;
+using System.Collections.Generic;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Value;
-using Tiny.PooledCollections.Generic.Value.Internals;
 
 public interface ICommandTimeline
 {
@@ -22,7 +21,7 @@ public interface ICommandTimeline
 
 public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : struct, ICommandValue<TValue>
 {
-    ValueList<CommandChannel<TValue>> channels;
+    List<CommandChannel<TValue>> channels;
 
     CommandChannel<TValue> defaultChannel, currentChannel;
     Action<CommandChannel<TValue>, object> groupEndAction;
@@ -35,7 +34,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
     public ReadOnlySpan<ICommand> Commands
         => defaultChannel is null ? [] : ReadOnlySpan<ICommand>.CastUp(defaultChannel.Commands);
 
-    public bool HasCommands => channels.Count != 0;
+    public bool HasCommands => channels is not null && channels.Count != 0;
 
     public bool HasOverlap => HasCommands && channels.Exists(channel => channel.HasOverlap);
 
@@ -75,8 +74,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
         {
             groupEndAction(currentChannel, groupEndActionState);
 
-            if (!channels.IsValid) channels = ValueList.Create<CommandChannel<TValue>>();
-            channels.Add(currentChannel);
+            (channels ??= []).Add(currentChannel);
         }
 
         currentChannel = defaultChannel;
@@ -89,11 +87,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
     {
         if (command is null) return false;
 
-        if (currentChannel is null)
-        {
-            if (!channels.IsValid) channels = ValueList.Create<CommandChannel<TValue>>();
-            channels.Add(currentChannel = defaultChannel = new());
-        }
+        if (currentChannel is null) (channels ??= []).Add(currentChannel = defaultChannel = new());
 
         return currentChannel.Add(command);
     }
@@ -105,7 +99,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
         var currentState = ResultState.NoCommand;
         CommandResult<TValue> currentResult = default;
 
-        foreach (var channel in channels.AsReadOnlySpan())
+        foreach (var channel in channels)
         {
             if (!channel.ResultAtTime(time, out var channelResult)) continue;
 

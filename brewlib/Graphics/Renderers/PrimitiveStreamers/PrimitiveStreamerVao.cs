@@ -185,7 +185,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         commandBufferSize = minRenderableVertexCount * commandSize;
 
         GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId = GL.GenBuffer());
-        if (DrawState.SupportsImmutable)
+        if (DrawState.SupportsImmutable && DrawState.Extensions.Contains("GL_ARB_map_buffer_range"))
         {
             GL.BufferStorage(BufferTarget.DrawIndirectBuffer,
                 commandBufferSize,
@@ -243,5 +243,7 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         FrameSync.Dispose();
     }
 
-    protected static bool HasCapabilities() => DrawState.Extensions.Contains("GL_ARB_draw_indirect");
+    protected static bool HasCapabilities()
+        => GpuCommandSync.HasCapabilities() && DrawState.Extensions.Contains("GL_ARB_vertex_array_object") &&
+            DrawState.Extensions.Contains("GL_ARB_draw_indirect");
 }

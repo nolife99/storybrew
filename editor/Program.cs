@@ -9,10 +9,10 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
+using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using SDL3;
@@ -192,7 +192,7 @@ public static class Program
 #if DEBUG
             GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 #else
-            GLContextFlag.ForwardCompatible;
+            GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 
         SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
 #endif
@@ -200,7 +200,7 @@ public static class Program
         SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
         SDL.GLSetAttribute(GLAttr.ContextFlags, (int)debugContext);
         SDL.GLSetAttribute(GLAttr.ContextMajorVersion, 3);
-        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 3);
+        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 2);
 
         ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
         SDL.GLSetAttribute(GLAttr.RedSize, format.RBits);
@@ -208,9 +208,6 @@ public static class Program
         SDL.GLSetAttribute(GLAttr.BlueSize, format.BBits);
         SDL.GLSetAttribute(GLAttr.AlphaSize, format.ABits);
         SDL.GLSetAttribute(GLAttr.DepthSize, 0);
-
-        SDL.LogInfo(SDL.LogCategory.System,
-            $"Display info: R{format.RBits} G{format.GBits} B{format.BBits} A{format.ABits}");
 
         var window = SDL.CreateWindow(Name, 0, 0, WindowFlags.OpenGL | WindowFlags.Resizable | WindowFlags.Hidden);
 
@@ -290,20 +287,20 @@ public static class Program
             avActive = (active + avActive) / 2;
             longest = new(long.Max(frameTime.Ticks, longest.Ticks));
 
-            buildStatsMessage(editor, frameTime, avActive, longest, draws);
+            buildStatsMessage(editor.statsLabel, frameTime, avActive, longest, draws);
 
             lastStat = cur;
         };
 
-        var state = (false, GCHandle.Alloc(redraw));
+        var state = (false, UnsafeMemory.AsPointerUnconstrained(in redraw));
         EventFilter filter = (nint s, ref Event e) =>
         {
-            ref var localState = ref s.AsRef<(bool, GCHandle)>();
+            ref var localState = ref s.AsRef<(bool, nint)>();
 
             if (e.Type is EventType.Quit) return localState.Item1 = true;
             if (e.Type is not EventType.WindowExposed || !SDL.IsMainThread()) return false;
 
-            ((Action<bool>)localState.Item2.Target!)(false);
+            localState.Item2.AsRef<Action<bool>>()(false);
             return true;
         };
 
@@ -319,18 +316,17 @@ public static class Program
         }
 
         SDL.RemoveEventWatch(filter, state.AsPointer());
-        state.Item2.Free();
     }
 
-    static void buildStatsMessage(Editor editor, TimeSpan av, TimeSpan avActive, TimeSpan longest, int draws)
+    static void buildStatsMessage(Label label, TimeSpan av, TimeSpan avActive, TimeSpan longest, int draws)
     {
-        if (!editor.statsLabel.Visible) return;
+        if (!label.Visible) return;
 
         var r = TimeSpan.FromSeconds(1);
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
             $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
 
-        editor.statsLabel.Text = result.AsReadOnlySpan();
+        label.Text = result.AsReadOnlySpan();
     }
 
     #endregion

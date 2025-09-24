@@ -3,7 +3,7 @@
 using System;
 using OpenTK.Graphics.OpenGL;
 
-public class VertexAttribute
+public sealed class VertexAttribute
 {
     public const string PositionAttributeName = "a_position", TextureCoordAttributeName = "a_textureCoord",
         ColorAttributeName = "a_color";
@@ -42,16 +42,6 @@ public class VertexAttribute
             } :
             new() { Name = PositionAttributeName, ComponentCount = 2, Usage = AttributeUsage.Position };
 
-    public static VertexAttribute CreatePosition2dPacked()
-        => new()
-        {
-            Name = PositionAttributeName,
-            ComponentCount = 2,
-            ComponentSize = 2,
-            Type = VertexAttribPointerType.HalfFloat,
-            Usage = AttributeUsage.Position
-        };
-
     public static VertexAttribute CreatePosition3d()
         => new() { Name = PositionAttributeName, ComponentCount = 3, Usage = AttributeUsage.Position };
 
@@ -84,7 +74,7 @@ public class VertexAttribute
             new() { Name = ColorAttributeName, ComponentCount = 4, Usage = AttributeUsage.Color };
 }
 
-public enum AttributeUsage
+public enum AttributeUsage : byte
 {
     Undefined, Position, Color, DiffuseMapCoord
 }

@@ -14,7 +14,7 @@ public readonly record struct CommandScale : ICommandValue<CommandScale>,
     IDivisionOperators<CommandScale, CommandDecimal, CommandScale>, IUnaryNegationOperators<CommandScale, CommandScale>
 {
     ///<summary> Represents a scale vector in which all values are 1 (one). </summary>
-    public static readonly CommandScale One = new(1, 1);
+    public static readonly CommandScale One = new(Vector128<double>.One);
 
     readonly Vector128<double> internalVec;
 
@@ -37,14 +37,14 @@ public readonly record struct CommandScale : ICommandValue<CommandScale>,
     public CommandDecimal X
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => internalVec.GetElement(0);
+        get => internalVec.ToScalar();
     }
 
     ///<summary> Gets the Y value of this instance. </summary>
     public CommandDecimal Y
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => internalVec.GetElement(1);
+        get => internalVec.GetUpper().ToScalar();
     }
 
     ///<summary> Converts this instance to a .osb string. </summary>

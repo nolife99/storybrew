@@ -191,8 +191,17 @@ public static class DrawState
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
-        WhitePixel = Texture2d.Create(Color.White);
-        TransparentPixel = Texture2d.Create(Color.Transparent);
+        WhitePixel = Texture2d.Create(Color.White,
+            textureOptions: new()
+            {
+                TextureMagFilter = TextureMagFilter.Nearest, TextureMinFilter = TextureMinFilter.Nearest
+            });
+
+        TransparentPixel = Texture2d.Create(Color.Transparent,
+            textureOptions: new()
+            {
+                TextureMagFilter = TextureMagFilter.Nearest, TextureMinFilter = TextureMinFilter.Nearest
+            });
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
@@ -258,14 +267,12 @@ public static class DrawState
         previousMode = mode;
     }
 
-    public static void BindPrimaryTexture(int textureId,
-        TextureTarget mode = TextureTarget.Texture2D,
-        bool activate = false)
-        => BindTexture(textureId, 0, mode, activate);
+    public static void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
+        => BindTexture(textureId, 0, mode);
 
-    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode, bool activate)
+    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode)
     {
-        if (activate) ActiveTextureUnit = samplerIndex;
+        ActiveTextureUnit = samplerIndex;
         SetTexturingMode(samplerIndex, mode);
 
         ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
@@ -275,9 +282,9 @@ public static class DrawState
         samplerTextureId = textureId;
     }
 
-    public static int BindTexture(int textureId, bool activate = true) => BindTextures([textureId], activate);
+    public static int BindTexture(int textureId) => BindTextures([textureId]);
 
-    static int BindTextures(scoped ReadOnlySpan<int> textures, bool activate)
+    static int BindTextures(scoped ReadOnlySpan<int> textures)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         for (var i = 0; i < textures.Length; ++i)
@@ -316,7 +323,7 @@ public static class DrawState
 
                 if (!isFreeSamplerUnit) continue;
 
-                BindTexture(textures[i], samplerIndex, TextureTarget.Texture2D, activate);
+                BindTexture(textures[i], samplerIndex, TextureTarget.Texture2D);
                 samplerIndexes[i] = samplerIndex;
                 lastRecycledTextureUnit = samplerIndex;
                 break;
@@ -449,9 +456,9 @@ public static class DrawState
         var rendererVendor = GL.GetString(StringName.Vendor);
         SDL.LogInfo(SDL.LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
-        if (glVer < new Version(3, 3))
+        if (glVer < new Version(3, 2))
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least OpenGL 3.2 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
         SDL.LogInfo(SDL.LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }

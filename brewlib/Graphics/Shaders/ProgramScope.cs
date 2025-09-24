@@ -12,7 +12,7 @@ public class ProgramScope
     readonly List<ShaderType> structs = [];
     readonly List<ShaderVariable> varyings = [], uniforms = [], vertexBuiltins = [], fragmentBuiltins = [];
 
-    int lastId;
+    int lastId, bindingIndex;
     string nextGenericTypeName => $"t{lastId++:000}";
     string nextGenericVaryingName => $"v{lastId++:000}";
 
@@ -23,9 +23,9 @@ public class ProgramScope
         return type;
     }
 
-    public ShaderStorageType AddSSBO(int bindingIndex)
+    public ShaderStorageType AddSSBO()
     {
-        ShaderStorageType type = new(nextGenericTypeName, bindingIndex);
+        ShaderStorageType type = new(nextGenericTypeName, bindingIndex++);
         ssbos.Add(type);
         return type;
     }
@@ -101,10 +101,10 @@ public class ProgramScope
     {
         if (isFragmentShader)
             for (var i = 0; i < fragmentBuiltins.Count; i++)
-                DeclareBuiltinVarying(ref code, fragmentBuiltins[i], i);
+                DeclareBuiltinVarying(ref code, fragmentBuiltins[i]);
         else
             for (var i = 0; i < vertexBuiltins.Count; i++)
-                DeclareBuiltinVarying(ref code, vertexBuiltins[i], i);
+                DeclareBuiltinVarying(ref code, vertexBuiltins[i]);
 
         foreach (var varying in varyings)
             if (context.Uses(varying))
@@ -118,10 +118,9 @@ public class ProgramScope
 
         return;
 
-        void DeclareBuiltinVarying(scoped ref TempList<char> code, ShaderVariable varying, int index)
+        void DeclareBuiltinVarying(scoped ref TempList<char> code, ShaderVariable varying)
         {
-            code.Append(CultureInfo.InvariantCulture,
-                $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
+            code.Append(CultureInfo.InvariantCulture, $"out {varying.ShaderTypeName.GetString()} {varying.Name}");
 
             if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
             code.AddRange(";\n");

@@ -102,5 +102,6 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
     public new static bool HasCapabilities()
         => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
+            DrawState.Extensions.Contains("GL_ARB_map_buffer_range") &&
             DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
 }
