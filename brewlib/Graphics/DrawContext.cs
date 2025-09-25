@@ -4,21 +4,20 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Tiny.PooledCollections.Generic;
 
 public sealed class DrawContext : IDisposable
 {
-    readonly PooledList<IDisposable> disposables = new();
-    FrozenDictionary<Type, object> frozenReferences;
-    Dictionary<Type, object> references = new();
+    readonly List<IDisposable> disposables = [];
+    FrozenDictionary<int, object> frozenReferences;
+    List<KeyValuePair<int, object>> references = [];
 
-    public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
+    public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(TypeKeyCache<T>.Key));
 
     public void Register<T>(T obj, bool dispose = false) where T : class
     {
         if (references is null) throw new InvalidOperationException("Can't register to frozen DrawContext");
 
-        references[typeof(T)] = obj;
+        references.Add(new(TypeKeyCache<T>.Key, obj));
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);
     }
 
@@ -37,10 +36,13 @@ public sealed class DrawContext : IDisposable
         if (disposed) return;
 
         foreach (var disposable in disposables) disposable.Dispose();
-        disposables.Dispose();
-
         disposed = true;
     }
 
     #endregion
+}
+
+file static class TypeKeyCache<T>
+{
+    public static readonly int Key = typeof(T).MetadataToken;
 }

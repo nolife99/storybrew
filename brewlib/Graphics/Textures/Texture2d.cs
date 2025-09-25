@@ -23,6 +23,8 @@ public sealed class Texture2d : Texture2dRegion
     const int StackAllocThreshold = 1024;
 
     public static readonly bool BindlessTexturesSupported = DrawState.Extensions.Contains("GL_ARB_bindless_texture");
+    static readonly bool clearTex = DrawState.HasCapabilities(4, 4, "GL_ARB_clear_texture");
+
     int _textureId;
 
     long bindlessId = -1, lastResetTime;
@@ -94,7 +96,7 @@ public sealed class Texture2d : Texture2dRegion
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
-        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
+        if (clearTex)
         {
             var pix = color.ToPixel<Rgba32>();
             GL.ClearTexSubImage(_textureId,
@@ -236,7 +238,7 @@ public sealed class Texture2d : Texture2dRegion
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        if (DrawState.Extensions.Contains("GL_ARB_clear_texture"))
+        if (clearTex)
         {
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,

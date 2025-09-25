@@ -34,5 +34,5 @@ sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 
     public new static bool HasCapabilities()
         => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
-            DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
+            DrawState.HasCapabilities(4, 3, "GL_ARB_multi_draw_indirect");
 }

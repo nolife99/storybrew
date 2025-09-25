@@ -241,8 +241,8 @@ public static class Program
     {
         var startT = Stopwatch.GetTimestamp();
 
-        TimeSpan prev = Stopwatch.GetElapsedTime(startT), fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero,
-            longest = TimeSpan.Zero, lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
+        TimeSpan prev = TimeSpan.Zero, fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero, longest = TimeSpan.Zero,
+            lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
 
         (int X, int Y) resize = default;
         var redraw = (bool pumpEvents) =>
@@ -278,7 +278,7 @@ public static class Program
             var active = Stopwatch.GetElapsedTime(startT) - cur;
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active - TimeSpan.FromTicks(1);
 
-            if (sleepTime > TimeSpan.Zero) SDL.DelayPrecise((ulong)(sleepTime.Ticks * TimeSpan.NanosecondsPerTick));
+            if (sleepTime > TimeSpan.Zero) Thread.Sleep(sleepTime);
 
             var frameTime = cur - prev;
             prev = cur;
@@ -293,7 +293,7 @@ public static class Program
         };
 
         var state = (false, UnsafeMemory.AsPointerUnconstrained(in redraw));
-        EventFilter filter = (nint s, ref Event e) =>
+        EventFilter filter = (nint s, ref readonly Event e) =>
         {
             ref var localState = ref s.AsRef<(bool, nint)>();
 
@@ -305,8 +305,9 @@ public static class Program
         };
 
         SDL.AddEventWatch(filter, state.AsPointer());
-
         SDL.ShowWindow(window);
+
+        prev = Stopwatch.GetElapsedTime(startT);
         while (true)
         {
             editor.InputManager.Update();

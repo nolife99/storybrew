@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,8 +15,6 @@ using OpenTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
-using Tiny.PooledCollections.Generic.Value;
-using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class QuadRendererBuffered : IQuadRenderer
 {
@@ -24,14 +23,16 @@ public sealed class QuadRendererBuffered : IQuadRenderer
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture",
         ClipUniformName = "u_clipRect", StorageBufferOffsetUniformName = "u_ssboOffset";
 
-    static readonly bool supportsRegionalBarrier =
-            DrawState.SupportsImmutable && DrawState.Extensions.Contains("GL_ARB_ES3_1_compatibility"),
-        supportsBarrier = supportsRegionalBarrier ||
-            DrawState.SupportsImmutable && DrawState.Extensions.Contains("GL_ARB_shader_image_load_store");
+    static readonly bool supportsBarrier = DrawState.SupportsImmutable &&
+        DrawState.HasCapabilities(4, 2, "GL_ARB_shader_image_load_store");
 
     static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(false),
         VertexAttribute.CreateDiffuseCoord(true),
         VertexAttribute.CreateColor(true));
+
+    readonly List<long> bindlessTextures;
+    readonly List<Vector4> clipRegions = [];
+    readonly List<Matrix4x4> combinedMatrices = [];
 
     readonly bool ownsShader;
 
@@ -40,11 +41,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
     readonly int ssbo, maxQuadsPerBatch, textureUniformLocation, storageBufferOffsetUniformLocation;
     readonly nint ssboMap;
 
-    ValueList<long> bindlessTextures;
-
     ICamera camera;
-    ValueList<Vector4> clipRegions = ValueList.Create<Vector4>();
-    ValueList<Matrix4x4> combinedMatrices = ValueList.Create<Matrix4x4>();
     int currentSamplerUnit = -1, ssboOffset, ssboBinding;
     long currentTexture;
 
@@ -67,7 +64,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         if (Texture2d.BindlessTexturesSupported)
         {
             ssboSize += sizeof(long);
-            bindlessTextures = ValueList.Create<long>();
+            bindlessTextures = [];
         }
         else textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
@@ -76,6 +73,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         ssboSize *= maxQuadsPerBatch;
 
         var indicesCount = maxQuadsPerBatch * IndexPerQuad;
+        if (indicesCount > 98298)
+            throw new InvalidOperationException("Too many quads: " + indicesCount + " indices > 98298 indices");
+
         using (var indicesBuffer = MemoryAllocator.Default.Allocate<ushort>(indicesCount))
         {
             var indices = indicesBuffer.Memory.Span;
@@ -182,17 +182,11 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
         var section = 0;
 
-        Copy(ref clipRegions);
-        if (Texture2d.BindlessTexturesSupported) Copy(ref bindlessTextures);
-        Copy(ref combinedMatrices);
+        Copy(clipRegions);
+        if (Texture2d.BindlessTexturesSupported) Copy(bindlessTextures);
+        Copy(combinedMatrices);
 
-        if (supportsBarrier)
-        {
-            const MemoryBarrierFlags flags = MemoryBarrierFlags.ShaderStorageBarrierBit;
-            if (supportsRegionalBarrier)
-                GL.MemoryBarrierByRegion(Unsafe.BitCast<MemoryBarrierFlags, MemoryBarrierRegionFlags>(flags));
-            else GL.MemoryBarrier(flags);
-        }
+        if (supportsBarrier) GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
 
         if (!Texture2d.BindlessTexturesSupported)
         {
@@ -211,9 +205,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
         return;
 
-        void Copy<T>(scoped ref ValueList<T> span) where T : struct
+        void Copy<T>(List<T> list) where T : struct
         {
-            var bytes = MemoryMarshal.AsBytes(span.AsReadOnlySpan());
+            var bytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(list));
 
             var ofs = section + ssboOffset * Unsafe.SizeOf<T>();
             if (supportsBarrier)
@@ -230,7 +224,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
                     ref MemoryMarshal.GetReference(bytes));
 
             section += maxQuadsPerBatch * Unsafe.SizeOf<T>();
-            span.Clear();
+            list.Clear();
         }
     }
 
@@ -329,10 +323,6 @@ public sealed class QuadRendererBuffered : IQuadRenderer
 
         primitiveStreamer.Dispose();
         if (ownsShader) shader.Dispose();
-
-        if (Texture2d.BindlessTexturesSupported) bindlessTextures.Dispose();
-        combinedMatrices.Dispose();
-        clipRegions.Dispose();
 
         disposed = true;
     }

@@ -100,8 +100,9 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, accessMask);
     }
 
+    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
+
     public new static bool HasCapabilities()
         => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
-            DrawState.Extensions.Contains("GL_ARB_map_buffer_range") &&
-            DrawState.Extensions.Contains("GL_ARB_multi_draw_indirect");
+            DrawState.HasCapabilities(4, 3, "GL_ARB_map_buffer_range", "GL_ARB_multi_draw_indirect");
 }

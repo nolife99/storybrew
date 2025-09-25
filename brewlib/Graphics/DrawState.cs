@@ -21,7 +21,7 @@ using ZLinq;
 public static class DrawState
 {
     public static readonly SearchValues<string> Extensions = getExtensions();
-    public static readonly bool UseSrgb, SupportsImmutable = Extensions.Contains("GL_ARB_buffer_storage");
+    public static readonly bool UseSrgb, SupportsImmutable = HasCapabilities(4, 4, "GL_ARB_buffer_storage");
 
     static IRenderer renderer;
 
@@ -75,10 +75,10 @@ public static class DrawState
 
     public static void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer)
     {
-        if (Extensions.Contains("GL_KHR_debug"))
+        if (HasCapabilities(4, 3, "GL_KHR_debug"))
         {
             GL.Enable(EnableCap.DebugOutputSynchronous);
-            GL.Khr.DebugMessageCallback((source, type, _, severity, length, message, _) =>
+            GL.DebugMessageCallback((source, type, _, severity, length, message, _) =>
                 {
                     var bytes = message.AsReadOnlySpan<byte>(length);
 
@@ -155,7 +155,7 @@ public static class DrawState
         }
 
         UseTextureCompression &= Extensions.Contains("GL_EXT_texture_compression_s3tc");
-        CanInvalidate = Extensions.Contains("GL_ARB_invalidate_subdata");
+        CanInvalidate = HasCapabilities(4, 3, "GL_ARB_invalidate_subdata");
 
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
@@ -462,6 +462,10 @@ public static class DrawState
 
         SDL.LogInfo(SDL.LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
+
+    public static bool HasCapabilities(int major, int minor, params ReadOnlySpan<string> extensions)
+        => extensions.AsValueEnumerable().All(s => Extensions.Contains(s)) ||
+            glVer.Major >= major && glVer.Minor >= minor;
 
     #endregion
 }
