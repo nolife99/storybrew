@@ -180,7 +180,7 @@ public static class DrawState
             1,
             out preferredFormat);
 
-        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture type: {preferredFormat:x}");
+        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture type: 0x{preferredFormat:x}");
 
         SDL.LogInfo(SDL.LogCategory.Render,
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");

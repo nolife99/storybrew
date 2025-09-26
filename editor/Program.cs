@@ -192,7 +192,7 @@ public static class Program
 #if DEBUG
             GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
 #else
-            GLContextFlag.Debug | GLContextFlag.ForwardCompatible;
+            GLContextFlag.ForwardCompatible;
 
         SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
 #endif
@@ -375,11 +375,23 @@ public static class Program
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
 
+        SDL.LogOutputFunction logger = (userdata, category, priority, message) => ThreadPool.UnsafeQueueUserWorkItem(_ =>
+        {
+            lock (errorHandlerLock)
+                using (var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss} [{category}] {message}\n"))
+                    File.AppendAllText(tracePath, text.AsReadOnlySpan());
+        }, null);
+
+        if (File.Exists(tracePath)) File.WriteAllText(tracePath, "");
+
         SDL.SetLogPriorities(SDL.LogPriority.Trace);
+        SDL.SetLogOutputFunction(logger, 0);
 
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataNameString, Name);
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataVersionString, Version.ToString());
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataURLString, Repository);
+
+        domain.ProcessExit += (_, _) => GC.KeepAlive(logger);
     }
 
     static void logError(Exception e, string filename, bool show)

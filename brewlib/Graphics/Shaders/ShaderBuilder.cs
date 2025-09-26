@@ -67,7 +67,7 @@ public sealed class ShaderBuilder
         return ProgramScope.AddSSBO();
     }
 
-    public Shader Build(bool log = true)
+    public Shader Build(bool log = false)
     {
         Context.VertexDeclaration = VertexDeclaration;
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context),

@@ -1,22 +1,22 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic.Value;
-using Tiny.PooledCollections.Generic.Value.Internals;
 
 class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
-    protected ValueList<Command<TValue>> commands = ValueList.Create<Command<TValue>>();
+    protected readonly List<Command<TValue>> commands = [];
 
     public bool HasOverlap;
 
-    public ReadOnlySpan<Command<TValue>> Commands => commands.AsReadOnlySpan();
+    public ReadOnlySpan<Command<TValue>> Commands => CollectionsMarshal.AsSpan(commands);
 
     public bool Add(Command<TValue> command)
     {
-        var c = commands.AsSpan();
+        var c = CollectionsMarshal.AsSpan(commands);
 
         var index = c.BinarySearch(command);
         if (index >= 0)
@@ -43,7 +43,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
     protected Command<TValue> CommandAtTime(float time)
     {
-        var c = commands.AsReadOnlySpan();
+        var c = Commands;
         if (c.Length == 0) return null;
 
         if (!findCommandIndex(c, time, out var index) && index > 0) --index;

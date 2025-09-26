@@ -96,7 +96,7 @@ public sealed class GpuCommandSync : IDisposable
         var insertIndex = count; // default: append at end
         while (left <= right)
         {
-            var mid = (left + right) / 2;
+            var mid = right + left >> 1;
             if (ranges[mid].End.Value >= target.Start.Value)
             {
                 insertIndex = mid;

@@ -27,7 +27,7 @@ public static class Native
                 using var image = await Image.LoadAsync<Rgba32>(iconResource);
 
                 ref var surface = ref SDL.CreateSurface(image.Width, image.Height, SDL.PixelFormat.ABGR8888)
-                    .AsRef<SDL.Surface>();
+                    .AsRef<Surface>();
 
                 SDL.LockSurface(surface.AsPointer());
                 image.CopyPixelDataTo(surface.Pixels.AsSpan<Rgba32>(image.Width * image.Height));

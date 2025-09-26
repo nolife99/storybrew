@@ -1,32 +1,30 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
-using Tiny.PooledCollections.Generic.Value;
-using Tiny.PooledCollections.Generic.Value.Internals;
 
 abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
 {
     protected static readonly int PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
-    readonly int commandSize;
 
-    protected readonly int MaxPrimitivesPerBatch;
+    readonly List<MultiDrawArraysIndirectCommand> commandBuffer;
+    readonly List<MultiDrawElementsIndirectCommand> commandBufferIndexed;
+
+    protected readonly int MaxPrimitivesPerBatch, indexBufferId = -1;
 
     readonly VertexDeclaration vertexDeclaration;
     bool Bound;
-
-    ValueList<MultiDrawArraysIndirectCommand> commandBuffer;
-    ValueList<MultiDrawElementsIndirectCommand> commandBufferIndexed;
 
     nint commandBufferMap;
 
     Shader currentShader;
 
-    protected int totalQueuedPrimitives, commandBufferOffset, indexBufferId = -1, vertexBufferId = -1;
+    protected int totalQueuedPrimitives, commandBufferOffset, vertexBufferId = -1;
     int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
@@ -39,14 +37,24 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         MaxPrimitivesPerBatch = maxPrimitivesPerBatch;
         this.vertexDeclaration = vertexDeclaration;
 
-        commandSize = indices.IsEmpty ?
-            Unsafe.SizeOf<MultiDrawArraysIndirectCommand>() :
-            Unsafe.SizeOf<MultiDrawElementsIndirectCommand>();
+        initializeDrawCommandBuffer(maxPrimitivesPerBatch,
+            indices.IsEmpty ?
+                Unsafe.SizeOf<MultiDrawArraysIndirectCommand>() :
+                Unsafe.SizeOf<MultiDrawElementsIndirectCommand>());
 
-        initializeDrawCommandBuffer(maxPrimitivesPerBatch);
+        if (!indices.IsEmpty)
+        {
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId = GL.GenBuffer());
+            GL.BufferData(BufferTarget.ElementArrayBuffer,
+                MemoryMarshal.AsBytes(indices).Length,
+                ref MemoryMarshal.GetReference(indices),
+                BufferUsageHint.StaticDraw);
 
-        if (!indices.IsEmpty) initializeIndexBuffer(indices);
-        else commandBuffer = ValueList.Create<MultiDrawArraysIndirectCommand>();
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+
+            commandBufferIndexed = [];
+        }
+        else commandBuffer = [];
     }
 
     public GpuCommandSync FrameSync { get; } = new();
@@ -91,8 +99,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         if (!Bound || totalQueuedPrimitives == 0) return;
 
         var span = indexBufferId != -1 ?
-            MemoryMarshal.AsBytes(commandBufferIndexed.AsReadOnlySpan()) :
-            MemoryMarshal.AsBytes(commandBuffer.AsReadOnlySpan());
+            MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(commandBufferIndexed)) :
+            MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(commandBuffer));
 
         if (commandBufferOffset + span.Length > commandBufferSize) commandBufferOffset = 0;
 
@@ -164,24 +172,8 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     protected virtual void initializeVertexBuffer()
         => GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId = GL.GenBuffer());
 
-    void initializeIndexBuffer(scoped ReadOnlySpan<ushort> indices)
+    void initializeDrawCommandBuffer(int minRenderableVertexCount, int commandSize)
     {
-        indexBufferId = GL.GenBuffer();
-
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
-        GL.BufferData(BufferTarget.ElementArrayBuffer,
-            MemoryMarshal.AsBytes(indices).Length,
-            ref MemoryMarshal.GetReference(indices),
-            BufferUsageHint.StaticDraw);
-
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-
-        commandBufferIndexed = ValueList.Create<MultiDrawElementsIndirectCommand>();
-    }
-
-    void initializeDrawCommandBuffer(int minRenderableVertexCount)
-    {
-        if (commandBufferId != -1) GL.DeleteBuffer(commandBufferId);
         commandBufferSize = minRenderableVertexCount * commandSize;
 
         GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId = GL.GenBuffer());
@@ -236,9 +228,6 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
         if (indexBufferId != -1) GL.DeleteBuffer(indexBufferId);
 
         if (!disposing) return;
-
-        commandBuffer.Dispose();
-        commandBufferIndexed.Dispose();
 
         FrameSync.Dispose();
     }
