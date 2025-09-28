@@ -17,24 +17,16 @@ static class NonRandomizedStringEqualityComparer
             .GetValue(new HashSet<string>(comparer));
 
     public static IEqualityComparer<string> GetStringComparer(this object comparer)
-    {
-        if (ReferenceEquals(comparer, EqualityComparer<string>.Default)) return WrappedAroundDefaultComparer;
-        if (ReferenceEquals(comparer, StringComparer.Ordinal)) return WrappedAroundStringComparerOrdinal;
-        if (ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
-            return WrappedAroundStringComparerOrdinalIgnoreCase;
-
-        return null;
-    }
+        => ReferenceEquals(comparer, EqualityComparer<string>.Default) ? WrappedAroundDefaultComparer :
+            ReferenceEquals(comparer, StringComparer.Ordinal) ? WrappedAroundStringComparerOrdinal :
+            ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase) ? WrappedAroundStringComparerOrdinalIgnoreCase :
+            null;
 
     public static IEqualityComparer<string> GetRandomizedStringComparer(this object comparer)
-    {
-        if (ReferenceEquals(comparer, WrappedAroundDefaultComparer)) return EqualityComparer<string>.Default;
-        if (ReferenceEquals(comparer, WrappedAroundStringComparerOrdinal)) return StringComparer.Ordinal;
-        if (ReferenceEquals(comparer, WrappedAroundStringComparerOrdinalIgnoreCase))
-            return StringComparer.OrdinalIgnoreCase;
-
-        return null;
-    }
+        => ReferenceEquals(comparer, WrappedAroundDefaultComparer) ? EqualityComparer<string>.Default :
+            ReferenceEquals(comparer, WrappedAroundStringComparerOrdinal) ? StringComparer.Ordinal :
+            ReferenceEquals(comparer, WrappedAroundStringComparerOrdinalIgnoreCase) ? StringComparer.OrdinalIgnoreCase :
+            (IEqualityComparer<string>)null;
 
     public static bool IsNonRandomizedStringComparer(this object comparer)
         => ReferenceEquals(comparer, WrappedAroundDefaultComparer) ||

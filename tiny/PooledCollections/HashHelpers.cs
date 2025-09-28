@@ -60,9 +60,9 @@ static class HashHelpers
     {
         var newSize = 2 * oldSize;
 
-        if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize) return MaxPrimeArrayLength;
-
-        return GetPrime(newSize);
+        return (uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize ?
+            MaxPrimeArrayLength :
+            GetPrime(newSize);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

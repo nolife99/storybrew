@@ -421,11 +421,7 @@ public ref struct TempHashSet<T>
         if (Count == 0) return true;
 
         if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet))
-        {
-            if (Count > otherAsSCGSet.Count) return false;
-
-            return IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
-        }
+            return Count > otherAsSCGSet.Count ? false : IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
 
         var (uniqueCount, unfoundCount) = CheckUniqueAndUnfoundElements(other, false);
         return uniqueCount == Count && unfoundCount >= 0;
@@ -442,11 +438,7 @@ public ref struct TempHashSet<T>
             if (Count == 0) return otherAsCollection.Count > 0;
 
             if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet))
-            {
-                if (Count >= otherAsSCGSet.Count) return false;
-
-                return IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
-            }
+                return Count >= otherAsSCGSet.Count ? false : IsSubsetOfHashSetWithSameComparer(otherAsSCGSet);
         }
 
         var (uniqueCount, unfoundCount) = CheckUniqueAndUnfoundElements(other, false);
@@ -457,13 +449,10 @@ public ref struct TempHashSet<T>
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        if (other is not ICollection<T> otherAsCollection) return ContainsAllElements(other);
-        if (otherAsCollection.Count == 0) return true;
-
-        if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet) &&
-            otherAsSCGSet.Count > Count) return false;
-
-        return ContainsAllElements(other);
+        return other is not ICollection<T> otherAsCollection ? ContainsAllElements(other) :
+            otherAsCollection.Count == 0 ? true :
+            other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet) &&
+            otherAsSCGSet.Count > Count ? false : ContainsAllElements(other);
     }
 
     public bool IsProperSupersetOf(IEnumerable<T> other)
@@ -477,11 +466,7 @@ public ref struct TempHashSet<T>
             if (otherAsCollection.Count == 0) return true;
 
             if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet))
-            {
-                if (otherAsSCGSet.Count >= Count) return false;
-
-                return ContainsAllElements(otherAsSCGSet);
-            }
+                return otherAsSCGSet.Count >= Count ? false : ContainsAllElements(otherAsSCGSet);
         }
 
         var (uniqueCount, unfoundCount) = CheckUniqueAndUnfoundElements(other, true);
@@ -506,11 +491,7 @@ public ref struct TempHashSet<T>
         ArgumentNullException.ThrowIfNull(other);
 
         if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet))
-        {
-            if (Count != otherAsSCGSet.Count) return false;
-
-            return ContainsAllElements(otherAsSCGSet);
-        }
+            return Count != otherAsSCGSet.Count ? false : ContainsAllElements(otherAsSCGSet);
 
         if (Count == 0 && other is ICollection<T> { Count: > 0 }) return false;
 
@@ -1073,9 +1054,7 @@ public ref struct TempHashSet<T>
         if (_buckets.IsNullOrEmpty()) return ref Unsafe.NullRef<T>();
 
         var index = FindItemIndex(equalValue);
-        if (index >= 0) return ref _entries![index].Value;
-
-        return ref Unsafe.NullRef<T>();
+        return ref index >= 0 ? ref _entries![index].Value : ref Unsafe.NullRef<T>();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1266,12 +1245,7 @@ public ref struct TempHashSet<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsSupersetOf(T[] other) => IsSupersetOf((ReadOnlySpan<T>)other);
 
-    public bool IsSupersetOf(ReadOnlySpan<T> other)
-    {
-        if (other.Length == 0) return true;
-
-        return ContainsAllElements(other);
-    }
+    public bool IsSupersetOf(ReadOnlySpan<T> other) => other.Length == 0 ? true : ContainsAllElements(other);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsProperSupersetOf(T[] other) => IsProperSupersetOf((ReadOnlySpan<T>)other);

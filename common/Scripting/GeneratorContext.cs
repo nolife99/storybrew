@@ -6,8 +6,8 @@ using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 
 /// <summary>
-///     Represents a generator context, which provides information about the project, mapset, and beatmap being processed,
-///     and methods to interact with the storyboard process.
+/// Represents a generator context, which provides information about the project, mapset, and beatmap being processed,
+/// and methods to interact with the storyboard process.
 /// </summary>
 public abstract class GeneratorContext
 {

@@ -253,9 +253,9 @@ public ref struct TempStack<T>
     }
 
     /// <summary>
-    ///     Ensures that the capacity of this Stack is at least the specified <paramref name="capacity"/>. If the current
-    ///     capacity of the Stack is less than specified <paramref name="capacity"/>, the capacity is increased by continuously
-    ///     twice current capacity until it is at least the specified <paramref name="capacity"/>.
+    /// Ensures that the capacity of this Stack is at least the specified <paramref name="capacity"/>. If the current
+    /// capacity of the Stack is less than specified <paramref name="capacity"/>, the capacity is increased by continuously twice
+    /// current capacity until it is at least the specified <paramref name="capacity"/>.
     /// </summary>
     /// <param name="capacity"> The minimum capacity to ensure. </param>
     /// <returns> The new capacity of this stack. </returns>
@@ -364,8 +364,7 @@ public ref struct TempStack<T>
                 return false;
 
             retval = --_index >= 0;
-            if (retval) _currentElement = _stack._array[_index];
-            else _currentElement = default;
+            _currentElement = retval ? _stack._array[_index] : default;
 
             return retval;
         }
@@ -381,7 +380,7 @@ public ref struct TempStack<T>
 
         readonly void ThrowEnumerationNotStartedOrEnded()
         {
-            Debug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index is -1 or -2);
 
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

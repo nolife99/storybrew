@@ -5,7 +5,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using BrewLib.IO;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SDL3;
 using Tiny;
 using Tiny.Formats.Json;

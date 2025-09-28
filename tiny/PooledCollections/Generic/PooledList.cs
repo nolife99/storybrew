@@ -482,12 +482,7 @@ public sealed class PooledList<T> : IList<T>, IReadOnlyList<T>, IDisposable
         _version++;
     }
 
-    public int LastIndexOf(T item)
-    {
-        if (_size == 0) return -1;
-
-        return LastIndexOf(item, _size - 1, _size);
-    }
+    public int LastIndexOf(T item) => _size == 0 ? -1 : LastIndexOf(item, _size - 1, _size);
 
     public int LastIndexOf(T item, int index)
     {

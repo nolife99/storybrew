@@ -78,8 +78,9 @@ public static class ScreenLayerManagerExtensions
         else
         {
             Span<char> joinSpan = stackalloc char[255];
-            if (Path.TryJoin(initialDirectory, initialValue, joinSpan, out var written)) path = joinSpan[..written];
-            else path = Path.Join(initialDirectory, initialValue);
+            path = Path.TryJoin(initialDirectory, initialValue, joinSpan, out var written) ?
+                joinSpan[..written] :
+                (ReadOnlySpan<char>)Path.Join(initialDirectory, initialValue);
         }
 
         SDL.ShowOpenFileDialog((_, filelist, _) =>

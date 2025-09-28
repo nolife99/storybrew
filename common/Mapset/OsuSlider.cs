@@ -30,8 +30,8 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     public float TravelDurationBeats { get; init; }
 
     /// <summary>
-    ///     Gets an enumeration of nodes that make up the slider. Each node contains the sample set and sample volume at a
-    ///     specific time in the slider.
+    /// Gets an enumeration of nodes that make up the slider. Each node contains the sample set and sample volume at a
+    /// specific time in the slider.
     /// </summary>
     public ReadOnlySpan<OsuSliderNode> Nodes => nodes;
 

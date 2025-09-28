@@ -276,9 +276,7 @@ public ref struct TempDictionary<TKey, TValue>
         get
         {
             ref var value = ref FindValue(key);
-            if (!Unsafe.IsNullRef(ref value)) return value;
-
-            throw new KeyNotFoundException(nameof(key));
+            return !Unsafe.IsNullRef(ref value) ? value : throw new KeyNotFoundException(nameof(key));
         }
         set
         {

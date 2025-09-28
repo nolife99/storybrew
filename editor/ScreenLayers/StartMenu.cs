@@ -245,8 +245,8 @@ public class StartMenu : UiScreenLayer
         SDL.LogWarn(SDL.LogCategory.Application,
             $"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
 
-        versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message
-        }\n\n{versionLabel.Text}";
+        versionLabel.Text =
+            $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message}\n\n{versionLabel.Text}";
 
         updateButton.Text = "See latest release";
         updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();

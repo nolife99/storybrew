@@ -304,10 +304,7 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
     bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
     {
         ref var value = ref FindValue(keyValuePair.Key);
-        if (!Unsafe.IsNullRef(ref value) &&
-            EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value)) return true;
-
-        return false;
+        return !Unsafe.IsNullRef(ref value) && EqualityComparer<TValue>.Default.Equals(value, keyValuePair.Value);
     }
 
     bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
@@ -1093,9 +1090,9 @@ public partial struct ValueDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
                 if (_index == 0 || _index == _dictionary._count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
-                if (_getEnumeratorRetType == DictEntry) return new DictionaryEntry(_current.Key, _current.Value);
-
-                return new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
+                return _getEnumeratorRetType == DictEntry ?
+                    new DictionaryEntry(_current.Key, _current.Value) :
+                    new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
             }
         }
 

@@ -2,7 +2,7 @@
 
 using System;
 using BrewLib.Graphics.Shaders;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmanaged
 {

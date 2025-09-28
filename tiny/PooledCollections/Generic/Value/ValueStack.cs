@@ -365,8 +365,7 @@ public struct ValueStack<T> : IReadOnlyCollection<T>, IDisposable
             if (_index == -1) return false;
 
             retval = --_index >= 0;
-            if (retval) _currentElement = _stack._array[_index];
-            else _currentElement = default;
+            _currentElement = retval ? _stack._array[_index] : default;
 
             return retval;
         }
@@ -382,7 +381,7 @@ public struct ValueStack<T> : IReadOnlyCollection<T>, IDisposable
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            Debug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index is -1 or -2);
 
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

@@ -534,8 +534,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                                 case EffectStatus.CompilationFailed:
                                 case EffectStatus.ExecutionFailed:
                                 case EffectStatus.LoadingFailed:
-                                    throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
-                                    })\nCheck its log for the actual error.");
+                                    throw new ScriptLoadingException(
+                                        $"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                             }
 
                             await Task.Delay(100);

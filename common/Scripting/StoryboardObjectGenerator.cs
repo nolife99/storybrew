@@ -1,4 +1,6 @@
-﻿namespace StorybrewCommon.Scripting;
+﻿using Image = SixLabors.ImageSharp.Image;
+
+namespace StorybrewCommon.Scripting;
 
 using System;
 using System.Globalization;

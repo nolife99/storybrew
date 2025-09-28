@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;

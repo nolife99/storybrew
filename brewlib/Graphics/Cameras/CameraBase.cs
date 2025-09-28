@@ -168,9 +168,7 @@ public abstract class CameraBase : ICamera
         var far = Vector4.Transform(new Vector4(device, FarPlane, 1), invertedProjectionView).AsVector3();
 
         var direction = Vector3.Normalize(far - near);
-        if (direction.Z == 0) return Vector3.Zero;
-
-        return near - direction * (near.Z / direction.Z);
+        return direction.Z == 0 ? Vector3.Zero : near - direction * (near.Z / direction.Z);
     }
 
     public RectangleF FromScreen(RectangleF screenBox2)

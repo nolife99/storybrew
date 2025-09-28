@@ -236,36 +236,27 @@ public static class LineBreaker
             if (firstAllowed == -1) firstAllowed = i - 1;
         }
 
-        if (firstAllowed != -1) return firstAllowed;
-
-        return endIndex - 1;
+        return firstAllowed != -1 ? firstAllowed : endIndex - 1;
     }
 
     static Breakability getBreakabilityAfter(char c)
-    {
-        if (breakOpportunityAfter.Contains(c) || c >= 0x2E0E && c <= 0x2E15) return Breakability.Opportunity;
-
-        if (breakProhibitedAfter.Contains(c) || c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
-
-        return Breakability.Allowed;
-    }
+        => breakOpportunityAfter.Contains(c) || c >= 0x2E0E && c <= 0x2E15 ? Breakability.Opportunity :
+            breakProhibitedAfter.Contains(c) || c >= 0x035C && c <= 0x0362 ? Breakability.Prohibited :
+            Breakability.Allowed;
 
     static Breakability getBreakabilityBefore(char c)
-    {
-        if (breakOpportunityBefore.Contains(c)) return Breakability.Opportunity;
-        if (breakProhibitedBefore.Contains(c) || c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
-
-        return Breakability.Allowed;
-    }
+        => breakOpportunityBefore.Contains(c) ? Breakability.Opportunity :
+            breakProhibitedBefore.Contains(c) || c >= 0x035C && c <= 0x0362 ? Breakability.Prohibited :
+            Breakability.Allowed;
 
     static bool mustBreakAfter(scoped ReadOnlySpan<char> text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
 
         var c = text[index];
-        if (causesBreakAfter.Contains(c)) return true;
-
-        return c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A);
+        return causesBreakAfter.Contains(c) ?
+            true :
+            c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A);
     }
 
     enum Breakability

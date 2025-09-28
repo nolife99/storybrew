@@ -575,14 +575,9 @@ public ref struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static uint Reduce(uint hashcode, uint N, ulong fastModBucketsMultiplier)
-    {
-        if (hashcode >= N)
-            return Environment.Is64BitProcess ?
-                HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) :
-                hashcode % N;
-
-        return hashcode;
-    }
+        => hashcode >= N ?
+            Environment.Is64BitProcess ? HashHelpers.FastMod(hashcode, N, fastModBucketsMultiplier) : hashcode % N :
+            hashcode;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static void UpdateLinkedList(int index, ref ArrayEntry<TKey>[] valuesInfo)

@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 public class ShaderVariable
 {

@@ -1,4 +1,6 @@
-﻿namespace BrewLib.Graphics.Textures;
+﻿using Image = SixLabors.ImageSharp.Image;
+
+namespace BrewLib.Graphics.Textures;
 
 using System;
 using System.Buffers;
@@ -11,7 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.IO;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;

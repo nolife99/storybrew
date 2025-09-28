@@ -13,12 +13,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
     public float Size => size;
     public int LineHeight => GetGlyph(' ').height;
 
-    public FontGlyph GetGlyph(char c)
-    {
-        if (glyphs.TryGetValue(c, out var glyph)) return glyph;
-
-        return glyphs[c] = generateGlyph(c);
-    }
+    public FontGlyph GetGlyph(char c) => glyphs.TryGetValue(c, out var glyph) ? glyph : glyphs[c] = generateGlyph(c);
 
     FontGlyph generateGlyph(char c)
     {

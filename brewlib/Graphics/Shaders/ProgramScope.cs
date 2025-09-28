@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public class ProgramScope

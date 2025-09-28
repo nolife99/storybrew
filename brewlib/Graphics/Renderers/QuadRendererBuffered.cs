@@ -11,7 +11,7 @@ using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
@@ -106,9 +106,9 @@ public sealed class QuadRendererBuffered : IQuadRenderer
             ssboMap = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer,
                 0,
                 ssboSize,
-                MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
-                MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
-                MapBufferAccessMask.MapUnsynchronizedBit);
+                BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit |
+                BufferAccessMask.MapFlushExplicitBit | BufferAccessMask.MapInvalidateBufferBit |
+                BufferAccessMask.MapUnsynchronizedBit);
         }
         else GL.BufferData(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferUsageHint.DynamicDraw);
 
@@ -212,10 +212,12 @@ public sealed class QuadRendererBuffered : IQuadRenderer
             var ofs = section + ssboOffset * Unsafe.SizeOf<T>();
             if (supportsBarrier)
             {
-                if (section == 0) primitiveStreamer.FrameSync.WaitAndLockRange(ssbo, ofs, bytes.Length);
+                primitiveStreamer.FrameSync.WaitForRange(ssbo, ofs, bytes.Length);
 
                 bytes.CopyTo((ssboMap + ofs).AsSpan<byte>(bytes.Length));
                 GL.FlushMappedBufferRange(BufferTarget.ShaderStorageBuffer, ofs, bytes.Length);
+
+                primitiveStreamer.FrameSync.LockRange(ssbo, ofs, bytes.Length);
             }
             else
                 GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
@@ -289,8 +291,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
             new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
             new Assign(sb.GlPosition,
                 ()
-                    => $"{combinedMatrix.Ref[drawId.Ref]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
-                    }, 0, 1)"),
+                    => $"{combinedMatrix.Ref[drawId.Ref]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name}, 0, 1)"),
             new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)));
 
         var clipRect = sb.AddFragmentVariable(ActiveUniformType.FloatVec4);

@@ -1,4 +1,6 @@
-﻿namespace StorybrewCommon.Subtitles;
+﻿using Path = System.IO.Path;
+
+namespace StorybrewCommon.Subtitles;
 
 using System;
 using System.Globalization;

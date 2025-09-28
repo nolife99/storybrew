@@ -94,9 +94,7 @@ public sealed class EditorGeneratorContext(Effect effect,
     {
         path = Path.GetFullPath(path);
 
-        if (fftAudioStreams.TryGetValue(path, out var audioStream)) return audioStream;
-
-        return fftAudioStreams[path] = new(path);
+        return fftAudioStreams.TryGetValue(path, out var audioStream) ? audioStream : fftAudioStreams[path] = new(path);
     }
 
     public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;

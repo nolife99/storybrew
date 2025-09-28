@@ -2,7 +2,7 @@
 
 using System;
 using System.Linq;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;

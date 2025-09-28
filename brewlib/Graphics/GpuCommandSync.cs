@@ -1,7 +1,8 @@
 namespace BrewLib.Graphics;
 
 using System;
-using OpenTK.Graphics.OpenGL;
+using System.Runtime.CompilerServices;
+using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 
@@ -13,7 +14,7 @@ public sealed class GpuCommandSync : IDisposable
             Create = () =>
             {
                 var h = GL.NV.GenFence();
-                GL.NV.SetFence(h, FenceConditionNv.AllCompletedNv);
+                GL.NV.SetFence(h, NvFence.AllCompletedNv);
                 return h;
             },
             Delete = h => GL.NV.DeleteFence(unchecked((int)h)),
@@ -205,9 +206,8 @@ public sealed class GpuCommandSync : IDisposable
     static ref ValueList<Range> GetOrCreateRanges(scoped ref ValueDictionary<int, ValueList<Range>> map, int bufferId)
     {
         ref var list = ref map.GetValueRefOrAddDefault(bufferId, out var found);
-        if (found) return ref list;
+        if (!found) list = ValueList.Create<Range>(4);
 
-        list = ValueList.Create<Range>(4);
         return ref list;
     }
 
@@ -221,7 +221,10 @@ public sealed class GpuCommandSync : IDisposable
     }
 
     bool OverlapsPending(int bufferId, Range target)
-        => pending.TryGetValue(bufferId, out var ranges) && OverlapsAny(ranges.AsReadOnlySpan(), target);
+    {
+        ref readonly var ranges = ref pending.GetValueRefOrNullRef(bufferId);
+        return !Unsafe.IsNullRef(in ranges) && OverlapsAny(ranges.AsReadOnlySpan(), target);
+    }
 
     void TrimSignaledFences()
     {

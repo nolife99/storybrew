@@ -6,7 +6,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SDL3;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
 

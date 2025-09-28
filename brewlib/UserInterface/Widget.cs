@@ -262,12 +262,7 @@ public class Widget(WidgetManager manager) : IDisposable
         foreach (var child in state) child.Dispose();
     }
 
-    public bool HasAncestor(Widget widget)
-    {
-        if (Parent is null) return false;
-
-        return Parent == widget || Parent.HasAncestor(widget);
-    }
+    public bool HasAncestor(Widget widget) => Parent is null ? false : Parent == widget || Parent.HasAncestor(widget);
 
     public bool HasDescendant(Widget widget)
     {

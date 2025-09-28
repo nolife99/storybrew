@@ -73,11 +73,9 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
         if (result != 0) return Math.Sign(result);
 
         result = endTime - other.EndTime;
-        if (result != 0) return Math.Sign(result);
-
-        if (other is not Command<TValue> typedOther) return 1;
-
-        return StartValue.Equals(typedOther.StartValue) && EndValue.Equals(typedOther.EndValue) ? 0 : 1;
+        return result != 0 ? Math.Sign(result) :
+            other is not Command<TValue> typedOther ? 1 :
+            StartValue.Equals(typedOther.StartValue) && EndValue.Equals(typedOther.EndValue) ? 0 : 1;
     }
 
     void ICommand.WriteOsb(TextWriter writer,
@@ -98,9 +96,8 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
         if (result != 0) return Math.Sign(result);
 
         result = endTime - other.endTime;
-        if (result != 0) return Math.Sign(result);
-
-        return StartValue.Equals(other.StartValue) && EndValue.Equals(other.EndValue) ? 0 : 1;
+        return result != 0 ? Math.Sign(result) :
+            StartValue.Equals(other.StartValue) && EndValue.Equals(other.EndValue) ? 0 : 1;
     }
 
     /// <summary> Offsets the start and end times of the command by the given value. </summary>

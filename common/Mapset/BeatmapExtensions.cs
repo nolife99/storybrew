@@ -6,8 +6,8 @@ using System;
 public static class BeatmapExtensions
 {
     /// <summary>
-    ///     Executes the specified <paramref name="tickAction"/> for each timing tick in the osu! beatmap, calculated based on
-    ///     the <paramref name="snapDivisor"/>.
+    /// Executes the specified <paramref name="tickAction"/> for each timing tick in the osu! beatmap, calculated based on
+    /// the <paramref name="snapDivisor"/>.
     /// </summary>
     public static void ForEachTick(this Beatmap beatmap,
         float startTime,

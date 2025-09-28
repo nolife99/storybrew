@@ -45,8 +45,8 @@ public class Object3d
     public virtual Matrix4x4 WorldTransformAt(float time) => Matrix4x4.Identity;
 
     /// <summary>
-    ///     Generates a <see cref="Object3d"/> and its children's sprites in the given segment. The sprites will have no
-    ///     commands until <see cref="GenerateTreeCommands"/> has been called.
+    /// Generates a <see cref="Object3d"/> and its children's sprites in the given segment. The sprites will have no
+    /// commands until <see cref="GenerateTreeCommands"/> has been called.
     /// </summary>
     public void GenerateTreeSprite(StoryboardSegment parentSegment)
     {
@@ -64,15 +64,15 @@ public class Object3d
     }
 
     /// <summary>
-    ///     Queues <see cref="State"/> for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
-    ///     the given <see cref="Camera"/>'s state.
+    /// Queues <see cref="State"/> for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
+    /// the given <see cref="Camera"/>'s state.
     /// </summary>
     public void GenerateTreeStates(float time, Camera camera)
         => GenerateTreeStates(time, camera.StateAt(time), in Object3dState.InitialState);
 
     /// <summary>
-    ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
-    ///     the given <see cref="CameraState"/> and <see cref="Object3dState"/>.
+    /// Queues <see cref="State"/>s for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
+    /// the given <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
     public void GenerateTreeStates(float time,
         scoped ref readonly CameraState camState,
@@ -87,17 +87,17 @@ public class Object3d
     }
 
     /// <summary>
-    ///     Generates commands on this <see cref="Object3d"/>'s sprites and its children's sprites based on queued
-    ///     <see cref="State"/>s.
+    /// Generates commands on this <see cref="Object3d"/>'s sprites and its children's sprites based on queued
+    /// <see cref="State"/>s.
     /// </summary>
     /// <param name="action"> Runs an action on each sprite. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the commands (can be left <see langword="null"/> to use the
-    ///     <see cref="State"/>'s time).
+    /// The explicit start time of the commands (can be left <see langword="null"/> to use the
+    /// <see cref="State"/>'s time).
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the commands (can be left <see langword="null"/> to use the
-    ///     <see cref="State"/>'s time).
+    /// The explicit end time of the commands (can be left <see langword="null"/> to use the
+    /// <see cref="State"/>'s time).
     /// </param>
     /// <param name="timeOffset"> The time offset of the commands. </param>
     /// <param name="loopable"> Whether the commands are encapsulated in a loop group. </param>
@@ -112,8 +112,8 @@ public class Object3d
     }
 
     /// <summary>
-    ///     Generates loop commands on this this <see cref="Object3d"/>'s sprites and its children's sprites based on queued
-    ///     <see cref="State"/>s.
+    /// Generates loop commands on this this <see cref="Object3d"/>'s sprites and its children's sprites based on queued
+    /// <see cref="State"/>s.
     /// </summary>
     /// <param name="action"> Runs an action on each sprite. This is encapsulated in a loop group. </param>
     /// <param name="startTime"> The explicit start time of the loop group. </param>
@@ -138,14 +138,14 @@ public class Object3d
             true);
 
     /// <summary>
-    ///     Generates a <see cref="Object3d"/>'s sprites in the given segment. The sprite will have no commands until
-    ///     <see cref="GenerateCommands"/> has been called.
+    /// Generates a <see cref="Object3d"/>'s sprites in the given segment. The sprite will have no commands until
+    /// <see cref="GenerateCommands"/> has been called.
     /// </summary>
     public virtual void GenerateSprite(StoryboardSegment segment) { }
 
     /// <summary>
-    ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> at <paramref name="time"/> based on the given
-    ///     <see cref="CameraState"/> and <see cref="Object3dState"/>.
+    /// Queues <see cref="State"/>s for this <see cref="Object3d"/> at <paramref name="time"/> based on the given
+    /// <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
     public virtual void GenerateStates(float time,
         scoped ref readonly CameraState cameraState,
@@ -154,12 +154,12 @@ public class Object3d
     /// <summary> Generates commands on this <see cref="Object3d"/>'s sprites based on its queued <see cref="State"/>s. </summary>
     /// <param name="action"> Runs an action on this object's sprites. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the commands (can be left <see langword="null"/> to use the
-    ///     <see cref="State"/>'s time).
+    /// The explicit start time of the commands (can be left <see langword="null"/> to use the
+    /// <see cref="State"/>'s time).
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the commands (can be left <see langword="null"/> to use the
-    ///     <see cref="State"/>'s time).
+    /// The explicit end time of the commands (can be left <see langword="null"/> to use the
+    /// <see cref="State"/>'s time).
     /// </param>
     /// <param name="timeOffset"> The time offset of the commands. </param>
     /// <param name="loopable"> Whether or not the commands are encapsulated in a loop group. </param>

@@ -84,10 +84,9 @@ public sealed class PoolingMemoryStream : Stream
             _ => throw new ArgumentException("Invalid seek origin", nameof(origin))
         };
 
-        if (newPosition < 0)
-            throw new ArgumentOutOfRangeException(nameof(offset), "Attempted to seek before start of stream");
-
-        return position = (int)newPosition;
+        return newPosition < 0 ?
+            throw new ArgumentOutOfRangeException(nameof(offset), "Attempted to seek before start of stream") :
+            position = (int)newPosition;
     }
 
     public override void SetLength(long value)

@@ -922,15 +922,12 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
             new BitHelper(new int[intArrayLength], false);
 
         foreach (var item in other)
-        {
-            int location;
-            if (AddIfNotPresent(item, out location)) itemsAddedFromOther.MarkBit(location);
+            if (AddIfNotPresent(item, out var location)) itemsAddedFromOther.MarkBit(location);
             else
             {
                 if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
                     itemsToRemove.MarkBit(location);
             }
-        }
 
         for (var i = 0; i < originalCount; i++)
             if (itemsToRemove.IsMarked(i))

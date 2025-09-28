@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -72,9 +72,9 @@ public sealed partial class Shader : IDisposable
             property.Location :
             -1;
 
-        if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})");
-
-        return location;
+        return location < 0 ?
+            throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})") :
+            location;
     }
 
     static int GetUniformIdentifier(scoped Span<char> buffer, scoped ReadOnlySpan<char> name, int index, string field)
@@ -111,8 +111,8 @@ public sealed partial class Shader : IDisposable
     {
         dispose();
 
-        var vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
-        var fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
+        var vertexShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
+        var fragmentShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
 
         if (vertexShaderId == -1 || fragmentShaderId == -1) return;
 
@@ -120,11 +120,8 @@ public sealed partial class Shader : IDisposable
         isInitialized = SortId != -1;
     }
 
-    int compileShader(OpenTK.Graphics.OpenGL.ShaderType type, string code)
+    int compileShader(osuTK.Graphics.OpenGL.ShaderType type, string code)
     {
-        if (DrawState.Extensions.Contains("GL_KHR_parallel_shader_compile"))
-            GL.Khr.MaxShaderCompilerThreads(GL.GetInteger((GetPName)All.MaxShaderCompilerThreadsKhr));
-
         var id = GL.CreateShader(type);
         GL.ShaderSource(id, code);
         GL.CompileShader(id);

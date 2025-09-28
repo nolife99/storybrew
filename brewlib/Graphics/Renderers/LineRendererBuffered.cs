@@ -8,7 +8,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -151,8 +151,7 @@ public sealed class LineRendererBuffered : ILineRenderer
         sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(sb.GlPosition,
                 ()
-                    => $"{combinedMatrix.Ref[sb.GlDrawId.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
-                    }, 1)"));
+                    => $"{combinedMatrix.Ref[sb.GlDrawId.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name}, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref}"));
 

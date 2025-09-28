@@ -190,14 +190,10 @@ public sealed class PooledQueue<T> : IReadOnlyCollection<T>
     }
 
     public bool Contains(T item)
-    {
-        if (_size == 0) return false;
-
-        if (_head < _tail) return Array.IndexOf(_array, item, _head, _size) >= 0;
-
-        return Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
+        => _size == 0 ? false :
+            _head < _tail ? Array.IndexOf(_array, item, _head, _size) >= 0 :
+            Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
             Array.IndexOf(_array, item, 0, _tail) >= 0;
-    }
 
     public T[] ToArray()
     {

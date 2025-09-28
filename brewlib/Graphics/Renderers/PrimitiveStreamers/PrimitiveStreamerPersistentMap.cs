@@ -3,14 +3,14 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using System;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
-    MapBufferAccessMask accessMask;
+    BufferAccessMask accessMask;
     nint bufferAddr;
     int bufferOffset, primitivesInCurrentRegion, vertexBufferSize;
 
@@ -63,7 +63,7 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, currentRegionBytes);
         }
 
-        var intermittent = (accessMask & MapBufferAccessMask.MapPersistentBit) == 0;
+        var intermittent = (accessMask & BufferAccessMask.MapPersistentBit) == 0;
         if (intermittent) GL.UnmapBuffer(BufferTarget.ArrayBuffer);
 
         if (indexBufferId != -1)
@@ -83,8 +83,8 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         base.initializeVertexBuffer();
         vertexBufferSize = MaxPrimitivesPerBatch * PrimitiveSize;
 
-        accessMask = MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapFlushExplicitBit |
-            MapBufferAccessMask.MapInvalidateBufferBit | MapBufferAccessMask.MapUnsynchronizedBit;
+        accessMask = BufferAccessMask.MapWriteBit | BufferAccessMask.MapFlushExplicitBit |
+            BufferAccessMask.MapInvalidateBufferBit | BufferAccessMask.MapUnsynchronizedBit;
 
         if (DrawState.SupportsImmutable)
         {
@@ -93,7 +93,7 @@ sealed class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
                 0,
                 BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
 
-            accessMask |= MapBufferAccessMask.MapPersistentBit;
+            accessMask |= BufferAccessMask.MapPersistentBit;
         }
         else GL.BufferData(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferUsageHint.DynamicDraw);
 

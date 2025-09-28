@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 public sealed class VertexAttribute
 {
@@ -19,13 +19,11 @@ public sealed class VertexAttribute
     public int Size => ComponentCount * ComponentSize;
 
     public override bool Equals(object obj)
-    {
-        if (obj == this) return true;
-
-        return obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
+        => obj == this ?
+            true :
+            obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
             ComponentSize == otherAttribute.ComponentSize && ComponentCount == otherAttribute.ComponentCount &&
             Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
-    }
 
     public override int GetHashCode()
         => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);

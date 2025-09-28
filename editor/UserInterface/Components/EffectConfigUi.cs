@@ -11,6 +11,7 @@ using BrewLib.Memory;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using SDL3;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -18,7 +19,6 @@ using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Color4 = OpenTK.Mathematics.Color4;
 
 public class EffectConfigUi : Widget
 {
@@ -253,10 +253,10 @@ public class EffectConfigUi : Widget
             return widget;
         }
 
-        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2) ||
-            field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale)) return vector2Field(field);
+        if (field.Type == typeof(Vector2) || field.Type == typeof(CommandPosition) ||
+            field.Type == typeof(CommandScale)) return vector2Field(field);
 
-        if (field.Type == typeof(Vector3) || field.Type == typeof(OpenTK.Mathematics.Vector3))
+        if (field.Type == typeof(Vector3))
         {
             var x = field.Type.GetField("X");
             var y = field.Type.GetField("Y");
@@ -289,8 +289,7 @@ public class EffectConfigUi : Widget
                 widget.Value = temp.AsReadOnlySpan();
             };
         }
-        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Rgba32))
-            return colorField(field);
+        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Rgba32)) return colorField(field);
         else if (field.Type.GetInterface(nameof(IConvertible)) is not null)
         {
             Textbox widget = new(Manager)
@@ -334,13 +333,11 @@ public class EffectConfigUi : Widget
 
     Vector2Picker vector2Field(EffectConfig.ConfigField field)
     {
-        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2))
+        if (field.Type == typeof(Vector2))
         {
             Vector2Picker widget = new(Manager)
             {
-                Value = field.Type == typeof(Vector2) ?
-                    (Vector2)field.Value :
-                    (OpenTK.Mathematics.Vector2)field.Value,
+                Value = (Vector2)field.Value,
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -348,13 +345,10 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Vector2)) setFieldValue(field, (Vector2)widget.Value);
-                else setFieldValue(field, (OpenTK.Mathematics.Vector2)widget.Value);
+                setFieldValue(field, (Vector2)widget.Value);
 
-                widget.Value = field.Type == typeof(Vector2) ?
-                    Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name))) :
-                    Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(
-                        ref Unsafe.Unbox<OpenTK.Mathematics.Vector2>(effect.Config.GetValue(field.Name)));
+                widget.Value =
+                    Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name)));
             };
 
             return widget;
@@ -388,12 +382,12 @@ public class EffectConfigUi : Widget
 
     HsbColorPicker colorField(EffectConfig.ConfigField field)
     {
-        if (field.Type == typeof(Color4) || field.Type == typeof(Rgba32))
+        if (field.Type == typeof(Color) || field.Type == typeof(Rgba32))
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(Color4) ?
-                    new(Unsafe.As<Color4, Vector4>(ref Unsafe.Unbox<Color4>(field.Value))) :
+                Value = field.Type == typeof(Color) ?
+                    Unsafe.Unbox<Color>(field.Value).ToPixel<Rgba32>() :
                     Unsafe.Unbox<Rgba32>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
@@ -402,12 +396,11 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Color4))
-                    setFieldValue(field, Unsafe.BitCast<Vector4, Color4>(widget.Value.ToVector4()));
-                else setFieldValue(field, widget.Value);
+                setFieldValue(field,
+                    field.Type == typeof(Color) ? Unsafe.Unbox<Color>(field.Value).ToPixel<Rgba32>() : widget.Value);
 
-                widget.Value = field.Type == typeof(Color4) ?
-                    new(Unsafe.As<Color4, Vector4>(ref Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)))) :
+                widget.Value = field.Type == typeof(Color) ?
+                    Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name)).ToPixel<Rgba32>() :
                     Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name));
             };
 

@@ -6,8 +6,8 @@ using System.Collections.Generic;
 /// <summary> Represents a point in time and a value in a keyframe collection. </summary>
 /// <typeparam name="TValue"> The type of the value of the keyframe. </typeparam>
 /// <remarks>
-///     This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change
-///     over time.
+/// This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change
+/// over time.
 /// </remarks>
 public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
 {
@@ -47,16 +47,16 @@ public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
     int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Comparer.Compare(x, y);
 
     /// <summary>
-    ///     Creates a new <see cref="Keyframe{TValue}"/> with the same value and easing function as this one, but with the
-    ///     given <paramref name="time"/>.
+    /// Creates a new <see cref="Keyframe{TValue}"/> with the same value and easing function as this one, but with the
+    /// given <paramref name="time"/>.
     /// </summary>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <returns> The new <see cref="Keyframe{TValue}"/>. </returns>
     public Keyframe<TValue> WithTime(float time) => new(time, Value, Ease);
 
     /// <summary>
-    ///     Creates a new <see cref="Keyframe{TValue}"/> with the same time and easing function as this one, but with the
-    ///     given <paramref name="value"/>.
+    /// Creates a new <see cref="Keyframe{TValue}"/> with the same time and easing function as this one, but with the
+    /// given <paramref name="value"/>.
     /// </summary>
     /// <param name="value"> The value of the new keyframe. </param>
     /// <returns> The new <see cref="Keyframe{TValue}"/>. </returns>

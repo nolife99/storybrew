@@ -89,11 +89,6 @@ public readonly record struct CommandPosition : ICommandValue<CommandPosition>,
         => new(Vector128.Lerp(a.internalVec, b.internalVec, Vector128.Create((double)t)));
 
 #pragma warning disable CS1591
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(OpenTK.Mathematics.Vector2 obj) => new(obj.X, obj.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition obj) => new(obj.X, obj.Y);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(PointF obj) => new(obj.X, obj.Y);

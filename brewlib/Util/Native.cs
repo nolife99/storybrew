@@ -19,24 +19,24 @@ public static class Native
     public static Task SetWindowIcon(ResourceContainer container, string iconPath)
     {
         var r = container.GetStream(iconPath, ResourceSource.Embedded);
-        if (r is null) return Task.CompletedTask;
+        return r is null ?
+            Task.CompletedTask :
+            Task.Factory.StartNew(async streamObj =>
+                {
+                    await using var iconResource = (Stream)streamObj;
+                    using var image = await Image.LoadAsync<Rgba32>(iconResource);
 
-        return Task.Factory.StartNew(async streamObj =>
-            {
-                await using var iconResource = (Stream)streamObj;
-                using var image = await Image.LoadAsync<Rgba32>(iconResource);
+                    ref var surface = ref SDL.CreateSurface(image.Width, image.Height, SDL.PixelFormat.ABGR8888)
+                        .AsRef<Surface>();
 
-                ref var surface = ref SDL.CreateSurface(image.Width, image.Height, SDL.PixelFormat.ABGR8888)
-                    .AsRef<Surface>();
+                    SDL.LockSurface(surface.AsPointer());
+                    image.CopyPixelDataTo(surface.Pixels.AsSpan<Rgba32>(image.Width * image.Height));
 
-                SDL.LockSurface(surface.AsPointer());
-                image.CopyPixelDataTo(surface.Pixels.AsSpan<Rgba32>(image.Width * image.Height));
+                    SDL.RunOnMainThread(x => SDL.SetWindowIcon(windowHandle, x), surface.AsPointer(), true);
 
-                SDL.RunOnMainThread(x => SDL.SetWindowIcon(windowHandle, x), surface.AsPointer(), true);
-
-                SDL.UnlockSurface(surface.AsPointer());
-                SDL.DestroySurface(surface.AsPointer());
-            },
-            r);
+                    SDL.UnlockSurface(surface.AsPointer());
+                    SDL.DestroySurface(surface.AsPointer());
+                },
+                r);
     }
 }

@@ -103,14 +103,15 @@ public class HsbColorPicker : Widget, Field
 
     void htmlTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        var success = Rgba32.TryParseHex(htmlTextbox.Value.ToString(), out var color);
+        var success = Color.TryParseHex(htmlTextbox.Value.ToString(), out var color);
         if (!success)
         {
             updateWidgets();
             return;
         }
 
-        Value = new(color.R / 255f, color.G / 255f, color.B / 255f, alphaSlider.Value);
+        var rgba = color.ToScaledVector4();
+        Value = new(rgba.X, rgba.Y, rgba.Z, alphaSlider.Value);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 

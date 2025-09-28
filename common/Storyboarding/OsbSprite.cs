@@ -776,8 +776,8 @@ public class OsbSprite : StoryboardObject
     }
 
     /// <summary>
-    ///     Commands on the <see cref="OsbSprite"/> until <see cref="EndGroup"/> is called will be active when the
-    ///     <paramref name="triggerName"/> event happens until <paramref name="endTime"/>.
+    /// Commands on the <see cref="OsbSprite"/> until <see cref="EndGroup"/> is called will be active when the
+    /// <paramref name="triggerName"/> event happens until <paramref name="endTime"/>.
     /// </summary>
     /// <remarks> Command times inside the loop are relative to the <paramref name="startTime"/> of the trigger loop. </remarks>
     /// <param name="triggerName"> Trigger type of the loop </param>
@@ -907,8 +907,8 @@ public class OsbSprite : StoryboardObject
                 break;
 
             default:
-                throw new NotSupportedException($"Failed to add command: No support for adding command of type {
-                    command.GetType().FullName}");
+                throw new NotSupportedException(
+                    $"Failed to add command: No support for adding command of type {command.GetType().FullName}");
         }
     }
 

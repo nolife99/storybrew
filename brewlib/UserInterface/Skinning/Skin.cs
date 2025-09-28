@@ -203,13 +203,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
                         parseFields(style, styleObject, parentStyle, constants);
 
-                        if (defaultStyle is null)
-                        {
-                            if (styleName == "default") defaultStyle = style;
-                            else
-                                throw new InvalidDataException(
-                                    $"The default {styleTypeName} style must be defined first");
-                        }
+                        defaultStyle ??= styleName == "default" ?
+                            style :
+                            throw new InvalidDataException($"The default {styleTypeName} style must be defined first");
 
                         styles.Add(styleName, style);
                     }
@@ -323,11 +319,10 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             [typeof(Drawable)] = (data, constants, skin) => skin.loadDrawable(data.Value<TinyToken>(), constants),
             [typeof(Vector2)] = (data, constants, _) =>
             {
-                if (data is TinyArray tinyArray)
-                    return new Vector2(resolve<float>(tinyArray[0], constants),
-                        resolve<float>(tinyArray[1], constants));
-
-                throw new InvalidDataException($"Incorrect vector2 format: {data}");
+                return data is TinyArray tinyArray ?
+                    (object)new Vector2(resolve<float>(tinyArray[0], constants),
+                        resolve<float>(tinyArray[1], constants)) :
+                    throw new InvalidDataException($"Incorrect vector2 format: {data}");
             },
             [typeof(Color)] = (data, constants, _) =>
             {
@@ -340,8 +335,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     if (colorField?.FieldType == typeof(Color)) return (Color)colorField.GetValue(null);
                 }
 
-                if (data is TinyArray tinyArray)
-                    return tinyArray.Count switch
+                return data is TinyArray tinyArray ?
+                    (object)(tinyArray.Count switch
                     {
                         3 => Color.FromScaledVector(new(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
@@ -351,17 +346,17 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants)))
-                    };
-
-                throw new InvalidDataException($"Incorrect color format: {data}");
+                    }) :
+                    throw new InvalidDataException($"Incorrect color format: {data}");
             },
             [typeof(FourSide)] = (data, constants, _) =>
             {
-                if (data is TinyArray tinyArray)
-                    return tinyArray.Count switch
+                return data is TinyArray tinyArray ?
+                    (object)(tinyArray.Count switch
                     {
                         1 => new(resolve<float>(tinyArray[0], constants)),
-                        2 => new(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
+                        2 => new(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants)),
                         3 => new(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
@@ -369,9 +364,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))
-                    };
-
-                throw new InvalidDataException($"Incorrect four side format: {data}");
+                    }) :
+                    throw new InvalidDataException($"Incorrect four side format: {data}");
             }
         }.ToFrozenDictionary();
 

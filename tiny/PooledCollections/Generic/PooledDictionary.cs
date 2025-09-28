@@ -211,9 +211,7 @@ public sealed partial class PooledDictionary<TKey, TValue> : IDictionary<TKey, T
         get
         {
             ref var value = ref FindValue(key);
-            if (!Unsafe.IsNullRef(ref value)) return value;
-
-            throw new KeyNotFoundException(nameof(key));
+            return !Unsafe.IsNullRef(ref value) ? value : throw new KeyNotFoundException(nameof(key));
         }
         set => TryInsert(key, value, InsertionBehavior.OverwriteExisting);
     }
@@ -1041,9 +1039,9 @@ public sealed partial class PooledDictionary<TKey, TValue> : IDictionary<TKey, T
                 if (_index == 0 || _index == _dictionary._count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
-                if (_getEnumeratorRetType == DictEntry) return new DictionaryEntry(_current.Key, _current.Value);
-
-                return new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
+                return _getEnumeratorRetType == DictEntry ?
+                    new DictionaryEntry(_current.Key, _current.Value) :
+                    new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
             }
         }
 

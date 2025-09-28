@@ -143,8 +143,8 @@ public class Vector3Picker : Widget, Field
         using (var y = value[1].ToCharArray(provider: CultureInfo.InvariantCulture))
             yTextbox.SetValueSilent(y.AsReadOnlySpan());
 
-        using (var z = value[2].ToCharArray(provider: CultureInfo.InvariantCulture))
-            zTextbox.SetValueSilent(z.AsReadOnlySpan());
+        using var z = value[2].ToCharArray(provider: CultureInfo.InvariantCulture);
+        zTextbox.SetValueSilent(z.AsReadOnlySpan());
     }
 
     protected override void Layout()

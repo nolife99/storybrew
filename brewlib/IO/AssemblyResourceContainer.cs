@@ -57,9 +57,7 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
     }
 
     public SafeWriteStream GetWriteStream(string path)
-    {
-        if (Path.IsPathRooted(path)) throw new ArgumentException("Resource paths must be relative", path);
-
-        return new(basePath is not null ? Path.Combine(basePath, path) : path);
-    }
+        => Path.IsPathRooted(path) ?
+            throw new ArgumentException("Resource paths must be relative", path) :
+            new(basePath is not null ? Path.Combine(basePath, path) : path);
 }

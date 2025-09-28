@@ -9,8 +9,8 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 public static class StreamReaderExtensions
 {
     /// <summary>
-    ///     Calls <paramref name="action"/> with the content of a .osu file, until it finds a blank line or reaches the end of
-    ///     the file.
+    /// Calls <paramref name="action"/> with the content of a .osu file, until it finds a blank line or reaches the end of
+    /// the file.
     /// </summary>
     public static void ParseSections<TState>(this StreamReader reader,
         Action<ReadOnlySpan<char>, TState> action,
@@ -27,8 +27,8 @@ public static class StreamReaderExtensions
     }
 
     /// <summary>
-    ///     Calls <paramref name="action"/> with the content of a line, until it finds a blank line or reaches the end of the
-    ///     file.
+    /// Calls <paramref name="action"/> with the content of a line, until it finds a blank line or reaches the end of the
+    /// file.
     /// </summary>
     public static void ParseSectionLines<TState>(this StreamReader reader,
         Action<ReadOnlySpan<char>, TState> action,

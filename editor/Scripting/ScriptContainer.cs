@@ -48,14 +48,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     public string LibraryFolder { get; }
 
     public IEnumerable<string> SourcePaths
-    {
-        get
-        {
-            if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return [MainSourcePath];
-
-            return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union([MainSourcePath]);
-        }
-    }
+        => LibraryFolder is null || !Directory.Exists(LibraryFolder) ? [MainSourcePath] :
+            Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union([MainSourcePath]);
 
     public ReadOnlySpan<string> ReferencedAssemblies
     {

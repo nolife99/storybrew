@@ -36,12 +36,8 @@ public readonly record struct CameraState(Matrix4x4 ViewProjection,
     }
 
     public float OpacityAt(float distance)
-    {
-        if (distance < NearFade) return float.Clamp((distance - NearClip) / (NearFade - NearClip), 0, 1);
-        if (distance > FarFade) return float.Clamp((FarClip - distance) / (FarClip - FarFade), 0, 1);
-
-        return 1;
-    }
+        => distance < NearFade ? float.Clamp((distance - NearClip) / (NearFade - NearClip), 0, 1) :
+            distance > FarFade ? float.Clamp((FarClip - distance) / (FarClip - FarFade), 0, 1) : 1;
 }
 #pragma warning restore CS1591
 ///<summary> Represents a three-dimensional perspective camera. </summary>

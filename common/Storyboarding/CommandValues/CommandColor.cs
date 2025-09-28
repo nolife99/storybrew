@@ -4,11 +4,9 @@ using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic.Temporary;
-using Vector3 = System.Numerics.Vector3;
 
 ///<summary> Base struct for coloring commands. </summary>
 public readonly record struct CommandColor : ICommandValue<CommandColor>,
@@ -89,8 +87,8 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
 
     /// <summary>
-    ///     Creates a <see cref="CommandColor"/> from HSB values.
-    ///     <para> Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1 </para>
+    /// Creates a <see cref="CommandColor"/> from HSB values.
+    /// <para> Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1 </para>
     /// </summary>
     public static CommandColor FromHsb(double hue, double saturation, double brightness)
     {
@@ -125,12 +123,6 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
 #pragma warning disable CS1591
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Color4(CommandColor obj)
-        => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);

@@ -4,7 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,

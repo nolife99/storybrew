@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Graphics;
 
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 public class RenderStates
 {

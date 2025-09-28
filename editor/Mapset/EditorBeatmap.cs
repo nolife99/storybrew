@@ -23,7 +23,7 @@ public class EditorBeatmap(string path) : Beatmap
     readonly List<int> bookmarks = [];
 
     readonly List<OsuBreak> breaks = [];
-    readonly List<Color> comboColors = [..defaultComboColors];
+    readonly List<Color> comboColors = [.. defaultComboColors];
     readonly List<OsuHitObject> hitObjects = [];
 
     float approachRate = 5, circleSize = 5, hpDrainRate = 5, overallDifficulty = 5, sliderMultiplier = 1.4f,

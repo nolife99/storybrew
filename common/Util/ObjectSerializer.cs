@@ -9,7 +9,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Storyboarding.CommandValues;
 using ZLinq;
-using Color4 = OpenTK.Mathematics.Color4;
 
 #pragma warning disable CS1591
 public abstract class ObjectSerializer
@@ -107,75 +106,6 @@ public abstract class ObjectSerializer
             {
                 var vector = (Vector3)v;
                 return ((Span<float>)[vector.X, vector.Y, vector.Z]).AsValueEnumerable().JoinToString(',');
-            }),
-        new SimpleObjectSerializer<OpenTK.Mathematics.Vector2>(
-            r => new OpenTK.Mathematics.Vector2(r.ReadSingle(), r.ReadSingle()),
-            (w, v) =>
-            {
-                var vector = (OpenTK.Mathematics.Vector2)v;
-                w.Write(vector.X);
-                w.Write(vector.Y);
-            },
-            v =>
-            {
-                var split = v.Split(',');
-                return new OpenTK.Mathematics.Vector2(float.Parse(split[0], CultureInfo.InvariantCulture),
-                    float.Parse(split[1], CultureInfo.InvariantCulture));
-            },
-            v =>
-            {
-                var vector = (OpenTK.Mathematics.Vector2)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) + "," +
-                    vector.Y.ToString(CultureInfo.InvariantCulture);
-            }),
-        new SimpleObjectSerializer<OpenTK.Mathematics.Vector3>(
-            r => new OpenTK.Mathematics.Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),
-            (w, v) =>
-            {
-                var vector = (OpenTK.Mathematics.Vector3)v;
-                w.Write(vector.X);
-                w.Write(vector.Y);
-                w.Write(vector.Z);
-            },
-            v =>
-            {
-                var split = v.Split(',');
-                return new OpenTK.Mathematics.Vector3(float.Parse(split[0], CultureInfo.InvariantCulture),
-                    float.Parse(split[1], CultureInfo.InvariantCulture),
-                    float.Parse(split[2], CultureInfo.InvariantCulture));
-            },
-            v =>
-            {
-                var vector = (OpenTK.Mathematics.Vector3)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) + "," +
-                    vector.Y.ToString(CultureInfo.InvariantCulture) + "," +
-                    vector.Z.ToString(CultureInfo.InvariantCulture);
-            }),
-        new SimpleObjectSerializer<Color4>(
-            r => new Color4(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()),
-            (w, v) =>
-            {
-                var color = (Color4)v;
-                w.Write(color.R);
-                w.Write(color.G);
-                w.Write(color.B);
-                w.Write(color.A);
-            },
-            v =>
-            {
-                var split = v.Split(',');
-                return new Color4(float.Parse(split[0], CultureInfo.InvariantCulture),
-                    float.Parse(split[1], CultureInfo.InvariantCulture),
-                    float.Parse(split[2], CultureInfo.InvariantCulture),
-                    float.Parse(split[3], CultureInfo.InvariantCulture));
-            },
-            v =>
-            {
-                var color = (Color4)v;
-                return color.R.ToString(CultureInfo.InvariantCulture) + "," +
-                    color.G.ToString(CultureInfo.InvariantCulture) + "," +
-                    color.B.ToString(CultureInfo.InvariantCulture) + "," +
-                    color.A.ToString(CultureInfo.InvariantCulture);
             }),
         new SimpleObjectSerializer<Rgba32>(r => new Rgba32(r.ReadUInt32()),
             (w, v) => w.Write(((Rgba32)v).PackedValue),

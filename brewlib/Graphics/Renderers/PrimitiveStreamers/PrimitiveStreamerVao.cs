@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
 {
@@ -106,10 +106,11 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
 
         if (commandBufferMap != 0)
         {
-            FrameSync.WaitAndLockRange(commandBufferId, commandBufferOffset, span.Length);
+            FrameSync.WaitForRange(commandBufferId, commandBufferOffset, span.Length);
             span.CopyTo(commandBufferMap.AsSpan<byte>(commandBufferSize)[commandBufferOffset..]);
 
             GL.FlushMappedBufferRange(BufferTarget.DrawIndirectBuffer, commandBufferOffset, span.Length);
+            FrameSync.LockRange(commandBufferId, commandBufferOffset, span.Length);
         }
         else
             GL.BufferSubData(BufferTarget.DrawIndirectBuffer,
@@ -187,9 +188,9 @@ abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
             commandBufferMap = GL.MapBufferRange(BufferTarget.DrawIndirectBuffer,
                 0,
                 commandBufferSize,
-                MapBufferAccessMask.MapWriteBit | MapBufferAccessMask.MapPersistentBit |
-                MapBufferAccessMask.MapFlushExplicitBit | MapBufferAccessMask.MapInvalidateBufferBit |
-                MapBufferAccessMask.MapUnsynchronizedBit);
+                BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit |
+                BufferAccessMask.MapFlushExplicitBit | BufferAccessMask.MapInvalidateBufferBit |
+                BufferAccessMask.MapUnsynchronizedBit);
         }
         else GL.BufferData(BufferTarget.DrawIndirectBuffer, commandBufferSize, 0, BufferUsageHint.DynamicDraw);
 

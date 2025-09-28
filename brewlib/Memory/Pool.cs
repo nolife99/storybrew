@@ -12,10 +12,10 @@ public sealed class Pool<T>(Action<T> disposer = null) where T : class, new()
     public T Retrieve()
     {
         var item = fastItem;
-        if (item is not null && Interlocked.CompareExchange(ref fastItem, null, item) == item ||
-            queue.TryDequeue(out item)) return item;
-
-        return new();
+        return item is not null && Interlocked.CompareExchange(ref fastItem, null, item) == item ||
+            queue.TryDequeue(out item) ?
+                item :
+                new();
     }
 
     public void Release(T obj)

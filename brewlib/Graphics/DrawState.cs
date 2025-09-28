@@ -11,7 +11,7 @@ using BrewLib.Graphics.Text;
 using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
@@ -464,8 +464,7 @@ public static class DrawState
     }
 
     public static bool HasCapabilities(int major, int minor, params ReadOnlySpan<string> extensions)
-        => extensions.AsValueEnumerable().All(s => Extensions.Contains(s)) ||
-            glVer.Major >= major && glVer.Minor >= minor;
+        => extensions.AsValueEnumerable().All(Extensions.Contains) || glVer.Major >= major && glVer.Minor >= minor;
 
     #endregion
 }

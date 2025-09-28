@@ -9,12 +9,14 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics;
 using SDL3;
 using SixLabors.ImageSharp.Diagnostics;
 using SixLabors.ImageSharp.Memory;
@@ -199,8 +201,8 @@ public static class Program
 
         SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
         SDL.GLSetAttribute(GLAttr.ContextFlags, (int)debugContext);
-        SDL.GLSetAttribute(GLAttr.ContextMajorVersion, 3);
-        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 2);
+        SDL.GLSetAttribute(GLAttr.ContextMajorVersion, 1);
+        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 0);
 
         ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
         SDL.GLSetAttribute(GLAttr.RedSize, format.RBits);
@@ -216,10 +218,14 @@ public static class Program
         glContext = SDL.GLCreateContext(window);
         if (glContext == 0) throw new InvalidOperationException($"Unable to create OpenGL context: {SDL.GetError()}");
 
-        if (!SDL.GLMakeCurrent(window, glContext))
-            throw new InvalidOperationException($"Unable to bind OpenGL context to window: {SDL.GetError()}");
-
-        GL.LoadBindings(new SDLBindingsContext());
+        ContextHandle contextHandle = new(glContext);
+        new GraphicsContext(default,
+            str =>
+            {
+                var func = SDL.GLGetProcAddress(str);
+                return func is null ? 0 : Marshal.GetFunctionPointerForDelegate(func);
+            },
+            () => contextHandle).Dispose();
 
         SDL.GLSetSwapInterval(0);
         SDL.GLResetAttributes();
@@ -241,8 +247,8 @@ public static class Program
     {
         var startT = Stopwatch.GetTimestamp();
 
-        TimeSpan prev = TimeSpan.Zero, fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero, longest = TimeSpan.Zero,
-            lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
+        TimeSpan prev = Stopwatch.GetElapsedTime(startT), fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero,
+            longest = TimeSpan.Zero, lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
 
         (int X, int Y) resize = default;
         var redraw = (bool pumpEvents) =>
@@ -307,7 +313,6 @@ public static class Program
         SDL.AddEventWatch(filter, state.AsPointer());
         SDL.ShowWindow(window);
 
-        prev = Stopwatch.GetElapsedTime(startT);
         while (true)
         {
             editor.InputManager.Update();
@@ -375,12 +380,20 @@ public static class Program
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
         domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
 
-        SDL.LogOutputFunction logger = (userdata, category, priority, message) => ThreadPool.UnsafeQueueUserWorkItem(_ =>
-        {
-            lock (errorHandlerLock)
-                using (var text = StringHelper.Interpolate(CultureInfo.InvariantCulture, $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss} [{category}] {message}\n"))
+        SDL.LogOutputFunction logger = (_, _, _, message) => ThreadPool.UnsafeQueueUserWorkItem(s =>
+            {
+                lock (errorHandlerLock)
+                {
+                    using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                        $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss} {(string)s}\n");
+
                     File.AppendAllText(tracePath, text.AsReadOnlySpan());
-        }, null);
+
+                    text.GetUnsafe(out var arr, out var count);
+                    Console.WriteLine(arr, 0, count - 1);
+                }
+            },
+            message);
 
         if (File.Exists(tracePath)) File.WriteAllText(tracePath, "");
 
@@ -405,7 +418,7 @@ public static class Program
             using StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true);
             try
             {
-                w.Write(DateTimeOffset.Now + " - ");
+                w.Write(DateTimeOffset.Now.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture) + ' ');
                 w.WriteLine(e);
                 w.WriteLine();
 

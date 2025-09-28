@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 
 public class ShaderType(string name)
 {
@@ -20,13 +20,9 @@ public class ShaderType(string name)
     }
 
     public ShaderVariable FieldAsVariable(ShaderVariable variable, Field field)
-    {
-        if (variable is null) return null;
-
-        if (!fields.Contains(field)) throw new InvalidOperationException();
-
-        return new ShaderFieldVariable(variable.Context, variable, field);
-    }
+        => variable is null ? null :
+            !fields.Contains(field) ? throw new InvalidOperationException() :
+            (ShaderVariable)new ShaderFieldVariable(variable.Context, variable, field);
 
     public readonly record struct Field(string Name, ActiveUniformType ShaderTypeName, int ArrayCount);
 }

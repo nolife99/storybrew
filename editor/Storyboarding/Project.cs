@@ -1,4 +1,6 @@
-﻿namespace StorybrewEditor.Storyboarding;
+﻿using Path = System.IO.Path;
+
+namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.Globalization;
@@ -16,7 +18,6 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
-using OpenTK.Mathematics;
 using SDL3;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -81,8 +82,7 @@ public sealed partial class Project : IDisposable
         if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
         SDL.LogInfo(SDL.LogCategory.Test,
-            $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
-            }");
+            $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath}");
 
         initializeAssetWatcher();
         using (var referencedAss = DefaultAssemblies.AsValueEnumerable()
@@ -540,8 +540,7 @@ public sealed partial class Project : IDisposable
     public static readonly string[] DefaultAssemblies =
     [
         typeof(Font).Assembly.Location, typeof(IPathCollection).Assembly.Location, typeof(Rgba32).Assembly.Location,
-        typeof(MathHelper).Assembly.Location, typeof(Script).Assembly.Location,
-        typeof(ValueArray<>).Assembly.Location, typeof(Pool<>).Assembly.Location,
+        typeof(Script).Assembly.Location, typeof(ValueArray<>).Assembly.Location, typeof(Pool<>).Assembly.Location,
         .. Directory.EnumerateFiles(RuntimeRefDirectory, "*.dll", SearchOption.AllDirectories)
     ];
 

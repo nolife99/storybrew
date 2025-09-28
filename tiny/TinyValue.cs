@@ -82,11 +82,7 @@ public class TinyValue : TinyToken
         }
 
         if (targetType.IsEnum && type is TinyTokenType.String or TinyTokenType.Integer)
-        {
-            if (value is null) return default;
-
-            return (T)Enum.Parse(targetType, value.ToString());
-        }
+            return value is null ? default : (T)Enum.Parse(targetType, value.ToString());
 
         if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
         {

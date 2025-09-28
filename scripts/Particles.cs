@@ -1,3 +1,5 @@
+using Vector2 = System.Numerics.Vector2;
+
 namespace StorybrewScripts;
 
 using System;
@@ -5,7 +7,6 @@ using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using Vector2 = System.Numerics.Vector2;
 
 class Particles : StoryboardObjectGenerator
 {

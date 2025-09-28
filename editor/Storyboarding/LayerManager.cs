@@ -122,8 +122,8 @@ public sealed class LayerManager : IDisposable
             sortLayer(layerToMove);
         }
         else
-            throw new InvalidOperationException($"Cannot move layer '{layerToMove.Identifier}' to the position of '{
-                layerToMove.Name}'");
+            throw new InvalidOperationException(
+                $"Cannot move layer '{layerToMove.Identifier}' to the position of '{layerToMove.Name}'");
     }
 
     public void TriggerEvents(TimeSpan startTime, TimeSpan endTime)

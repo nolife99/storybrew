@@ -13,12 +13,9 @@ partial struct ValueDictionary<TKey, TValue>
     [UnscopedRef]
     public AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>()
         where TAlternateKey : notnull, allows ref struct
-    {
-        if (!AlternateLookup<TAlternateKey>.IsCompatibleKey(in this))
-            throw new InvalidOperationException("Incompatible comparer");
-
-        return new(ref this);
-    }
+        => !AlternateLookup<TAlternateKey>.IsCompatibleKey(in this) ?
+            throw new InvalidOperationException("Incompatible comparer") :
+            new(ref this);
 
     [UnscopedRef]
     public bool TryGetAlternateLookup<TAlternateKey>(out AlternateLookup<TAlternateKey> lookup)
@@ -45,9 +42,7 @@ partial struct ValueDictionary<TKey, TValue>
             get
             {
                 ref var value = ref FindValue(key, out _);
-                if (Unsafe.IsNullRef(ref value)) throw new KeyNotFoundException();
-
-                return value;
+                return Unsafe.IsNullRef(ref value) ? throw new KeyNotFoundException() : value;
             }
             set => GetValueRefOrAddDefault(key, out _) = value;
         }

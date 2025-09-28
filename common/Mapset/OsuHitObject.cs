@@ -175,12 +175,10 @@ public record OsuHitObject
 
         foreach (var value in values) value.Dispose();
 
-        if (result is null)
+        return result is null ?
             throw new NotSupportedException(
-                $"Parsing failed - the line does not contain valid hit object information: {line
-                }");
-
-        return result;
+                $"Parsing failed - the line does not contain valid hit object information: {line}") :
+            result;
     }
 }
 

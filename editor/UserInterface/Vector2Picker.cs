@@ -104,8 +104,8 @@ public class Vector2Picker : Widget, Field
         using (var x = value.X.ToCharArray(provider: CultureInfo.InvariantCulture))
             xTextbox.SetValueSilent(x.AsReadOnlySpan());
 
-        using (var y = value.Y.ToCharArray(provider: CultureInfo.InvariantCulture))
-            yTextbox.SetValueSilent(y.AsReadOnlySpan());
+        using var y = value.Y.ToCharArray(provider: CultureInfo.InvariantCulture);
+        yTextbox.SetValueSilent(y.AsReadOnlySpan());
     }
 
     protected override void Layout()

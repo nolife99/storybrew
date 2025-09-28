@@ -5,8 +5,8 @@ using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 /// <summary>
-///     The absolute result of a command that can be given to an <see cref="OsbSprite"/> to change its properties over
-///     time.
+/// The absolute result of a command that can be given to an <see cref="OsbSprite"/> to change its properties over
+/// time.
 /// </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
 /// <seealso cref="Command{TValue}"/>

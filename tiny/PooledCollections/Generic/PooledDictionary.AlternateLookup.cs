@@ -12,12 +12,9 @@ partial class PooledDictionary<TKey, TValue>
 {
     public AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>()
         where TAlternateKey : notnull, allows ref struct
-    {
-        if (!AlternateLookup<TAlternateKey>.IsCompatibleKey(this))
-            throw new InvalidOperationException("Incompatible comparer");
-
-        return new(this);
-    }
+        => !AlternateLookup<TAlternateKey>.IsCompatibleKey(this) ?
+            throw new InvalidOperationException("Incompatible comparer") :
+            new(this);
 
     public bool TryGetAlternateLookup<TAlternateKey>(out AlternateLookup<TAlternateKey> lookup)
         where TAlternateKey : notnull, allows ref struct
@@ -43,9 +40,7 @@ partial class PooledDictionary<TKey, TValue>
             get
             {
                 ref var value = ref FindValue(key, out _);
-                if (Unsafe.IsNullRef(ref value)) throw new KeyNotFoundException();
-
-                return value;
+                return Unsafe.IsNullRef(ref value) ? throw new KeyNotFoundException() : value;
             }
             set => GetValueRefOrAddDefault(key, out _) = value;
         }

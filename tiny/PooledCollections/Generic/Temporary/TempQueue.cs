@@ -392,7 +392,7 @@ public ref struct TempQueue<T>
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            Debug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index is -1 or -2);
 
             if (_index == -1) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

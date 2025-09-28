@@ -404,15 +404,14 @@ public record struct State
         Vector2 scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
             noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black ||
-            (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 || scale.X <= 0 ||
-            scale.Y <= 0) return false;
-
-        return OsbSprite.InScreenBounds(
-            new(noGen ? Position.X : double.Round(Position.X, generator.PositionDecimals),
-                noGen ? Position.Y : double.Round(Position.Y, generator.PositionDecimals)),
-            imageSize * scale,
-            noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals),
-            origin);
+        return Additive && Color == CommandColor.Black ||
+            (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 || scale.X <= 0 || scale.Y <= 0 ?
+                false :
+                OsbSprite.InScreenBounds(
+                    new(noGen ? Position.X : double.Round(Position.X, generator.PositionDecimals),
+                        noGen ? Position.Y : double.Round(Position.Y, generator.PositionDecimals)),
+                    imageSize * scale,
+                    noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals),
+                    origin);
     }
 }

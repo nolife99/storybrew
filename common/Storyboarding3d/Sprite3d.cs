@@ -36,8 +36,8 @@ public class Sprite3d : Node3d, HasOsbSprites
     public string SpritePath;
 
     /// <summary>
-    ///     If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the
-    ///     <see cref="Camera"/>.
+    /// If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the
+    /// <see cref="Camera"/>.
     /// </summary>
     public CommandScale? UseDefaultScale;
 

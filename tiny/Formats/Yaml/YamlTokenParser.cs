@@ -46,8 +46,8 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
             if (lineIndent == indent) return false;
 
             if (lineIndent > indent)
-                throw new InvalidDataException($"Unexpected indent: {lineIndent}, expected: {indent}, token: {
-                    context.CurrentToken}");
+                throw new InvalidDataException(
+                    $"Unexpected indent: {lineIndent}, expected: {indent}, token: {context.CurrentToken}");
 
             context.PopParser();
             return true;
@@ -238,8 +238,8 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
                 return;
             }
 
-            throw new InvalidDataException($"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent
-            }, token: {context.CurrentToken}");
+            throw new InvalidDataException(
+                $"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent}, token: {context.CurrentToken}");
         }
 
         public override void End() => Callback(new TinyValue(null, TinyTokenType.Null));

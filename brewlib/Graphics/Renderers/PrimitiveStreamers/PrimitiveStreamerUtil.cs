@@ -8,13 +8,9 @@ static class PrimitiveStreamerUtil
     public static IPrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
         int minVert,
         scoped ReadOnlySpan<ushort> indices) where TPrimitive : unmanaged
-    {
-        if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerPersistentMap<TPrimitive>(vertDec, minVert, indices);
-
-        if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices);
-
-        throw new NotSupportedException();
-    }
+        => PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities() ?
+            new PrimitiveStreamerPersistentMap<TPrimitive>(vertDec, minVert, indices) :
+            PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities() ?
+                (IPrimitiveStreamer<TPrimitive>)new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices) :
+                throw new NotSupportedException();
 }

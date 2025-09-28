@@ -49,9 +49,9 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Takes the intersection of this set with other. Modifies this set. </summary>
     /// <remarks>
-    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
-    ///     and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the
-    ///     property that the intersection of anything with the empty set is the empty set.
+    /// Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
+    /// and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the property
+    /// that the intersection of anything with the empty set is the empty set.
     /// </remarks>
     /// <param name="other"> enumerable with items to add </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,9 +59,9 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Takes the intersection of this set with other. Modifies this set. </summary>
     /// <remarks>
-    ///     Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
-    ///     and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the
-    ///     property that the intersection of anything with the empty set is the empty set.
+    /// Implementation Notes: Iterate over the other and mark intersection by checking contains in this. Then loop over
+    /// and delete any unmarked elements. Total cost is n2+n1. Attempts to return early based on counts alone, using the property
+    /// that the intersection of anything with the empty set is the empty set.
     /// </remarks>
     /// <param name="other"> enumerable with items to add </param>
     public void IntersectWith(ReadOnlySpan<T> other)
@@ -80,8 +80,8 @@ partial struct ValueHashSet<T> : IDisposable
     }
 
     /// <summary>
-    ///     Iterate over other. If contained in this, mark an element in bit array corresponding to its position in _slots. If
-    ///     anything is unmarked (in bit array), remove it. This attempts to allocate on the stack, if below StackAllocThreshold.
+    /// Iterate over other. If contained in this, mark an element in bit array corresponding to its position in _slots. If
+    /// anything is unmarked (in bit array), remove it. This attempts to allocate on the stack, if below StackAllocThreshold.
     /// </summary>
     /// <param name="other"> </param>
     void IntersectWithSpan(ReadOnlySpan<T> other)
@@ -150,12 +150,12 @@ partial struct ValueHashSet<T> : IDisposable
     }
 
     /// <summary>
-    ///     Implementation notes: Used for symmetric except when other isn't a HashSet. This is more tedious because other may
-    ///     contain duplicates. HashSet technique could fail in these situations: 1. Other has a duplicate that's not in this:
-    ///     HashSet technique would add then remove it. 2. Other has a duplicate that's in this: HashSet technique would remove then
-    ///     add it back. In general, its presence would be toggled each time it appears in other. This technique uses bit marking to
-    ///     indicate whether to add/remove the item. If already present in collection, it will get marked for deletion. If added
-    ///     from other, it will get marked as something not to remove.
+    /// Implementation notes: Used for symmetric except when other isn't a HashSet. This is more tedious because other may
+    /// contain duplicates. HashSet technique could fail in these situations: 1. Other has a duplicate that's not in this: HashSet
+    /// technique would add then remove it. 2. Other has a duplicate that's in this: HashSet technique would remove then add it
+    /// back. In general, its presence would be toggled each time it appears in other. This technique uses bit marking to indicate
+    /// whether to add/remove the item. If already present in collection, it will get marked for deletion. If added from other, it
+    /// will get marked as something not to remove.
     /// </summary>
     /// <param name="other"> </param>
     void SymmetricExceptWithSpan(ReadOnlySpan<T> other)
@@ -218,9 +218,9 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Checks if this is a proper subset of other (i.e. strictly contained in) </summary>
     /// <remarks>
-    ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
-    ///     empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the
-    ///     empty set.
+    /// Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
+    /// empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the empty
+    /// set.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a proper subset of other; false if not </returns>
@@ -229,9 +229,9 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Checks if this is a proper subset of other (i.e. strictly contained in) </summary>
     /// <remarks>
-    ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
-    ///     empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the
-    ///     empty set.
+    /// Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If this is the
+    /// empty set, then it's a proper subset of a set that contains at least one element, but it's not a proper subset of the empty
+    /// set.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a proper subset of other; false if not </returns>
@@ -248,16 +248,16 @@ partial struct ValueHashSet<T> : IDisposable
     }
 
     /// <summary>
-    ///     Determines counts that can be used to determine equality, subset, and superset. This is only used when other is an
-    ///     IEnumerable and not a HashSet. If other is a HashSet these properties can be checked faster without use of marking
-    ///     because we can assume other has no duplicates. The following count checks are performed by callers: 1. Equals: checks if
-    ///     unfoundCount = 0 and uniqueFoundCount = _count; i.e. everything in other is in this and everything in this is in other
-    ///     2. Subset: checks if unfoundCount >= 0 and uniqueFoundCount = _count; i.e. other may have elements not in this and
-    ///     everything in this is in other 3. Proper subset: checks if unfoundCount > 0 and uniqueFoundCount = _count; i.e other
-    ///     must have at least one element not in this and everything in this is in other 4. Proper superset: checks if unfound
-    ///     count = 0 and uniqueFoundCount strictly less than _count; i.e. everything in other was in this and this had at least one
-    ///     element not contained in other. An earlier implementation used delegates to perform these checks rather than returning
-    ///     an ElementCount struct; however this was changed due to the perf overhead of delegates.
+    /// Determines counts that can be used to determine equality, subset, and superset. This is only used when other is an
+    /// IEnumerable and not a HashSet. If other is a HashSet these properties can be checked faster without use of marking because
+    /// we can assume other has no duplicates. The following count checks are performed by callers: 1. Equals: checks if
+    /// unfoundCount = 0 and uniqueFoundCount = _count; i.e. everything in other is in this and everything in this is in other 2.
+    /// Subset: checks if unfoundCount >= 0 and uniqueFoundCount = _count; i.e. other may have elements not in this and everything
+    /// in this is in other 3. Proper subset: checks if unfoundCount > 0 and uniqueFoundCount = _count; i.e other must have at least
+    /// one element not in this and everything in this is in other 4. Proper superset: checks if unfound count = 0 and
+    /// uniqueFoundCount strictly less than _count; i.e. everything in other was in this and this had at least one element not
+    /// contained in other. An earlier implementation used delegates to perform these checks rather than returning an ElementCount
+    /// struct; however this was changed due to the perf overhead of delegates.
     /// </summary>
     /// <param name="other"> </param>
     /// <param name="returnIfUnfound"> Allows us to finish faster for equals and proper superset because unfoundCount must be 0. </param>
@@ -312,8 +312,8 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Checks if this is a superset of other </summary>
     /// <remarks>
-    ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
-    ///     elements (it's the empty set), then this is a superset, even if this is also the empty set.
+    /// Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
+    /// elements (it's the empty set), then this is a superset, even if this is also the empty set.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a superset of other; false if not </returns>
@@ -322,25 +322,23 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Checks if this is a superset of other </summary>
     /// <remarks>
-    ///     Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
-    ///     elements (it's the empty set), then this is a superset, even if this is also the empty set.
+    /// Implementation Notes: The following properties are used up-front to avoid element-wise checks: 1. If other has no
+    /// elements (it's the empty set), then this is a superset, even if this is also the empty set.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a superset of other; false if not </returns>
     public bool IsSupersetOf(ReadOnlySpan<T> other)
-    {
-        // if other is the empty set then this is a superset
-        if (other.Length == 0) return true;
+        =>
 
-        return ContainsAllElements(other);
-    }
+            // if other is the empty set then this is a superset
+            other.Length == 0 ? true : ContainsAllElements(other);
 
     /// <summary> Checks if this is a proper superset of other (i.e. other strictly contained in this) </summary>
     /// <remarks>
-    ///     Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
-    ///     was at least one element not contained in other. The following properties are used up-front to avoid element-wise
-    ///     checks: 1. If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2.
-    ///     If other is an empty set and this contains at least 1 element, then this is a proper superset.
+    /// Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
+    /// was at least one element not contained in other. The following properties are used up-front to avoid element-wise checks: 1.
+    /// If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2. If other is an
+    /// empty set and this contains at least 1 element, then this is a proper superset.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a proper superset of other; false if not </returns>
@@ -349,10 +347,10 @@ partial struct ValueHashSet<T> : IDisposable
 
     /// <summary> Checks if this is a proper superset of other (i.e. other strictly contained in this) </summary>
     /// <remarks>
-    ///     Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
-    ///     was at least one element not contained in other. The following properties are used up-front to avoid element-wise
-    ///     checks: 1. If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2.
-    ///     If other is an empty set and this contains at least 1 element, then this is a proper superset.
+    /// Implementation Notes: This is slightly more complicated than IsSupersetOf because we have to keep track if there
+    /// was at least one element not contained in other. The following properties are used up-front to avoid element-wise checks: 1.
+    /// If this is the empty set, then it can't be a proper superset of any set, even if other is the empty set. 2. If other is an
+    /// empty set and this contains at least 1 element, then this is a proper superset.
     /// </remarks>
     /// <param name="other"> </param>
     /// <returns> true if this is a proper superset of other; false if not </returns>
@@ -445,8 +443,8 @@ partial struct ValueHashSet<T> : IDisposable
     }
 
     /// <summary>
-    ///     Checks if this contains of other's elements. Iterates over other's elements and returns false as soon as it finds
-    ///     an element in other that's not in this. Used by SupersetOf, ProperSupersetOf, and SetEquals.
+    /// Checks if this contains of other's elements. Iterates over other's elements and returns false as soon as it finds
+    /// an element in other that's not in this. Used by SupersetOf, ProperSupersetOf, and SetEquals.
     /// </summary>
     /// <param name="other"> </param>
     /// <returns> </returns>

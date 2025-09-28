@@ -15,8 +15,7 @@ public sealed class TextFontManager(TextureContainer container) : IDisposable
         if (!fonts.TryGetValue(identifier, out var font))
             fonts[identifier] = font = new(fontName, fontSize * scaling, container);
 
-        if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
-        else references[identifier] = 1;
+        references[identifier] = references.TryGetValue(identifier, out var refCount) ? refCount + 1 : 1;
 
         return new TextFontProxy<(int, TextFontManager)>(font,
             (f, state) =>

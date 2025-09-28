@@ -8,8 +8,8 @@ using StorybrewCommon.Storyboarding.CommandValues;
 public static class KeyframedValueExtensions
 {
     /// <summary>
-    ///     Iterates through each keyframe in <paramref name="keyframes"/>, calling <paramref name="action"/> for each true
-    ///     value.
+    /// Iterates through each keyframe in <paramref name="keyframes"/>, calling <paramref name="action"/> for each true
+    /// value.
     /// </summary>
     public static void ForEachFlag(this KeyframedValue<bool> keyframes, Action<float, float> action)
     {
