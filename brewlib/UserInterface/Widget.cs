@@ -538,7 +538,7 @@ public class Widget(WidgetManager manager) : IDisposable
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application,
+                SDL.LogError(LogCategory.Application,
                     $"Event handler '{handler.Method}' for '{handler.Target}':\n{ex}");
             }
 

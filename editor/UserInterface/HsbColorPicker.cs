@@ -64,14 +64,15 @@ public class HsbColorPicker : Widget, Field
 
     public override Vector2 PreferredSize => new(layout.PreferredSize.X, layout.PreferredSize.Y + previewHeight);
 
-    public Rgba32 Value
+    public Color Value
     {
-        get => new(value);
+        get => Color.FromScaledVector(value);
         set
         {
-            if (new Rgba32(this.value) == value) return;
+            var vec = value.ToScaledVector4();
+            if (this.value == vec) return;
 
-            this.value = value.ToVector4();
+            this.value = vec;
 
             updateWidgets();
             OnValueChanged?.Invoke(this, EventArgs.Empty);
@@ -80,16 +81,16 @@ public class HsbColorPicker : Widget, Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
 
-    public object FieldValue { get => Value; set => Value = (Rgba32)value; }
+    public object FieldValue { get => Value; set => Value = (Color)value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
     void slider_OnValueChanged(object sender, EventArgs e)
     {
-        var value = ColorExtensions.FromHsb(new(hueSlider.Value % 1,
-            saturationSlider.Value,
-            brightnessSlider.Value,
-            alphaSlider.Value));
+        var value = ColorExtensions.FromHsb(new((float)hueSlider.Value % 1,
+            (float)saturationSlider.Value,
+            (float)brightnessSlider.Value,
+            (float)alphaSlider.Value));
 
         if (this.value == value) return;
 
@@ -111,7 +112,7 @@ public class HsbColorPicker : Widget, Field
         }
 
         var rgba = color.ToScaledVector4();
-        Value = new(rgba.X, rgba.Y, rgba.Z, alphaSlider.Value);
+        Value = Color.FromScaledVector(new(rgba.AsVector3(), (float)alphaSlider.Value));
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 

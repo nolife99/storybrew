@@ -12,7 +12,7 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 /// <summary> A command that can be given to an <see cref="OsbSprite"/> to change its properties over time. </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
 public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand, IOffsetable
-    where TValue : struct, ICommandValue<TValue>
+    where TValue : ICommandValue<TValue>
 {
     /// <summary> The end value of the command. </summary>
     public readonly TValue EndValue;

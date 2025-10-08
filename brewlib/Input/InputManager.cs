@@ -39,7 +39,7 @@ public sealed class InputManager(nint window, IInputHandler handler)
         if (SDL.PeepEvents(events, EventAction.GetEvent, EventType.First, EventType.Last) == -1)
             throw new InvalidOperationException($"Unable to get events: {SDL.GetError()}");
 
-        foreach (var e in events)
+        foreach (ref var e in events)
             switch (e.Type)
             {
                 case EventType.WindowMouseEnter: window_MouseEnter(); break;

@@ -119,19 +119,19 @@ public static class DrawState
                     switch (severity)
                     {
                         case DebugSeverity.DebugSeverityHigh:
-                            SDL.LogError(SDL.LogCategory.Render, str.AsReadOnlySpan());
+                            SDL.LogError(LogCategory.Render, str.AsReadOnlySpan());
                             throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
 
                         case DebugSeverity.DebugSeverityMedium:
-                            SDL.LogWarn(SDL.LogCategory.Render, str.AsReadOnlySpan());
+                            SDL.LogWarn(LogCategory.Render, str.AsReadOnlySpan());
                             break;
 
                         case DebugSeverity.DebugSeverityLow:
-                            SDL.LogInfo(SDL.LogCategory.Render, str.AsReadOnlySpan());
+                            SDL.LogInfo(LogCategory.Render, str.AsReadOnlySpan());
                             break;
 
                         case DebugSeverity.DebugSeverityNotification:
-                            SDL.LogDebug(SDL.LogCategory.Render, str.AsReadOnlySpan());
+                            SDL.LogDebug(LogCategory.Render, str.AsReadOnlySpan());
                             break;
                     }
                 },
@@ -151,7 +151,7 @@ public static class DrawState
                 SetCapability(EnableCap.FramebufferSrgb, true);
                 ColorCorrected = true;
             }
-            else SDL.LogWarn(SDL.LogCategory.Render, "The default framebuffer isn't sRgb");
+            else SDL.LogWarn(LogCategory.Render, "The default framebuffer isn't sRgb");
         }
 
         UseTextureCompression &= Extensions.Contains("GL_EXT_texture_compression_s3tc");
@@ -172,7 +172,7 @@ public static class DrawState
             1,
             out int preferredFormat);
 
-        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)preferredFormat)}");
+        SDL.LogInfo(LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)preferredFormat)}");
 
         GL.GetInternalformat(ImageTarget.Texture2D,
             SizedInternalFormat.Rgba8,
@@ -180,13 +180,13 @@ public static class DrawState
             1,
             out preferredFormat);
 
-        SDL.LogInfo(SDL.LogCategory.Render, $"preferred texture type: 0x{preferredFormat:x}");
+        SDL.LogInfo(LogCategory.Render, $"preferred texture type: 0x{preferredFormat:x}");
 
-        SDL.LogInfo(SDL.LogCategory.Render,
+        SDL.LogInfo(LogCategory.Render,
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
 
-        SDL.LogInfo(SDL.LogCategory.Render, $"max texture size: {MaxTextureSize}");
-        SDL.LogInfo(SDL.LogCategory.Render, $"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
+        SDL.LogInfo(LogCategory.Render, $"max texture size: {MaxTextureSize}");
+        SDL.LogInfo(LogCategory.Render, $"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
 
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
@@ -450,17 +450,17 @@ public static class DrawState
     {
         var glVerStr = GL.GetString(StringName.Version);
         glVer = new(glVerStr.Split(' ')[0]);
-        SDL.LogInfo(SDL.LogCategory.Render, $"OpenGL v{glVerStr}");
+        SDL.LogInfo(LogCategory.Render, $"OpenGL v{glVerStr}");
 
         var rendererName = GL.GetString(StringName.Renderer);
         var rendererVendor = GL.GetString(StringName.Vendor);
-        SDL.LogInfo(SDL.LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
+        SDL.LogInfo(LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
         if (glVer < new Version(3, 2))
             throw new NotSupportedException(
                 $"This application requires at least OpenGL 3.2 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
-        SDL.LogInfo(SDL.LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
+        SDL.LogInfo(LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
     public static bool HasCapabilities(int major, int minor, params ReadOnlySpan<string> extensions)

@@ -86,7 +86,7 @@ public sealed class ShaderBuilder
         fragmentShaderCode.InsertRange(0, commonCodeSpan);
 
         if (log)
-            SDL.LogInfo(SDL.LogCategory.Render,
+            SDL.LogInfo(LogCategory.Render,
                 $"--- VERTEX ---\n{vertexShaderCode.AsReadOnlySpan()}\n--- FRAGMENT ---\n{fragmentShaderCode.AsReadOnlySpan()}");
 
         return new(vertexShaderCode.AsReadOnlySpan().ToString(), fragmentShaderCode.AsReadOnlySpan().ToString());

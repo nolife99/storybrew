@@ -1,14 +1,12 @@
 namespace StorybrewEditor;
 
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.ExceptionServices;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +16,6 @@ using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics;
 using SDL3;
-using SixLabors.ImageSharp.Diagnostics;
 using SixLabors.ImageSharp.Memory;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -33,7 +30,7 @@ public static class Program
 
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
-    static readonly ConcurrentDictionary<nint, (IMemoryOwner<byte>, MemoryHandle, StackTrace)> managedAllocs = new();
+    static readonly ConcurrentDictionary<nint, StackTrace> managedAllocs = new();
 
     public static AudioManager AudioManager { get; private set; }
     public static Settings Settings { get; private set; }
@@ -42,56 +39,34 @@ public static class Program
     {
         SDL.SetMemoryFunctions(cb =>
             {
-                var memory = MemoryAllocator.Default.Allocate<byte>((int)cb);
-                var pinned = memory.Memory.Pin();
-                var addr = memory.Memory.Span.AsPointer();
+                var addr = Marshal.AllocHGlobal((nint)cb);
 
-                managedAllocs.TryAdd(addr, (memory, pinned, new(true)));
+                managedAllocs.TryAdd(addr, new(true));
                 return addr;
             },
             (c, s) =>
             {
-                var memory = MemoryAllocator.Default.Allocate<byte>((int)(c * s));
-                var span = memory.Memory.Span;
-                span.Clear();
+                var addr = Marshal.AllocHGlobal((nint)(c * s));
+                addr.AsSpan<byte>((int)(c * s)).Clear();
 
-                var pinned = memory.Memory.Pin();
-                var addr = span.AsPointer();
-
-                managedAllocs.TryAdd(addr, (memory, pinned, new(true)));
+                managedAllocs.TryAdd(addr, new(true));
                 return addr;
             },
             (addr, cb) =>
             {
-                IMemoryOwner<byte> oldArr = null;
-                if (managedAllocs.TryRemove(addr, out var arrayToFree))
-                {
-                    oldArr = arrayToFree.Item1;
-                    arrayToFree.Item2.Dispose();
-                }
+                managedAllocs.TryRemove(addr, out _);
 
-                var memory = MemoryAllocator.Default.Allocate<byte>((int)cb);
-                var span = memory.Memory.Span;
+                var newAddr = Marshal.ReAllocHGlobal(addr, (nint)cb);
 
-                if (oldArr is not null)
-                {
-                    oldArr.Memory.Span.CopyTo(span);
-                    oldArr.Dispose();
-                }
-
-                var pinned = memory.Memory.Pin();
-                var newAddr = span.AsPointer();
-
-                managedAllocs.TryAdd(newAddr, (memory, pinned, new(true)));
+                managedAllocs.TryAdd(newAddr, new(true));
                 return newAddr;
             },
             addr =>
             {
-                if (!managedAllocs.TryRemove(addr, out var arrayToFree))
+                if (!managedAllocs.TryRemove(addr, out _))
                     throw new InvalidMemoryOperationException($"Attempted to free invalid memory: {addr}");
 
-                arrayToFree.Item2.Dispose();
-                arrayToFree.Item1.Dispose();
+                Marshal.FreeHGlobal(addr);
             });
 
         if (args.Length != 0 && handleArguments(args)) return;
@@ -101,13 +76,6 @@ public static class Program
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         GC.WaitForPendingFinalizers();
-
-        if (managedAllocs.IsEmpty) return;
-
-        throw new AggregateException(managedAllocs.Values.Select(p
-            => ExceptionDispatchInfo.SetRemoteStackTrace(
-                new InvalidMemoryOperationException(p.Item1.Memory.Length.ToString()),
-                p.Item3.ToString())));
     }
 
     static bool handleArguments(string[] args)
@@ -180,13 +148,13 @@ public static class Program
 
         Settings.Save();
 
-        SDL.GLDestroyContext(context);
+        SDL.GLDestroyContext(context.Handle);
         SDL.GLUnloadLibrary();
         SDL.DestroyWindow(window);
         SDL.Quit();
     }
 
-    static nint createWindow(DisplayMode displayDevice, out nint glContext)
+    static nint createWindow(DisplayMode displayDevice, out ContextHandle glContext)
     {
         if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
 
@@ -196,42 +164,50 @@ public static class Program
 #else
             GLContextFlag.ForwardCompatible;
 
-        SDL.GLSetAttribute(GLAttr.ContextNoError, 1);
+        SetAttributeSafe(GLAttr.ContextNoError, 1);
 #endif
 
-        SDL.GLSetAttribute(GLAttr.ContextProfileMask, (int)GLProfile.Core);
-        SDL.GLSetAttribute(GLAttr.ContextFlags, (int)debugContext);
-        SDL.GLSetAttribute(GLAttr.ContextMajorVersion, 1);
-        SDL.GLSetAttribute(GLAttr.ContextMinorVersion, 0);
+        SetAttributeSafe(GLAttr.ContextProfileMask, (int)GLProfile.Core);
+        SetAttributeSafe(GLAttr.ContextFlags, (int)debugContext);
+        SetAttributeSafe(GLAttr.ContextMajorVersion, 3);
+        SetAttributeSafe(GLAttr.ContextMinorVersion, 2);
 
         ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
-        SDL.GLSetAttribute(GLAttr.RedSize, format.RBits);
-        SDL.GLSetAttribute(GLAttr.GreenSize, format.GBits);
-        SDL.GLSetAttribute(GLAttr.BlueSize, format.BBits);
-        SDL.GLSetAttribute(GLAttr.AlphaSize, format.ABits);
-        SDL.GLSetAttribute(GLAttr.DepthSize, 0);
+        SetAttributeSafe(GLAttr.RedSize, format.RBits);
+        SetAttributeSafe(GLAttr.GreenSize, format.GBits);
+        SetAttributeSafe(GLAttr.BlueSize, format.BBits);
+        SetAttributeSafe(GLAttr.AlphaSize, format.ABits);
+        SetAttributeSafe(GLAttr.DepthSize, 0);
 
         var window = SDL.CreateWindow(Name, 0, 0, WindowFlags.OpenGL | WindowFlags.Resizable | WindowFlags.Hidden);
 
         if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
 
-        glContext = SDL.GLCreateContext(window);
-        if (glContext == 0) throw new InvalidOperationException($"Unable to create OpenGL context: {SDL.GetError()}");
+        glContext = new(SDL.GLCreateContext(window));
+        if (glContext.Handle == 0)
+            throw new InvalidOperationException($"Unable to create OpenGL context: {SDL.GetError()}");
 
-        ContextHandle contextHandle = new(glContext);
-        new GraphicsContext(default,
-            str =>
-            {
-                var func = SDL.GLGetProcAddress(str);
-                return func is null ? 0 : Marshal.GetFunctionPointerForDelegate(func);
-            },
-            () => contextHandle).Dispose();
+        var contextHandle = glContext;
+        using (Toolkit.Init(new() { Backend = PlatformBackend.PreferNative }))
+            new GraphicsContext(default,
+                str =>
+                {
+                    var func = SDL.GLGetProcAddress(str);
+                    return func is null ? 0 : Marshal.GetFunctionPointerForDelegate(func);
+                },
+                () => contextHandle).Dispose();
 
         SDL.GLSetSwapInterval(0);
         SDL.GLResetAttributes();
 
         Native.InitializeHandle(window);
         return window;
+
+        static void SetAttributeSafe(GLAttr attr, int val)
+        {
+            if (!SDL.GLSetAttribute(attr, val))
+                throw new InvalidOperationException($"Failed to set attribute {Enum.GetName(attr)}: {SDL.GetError()}");
+        }
     }
 
     static AudioManager createAudioManager()
@@ -272,19 +248,19 @@ public static class Program
             if (!SDL.GLSwapWindow(window))
                 throw new InvalidOperationException($"Unable to swap framebuffer: {SDL.GetError()}");
 
-            if (schedulerLock.TryEnter())
+            if (Monitor.TryEnter(scheduledActions))
             {
                 using var snapshot = TempList.Create(scheduledActions);
                 scheduledActions.Clear();
 
-                schedulerLock.Exit();
+                Monitor.Exit(scheduledActions);
                 foreach (var action in snapshot) action.Dispose();
             }
 
             var active = Stopwatch.GetElapsedTime(startT) - cur;
-            var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active - TimeSpan.FromTicks(1);
+            var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > TimeSpan.Zero) Thread.Sleep(sleepTime);
+            if (sleepTime > TimeSpan.Zero) SDL.DelayNS((ulong)(sleepTime.Ticks * 97.5));
 
             var frameTime = cur - prev;
             prev = cur;
@@ -324,13 +300,17 @@ public static class Program
         SDL.RemoveEventWatch(filter, state.AsPointer());
     }
 
+    static readonly Func<int> getCount = managedAllocs.GetType()
+        .GetMethod("GetCountNoLocks", BindingFlags.Instance | BindingFlags.NonPublic)
+        ?.CreateDelegate<Func<int>>(managedAllocs);
+
     static void buildStatsMessage(Label label, TimeSpan av, TimeSpan avActive, TimeSpan longest, int draws)
     {
         if (!label.Visible) return;
 
         var r = TimeSpan.FromSeconds(1);
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{MemoryDiagnostics.TotalUndisposedAllocationCount} off-heap buffers");
+            $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{getCount()} off-heap buffers");
 
         label.Text = result.AsReadOnlySpan();
     }
@@ -339,7 +319,6 @@ public static class Program
 
     #region Scheduling
 
-    static readonly Lock schedulerLock = new();
     static readonly List<IDisposable> scheduledActions = [];
 
     public static ValueTask Schedule<TState>(Action<TState> action, TState state = default)
@@ -351,7 +330,7 @@ public static class Program
         }
 
         var tcs = ValueTaskSourceHolder<TState>.Get(action, state);
-        lock (schedulerLock) scheduledActions.Add(tcs);
+        lock (scheduledActions) scheduledActions.Add(tcs);
 
         return tcs.Task;
     }
@@ -362,7 +341,6 @@ public static class Program
 
     const string DefaultLogPath = "logs";
 
-    static readonly Lock errorHandlerLock = new();
     static bool insideErrorHandler;
 
     static void setupLogging(string logsPath = null, string commonLogFilename = null)
@@ -373,43 +351,75 @@ public static class Program
         var exceptionPath = Path.Combine(logsPath, commonLogFilename ?? "exception.log");
         var crashPath = Path.Combine(logsPath, commonLogFilename ?? "crash.log");
 
+        AppContext.SetData(nameof(tracePath), tracePath);
+        AppContext.SetData(nameof(exceptionPath), exceptionPath);
+        AppContext.SetData(nameof(crashPath), crashPath);
+
         if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
-        else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
+        else
+        {
+            if (File.Exists(tracePath)) File.Delete(tracePath);
+            if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
+        }
 
         var domain = AppDomain.CurrentDomain;
-        domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
-        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, e.IsTerminating);
+        domain.FirstChanceException += (_, e) => logError(e.Exception,
+            (string)AppContext.GetData(nameof(exceptionPath)),
+            false);
 
-        SDL.LogOutputFunction logger = (_, _, _, message) => ThreadPool.UnsafeQueueUserWorkItem(s =>
-            {
-                lock (errorHandlerLock)
+        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject,
+            (string)AppContext.GetData(nameof(crashPath)),
+            e.IsTerminating);
+
+        SDL.SetLogPriorities(LogPriority.Trace);
+        SDL.SetLogOutputFunction((_, _, _, message) => ThreadPool.UnsafeQueueUserWorkItem(m =>
                 {
-                    using var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                        $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss} {(string)s}\n");
+                    var msg = (string)m!;
+                    Span<char> text = stackalloc char[msg.Length + Environment.NewLine.Length + 20];
 
-                    File.AppendAllText(tracePath, text.AsReadOnlySpan());
+                    var success = DateTime.Now.TryFormat(text,
+                        out var written,
+                        "yyyy-MM-ddTHH:mm:ss",
+                        CultureInfo.InvariantCulture);
 
-                    text.GetUnsafe(out var arr, out var count);
-                    Console.WriteLine(arr, 0, count - 1);
-                }
-            },
-            message);
+                    text[written++] = ' ';
+                    success &= msg.TryCopyTo(text[written..]) &&
+                        Environment.NewLine.TryCopyTo(text[(written + msg.Length)..]);
 
-        if (File.Exists(tracePath)) File.WriteAllText(tracePath, "");
+                    if (!success) throw new InvalidOperationException("Failed to format log message");
 
-        SDL.SetLogPriorities(SDL.LogPriority.Trace);
-        SDL.SetLogOutputFunction(logger, 0);
+                    var p = (string)AppContext.GetData(nameof(tracePath));
+                    if (p is not null)
+                        lock (p)
+                            File.AppendAllText(p, text);
+
+                    Console.Out.Write(text);
+                },
+                message),
+            0);
 
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataNameString, Name);
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataVersionString, Version.ToString());
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataURLString, Repository);
 
-        domain.ProcessExit += (_, _) => GC.KeepAlive(logger);
+        SDL.AddEventWatch((nint _, ref readonly Event e) =>
+            {
+                if (e.Type is not EventType.Quit) return false;
+
+                AppContext.SetData(nameof(tracePath), null);
+                AppContext.SetData(nameof(exceptionPath), null);
+                AppContext.SetData(nameof(crashPath), null);
+
+                return true;
+            },
+            0);
     }
 
     static void logError(Exception e, string filename, bool show)
     {
-        lock (errorHandlerLock)
+        if (filename is null) return;
+
+        lock (filename)
         {
             if (insideErrorHandler) return;
 
@@ -426,10 +436,13 @@ public static class Program
 
                 if (!show) return;
 
+                using var msg = StringHelper.Interpolate(
+                    $"An error occurred:\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.");
+
                 using MessageBoxData data = new(MessageBoxFlags.Error,
                     0,
                     FullName,
-                    $"An error occurred:\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                    msg.AsReadOnlySpan(),
                     [
                         new(MessageBoxButtonFlags.EscapekeyDefault, 1, "Cancel"),
                         new(MessageBoxButtonFlags.ReturnkeyDefault, 0, "OK")
@@ -442,9 +455,11 @@ public static class Program
             }
             catch (Exception e2)
             {
-                w.Write(DateTimeOffset.Now + " - ");
+                w.Write(DateTimeOffset.Now.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture) + " - ");
                 w.WriteLine(e2);
                 w.WriteLine();
+
+                e = new AggregateException(e, e2);
             }
             finally
             {

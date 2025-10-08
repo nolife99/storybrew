@@ -10,7 +10,7 @@ public class ByteCountingTextWriter(Encoding encoding) : TextWriter
 
     public override Encoding Encoding => _encoding;
 
-    public long ByteCount { get; private set; }
+    public long ByteCount { get; set; }
 
     public override void Write(char value) => ByteCount += _encoding.GetByteCount([value]);
 

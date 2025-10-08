@@ -283,7 +283,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var i = keyframes.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
+        var i = keyframes.BinarySearch(keyframe);
         if (i >= 0)
         {
             if (before)
@@ -453,10 +453,6 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             }
 
             if (maxDistSq < epsilonSq || indexFar <= 0) continue;
-
-            if (stack.Count > 8100)
-                throw new InsufficientMemoryException(
-                    $"Too many keyframes to simplify! Tolerance: {float.Sqrt(epsilonSq)}");
 
             keep.Add(indexFar);
             stack.AddRange([(indexFar, right), (left, indexFar)]);

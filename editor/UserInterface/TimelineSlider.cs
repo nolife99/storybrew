@@ -30,10 +30,10 @@ public class TimelineSlider : Slider
 
     readonly Project project;
 
-    float dragStart, highlightStart, highlightEnd, timeSpan;
+    double dragStart, highlightStart, highlightEnd, timeSpan;
 
     Sprite line;
-    public float RepeatStart, RepeatEnd;
+    public double RepeatStart, RepeatEnd;
 
     public int SnapDivisor = 4;
 
@@ -74,12 +74,12 @@ public class TimelineSlider : Slider
         var hitObjectsY = Bounds.Height * .6f;
         var pixelSize = Manager.PixelSize;
 
-        var currentTimingPoint = project.MainBeatmap.GetTimingPointAt(Value * 1000);
+        var currentTimingPoint = project.MainBeatmap.GetTimingPointAt((float)(Value * 1000));
         var targetTimeSpan = (SnapDivisor >= 2 ? SnapDivisor >= 8 ? 1 : 2 : 4) * (170 / currentTimingPoint.BPM);
         timeSpan += (targetTimeSpan - timeSpan) * .01f;
 
-        var leftTime = (Value - timeSpan) * 1000;
-        var rightTime = (Value + timeSpan) * 1000;
+        var leftTime = (float)((Value - timeSpan) * 1000);
+        var rightTime = (float)((Value + timeSpan) * 1000);
         var timeScale = Bounds.Width / (rightTime - leftTime);
 
         // Repeat
@@ -234,8 +234,8 @@ public class TimelineSlider : Slider
         }
     }
 
-    float timeToXTop(float time)
-        => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
+    float timeToXTop(double time)
+        => Manager.SnapToPixel((float)(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width));
 
     void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Color color, float opacity)
     {
@@ -343,15 +343,15 @@ public class TimelineSlider : Slider
     public void Scroll(float direction)
     {
         var time = Value * 1000;
-        var timingPoint = project.MainBeatmap.GetTimingPointAt(time);
+        var timingPoint = project.MainBeatmap.GetTimingPointAt((float)time);
 
         var stepDuration = timingPoint.BeatDuration / SnapDivisor;
         time += stepDuration * direction;
 
         var steps = (time - timingPoint.Offset) / stepDuration;
-        time = timingPoint.Offset + float.Round(steps) * stepDuration;
+        time = timingPoint.Offset + double.Round(steps) * stepDuration;
 
-        Value = time * .001f;
+        Value = time * .001;
     }
 
     public void Snap() => Scroll(0);

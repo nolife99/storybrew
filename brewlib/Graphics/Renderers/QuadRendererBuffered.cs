@@ -112,7 +112,7 @@ public sealed class QuadRendererBuffered : IQuadRenderer
         }
         else GL.BufferData(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferUsageHint.DynamicDraw);
 
-        SDL.LogInfo(SDL.LogCategory.Render,
+        SDL.LogInfo(LogCategory.Render,
             $"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 

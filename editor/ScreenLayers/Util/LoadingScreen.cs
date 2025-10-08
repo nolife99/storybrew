@@ -29,7 +29,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> acti
                 }
                 catch (Exception e)
                 {
-                    SDL.LogError(SDL.LogCategory.Application,
+                    SDL.LogError(LogCategory.Application,
                         $"{loadingScreen.title.AsReadOnlySpan()} failed ({loadingScreen.action.Method.Name}): {e}");
 
                     await Program.Schedule(state =>

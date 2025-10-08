@@ -1,6 +1,4 @@
-﻿using Image = SixLabors.ImageSharp.Image;
-
-namespace StorybrewCommon.Scripting;
+﻿namespace StorybrewCommon.Scripting;
 
 using System;
 using System.Globalization;
@@ -171,18 +169,17 @@ public abstract class StoryboardObjectGenerator : Script
         path = Path.GetFullPath(path);
         if (bitmaps.TryGetValue(path, out var bitmap)) return bitmap;
 
-        using var stream = File.OpenRead(path);
         if (alternatePath is not null && !File.Exists(path))
         {
             alternatePath = Path.GetFullPath(alternatePath);
             if (watch) context.AddDependency(alternatePath);
 
-            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(stream));
+            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(alternatePath));
         }
         else
         {
             if (watch) context.AddDependency(path);
-            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(stream));
+            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(path));
         }
 
         return bitmap;
@@ -203,7 +200,7 @@ public abstract class StoryboardObjectGenerator : Script
         path = Path.GetFullPath(path);
         if (watch) context.AddDependency(path);
 
-        var stream = File.OpenRead(path);
+        FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         disposables.Add(stream);
         return stream;
     }
@@ -230,18 +227,22 @@ public abstract class StoryboardObjectGenerator : Script
     /// Gets a random double-precision floating-point number between <paramref name="minValue"/> and
     /// <paramref name="maxValue"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * SDL.RandFR(ref rnd);
 
     /// <summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double maxValue) => SDL.RandFR(ref rnd) * maxValue;
 
     /// <summary>
     /// Gets a random single-precision floating-point number between <paramref name="minValue"/> and
     /// <paramref name="maxValue"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float Random(float minValue, float maxValue) => minValue + (maxValue - minValue) * SDL.RandFR(ref rnd);
 
     /// <summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float Random(float maxValue) => SDL.RandFR(ref rnd) * maxValue;
 
     #endregion
@@ -409,8 +410,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                SDL.LogError(SDL.LogCategory.Test,
-                    $"Updating configuration for {field.Name} with type {fieldType}:\n{e}");
+                SDL.LogError(LogCategory.Test, $"Updating configuration for {field.Name} with type {fieldType}:\n{e}");
             }
         }
 
@@ -432,7 +432,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                SDL.LogError(SDL.LogCategory.Test, $"Applying configuration for {field.Name}:\n{e}");
+                SDL.LogError(LogCategory.Test, $"Applying configuration for {field.Name}:\n{e}");
             }
         }
     }

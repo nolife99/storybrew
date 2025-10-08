@@ -8,6 +8,7 @@ using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public sealed class LayerManager : IDisposable
@@ -128,13 +129,13 @@ public sealed class LayerManager : IDisposable
 
     public void TriggerEvents(TimeSpan startTime, TimeSpan endTime)
     {
-        foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
+        foreach (var layer in Layers.AsReadOnlySpan()) layer.TriggerEvents(startTime, endTime);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        foreach (var layer in Layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
+        foreach (var layer in Layers.AsReadOnlySpan()) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
     }
 
     void layer_OnChanged(object sender, ChangedEventArgs e)

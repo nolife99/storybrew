@@ -41,7 +41,7 @@ class HitObjectHighlight : StoryboardObjectGenerator
             var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
             var pos = hitobject.Position + hitobject.StackOffset;
-            if (hSprite.PositionAt(hitobject.StartTime) != pos && hitobject is not OsuSlider)
+            if ((Vector2)hSprite.PositionAt(hitobject.StartTime) != pos && hitobject is not OsuSlider)
                 hSprite.Move(hitobject.StartTime, pos + hitobject.StackOffset);
 
             hSprite.Scale(OsbEasing.In,

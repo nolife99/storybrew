@@ -69,7 +69,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
             watcher.Created += watcher_Changed;
             watcher.Changed += watcher_Changed;
             watcher.Renamed += watcher_Changed;
-            watcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher: {e.GetException()}");
+            watcher.Error += (_, e) => SDL.LogError(LogCategory.Test, $"Watcher: {e.GetException()}");
             watcher.EnableRaisingEvents = true;
         }
         else
@@ -93,7 +93,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
             watcher.Created += watcher_Changed;
             watcher.Changed += watcher_Changed;
             watcher.Renamed += watcher_Changed;
-            watcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher: {e.GetException()}");
+            watcher.Error += (_, e) => SDL.LogError(LogCategory.Test, $"Watcher: {e.GetException()}");
             watcher.EnableRaisingEvents = true;
         }
     }
@@ -108,7 +108,7 @@ public sealed class MultiFileWatcher : IDisposable, IEnumerable<string>
                     if (!watchedFilenames.Contains(e.FullPath))
                         return;
 
-                SDL.LogInfo(SDL.LogCategory.Test, $"Watched file {e.ChangeType}: {e.FullPath}");
+                SDL.LogInfo(LogCategory.Test, $"Watched file {e.ChangeType}: {e.FullPath}");
                 OnFileChanged?.Invoke(sender, e);
             });
 

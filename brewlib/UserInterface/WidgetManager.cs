@@ -113,7 +113,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         using var buttons = TempArray.Create(clickTargets.AsReadOnlySpan());
         foreach (var key in buttons)
-            if (clickTargets[key.Key] == widget)
+            if (key.Value == widget)
                 clickTargets.Remove(key.Key);
     }
 

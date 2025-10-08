@@ -125,23 +125,31 @@ public abstract class ObjectSerializer
                     color.B.ToString(CultureInfo.InvariantCulture) +
                     "," + color.A.ToString(CultureInfo.InvariantCulture);
             }),
-        new SimpleObjectSerializer<Color>(r => Color.FromPixel(new Rgba32(r.ReadUInt32())),
-            (w, v) => w.Write(((Rgba32)v).PackedValue),
-            v =>
+        new SimpleObjectSerializer<Color>(
+            r => Color.FromScaledVector(new(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle())),
+            (w, v) =>
             {
-                var split = v.Split(',');
-                return Color.FromPixel(new Rgba32(byte.Parse(split[0], CultureInfo.InvariantCulture),
-                    byte.Parse(split[1], CultureInfo.InvariantCulture),
-                    byte.Parse(split[2], CultureInfo.InvariantCulture),
-                    byte.Parse(split[3], CultureInfo.InvariantCulture)));
+                var col = ((Color)v).ToScaledVector4();
+                w.Write(col.X);
+                w.Write(col.Y);
+                w.Write(col.Z);
+                w.Write(col.W);
             },
             v =>
             {
-                var color = ((Color)v).ToPixel<Rgba32>();
-                return color.R.ToString(CultureInfo.InvariantCulture) + "," +
-                    color.G.ToString(CultureInfo.InvariantCulture) + "," +
-                    color.B.ToString(CultureInfo.InvariantCulture) +
-                    "," + color.A.ToString(CultureInfo.InvariantCulture);
+                var split = v.Split(',');
+                return Color.FromScaledVector(new(float.Parse(split[0], CultureInfo.InvariantCulture),
+                    float.Parse(split[1], CultureInfo.InvariantCulture),
+                    float.Parse(split[2], CultureInfo.InvariantCulture),
+                    float.Parse(split[3], CultureInfo.InvariantCulture)));
+            },
+            v =>
+            {
+                var color = ((Color)v).ToScaledVector4();
+                return color.X.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.Y.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.Z.ToString(CultureInfo.InvariantCulture) + "," +
+                    color.W.ToString(CultureInfo.InvariantCulture);
             })
     ];
 

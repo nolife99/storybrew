@@ -53,7 +53,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
 
                 if (exception is not null)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, $"Failed to download the new version.\n\n{exception}");
+                    SDL.LogError(LogCategory.Application, $"Failed to download the new version.\n\n{exception}");
                     Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
                         Updater.OpenLatestReleasePage);
 
@@ -78,11 +78,11 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
 
                             if (!Directory.Exists(entryFolder))
                             {
-                                SDL.LogInfo(SDL.LogCategory.Application, $"Creating {entryFolder}");
+                                SDL.LogInfo(LogCategory.Application, $"Creating {entryFolder}");
                                 Directory.CreateDirectory(entryFolder);
                             }
 
-                            SDL.LogInfo(SDL.LogCategory.Application, $"Extracting {entryPath}");
+                            SDL.LogInfo(LogCategory.Application, $"Extracting {entryPath}");
                             entry.ExtractToFile(entryPath);
 
                             if (Path.GetExtension(entryPath) == ".exe") executablePath = entryPath;
@@ -110,7 +110,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 }
                 catch (Exception e)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, $"Failed to start the update process.\n\n{e}");
+                    SDL.LogError(LogCategory.Application, $"Failed to start the update process.\n\n{e}");
                     Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
                         Updater.OpenLatestReleasePage);
 

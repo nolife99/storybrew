@@ -31,7 +31,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public void Queue(T target,
         int uniqueKey,
-        Func<CancellationTokenSource, ValueTask> action,
+        Func<T, CancellationTokenSource, ValueTask> action,
         bool mustRunAlone = false)
     {
         for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
@@ -42,7 +42,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (runner.UniqueKey == uniqueKey)
                     return;
 
-        context.Queue.Enqueue(new(uniqueKey, action, mustRunAlone));
+        context.Queue.Enqueue(new(target, uniqueKey, action, mustRunAlone));
         context.Signal();
     }
 
@@ -50,11 +50,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         context.Queue.Clear();
         return stopThreads ?
-            Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.JoinOrAbort())) :
+            Parallel.ForEachAsync(actionRunners.Where(r => r is not null), (runner, _) => runner.DisposeAsync()) :
             Task.CompletedTask;
     }
 
-    sealed record ActionContainer(int UniqueKey, Func<CancellationTokenSource, ValueTask> Action, bool MustRunAlone);
+    readonly record struct ActionContainer(T Target,
+        int UniqueKey,
+        Func<T, CancellationTokenSource, ValueTask> Action,
+        bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
@@ -86,23 +89,23 @@ public sealed class AsyncActionQueue<T> : IDisposable
         public Task WaitForSignal() => tcs.Task;
     }
 
-    sealed class ActionRunner(ActionQueueContext context)
+    sealed class ActionRunner(ActionQueueContext context) : IAsyncDisposable
     {
         readonly ActionQueueContext context = context;
         Task thread;
         CancellationTokenSource tokenSrc;
 
-        public async Task JoinOrAbort()
+        public async ValueTask DisposeAsync()
         {
-            if (thread is null) return;
-
-            var localThread = thread;
-            thread = null;
+            var localThread = Interlocked.Exchange(ref thread, null);
+            if (localThread is null) return;
 
             context.Signal();
 
             if (await localThread.WaitAsync(TimeSpan.FromMilliseconds(400)).ContinueWith(t => t.IsFaulted))
                 await tokenSrc.CancelAsync();
+
+            await localThread;
 
             tokenSrc.Dispose();
         }
@@ -139,7 +142,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         while (!localContext.Enabled || localContext.Queue.IsEmpty)
                         {
-                            if (runner.thread is null) return;
+                            if (Volatile.Read(ref runner.thread) is null) return;
 
                             await localContext.WaitForSignal();
                         }
@@ -150,11 +153,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             continue;
                         }
 
-                        ActionContainer task = null;
+                        ActionContainer task = default;
                         while (localContext.Queue.TryDequeue(out var t))
                         {
                             if (localContext.Running.ContainsKey(t.UniqueKey) ||
-                                t.MustRunAlone && localContext.Running.IsEmpty)
+                                t.MustRunAlone && !localContext.Running.IsEmpty)
                             {
                                 localContext.Queue.Enqueue(t);
                                 continue;
@@ -164,7 +167,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             break;
                         }
 
-                        if (task is null)
+                        if (task == default)
                         {
                             mustSleep = true;
                             continue;
@@ -173,7 +176,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         localContext.Running.TryAdd(task.UniqueKey, true);
                         if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, true);
 
-                        await task.Action(localToken);
+                        await task.Action(task.Target, localToken);
 
                         if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, false);
                         localContext.Running.TryRemove(task.UniqueKey, out _);

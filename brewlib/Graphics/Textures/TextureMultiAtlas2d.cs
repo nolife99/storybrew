@@ -42,13 +42,13 @@ public sealed class TextureMultiAtlas2d : IDisposable
             fragmentation = float.Max(fragmentation, atlas.Fragmentation);
         }
 
-        SDL.LogInfo(SDL.LogCategory.Video, $"{description} full, adding an atlas (max {fragmentation:P2} fragmented)");
+        SDL.LogInfo(LogCategory.Video, $"{description} full, adding an atlas (max {fragmentation:P2} fragmented)");
         return pushAtlas().AddRegion(bitmap);
     }
 
     Texture2d loadOversized(Image<Rgba32> bitmap)
     {
-        SDL.LogWarn(SDL.LogCategory.Video, $"Bitmap \"{bitmap.Size}\" doesn't fit in this atlas");
+        SDL.LogWarn(LogCategory.Video, $"Bitmap \"{bitmap.Size}\" doesn't fit in this atlas");
 
         var texture = Texture2d.Load(bitmap, textureOptions);
         (oversizeTextures ??= []).Add(texture);

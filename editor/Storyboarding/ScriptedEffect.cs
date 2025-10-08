@@ -61,7 +61,7 @@ public class ScriptedEffect : Effect
             if (!Disposed) Refresh();
         };
 
-        EditorGeneratorContext context = new(this,
+        using EditorGeneratorContext context = new(this,
             Project.ProjectFolderPath,
             Project.ProjectAssetFolderPath,
             Project.MapsetPath,
@@ -127,12 +127,7 @@ public class ScriptedEffect : Effect
 
         if (Project.Disposed) return;
 
-        Program.Schedule(state =>
-            {
-                state.Item2.UpdateLayers(state.context.EditorLayers);
-                state.context.Dispose();
-            },
-            (context, this));
+        await Program.Schedule(state => state.Item2.UpdateLayers(state.context.EditorLayers), (context, this));
     }
 
     ValueTask updateWatcherWithException(MultiFileWatcher watcher, Exception ex, EditorGeneratorContext context)
@@ -162,11 +157,13 @@ public class ScriptedEffect : Effect
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
-    ValueTask changeStatus(EffectStatus status, ReadOnlySpan<char> message = default, ReadOnlySpan<char> log = default)
+    ValueTask changeStatus(EffectStatus newStatus,
+        ReadOnlySpan<char> message = default,
+        ReadOnlySpan<char> log = default)
     {
         var duration = Environment.TickCount64 - statusStopwatch;
         if (duration > 0)
-            switch (this.status)
+            switch (status)
             {
                 case EffectStatus.Ready:
                 case EffectStatus.CompilationFailed:
@@ -174,10 +171,10 @@ public class ScriptedEffect : Effect
                 case EffectStatus.ExecutionFailed:
                     break;
 
-                default: SDL.LogInfo(SDL.LogCategory.Test, $"{Name}: {this.status} took {duration}ms"); break;
+                default: SDL.LogInfo(LogCategory.Test, $"{Name}: {status} took {duration}ms"); break;
             }
 
-        this.status = status;
+        status = newStatus;
 
         if (statusMessage.IsValid) statusMessage.Clear();
         else statusMessage = ValueList.Create<char>();

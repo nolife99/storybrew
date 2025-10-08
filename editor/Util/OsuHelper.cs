@@ -8,22 +8,23 @@ public static class OsuHelper
 {
     public static string GetOsuExePath()
     {
-        try
-        {
-            using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
-
-            if (registryKey is not null)
+        if (OperatingSystem.IsWindows())
+            try
             {
-                var value = registryKey.GetValue(null).ToString();
-                var startIndex = value.IndexOf('"');
-                var endIndex = value.LastIndexOf('"');
-                return value.Substring(startIndex + 1, endIndex - 1);
+                using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
+
+                if (registryKey is not null)
+                {
+                    var value = registryKey.GetValue(null).ToString();
+                    var startIndex = value.IndexOf('"');
+                    var endIndex = value.LastIndexOf('"');
+                    return value.Substring(startIndex + 1, endIndex - 1);
+                }
             }
-        }
-        catch
-        {
-            // ignored
-        }
+            catch
+            {
+                // ignored
+            }
 
         var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "osu!",

@@ -90,7 +90,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         else
         {
             font = SystemFonts.CreateFont(name, emSize, style);
-            SDL.LogWarn(SDL.LogCategory.Application, $"Using system font for {name}");
+            SDL.LogWarn(LogCategory.Application, $"Using system font for {name}");
         }
 
         return fonts[id] = font;
@@ -113,7 +113,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             fontFamily = fontCollection.Add(copyStream, CultureInfo.InvariantCulture);
         }
 
-        SDL.LogInfo(SDL.LogCategory.Application, $"Loaded font {fontFamily.Name} for {name}");
+        SDL.LogInfo(LogCategory.Application, $"Loaded font {fontFamily.Name} for {name}");
 
         return families[name] = fontFamily;
     }

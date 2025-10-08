@@ -104,7 +104,7 @@ public class SettingsMenu : Widget
 
         dimSlider.OnValueChanged += (_, _) =>
         {
-            project.DimFactor = dimSlider.Value;
+            project.DimFactor = (float)dimSlider.Value;
             dimLabel.Text = $"Dim ({project.DimFactor:p})";
         };
 

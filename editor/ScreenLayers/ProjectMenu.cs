@@ -217,7 +217,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             else timeline.ClearHighlight();
         };
 
-        effects.OnEffectSelected += effect => timeline.Value = effect.StartTime * .001f;
+        effects.OnEffectSelected += effect => timeline.Value = effect.StartTime * .001;
 
         WidgetManager.Root.Add(layers = new(WidgetManager, proj.LayerManager)
         {
@@ -233,7 +233,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             else timeline.ClearHighlight();
         };
 
-        layers.OnLayerSelected += layer => timeline.Value = layer.StartTime * .001f;
+        layers.OnLayerSelected += layer => timeline.Value = layer.StartTime * .001;
 
         WidgetManager.Root.Add(settings = new(WidgetManager, proj)
         {
@@ -287,7 +287,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeB.OnClick += (_, _) => Manager.ShowPrompt("Skip to...",
             value =>
             {
-                if (float.TryParse(value, out var time)) timeline.Value = time * .001f;
+                if (float.TryParse(value, out var time)) timeline.Value = time * .001;
             });
 
         resizeTimeline();
@@ -390,6 +390,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
             Manager.ShowMessage(text.AsReadOnlySpan(), changeMapsetFolder, true);
         }
+        else project_OnEffectsStatusChanged(proj, EventArgs.Empty);
     }
 
     public override bool OnKeyDown(KeyboardEvent e)
@@ -400,7 +401,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 if ((e.Mod & SDL.Keymod.Ctrl) != 0)
                 {
                     foreach (var bookmark in proj.MainBeatmap.Bookmarks)
-                        if (bookmark > float.Round(timeline.Value * 1000) + 50)
+                        if (bookmark > double.Round(timeline.Value * 1000) + 50)
                         {
                             timeline.Value = bookmark * .001f;
                             break;
@@ -415,7 +416,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     for (var i = proj.MainBeatmap.Bookmarks.Length - 1; i >= 0; --i)
                     {
                         var bookmark = proj.MainBeatmap.Bookmarks[i];
-                        if (!(bookmark < float.Round(timeline.Value * 1000) - 500)) continue;
+                        if (!(bookmark < double.Round(timeline.Value * 1000) - 500)) continue;
 
                         timeline.Value = bookmark * .001f;
                         break;
@@ -586,7 +587,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             }
         }
 
-        timeline.SetValueSilent((float)time.TotalSeconds);
+        timeline.SetValueSilent(time.TotalSeconds);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             using (var temp = TempList.Create<char>())
@@ -811,8 +812,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     void resizeTimeline()
     {
-        timeline.MinValue = float.Min(0, proj.StartTime * .001f);
-        timeline.MaxValue = float.Max((float)audio.Duration.TotalSeconds, proj.EndTime * .001f);
+        timeline.MinValue = double.Min(0, proj.StartTime * .001);
+        timeline.MaxValue = double.Max(audio.Duration.TotalSeconds, proj.EndTime * .001);
     }
 
     public override void Close()

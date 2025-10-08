@@ -61,11 +61,10 @@ public class LayerList : Widget
         layersLayout.ClearWidgets();
         foreach (var osbLayer in Project.OsbLayers)
         {
-            using var text = StringHelper.Interpolate($"{osbLayer}");
             layersLayout.Add(new Label(Manager)
             {
                 StyleName = "listHeader",
-                Text = text.AsReadOnlySpan(),
+                Text = Enum.GetName(osbLayer),
                 HandleDrop = data =>
                 {
                     if (data is not EditorStoryboardLayer droppedLayer) return false;
@@ -173,7 +172,7 @@ public class LayerList : Widget
                     foreach (var dndLayer in layerManager.Layers)
                         if (dndLayer.Identifier == droppedLayer.Identifier)
                         {
-                            layerManager.MoveToOsbLayer(dndLayer, osbLayer);
+                            layerManager.MoveToLayer(dndLayer, layer);
                             break;
                         }
 

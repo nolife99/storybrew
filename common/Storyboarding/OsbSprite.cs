@@ -913,10 +913,10 @@ public class OsbSprite : StoryboardObject
     }
 
     /// <returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
-    public bool IsActive(float time) => StartTime <= time && time <= EndTime;
+    public bool IsActive(float time) => commandsStartTime <= time && time <= commandsEndTime;
 
     /// <returns> True if the sprite is visible at <paramref name="time"/>, else returns false. </returns>
-    public bool InDisplayInterval(float time) => DisplayStartTime <= time && time <= DisplayEndTime;
+    public bool InDisplayInterval(float time) => displayStartTime <= time && time <= displayEndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
     public override void WriteOsb(TextWriter writer,

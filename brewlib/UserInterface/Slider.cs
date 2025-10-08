@@ -9,7 +9,7 @@ public class Slider : ProgressBar
     bool disabled, hovered, dragged;
     byte dragButton;
 
-    public float Step;
+    public double Step;
 
     public Slider(WidgetManager manager) : base(manager)
     {
@@ -69,13 +69,13 @@ public class Slider : ProgressBar
 
     public event EventHandler OnValueCommited;
 
-    public float GetValueForPosition(Vector2 position)
+    public double GetValueForPosition(Vector2 position)
     {
         var bounds = Bounds;
         var value = MinValue + (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) /
             bounds.Width;
 
-        if (Step != 0) value = float.Min((int)(value / Step) * Step, MaxValue);
+        if (Step != 0) value = double.Min((int)(value / Step) * Step, MaxValue);
         return value;
     }
 

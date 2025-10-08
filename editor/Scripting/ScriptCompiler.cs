@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
+using SixLabors.ImageSharp.Memory;
 using StorybrewEditor.Storyboarding;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -37,7 +38,7 @@ public static class ScriptCompiler
         using var trees = ValueDictionary.Create<SyntaxTree, (string SourcePath, SourceText SourceText)>();
         foreach (var src in sourcePaths)
         {
-            using var sourceStream = File.OpenRead(src);
+            using FileStream sourceStream = new(src, FileMode.Open, FileAccess.Read, FileShare.Read, 0);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
 
             trees.Add(CSharpSyntaxTree.ParseText(sourceText,
@@ -46,16 +47,23 @@ public static class ScriptCompiler
                 (src, sourceText));
         }
 
-        var assemblies = ValueList.Create<AssemblyMetadata>();
+        using var assemblies = ValueList.Create<AssemblyMetadata>();
         foreach (var asmPath in referencedAssemblies)
         {
-            using var stream = File.OpenRead(asmPath);
+            using FileStream stream = new(asmPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                0,
+                FileOptions.SequentialScan);
+
             if (!Project.DefaultAssemblies.Contains(asmPath))
             {
-                using PoolingMemoryStream copyStream = new();
-                stream.CopyTo(copyStream, 65536);
+                using var memory = MemoryAllocator.Default.Allocate<byte>((int)stream.Length);
+                var writtenSpan = memory.Memory.Span;
 
-                InternalLoad(context, copyStream.WrittenSpan, default);
+                stream.ReadExactly(writtenSpan);
+                InternalLoad(context, writtenSpan, default);
 
                 stream.Position = 0;
             }
@@ -68,30 +76,25 @@ public static class ScriptCompiler
         using (PoolingMemoryStream assemblyStream = new())
         using (PoolingMemoryStream pdbStream = new())
         {
-            try
-            {
-                compilation = CSharpCompilation
-                    .Create(null,
-                        trees.Keys,
-                        assemblies.Select(s => s.GetReference()),
-                        new(OutputKind.DynamicallyLinkedLibrary,
-                            allowUnsafe: true,
-                            optimizationLevel: OptimizationLevel.Release,
-                            concurrentBuild: false))
-                    .Emit(assemblyStream,
-                        pdbStream,
-                        embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                        options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
-                        cancellationToken: tokenSource);
-            }
-            finally
-            {
-                foreach (var ass in assemblies) ass.Dispose();
-                assemblies.Dispose();
-            }
+            compilation = CSharpCompilation
+                .Create(null,
+                    trees.Keys,
+                    assemblies.Select(s => s.GetReference()),
+                    new(OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: true,
+                        optimizationLevel: OptimizationLevel.Release,
+                        concurrentBuild: false))
+                .Emit(assemblyStream,
+                    pdbStream,
+                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
+                    options: new(debugInformationFormat: DebugInformationFormat.PortablePdb),
+                    cancellationToken: tokenSource);
 
             if (compilation.Success)
+            {
+                foreach (var ass in assemblies) ass.Dispose();
                 return new(InternalLoad(context, assemblyStream.WrittenSpan, pdbStream.WrittenSpan));
+            }
         }
 
         using var error = TempList.Create("Compilation error\n");
@@ -127,6 +130,7 @@ public static class ScriptCompiler
             foreach (var diagnostic in diagnostics) error.Append($"--{diagnostic}\n");
         }
 
+        foreach (var ass in assemblies) ass.Dispose();
         tokenSource.ThrowIfCancellationRequested();
 
         return new(new ScriptCompilationException(error.AsReadOnlySpan().ToString()));

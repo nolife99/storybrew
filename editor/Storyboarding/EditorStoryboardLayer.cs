@@ -142,13 +142,13 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
 
     public void TriggerEvents(TimeSpan fromTime, TimeSpan toTime)
     {
-        if (Visible) segment.TriggerEvents(fromTime, toTime);
+        if (visible) segment.TriggerEvents(fromTime, toTime);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (Visible)
+        if (visible)
             segment.Draw(drawContext,
                 camera,
                 bounds,
@@ -182,8 +182,8 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
 
     public void CopySettings(EditorStoryboardLayer other)
     {
-        DiffSpecific = other.DiffSpecific;
-        OsbLayer = other.OsbLayer;
-        Visible = other.Visible;
+        DiffSpecific = other.diffSpecific;
+        OsbLayer = other.osbLayer;
+        Visible = other.visible;
     }
 }

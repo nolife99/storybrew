@@ -47,7 +47,7 @@ public sealed class MapsetManager : IDisposable
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions) SDL.LogError(SDL.LogCategory.Application, $"Loading beatmap: {e}");
+                if (logLoadingExceptions) SDL.LogError(LogCategory.Application, $"Loading beatmap: {e}");
                 else throw;
             }
     }
@@ -84,11 +84,11 @@ public sealed class MapsetManager : IDisposable
         fileWatcher.Created += mapsetFileWatcher_Changed;
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
-        fileWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Application,
+        fileWatcher.Error += (_, e) => SDL.LogError(LogCategory.Application,
             $"Watcher (mapset): {e.GetException()}");
 
         fileWatcher.EnableRaisingEvents = true;
-        SDL.LogInfo(SDL.LogCategory.Application, $"Watching (mapset): {path}");
+        SDL.LogInfo(LogCategory.Application, $"Watching (mapset): {path}");
     }
 
     void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e)
@@ -96,7 +96,7 @@ public sealed class MapsetManager : IDisposable
             _ =>
             {
                 if (Path.GetExtension(e.Name) == ".osu")
-                    SDL.LogInfo(SDL.LogCategory.Application, $"Watched mapset file {e.ChangeType}: {e.FullPath}");
+                    SDL.LogInfo(LogCategory.Application, $"Watched mapset file {e.ChangeType}: {e.FullPath}");
 
                 OnFileChanged?.Invoke(sender, e);
             });

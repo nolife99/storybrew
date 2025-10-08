@@ -30,11 +30,11 @@ public static class ScreenLayerManagerExtensions
             });
 
         SDL.ShowOpenFolderDialog((_, filelist, _) =>
-            {
-                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
-                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
-                else valueTaskSource.SetResult(null);
-            },
+        {
+            if (!filelist.HasValue) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+            else if (!filelist.Value.IsEmpty) valueTaskSource.SetResult(filelist.Value.Span[0].Span.ToString());
+            else valueTaskSource.SetResult(null);
+        },
             0,
             0,
             initialValue,
@@ -84,11 +84,11 @@ public static class ScreenLayerManagerExtensions
         }
 
         SDL.ShowOpenFileDialog((_, filelist, _) =>
-            {
-                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
-                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
-                else valueTaskSource.SetResult(null);
-            },
+        {
+            if (!filelist.HasValue) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+            else if (!filelist.Value.IsEmpty) valueTaskSource.SetResult(filelist.Value.Span[0].Span.ToString());
+            else valueTaskSource.SetResult(null);
+        },
             0,
             0,
             filter,
@@ -116,8 +116,8 @@ public static class ScreenLayerManagerExtensions
 
         SDL.ShowSaveFileDialog((_, filelist, _) =>
             {
-                if (filelist.Array is null) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
-                else if (filelist.Count != 0) valueTaskSource.SetResult(filelist[0].AsSpan().ToString());
+                if (!filelist.HasValue) valueTaskSource.SetException(new InvalidOperationException(SDL.GetError()));
+                else if (!filelist.Value.IsEmpty) valueTaskSource.SetResult(filelist.Value.Span[0].Span.ToString());
                 else valueTaskSource.SetResult(null);
             },
             0,
@@ -190,13 +190,13 @@ public static class ScreenLayerManagerExtensions
 
                 else
                     screenLayer.AsyncLoading("Loading project",
-                        async () =>
+                        () =>
                         {
                             var project = Project.Load(projectPath,
                                 true,
                                 screenLayer.GetContext<Editor>().ResourceContainer);
 
-                            await Program.Schedule(s => s.screenLayer.Set(new ProjectMenu(s.project)),
+                            return Program.Schedule(s => s.screenLayer.Set(new ProjectMenu(s.project)),
                                 (screenLayer, project));
                         });
             });

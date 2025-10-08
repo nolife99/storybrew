@@ -56,10 +56,10 @@ class Spectrum : StoryboardObjectGenerator
 
     protected override void Generate()
     {
-        if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() is not null)
+        if (StartTime == EndTime && !Beatmap.HitObjects.IsEmpty)
         {
-            StartTime = (int)Beatmap.HitObjects.First().StartTime;
-            EndTime = (int)Beatmap.HitObjects.Last().EndTime;
+            StartTime = (int)Beatmap.HitObjects[0].StartTime;
+            EndTime = (int)Beatmap.HitObjects[^1].EndTime;
         }
 
         EndTime = Math.Min(EndTime, (int)AudioDuration);

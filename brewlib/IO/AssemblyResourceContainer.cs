@@ -22,7 +22,7 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
         {
             if ((sources & ResourceSource.Absolute) != 0)
             {
-                if (File.Exists(path)) return File.OpenRead(path);
+                if (File.Exists(path)) return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
             else throw new InvalidOperationException($"Resource paths must be relative ({path})");
         }
@@ -31,7 +31,8 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
             if ((sources & ResourceSource.Relative) != 0)
             {
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
-                if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
+                if (File.Exists(combinedPath))
+                    return new FileStream(combinedPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
 
             if ((sources & ResourceSource.Embedded) != 0)
@@ -43,7 +44,7 @@ public sealed class AssemblyResourceContainer(Assembly assembly, string baseName
             }
         }
 
-        SDL.LogWarn(SDL.LogCategory.Application, $"Not found: {path} ({sources})");
+        SDL.LogWarn(LogCategory.Application, $"Not found: {path} ({sources})");
         return null;
     }
 

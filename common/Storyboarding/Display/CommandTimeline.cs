@@ -36,7 +36,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
 
     public bool HasCommands => channels is not null && channels.Count != 0;
 
-    public bool HasOverlap => HasCommands && channels.Exists(channel => channel.HasOverlap);
+    public bool HasOverlap => channels is not null && channels.Exists(channel => channel.HasOverlap);
 
     bool ICommandTimeline.Add(ICommand command) => Add(command as Command<TValue>);
 
@@ -94,7 +94,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
 
     public TValue ValueAtTime(float time)
     {
-        if (!HasCommands) return DefaultValue;
+        if (channels is null) return DefaultValue;
 
         var currentState = ResultState.NoCommand;
         CommandResult<TValue> currentResult = default;
@@ -141,7 +141,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
             }
         }
 
-        return currentState switch { ResultState.NoCommand => DefaultValue, _ => currentResult.ValueAtTime(time) };
+        return currentState is ResultState.NoCommand ? DefaultValue : currentResult.ValueAtTime(time);
     }
 
     internal bool FindStartEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float startEdge)
@@ -216,7 +216,7 @@ public sealed class CommandTimeline<TValue> : ICommandTimeline where TValue : st
         return result;
     }
 
-    enum ResultState : byte
+    enum ResultState
     {
         NoCommand, CommandInPresent, CommandInFuture, CommandInPast
     }

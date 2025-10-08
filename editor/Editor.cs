@@ -97,7 +97,7 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         }
         catch (Exception e)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Loading skin: {e}");
+            SDL.LogError(LogCategory.Application, $"Loading skin: {e}");
             Skin = new(textureContainer);
         }
 

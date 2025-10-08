@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
+using System.Globalization;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -10,22 +11,22 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 {
     Drawable bar = NullDrawable.Instance;
 
-    public float MinValue, MaxValue = 1;
+    public double MinValue, MaxValue = 1;
     int preferredHeight = 32;
 
-    float value = .5f;
+    double value = .5f;
 
     public override Vector2 MinSize => bar.MinSize;
 
     public override Vector2 PreferredSize
         => new(float.Max(200, bar.PreferredSize.X), float.Max(preferredHeight, bar.PreferredSize.Y));
 
-    public float Value
+    public double Value
     {
         get => value;
         set
         {
-            value = float.Clamp(value, MinValue, MaxValue);
+            value = double.Clamp(value, MinValue, MaxValue);
 
             if (this.value == value) return;
 
@@ -36,11 +37,11 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(StyleName);
 
-    public object FieldValue { get => Value; set => Value = (float)value; }
+    public object FieldValue { get => Value; set => Value = Convert.ToDouble(value, CultureInfo.InvariantCulture); }
 
     public event EventHandler OnValueChanged;
 
-    public void SetValueSilent(float val) => value = float.Clamp(val, MinValue, MaxValue);
+    public void SetValueSilent(double val) => value = double.Clamp(val, MinValue, MaxValue);
 
     protected override void Dispose(bool disposing)
     {
@@ -66,7 +67,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
         bar.Draw(drawContext,
             Manager.Camera,
-            new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height),
+            new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * (float)progress, Bounds.Height),
             actualOpacity);
     }
 }

@@ -53,7 +53,7 @@ public sealed class LineRendererBuffered : ILineRenderer
         combinedMatricesBuffer = GL.GenBuffer();
         combinedMatrices = new();
 
-        SDL.LogInfo(SDL.LogCategory.Render,
+        SDL.LogInfo(LogCategory.Render,
             $"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 

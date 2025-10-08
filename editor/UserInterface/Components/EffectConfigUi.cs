@@ -12,7 +12,6 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using SDL3;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
@@ -289,7 +288,7 @@ public class EffectConfigUi : Widget
                 widget.Value = temp.AsReadOnlySpan();
             };
         }
-        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Rgba32)) return colorField(field);
+        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color)) return colorField(field);
         else if (field.Type.GetInterface(nameof(IConvertible)) is not null)
         {
             Textbox widget = new(Manager)
@@ -382,13 +381,11 @@ public class EffectConfigUi : Widget
 
     HsbColorPicker colorField(EffectConfig.ConfigField field)
     {
-        if (field.Type == typeof(Color) || field.Type == typeof(Rgba32))
+        if (field.Type == typeof(Color))
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(Color) ?
-                    Unsafe.Unbox<Color>(field.Value).ToPixel<Rgba32>() :
-                    Unsafe.Unbox<Rgba32>(field.Value),
+                Value = Unsafe.Unbox<Color>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -396,12 +393,9 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                setFieldValue(field,
-                    field.Type == typeof(Color) ? Unsafe.Unbox<Color>(field.Value).ToPixel<Rgba32>() : widget.Value);
+                setFieldValue(field, widget.Value);
 
-                widget.Value = field.Type == typeof(Color) ?
-                    Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name)).ToPixel<Rgba32>() :
-                    Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name));
+                widget.Value = Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name));
             };
 
             return widget;
@@ -410,9 +404,7 @@ public class EffectConfigUi : Widget
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(Rgba32) ?
-                    Unsafe.Unbox<Rgba32>(field.Value) :
-                    Unsafe.Unbox<CommandColor>(field.Value),
+                Value = Unsafe.Unbox<CommandColor>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -420,12 +412,9 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Rgba32)) setFieldValue(field, widget.Value);
-                else setFieldValue(field, (CommandColor)widget.Value);
+                setFieldValue(field, (CommandColor)widget.Value);
 
-                widget.Value = field.Type == typeof(Rgba32) ?
-                    Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name)) :
-                    Unsafe.Unbox<CommandColor>(effect.Config.GetValue(field.Name));
+                widget.Value = Unsafe.Unbox<CommandColor>(effect.Config.GetValue(field.Name));
             };
 
             return widget;
@@ -454,7 +443,7 @@ public class EffectConfigUi : Widget
         catch (Exception e)
         {
             memory.Dispose();
-            SDL.LogWarn(SDL.LogCategory.Application, $"Cannot copy clipboard data: {e}");
+            SDL.LogWarn(LogCategory.Application, $"Cannot copy clipboard data: {e}");
         }
 
         (ClipboardHelper.GetData() as IDisposable)?.Dispose();
@@ -487,13 +476,13 @@ public class EffectConfigUi : Widget
                 }
                 catch (Exception ex)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, $"Paste '{name}': {ex}");
+                    SDL.LogError(LogCategory.Application, $"Paste '{name}': {ex}");
                 }
             }
         }
         catch (Exception ex)
         {
-            SDL.LogWarn(SDL.LogCategory.Application, $"Cannot paste clipboard data: {ex}");
+            SDL.LogWarn(LogCategory.Application, $"Cannot paste clipboard data: {ex}");
         }
 
         if (!changed) return;

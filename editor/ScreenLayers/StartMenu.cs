@@ -105,7 +105,7 @@ public class StartMenu : UiScreenLayer
             newProjectButton.Disabled = true;
             openProjectButton.Disabled = true;
 
-            SDL.LogWarn(SDL.LogCategory.System,
+            SDL.LogWarn(LogCategory.System,
                 $".NET SDK {Environment.Version} not found at {sdkPath} from {RuntimeEnvironment.GetRuntimeDirectory()}");
 
             Manager.ShowMessage(
@@ -242,7 +242,7 @@ public class StartMenu : UiScreenLayer
 
     ValueTask handleLatestVersionException(Exception exception)
     {
-        SDL.LogWarn(SDL.LogCategory.Application,
+        SDL.LogWarn(LogCategory.Application,
             $"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
 
         versionLabel.Text =

@@ -22,7 +22,7 @@ public static class Updater
 
     public static void Update(string destinationFolder, Version fromVersion)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"Updating from version {fromVersion} to {Program.Version}");
+        SDL.LogInfo(LogCategory.Application, $"Updating from version {fromVersion} to {Program.Version}");
         var updaterPath = typeof(Editor).Assembly.Location;
         var sourceFolder = Path.GetDirectoryName(updaterPath);
         try
@@ -31,7 +31,7 @@ public static class Updater
         }
         catch (Exception e)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Replacing files: {e}");
+            SDL.LogError(LogCategory.Application, $"Replacing files: {e}");
             OpenLatestReleasePage();
             return;
         }
@@ -42,13 +42,13 @@ public static class Updater
         }
         catch (Exception e)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Updating data: {e}");
+            SDL.LogError(LogCategory.Application, $"Updating data: {e}");
         }
 
         var relativeProcessPath = PathHelper.GetRelativePath(sourceFolder, updaterPath);
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
-        SDL.LogInfo(SDL.LogCategory.Application, $"\nUpdate complete, starting {processPath}");
+        SDL.LogInfo(LogCategory.Application, $"\nUpdate complete, starting {processPath}");
         Process.Start(
                 new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })
             ?.Dispose();
@@ -77,7 +77,7 @@ public static class Updater
             var dllPath = Path.Combine(destinationFolder, "ManagedBass.PInvoke.dll");
             if (File.Exists(dllPath))
             {
-                SDL.LogInfo(SDL.LogCategory.Application, $"Removing {dllPath}");
+                SDL.LogInfo(LogCategory.Application, $"Removing {dllPath}");
                 File.Delete(dllPath);
             }
         }
@@ -87,20 +87,20 @@ public static class Updater
         var oldRoslynFolder = Path.Combine(destinationFolder, "bin");
         if (!Directory.Exists(oldRoslynFolder)) return;
 
-        SDL.LogInfo(SDL.LogCategory.Application, $"Removing {oldRoslynFolder}");
+        SDL.LogInfo(LogCategory.Application, $"Removing {oldRoslynFolder}");
         Directory.Delete(oldRoslynFolder, true);
     }
 
     static void firstRun()
     {
-        SDL.LogInfo(SDL.LogCategory.Application, "First run\n");
+        SDL.LogInfo(LogCategory.Application, "First run\n");
 
         foreach (var exeFilename in Directory.EnumerateFiles(Path.GetDirectoryName(typeof(Editor).Assembly.Location),
             "*.exe_",
             SearchOption.AllDirectories))
         {
             var newFilename = Path.ChangeExtension(exeFilename, ".exe");
-            SDL.LogInfo(SDL.LogCategory.Application, $"Renaming {exeFilename} to {newFilename}");
+            SDL.LogInfo(LogCategory.Application, $"Renaming {exeFilename} to {newFilename}");
             File.Move(exeFilename, newFilename);
         }
 
@@ -110,14 +110,14 @@ public static class Updater
 
     static void replaceFiles(string sourceFolder, string destinationFolder, Version fromVersion)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"\nCopying files from {sourceFolder} to {destinationFolder}");
+        SDL.LogInfo(LogCategory.Application, $"\nCopying files from {sourceFolder} to {destinationFolder}");
         foreach (var sourceFilename in Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories))
         {
             var relativeFilename = PathHelper.GetRelativePath(sourceFolder, sourceFilename);
 
             if (matchFilter(relativeFilename, ignoredPaths))
             {
-                SDL.LogInfo(SDL.LogCategory.Application, $"  Ignoring {relativeFilename}");
+                SDL.LogInfo(LogCategory.Application, $"  Ignoring {relativeFilename}");
                 continue;
             }
 
@@ -127,7 +127,7 @@ public static class Updater
             if (Path.GetExtension(destinationFilename) == ".exe_")
                 destinationFilename = Path.ChangeExtension(destinationFilename, ".exe");
 
-            SDL.LogInfo(SDL.LogCategory.Application, $"  Copying {relativeFilename} to {destinationFilename}");
+            SDL.LogInfo(LogCategory.Application, $"  Copying {relativeFilename} to {destinationFilename}");
             replaceFile(sourceFilename, destinationFilename, readOnly, fromVersion);
         }
     }
@@ -145,7 +145,7 @@ public static class Updater
                 // Don't update files that became readonly when coming from a version that didn't have them
                 if (fromVersion < readOnlyVersion) return;
 
-                SDL.LogInfo(SDL.LogCategory.Application, $"  Creating backup for {destinationFilename}");
+                SDL.LogInfo(LogCategory.Application, $"  Creating backup for {destinationFilename}");
                 var backupFilename = destinationFilename + $".{DateTimeOffset.UtcNow.Ticks}.bak";
                 File.Move(destinationFilename, backupFilename);
             }

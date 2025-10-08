@@ -33,12 +33,12 @@ public class Settings
             return;
         }
 
-        SDL.LogInfo(SDL.LogCategory.Application, $"Loading settings from '{path}'");
+        SDL.LogInfo(LogCategory.Application, $"Loading settings from '{path}'");
 
         var type = GetType();
         try
         {
-            using var reader = File.OpenText(path);
+            using StreamReader reader = new(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0));
             reader.ParseKeyValueSection((key, value, state) =>
                 {
                     var field = state.type.GetField(key.ToString());
@@ -51,21 +51,21 @@ public class Settings
                     }
                     catch (Exception e)
                     {
-                        SDL.LogError(SDL.LogCategory.Application, $"Loading setting {key} with value {value}: {e}");
+                        SDL.LogError(LogCategory.Application, $"Loading setting {key} with value {value}: {e}");
                     }
                 },
                 (type, this));
         }
         catch (Exception e)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Loading settings: {e}");
+            SDL.LogError(LogCategory.Application, $"Loading settings: {e}");
             Save();
         }
     }
 
     public void Save()
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"Saving settings at '{path}'");
+        SDL.LogInfo(LogCategory.Application, $"Saving settings at '{path}'");
 
         using SafeWriteStream stream = new(path);
         using StreamWriter writer = new(stream, Project.Encoding, leaveOpen: true);

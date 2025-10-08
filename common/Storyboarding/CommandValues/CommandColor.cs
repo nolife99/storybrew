@@ -5,7 +5,6 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic.Temporary;
 
 ///<summary> Base struct for coloring commands. </summary>
@@ -123,12 +122,6 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
 #pragma warning disable CS1591
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandColor(Rgba32 obj) => obj.ToVector4().AsVector3();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new(obj.internalVec, 1));

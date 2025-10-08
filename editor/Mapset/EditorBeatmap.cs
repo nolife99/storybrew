@@ -97,12 +97,12 @@ public class EditorBeatmap(string path) : Beatmap
 
     public static EditorBeatmap Load(string path)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"Loading beatmap {path}");
+        SDL.LogInfo(LogCategory.Application, $"Loading beatmap {path}");
         try
         {
             EditorBeatmap beatmap = new(path);
 
-            using var reader = File.OpenText(path);
+            using StreamReader reader = new(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0));
             reader.ParseSections((section, state) =>
                 {
                     switch (section)

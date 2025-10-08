@@ -120,11 +120,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
             catch (TypeLoadException)
             {
-                SDL.LogWarn(SDL.LogCategory.Application, $"Skin - Drawable type for {name} doesn't exist");
+                SDL.LogWarn(LogCategory.Application, $"Skin - Drawable type for {name} doesn't exist");
             }
             catch (Exception e)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Skin - Loading drawable {name}: {e}");
+                SDL.LogError(LogCategory.Application, $"Skin - Loading drawable {name}: {e}");
             }
     }
 
@@ -211,24 +211,24 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     }
                     catch (InvalidDataException e)
                     {
-                        SDL.LogWarn(SDL.LogCategory.Application,
+                        SDL.LogWarn(LogCategory.Application,
                             $"Skin - Invalid style {styleTypeName}.'{styleName}': {e.Message}");
                     }
                     catch (Exception e)
                     {
-                        SDL.LogError(SDL.LogCategory.Application,
+                        SDL.LogError(LogCategory.Application,
                             $"Skin - Loading style {styleTypeName}.'{styleName}': {e}");
                     }
                 }
             }
             catch (TypeLoadException)
             {
-                SDL.LogWarn(SDL.LogCategory.Application,
+                SDL.LogWarn(LogCategory.Application,
                     $"Skin - Widget type {styleTypeName} doesn't exist or isn't skinnable");
             }
             catch (Exception e)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Skin - Loading {styleTypeName} styles: {e}");
+                SDL.LogError(LogCategory.Application, $"Skin - Loading {styleTypeName} styles: {e}");
             }
         }
     }
@@ -247,7 +247,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     var parser = getFieldParser(fieldType);
 
                     if (parser is not null) field.SetValue(skinnable, parser(fieldData, constants, this));
-                    else SDL.LogWarn(SDL.LogCategory.Application, $"Skin - No parser for {fieldType}");
+                    else SDL.LogWarn(LogCategory.Application, $"Skin - No parser for {fieldType}");
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
             }

@@ -1,6 +1,4 @@
-﻿using Path = System.IO.Path;
-
-namespace StorybrewEditor.Storyboarding;
+﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.Globalization;
@@ -81,7 +79,7 @@ public sealed partial class Project : IDisposable
         var scriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
         if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
-        SDL.LogInfo(SDL.LogCategory.Test,
+        SDL.LogInfo(LogCategory.Test,
             $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath}");
 
         initializeAssetWatcher();
@@ -258,7 +256,7 @@ public sealed partial class Project : IDisposable
     {
         effectUpdateQueue.Queue(effect,
             string.GetHashCode(effect.Path, StringComparison.OrdinalIgnoreCase),
-            effect.Update,
+            (ef, t) => ef.Update(t),
             effect.Multithreaded);
 
         refreshEffectsStatus();
@@ -329,7 +327,7 @@ public sealed partial class Project : IDisposable
     void refreshEffectsStatus()
     {
         var previousStatus = EffectsStatus;
-        var isUpdating = effectUpdateQueue is not null && effectUpdateQueue.Running;
+        var isUpdating = false;
 
         var hasError = false;
 
@@ -498,10 +496,10 @@ public sealed partial class Project : IDisposable
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
-        assetWatcher.Error += (_, e) => SDL.LogError(SDL.LogCategory.Test, $"Watcher (assets): {e.GetException()}");
+        assetWatcher.Error += (_, e) => SDL.LogError(LogCategory.Test, $"Watcher (assets): {e.GetException()}");
 
         assetWatcher.EnableRaisingEvents = true;
-        SDL.LogInfo(SDL.LogCategory.Test, $"Watching (assets): {assetsFolderPath}");
+        SDL.LogInfo(LogCategory.Test, $"Watching (assets): {assetsFolderPath}");
     }
 
     void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e)
@@ -1002,7 +1000,7 @@ public sealed partial class Project : IDisposable
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
         {
-            SDL.LogInfo(SDL.LogCategory.Test, $"Exporting diff specific events to {osuPath}");
+            SDL.LogInfo(LogCategory.Test, $"Exporting diff specific events to {osuPath}");
             await using SafeWriteStream stream = new(osuPath);
             await using StreamWriter writer = new(stream, Encoding, leaveOpen: true);
             using StreamReader reader = new(osuPath, Encoding);
@@ -1050,7 +1048,7 @@ public sealed partial class Project : IDisposable
         diffSpecific.Dispose();
         if (exportOsb && sbLayer.Count != 0)
         {
-            SDL.LogInfo(SDL.LogCategory.Test, $"Exporting osb to {osbPath}");
+            SDL.LogInfo(LogCategory.Test, $"Exporting osb to {osbPath}");
             await using StreamWriter writer = new(osbPath, false, Encoding);
             await writer.WriteLineAsync("[Events]");
             await writer.WriteLineAsync("//Background and Video events");

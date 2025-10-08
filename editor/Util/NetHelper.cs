@@ -34,7 +34,7 @@ public static class NetHelper
     {
         try
         {
-            SDL.LogInfo(SDL.LogCategory.Application, $"Requesting {url}");
+            SDL.LogInfo(LogCategory.Application, $"Requesting {url}");
 
             var result = await Client.GetStringAsync(url);
             await action.Invoke(result, null);
@@ -49,7 +49,7 @@ public static class NetHelper
     {
         try
         {
-            SDL.LogInfo(SDL.LogCategory.Application, $"Post {url}");
+            SDL.LogInfo(LogCategory.Application, $"Post {url}");
 
             FormUrlEncodedContent content = new(data);
             using var response = await Client.PostAsync(url, content);
@@ -71,7 +71,7 @@ public static class NetHelper
     {
         try
         {
-            SDL.LogInfo(SDL.LogCategory.Application, $"Post {url}");
+            SDL.LogInfo(LogCategory.Application, $"Post {url}");
 
             FormUrlEncodedContent content = new(data);
             var response = Client.PostAsync(url, content).Result;
@@ -99,7 +99,7 @@ public static class NetHelper
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             else if (File.Exists(filename)) File.Delete(filename);
 
-            SDL.LogInfo(SDL.LogCategory.Application, $"Downloading {url}");
+            SDL.LogInfo(LogCategory.Application, $"Downloading {url}");
 
             using (var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {

@@ -1,6 +1,4 @@
-﻿using Image = SixLabors.ImageSharp.Image;
-
-namespace BrewLib.Graphics.Textures;
+﻿namespace BrewLib.Graphics.Textures;
 
 using System;
 using System.Buffers;
@@ -184,19 +182,24 @@ public sealed class Texture2d : Texture2dRegion
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
         using var stream = File.Exists(filename) ?
-            File.OpenRead(filename) :
+            new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 0, FileOptions.SequentialScan) :
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
         if (stream is not null) return Image.Load<Rgba32>(stream);
 
-        SDL.LogWarn(SDL.LogCategory.Video, $"Texture not found: {filename}");
+        SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
         return null;
     }
 
     public static Task<Image<Rgba32>> LoadBitmapAsync(string filename, ResourceContainer resourceContainer = null)
     {
         var stream = File.Exists(filename) ?
-            File.OpenRead(filename) :
+            new FileStream(filename,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                0,
+                FileOptions.Asynchronous | FileOptions.SequentialScan) :
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
         if (stream is not null)
@@ -208,7 +211,7 @@ public sealed class Texture2d : Texture2dRegion
                     },
                     stream);
 
-        SDL.LogWarn(SDL.LogCategory.Video, $"Texture not found: {filename}");
+        SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
         return Task.FromResult<Image<Rgba32>>(null);
     }
 

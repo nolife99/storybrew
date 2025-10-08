@@ -1,6 +1,11 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using BrewLib.IO;
 using ManagedBass;
 using SDL3;
@@ -11,6 +16,29 @@ public sealed class AudioManager : IDisposable
     readonly PooledList<AudioChannel> audioChannels = new();
     float volume = 1;
 
+    static AudioManager()
+    {
+        foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
+            if (assembly.ManifestModule.Name.StartsWith("ManagedBass", StringComparison.Ordinal))
+                NativeLibrary.SetDllImportResolver(assembly, Resolver);
+
+        AppDomain.CurrentDomain.AssemblyLoad += (_, e) =>
+        {
+            var a = e.LoadedAssembly;
+            if (a.ManifestModule.Name.StartsWith("ManagedBass", StringComparison.Ordinal))
+                NativeLibrary.SetDllImportResolver(a, Resolver);
+        };
+
+        return;
+
+        static nint Resolver(string libraryName, Assembly assembly, DllImportSearchPath? path)
+            => Directory.EnumerateFiles(Path.GetDirectoryName(assembly.Location)!, "*", SearchOption.AllDirectories)
+                .Where(c => c.Contains(libraryName, StringComparison.OrdinalIgnoreCase) &&
+                    c.Contains(RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase))
+                .Select(c => NativeLibrary.Load(c, assembly, null))
+                .FirstOrDefault();
+    }
+
     public AudioManager()
     {
         const DeviceInitFlags flags = DeviceInitFlags.DirectSound | DeviceInitFlags.Latency;
@@ -18,14 +46,14 @@ public sealed class AudioManager : IDisposable
         var initialized = false;
         try
         {
-            SDL.LogInfo(SDL.LogCategory.Audio, $"Initializing audio - Bass {Bass.Version}");
+            SDL.LogInfo(LogCategory.Audio, $"Initializing audio - Bass {Bass.Version}");
             if (Bass.Init(Flags: flags))
             {
                 initialized = true;
                 return;
             }
 
-            SDL.LogError(SDL.LogCategory.Audio, $"Initializing audio with default device: {Bass.LastError}");
+            SDL.LogError(LogCategory.Audio, $"Initializing audio with default device: {Bass.LastError}");
 
             for (var i = 0; i < Bass.DeviceCount; ++i)
             {
@@ -38,7 +66,7 @@ public sealed class AudioManager : IDisposable
                     return;
                 }
 
-                SDL.LogError(SDL.LogCategory.Audio, $"Initializing audio with device {i}: {Bass.LastError}");
+                SDL.LogError(LogCategory.Audio, $"Initializing audio with device {i}: {Bass.LastError}");
             }
         }
         finally

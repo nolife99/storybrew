@@ -413,7 +413,7 @@ public partial class EffectList : Widget
                 paths.Add(Path.Combine(path, "code"));
                 paths.Add(Path.Combine(path, "code-insiders"));
             }
-            else SDL.LogWarn(SDL.LogCategory.Application, $"Invalid path in environment variables: {path}");
+            else SDL.LogWarn(LogCategory.Application, $"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
@@ -423,7 +423,7 @@ public partial class EffectList : Widget
             {
                 if (!File.Exists(path)) continue;
 
-                SDL.LogInfo(SDL.LogCategory.Application, $"Opening vscode with \"{path} {arguments}\"");
+                SDL.LogInfo(LogCategory.Application, $"Opening vscode with \"{path} {arguments}\"");
                 Process.Start(new ProcessStartInfo(path, arguments)
                     {
                         UseShellExecute = true,
@@ -437,7 +437,7 @@ public partial class EffectList : Widget
             }
             catch (Exception e)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Could not open vscode:\n{e}");
+                SDL.LogError(LogCategory.Application, $"Could not open vscode:\n{e}");
             }
 
         Manager.ScreenLayerManager.ShowMessage(

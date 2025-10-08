@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
@@ -13,8 +14,8 @@ using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Tiny.PooledCollections.Generic.Value;
+using Tiny.PooledCollections.Generic.Value.Internals;
 
 public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
     : StoryboardSegment, IDisplayable, IPostProcessable
@@ -48,13 +49,13 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         FrameStats frameStats)
     {
         var displayTime = project.DisplayTime.TotalMilliseconds;
-        if (displayTime < StartTime || EndTime < displayTime) return;
+        if (displayTime < startTime || endTime < displayTime) return;
 
         if (layer.Highlight || effect.Highlight)
             opacity *= ((float)double.Sin(drawContext.Get<Editor>().TimeSource.Current.TotalSeconds * 4) + 1) * .5f;
 
         StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
-        foreach (var o in displayableObjects)
+        foreach (var o in CollectionsMarshal.AsSpan(displayableObjects))
             o.Draw(drawContext, camera, bounds, opacity, ref newTransform, project, frameStats);
     }
 
@@ -135,11 +136,11 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
     public override OsbAnimation CreateAnimation(string path,
         int frameCount,
         float frameDelay,
-        OsbLoopType loopType,
+        OsbLoopType loopType = OsbLoopType.LoopForever,
         OsbOrigin origin = OsbOrigin.Centre)
         => CreateAnimation(path, frameCount, frameDelay, loopType, origin, OsbSprite.DefaultPosition);
 
-    public override OsbSample CreateSample(string path, float time, float volume)
+    public override OsbSample CreateSample(string path, float time, float volume = 100)
     {
         EditorOsbSample storyboardObject = new() { AudioPath = path, Time = time, Volume = volume };
 
@@ -202,11 +203,11 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         foreach (var s in segments) s.TriggerEvents(fromTime, toTime);
     }
 
-    TempList<(StoryboardObject StoryboardObject, StoryboardTransform Transform)> Flatten(StoryboardTransform transform)
+    ValueList<(StoryboardObject StoryboardObject, StoryboardTransform Transform)> Flatten(StoryboardTransform transform)
     {
-        var result = TempList.Create<(StoryboardObject, StoryboardTransform)>();
+        var result = ValueList.Create<(StoryboardObject, StoryboardTransform)>();
 
-        StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale, false, false);
+        StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
         foreach (var storyboardObject in storyboardObjects)
         {
             if (storyboardObject is EditorStoryboardSegment segment)
@@ -232,11 +233,8 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
 
     public int CalculateSize(OsbLayer osbLayer)
     {
-        var exportSettings = ExportSettings.Default;
-
         using ByteCountingTextWriter writer = new(Project.Encoding);
-        foreach (var sbo in storyboardObjects)
-            sbo.WriteOsb(writer, exportSettings, osbLayer, in StoryboardTransform.Identity);
+        WriteOsb(writer, ExportSettings.Default, osbLayer, in StoryboardTransform.Identity);
 
         return (int)writer.ByteCount;
     }

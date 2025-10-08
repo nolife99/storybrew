@@ -35,7 +35,7 @@ public class AudioStream : AudioChannel
 
         if (decodeStream == 0)
         {
-            SDL.LogError(SDL.LogCategory.Audio, $"Loading audio stream ({path}): {Bass.LastError}");
+            SDL.LogError(LogCategory.Audio, $"Loading audio stream ({path}): {Bass.LastError}");
 
             return;
         }

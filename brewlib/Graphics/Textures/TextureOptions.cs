@@ -88,7 +88,7 @@ public class TextureOptions : IEquatable<TextureOptions>
                 {
                     var parser = getFieldParser(fieldType);
                     if (parser is not null) field.SetValue(obj, parser(fieldData));
-                    else SDL.LogWarn(SDL.LogCategory.Application, $"No parser for {fieldType}");
+                    else SDL.LogWarn(LogCategory.Application, $"No parser for {fieldType}");
                 }
             }
 

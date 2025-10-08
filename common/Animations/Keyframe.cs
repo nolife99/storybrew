@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Animations;
 
 using System;
-using System.Collections.Generic;
 
 /// <summary> Represents a point in time and a value in a keyframe collection. </summary>
 /// <typeparam name="TValue"> The type of the value of the keyframe. </typeparam>
@@ -9,13 +8,10 @@ using System.Collections.Generic;
 /// This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change
 /// over time.
 /// </remarks>
-public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
+public readonly record struct Keyframe<TValue> : IComparable<Keyframe<TValue>>
 {
-    internal static readonly Comparer<Keyframe<TValue>> Comparer =
-        Comparer<Keyframe<TValue>>.Create((x, y) => float.Sign(x.Time - y.Time));
-
     /// <summary> Gets the easing function to apply to this keyframe. </summary>
-    /// <remarks> This easing function is used when interpolating between this keyframe and the previous keyframe. </remarks>
+    /// <remarks> This easing function is used when interpolating between this keyframe and another keyframe. </remarks>
     public readonly Func<float, float> Ease;
 
     /// <summary> Gets the time of the keyframe. </summary>
@@ -44,7 +40,7 @@ public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
         Until = until;
     }
 
-    int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Comparer.Compare(x, y);
+    int IComparable<Keyframe<TValue>>.CompareTo(Keyframe<TValue> other) => float.Sign(Time - other.Time);
 
     /// <summary>
     /// Creates a new <see cref="Keyframe{TValue}"/> with the same value and easing function as this one, but with the
