@@ -1,4 +1,4 @@
-﻿namespace StorybrewCommon.Storyboarding.Display;
+namespace StorybrewCommon.Storyboarding.Display;
 
 using System;
 using System.Collections.Generic;
@@ -48,21 +48,18 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
     protected Command<TValue> CommandAtTime(float time)
     {
-        var t = Unsafe.As<ListDebugView<float>>(times);
-        if (t.Count == 0) return null;
+        var t = CollectionsMarshal.AsSpan(times);
+        if (t.IsEmpty) return null;
 
         if (!findCommandIndex(t, time, out var index) && index > 0) --index;
 
         if (HasOverlap)
-        {
-            var items = t.Items;
-            for (var i = 0; i < index; ++i)
-                if (items[i] <= items[index] && time <= commands[i].endTime)
+            for (var i = 0; i < index; i++)
+                if (t[i] <= t[index] && time <= commands[i].endTime)
                 {
                     index = i;
                     break;
                 }
-        }
 
         return commands[index];
     }
@@ -80,89 +77,178 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         return true;
     }
 
-    static bool findCommandIndex(ListDebugView<float> c, float time, out int index)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool findCommandIndex(ReadOnlySpan<float> c, float time, out int index)
     {
-        var len = c.Count;
-        var i = 0;
+        var left = 0;
+        var right = c.Length - 1;
 
-        ref var first = ref MemoryMarshal.GetArrayDataReference(c.Items);
-
-        if (Vector512.IsHardwareAccelerated && len >= Vector512<float>.Count)
+        if (Vector512.IsHardwareAccelerated && right + 1 > Vector512<float>.Count)
         {
-            var vTime = Vector512.Create(time);
-            while (i + Vector512<float>.Count <= len)
+            if (search512(c, time, out var narrowed))
             {
-                var mask = Vector512.LessThan(Vector512.LoadUnsafe(ref first, (nuint)i), vTime)
-                    .ExtractMostSignificantBits();
+                index = narrowed;
+                return true;
+            }
 
-                if (mask != 0xFFFF)
-                {
-                    index = i + BitOperations.TrailingZeroCount(~mask & 0xFFFF);
-                    return index < len && Unsafe.Add(ref first, index) == time;
-                }
+            left = Math.Max(0, narrowed - Vector512<float>.Count);
+            right = Math.Min(c.Length - 1, narrowed + Vector512<float>.Count);
+        }
 
-                i += Vector512<float>.Count;
+        if (Vector256.IsHardwareAccelerated && right - left + 1 > Vector256<float>.Count)
+        {
+            if (search256(c.Slice(left, right - left + 1), time, out var narrowed))
+            {
+                index = left + narrowed;
+                return true;
+            }
+
+            left += narrowed;
+            right = Math.Min(c.Length - 1, left + Vector256<float>.Count);
+        }
+
+        if (Vector128.IsHardwareAccelerated && right - left + 1 > Vector128<float>.Count)
+        {
+            if (search128(c.Slice(left, right - left + 1), time, out var narrowed))
+            {
+                index = left + narrowed;
+                return true;
+            }
+
+            left += narrowed;
+            right = Math.Min(c.Length - 1, left + Vector128<float>.Count);
+        }
+
+        ref var first = ref MemoryMarshal.GetReference(c);
+        while (left <= right)
+        {
+            var mid = left + right >> 1;
+            var v = Unsafe.Add(ref first, mid);
+
+            if (v > time) right = mid - 1;
+            else if (v < time) left = mid + 1;
+            else
+            {
+                index = mid;
+                return true;
             }
         }
 
-        if (Vector256.IsHardwareAccelerated && len - i >= Vector256<float>.Count)
-        {
-            var vTime = Vector256.Create(time);
-            while (i + Vector256<float>.Count <= len)
-            {
-                var mask = Vector256.LessThan(Vector256.LoadUnsafe(ref first, (nuint)i), vTime)
-                    .ExtractMostSignificantBits();
-
-                if (mask != 0xFF)
-                {
-                    index = i + BitOperations.TrailingZeroCount(~mask & 0xFF);
-                    return index < len && Unsafe.Add(ref first, index) == time;
-                }
-
-                i += Vector256<float>.Count;
-            }
-        }
-
-        if (Vector128.IsHardwareAccelerated && len - i >= Vector128<float>.Count)
-        {
-            var vTime = Vector128.Create(time);
-            while (i + Vector128<float>.Count <= len)
-            {
-                var mask = Vector128.LessThan(Vector128.LoadUnsafe(ref first, (nuint)i), vTime)
-                    .ExtractMostSignificantBits();
-
-                if (mask != 0xF)
-                {
-                    index = i + BitOperations.TrailingZeroCount(~mask & 0xF);
-                    return index < len && Unsafe.Add(ref first, index) == time;
-                }
-
-                i += Vector128<float>.Count;
-            }
-        }
-
-        ref var end = ref Unsafe.Add(ref first, len);
-        ref var start = ref first;
-
-        first = ref Unsafe.Add(ref first, i);
-        while (Unsafe.IsAddressLessThan(ref first, ref end))
-        {
-            if (first >= time)
-            {
-                index = (int)(Unsafe.ByteOffset(ref start, ref first) / sizeof(float));
-                return first == time;
-            }
-
-            first = ref Unsafe.Add(ref first, 1);
-        }
-
-        index = len;
+        index = left;
         return false;
     }
 
-    sealed class ListDebugView<T>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool search512(ReadOnlySpan<float> c, float time, out int index)
     {
-        public readonly int Count;
-        public readonly T[] Items;
+        ref var first = ref MemoryMarshal.GetReference(c);
+        var left = 0;
+        var right = c.Length - 1;
+
+        var V = Vector512<float>.Count;
+        var vTime = Vector512.Create(time);
+
+        int len;
+        while ((len = right - left + 1) > V)
+        {
+            var blockStart = left + (len - V >> 1);
+
+            var v = Vector512.LoadUnsafe(ref first, (nuint)blockStart);
+
+            var eqMask = Vector512.Equals(v, vTime).ExtractMostSignificantBits();
+            if (eqMask != 0)
+            {
+                index = blockStart + BitOperations.TrailingZeroCount(eqMask);
+                return true;
+            }
+
+            var countLess = BitOperations.PopCount(Vector512.LessThan(v, vTime).ExtractMostSignificantBits());
+            if (countLess == 0) right = blockStart - 1;
+            else if (countLess == V) left = blockStart + V;
+            else
+            {
+                left = blockStart + countLess;
+                break;
+            }
+        }
+
+        index = left;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool search256(ReadOnlySpan<float> c, float time, out int index)
+    {
+        ref var first = ref MemoryMarshal.GetReference(c);
+        var left = 0;
+        var right = c.Length - 1;
+
+        var V = Vector256<float>.Count;
+        var vTime = Vector256.Create(time);
+
+        int len;
+        while ((len = right - left + 1) > V)
+        {
+            var blockStart = left + (len - V >> 1);
+
+            var v = Vector256.LoadUnsafe(ref first, (nuint)blockStart);
+
+            var eqMask = Vector256.Equals(v, vTime).ExtractMostSignificantBits();
+            if (eqMask != 0)
+            {
+                index = blockStart + BitOperations.TrailingZeroCount(eqMask);
+                return true;
+            }
+
+            var countLess = BitOperations.PopCount(Vector256.LessThan(v, vTime).ExtractMostSignificantBits());
+            if (countLess == 0) right = blockStart - 1;
+            else if (countLess == V) left = blockStart + V;
+            else
+            {
+                left = blockStart + countLess;
+                break;
+            }
+        }
+
+        index = left;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool search128(ReadOnlySpan<float> c, float time, out int index)
+    {
+        ref var first = ref MemoryMarshal.GetReference(c);
+        var left = 0;
+        var right = c.Length - 1;
+
+        var V = Vector128<float>.Count;
+        var vTime = Vector128.Create(time);
+
+        int len;
+        while ((len = right - left + 1) > V)
+        {
+            var blockStart = left + (len - V >> 1);
+
+            var v = Vector128.LoadUnsafe(ref first, (nuint)blockStart);
+
+            var eqMask = Vector128.Equals(v, vTime).ExtractMostSignificantBits();
+            if (eqMask != 0)
+            {
+                index = blockStart + BitOperations.TrailingZeroCount(eqMask);
+                return true;
+            }
+
+            var countLess = BitOperations.PopCount(Vector128.LessThan(v, vTime).ExtractMostSignificantBits());
+            if (countLess == 0) right = blockStart - 1;
+            else if (countLess == V) left = blockStart + V;
+            else
+            {
+                left = blockStart + countLess;
+                break;
+            }
+        }
+
+        index = left;
+        return false;
     }
 }

@@ -1,5 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
+using System.Runtime.InteropServices;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
@@ -9,8 +10,8 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
-        var c = commands;
-        if (c.Count == 0)
+        var c = CollectionsMarshal.AsSpan(commands);
+        if (c.IsEmpty)
         {
             result = default;
             return false;
@@ -41,7 +42,7 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
         var loopNumber = (int)(loopTime / loopDuration);
         loopTime %= loopDuration;
 
-        if (loopTime <= c[0].StartTime)
+        if (loopTime <= c[0].startTime)
         {
             result = new(c[^1], startTime + (loopNumber - 1) * loopDuration);
             return true;
