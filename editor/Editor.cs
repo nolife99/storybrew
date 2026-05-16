@@ -4,8 +4,8 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.Graphics;
+using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Input;
@@ -15,12 +15,11 @@ using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
 using SDL3;
 using StorybrewEditor.ScreenLayers;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public sealed class Editor(nint window) : InputAdapter, IDisposable
+public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : InputAdapter, IDisposable
 {
     readonly FrameClock clock = new();
 
@@ -52,22 +51,22 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         drawContext = new();
         drawContext.Register(this);
 
-        TextureContainer textureContainer = Texture2d.BindlessTexturesSupported ?
-            new TextureContainerSeparate(ResourceContainer) :
-            new TextureContainerAtlas(ResourceContainer);
+        drawContext.Register(graphicsBackend, true);
+
+        TextureContainer textureContainer = new TextureContainerAtlas(graphicsBackend.TextureFactory, ResourceContainer);
 
         drawContext.Register(textureContainer, true);
 
-        drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
-        drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
-        drawContext.Freeze();
-
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(ResourceContainer, textureContainer);
+        graphicsBackend.Initialize(ResourceContainer, textureContainer);
+
+        drawContext.Register<IQuadRenderer>(graphicsBackend.RendererFactory.CreateQuadRenderer(), true);
+        drawContext.Register<ILineRenderer>(graphicsBackend.RendererFactory.CreateLineRenderer(), true);
+        drawContext.Freeze();
 
         try
         {
-            var brewLibAssembly = typeof(Drawable).Assembly;
+            var brewLibAssembly = drawContext.GetType().Assembly;
             Skin = new(textureContainer)
             {
                 ResolveDrawableType =
@@ -128,7 +127,9 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
             }
         }
 
-        if (!SDL.SetWindowSize(window, (int)windowWidth, (int)windowHeight))
+        if (!SDL.SetWindowSize(window,
+            float.ConvertToIntegerNative<int>(windowWidth),
+            float.ConvertToIntegerNative<int>(windowHeight)))
             throw new InvalidOperationException($"Unable to set window size: {SDL.GetError()}");
 
         if (!SDL.GetWindowBordersSize(window, out var top, out var left, out var bottom, out var right))
@@ -139,13 +140,22 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
         if (pos.X < 0 || pos.Y < 0)
         {
-            SDL.SetWindowSize(window, workArea.W, workArea.H);
-            SDL.MaximizeWindow(window);
+            if (!SDL.SetWindowSize(window, workArea.W, workArea.H))
+                throw new InvalidOperationException($"Unable to set window size: {SDL.GetError()}");
+
+            if (!SDL.MaximizeWindow(window))
+                throw new InvalidOperationException($"Unable to maximize window: {SDL.GetError()}");
         }
-        else if (!SDL.SetWindowPosition(window, (int)pos.X, (int)pos.Y))
+        else if (!SDL.SetWindowPosition(window,
+            float.ConvertToIntegerNative<int>(pos.X),
+            float.ConvertToIntegerNative<int>(pos.Y)))
             throw new InvalidOperationException($"Unable to set window location: {SDL.GetError()}");
 
-        inputDispatcher.OnResize(new() { Data1 = (int)windowWidth, Data2 = (int)windowHeight });
+        if (!SDL.GetWindowSizeInPixels(window, out var pixelWidth, out var pixelHeight))
+            throw new InvalidOperationException($"Unable to get window size in pixels: {SDL.GetError()}");
+
+        inputDispatcher.OnResize(new() { Data1 = pixelWidth, Data2 = pixelHeight });
+
         Restart();
     }
 
@@ -167,21 +177,13 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
 
     public int Draw()
     {
-        Span<float> clearColor = [0, 0, 0, 0];
-        GL.ClearBuffer(ClearBuffer.Color, 0, ref clearColor.GetPinnableReference());
+        if (!DrawState.Backend.BeginFrame(Vector4.Zero)) return 0;
 
         screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
 
         var draws = DrawState.CompleteFrame();
-
-        if (DrawState.CanInvalidate)
-        {
-            Span<FramebufferAttachment> attachments = [FramebufferAttachment.Color];
-            GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer,
-                attachments.Length,
-                ref attachments.GetPinnableReference());
-        }
+        DrawState.Backend.EndFrame(DrawState.CanInvalidate);
 
         return draws;
     }
@@ -290,10 +292,10 @@ public sealed class Editor(nint window) : InputAdapter, IDisposable
         DrawState.Viewport = new(0, 0, width, height);
 
         var virtualHeight = height * float.Max(1024f / width, 768f / height);
-        overlayCamera.VirtualHeight = (int)virtualHeight;
+        overlayCamera.VirtualHeight = float.ConvertToIntegerNative<int>(virtualHeight);
 
         var virtualWidth = width * virtualHeight / height;
-        overlayCamera.VirtualWidth = (int)virtualWidth;
+        overlayCamera.VirtualWidth = float.ConvertToIntegerNative<int>(virtualWidth);
         overlay.Size = new(virtualWidth, virtualHeight);
     }
 

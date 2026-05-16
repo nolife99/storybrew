@@ -1,78 +1,116 @@
-﻿namespace BrewLib.Graphics;
+namespace BrewLib.Graphics;
 
-using osuTK.Graphics.OpenGL;
+using System;
+using BrewLib.Graphics.Backend;
 
-public class RenderStates
+public struct RenderStates
 {
-    static BlendingFactorState currentState;
-    public BlendingFactorState BlendingFactor { get; init; } = BlendingFactorState.Default;
+    public static readonly RenderStates Default = new(BlendingMode.AlphaBlend);
+
+    static RenderStates currentState;
+
+    public BlendingFactorState BlendingFactor;
+
+    public RenderStates()
+    {
+        BlendingFactor = new(BlendingMode.AlphaBlend);
+    }
+
+    public RenderStates(BlendingMode blendingMode)
+    {
+        BlendingFactor = new(blendingMode);
+    }
+
+    public static void ClearStateCache() => currentState = default;
 
     public void Apply()
     {
-        if (currentState.Equals(BlendingFactor)) return;
+        if (currentState.BlendingFactor == BlendingFactor) return;
 
-        DrawState.FlushRenderer(true);
-
-        BlendingFactor.Apply();
-        currentState = BlendingFactor;
+        DrawState.FlushRenderer();
+        DrawState.Device.SetBlendState(BlendingFactor);
+        currentState.BlendingFactor = BlendingFactor;
     }
-
-    public static void ClearStateCache() => currentState = BlendingFactorState.Default;
 }
 
-public readonly record struct BlendingFactorState
+public readonly struct BlendingFactorState : IEquatable<BlendingFactorState>
 {
-    public static readonly BlendingFactorState Default = new(BlendingMode.AlphaBlend);
+    public readonly bool Enabled;
+    public readonly BlendFactor Source, Destination, AlphaSource, AlphaDestination;
 
-    readonly BlendingFactorDest dest, alphaDest;
-
-    readonly bool enabled = true;
-    readonly BlendingFactorSrc src, alphaSrc;
-    static BlendingFactorState() => Default.Apply();
-
-    public BlendingFactorState(BlendingMode mode)
+    public BlendingFactorState(BlendingMode blendingMode)
     {
-        switch (mode)
+        switch (blendingMode)
         {
-            case BlendingMode.Off: enabled = false; break;
-
-            case BlendingMode.AlphaBlend:
-                src = alphaSrc = BlendingFactorSrc.SrcAlpha;
-                dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-                break;
-
-            case BlendingMode.Color:
-                src = BlendingFactorSrc.SrcAlpha;
-                dest = BlendingFactorDest.OneMinusSrcAlpha;
-                alphaSrc = BlendingFactorSrc.Zero;
-                alphaDest = BlendingFactorDest.One;
+            case BlendingMode.Off:
+                Enabled = false;
+                Source = Destination = AlphaSource = AlphaDestination = BlendFactor.One;
                 break;
 
             case BlendingMode.Additive:
-                src = alphaSrc = BlendingFactorSrc.SrcAlpha;
-                dest = alphaDest = BlendingFactorDest.One;
+                Enabled = true;
+                Source = BlendFactor.SrcAlpha;
+                Destination = BlendFactor.One;
+                AlphaSource = BlendFactor.SrcAlpha;
+                AlphaDestination = BlendFactor.One;
+                break;
+
+            case BlendingMode.Color:
+                Enabled = true;
+                Source = BlendFactor.SrcAlpha;
+                Destination = BlendFactor.OneMinusSrcAlpha;
+                AlphaSource = BlendFactor.Zero;
+                AlphaDestination = BlendFactor.One;
                 break;
 
             case BlendingMode.Premultiply:
-                src = BlendingFactorSrc.SrcAlpha;
-                dest = BlendingFactorDest.OneMinusSrcAlpha;
-                alphaSrc = BlendingFactorSrc.One;
-                alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+                Enabled = true;
+                Source = BlendFactor.SrcAlpha;
+                Destination = BlendFactor.OneMinusSrcAlpha;
+                AlphaSource = BlendFactor.One;
+                AlphaDestination = BlendFactor.OneMinusSrcAlpha;
                 break;
 
             case BlendingMode.BlendAdd:
             case BlendingMode.Premultiplied:
-                src = alphaSrc = BlendingFactorSrc.One;
-                dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+                Enabled = true;
+                Source = BlendFactor.One;
+                Destination = BlendFactor.OneMinusSrcAlpha;
+                AlphaSource = BlendFactor.One;
+                AlphaDestination = BlendFactor.OneMinusSrcAlpha;
+                break;
+
+            case BlendingMode.AlphaBlend:
+            default:
+                Enabled = true;
+                Source = BlendFactor.SrcAlpha;
+                Destination = BlendFactor.OneMinusSrcAlpha;
+                AlphaSource = BlendFactor.SrcAlpha;
+                AlphaDestination = BlendFactor.OneMinusSrcAlpha;
                 break;
         }
     }
 
-    public void Apply()
-    {
-        if (!enabled) return;
+    public bool Equals(BlendingFactorState other)
+        => !Enabled && !other.Enabled ||
+           Enabled == other.Enabled &&
+           Source == other.Source &&
+           Destination == other.Destination &&
+           AlphaSource == other.AlphaSource &&
+           AlphaDestination == other.AlphaDestination;
 
-        DrawState.SetCapability(EnableCap.Blend, enabled);
-        GL.BlendFuncSeparate(src, dest, alphaSrc, alphaDest);
-    }
+    public override bool Equals(object obj) => obj is BlendingFactorState other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(Enabled, Source, Destination, AlphaSource, AlphaDestination);
+
+    public static bool operator ==(BlendingFactorState left, BlendingFactorState right) => left.Equals(right);
+    public static bool operator !=(BlendingFactorState left, BlendingFactorState right) => !left.Equals(right);
+}
+
+public enum BlendFactor
+{
+    Zero,
+    One,
+    SrcAlpha,
+    OneMinusSrcAlpha
 }

@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
+namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
 using System.Runtime.CompilerServices;
@@ -6,33 +6,45 @@ using System.Runtime.InteropServices;
 using BrewLib.Graphics.Shaders;
 using osuTK.Graphics.OpenGL;
 
-sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
+class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     scoped ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : unmanaged
 {
     readonly TPrimitive[] primitiveBuffer = GC.AllocateUninitializedArray<TPrimitive>(maxPrimitivesPerBatch);
 
-    protected override void internalAddPrimitive(scoped ref readonly TPrimitive primitive)
-        => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer), totalQueuedPrimitives) = primitive;
+    public override ref TPrimitive PrimitiveAt(int index)
+        => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer), index);
 
-    protected override void internalRender(PrimitiveType type)
+    public override void Render(PrimitiveTopology topology, int primitiveCount, int verticesPerPrimitive)
     {
+        if (primitiveCount == 0) return;
+
+        GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
         GL.BufferData(BufferTarget.ArrayBuffer,
-            totalQueuedPrimitives * PrimitiveSize,
+            primitiveCount * PrimitiveSize,
             primitiveBuffer,
             BufferUsageHint.StreamDraw);
 
+        var type = toOpenGlPrimitiveType(topology);
         if (indexBufferId != -1)
-            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandBufferOffset, QueuedRenders, 0);
-        else GL.MultiDrawArraysIndirect(type, commandBufferOffset, QueuedRenders, 0);
+            GL.DrawElements(type, primitiveCount * verticesPerPrimitive, DrawElementsType.UnsignedShort, 0);
+        else GL.DrawArrays(type, 0, primitiveCount * verticesPerPrimitive);
+
+        DrawState.CountDrawCall();
 
         if (DrawState.CanInvalidate) GL.InvalidateBufferData(vertexBufferId);
     }
 
-    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
-
     public new static bool HasCapabilities()
-        => PrimitiveStreamerVao<TPrimitive>.HasCapabilities() &&
-            DrawState.HasCapabilities(4, 3, "GL_ARB_multi_draw_indirect");
+        => PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
+
+    static PrimitiveType toOpenGlPrimitiveType(PrimitiveTopology topology)
+        => topology switch
+        {
+            PrimitiveTopology.Points => PrimitiveType.Points,
+            PrimitiveTopology.Lines => PrimitiveType.Lines,
+            PrimitiveTopology.Triangles => PrimitiveType.Triangles,
+            _ => throw new ArgumentOutOfRangeException(nameof(topology), topology, null)
+        };
 }

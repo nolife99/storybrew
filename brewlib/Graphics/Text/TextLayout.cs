@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Buffers;
 using System.Numerics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
@@ -11,7 +10,7 @@ using Tiny.PooledCollections.Generic.Value.Internals;
 public struct TextLayout : IDisposable
 {
     ValueList<TextLayoutLine> _lines;
-    readonly float[] size;
+    ValueArray<float> size;
 
     public TextLayout(scoped ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
@@ -20,7 +19,7 @@ public struct TextLayout : IDisposable
         var height = 0f;
 
         _lines = ValueList.Create<TextLayoutLine>();
-        size = ArrayPool<float>.Shared.Rent(2);
+        size = ValueArray.Create<float>(2);
 
         using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).width))
             foreach (var (start, length) in lineBreaks)
@@ -28,7 +27,7 @@ public struct TextLayout : IDisposable
                 TextLayoutLine line = new(size, height, alignment, _lines.Count == 0);
 
                 var span = text.Slice(start, length);
-                foreach (var c in span) line.Add(font.GetGlyph(c), glyphIndex++);
+                foreach (var c in span) line.Add(font.GetGlyph(c), c, glyphIndex++);
 
                 _lines.Add(line);
                 width = float.Max(width, line.Width);
@@ -38,7 +37,7 @@ public struct TextLayout : IDisposable
         if (_lines.Count == 0) _lines.Add(new(size, 0, alignment, true));
         ref var lastLine = ref _lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
-        lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
+        lastLine.Add(new(null, 0, font.LineHeight), '\0', glyphIndex);
 
         size[0] = width;
         size[1] = height;
@@ -46,7 +45,7 @@ public struct TextLayout : IDisposable
 
     public bool IsValid => _lines.IsValid;
 
-    public readonly Vector2 Size => Vector2.Create(size);
+    public readonly Vector2 Size => Vector2.Create(size.AsReadOnlySpan());
 
     public readonly ReadOnlySpan<TextLayoutLine> Lines => _lines.AsReadOnlySpan();
 
@@ -55,7 +54,7 @@ public struct TextLayout : IDisposable
         foreach (var line in _lines) line.Dispose();
         _lines.Dispose();
 
-        ArrayPool<float>.Shared.Return(size);
+        size.Dispose();
     }
 
     public readonly void ForTextBounds<TState>(int startIndex,
@@ -170,14 +169,14 @@ public struct TextLayout : IDisposable
 public struct TextLayoutLine : IDisposable
 {
     ValueList<TextLayoutGlyph> _glyphs;
-    readonly int[] widthRef;
+    ValueArray<int> widthRef;
 
     bool advance;
-    readonly float[] layout;
+    readonly ValueArray<float> layout;
     readonly float y;
     readonly BoxAlignment alignment;
 
-    internal TextLayoutLine(float[] layout, float y, BoxAlignment alignment, bool advanceOnEmpty)
+    internal TextLayoutLine(ValueArray<float> layout, float y, BoxAlignment alignment, bool advanceOnEmpty)
     {
         this.layout = layout;
         this.y = y;
@@ -185,7 +184,7 @@ public struct TextLayoutLine : IDisposable
         advance = advanceOnEmpty;
 
         _glyphs = ValueList.Create<TextLayoutGlyph>();
-        widthRef = ArrayPool<int>.Shared.Rent(1);
+        widthRef = ValueArray.Create<int>(1);
         widthRef[0] = 0;
     }
 
@@ -204,14 +203,14 @@ public struct TextLayoutLine : IDisposable
     public void Dispose()
     {
         _glyphs.Dispose();
-        ArrayPool<int>.Shared.Return(widthRef);
+        widthRef.Dispose();
     }
 
-    internal void Add(FontGlyph glyph, int glyphIndex)
+    internal void Add(FontGlyph glyph, char c, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
-        _glyphs.Add(new((alignment, layout, widthRef), glyph, glyphIndex, new(Width, y)));
+        _glyphs.Add(new((alignment, layout, widthRef), glyph, c, glyphIndex, new(Width, y)));
         if (advance) widthRef[0] += glyph.width;
         if (glyph.height > Height) Height = glyph.height;
     }
@@ -219,18 +218,24 @@ public struct TextLayoutLine : IDisposable
     public readonly TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
 }
 
-public readonly struct TextLayoutGlyph
+public readonly struct TextLayoutGlyph : IComparable<TextLayoutGlyph>
 {
-    readonly (BoxAlignment alignment, float[] layout, int[] widthRef) line;
+    readonly (BoxAlignment alignment, ValueArray<float> layout, ValueArray<int> widthRef) line;
     readonly Vector2 pos;
+    readonly char c;
 
     public readonly FontGlyph Glyph;
     public readonly int Index;
 
-    internal TextLayoutGlyph((BoxAlignment, float[], int[]) line, FontGlyph glyph, int index, Vector2 pos)
+    internal TextLayoutGlyph((BoxAlignment, ValueArray<float>, ValueArray<int>) line,
+        FontGlyph glyph,
+        char c,
+        int index,
+        Vector2 pos)
     {
         this.line = line;
         this.pos = pos;
+        this.c = c;
 
         Glyph = glyph;
         Index = index;
@@ -241,4 +246,6 @@ public readonly struct TextLayoutGlyph
                 (line.alignment & BoxAlignment.Right) > 0 ? line.layout[0] - line.widthRef[0] :
                 line.layout[0] * .5f - line.widthRef[0] * .5f) + pos.X,
             pos.Y);
+
+    public int CompareTo(TextLayoutGlyph other) => c.CompareTo(other.c);
 }

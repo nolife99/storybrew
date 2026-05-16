@@ -1,4 +1,4 @@
-﻿namespace StorybrewEditor.Storyboarding;
+namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.Collections.Generic;
@@ -148,14 +148,20 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (visible)
-            segment.Draw(drawContext,
-                camera,
-                bounds,
-                opacity,
-                in StoryboardTransform.Identity,
-                Effect.Project,
-                frameStats);
+        if (!visible) return;
+
+        var editor = drawContext.Get<Editor>();
+        var highlightOpacity = ((float)double.Sin(editor.TimeSource.Current.TotalSeconds * 4) + 1) * .5f;
+
+        segment.DrawParallel(drawContext,
+            camera,
+            bounds,
+            opacity,
+            in StoryboardTransform.Identity,
+            Effect.Project,
+            frameStats,
+            editor.InputManager.Alt,
+            highlightOpacity);
     }
 
     public void PostProcess()

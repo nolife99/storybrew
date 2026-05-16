@@ -13,10 +13,10 @@ public sealed class Sprite : Drawable
     public Color Color;
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
-    public Texture2dRegion Texture;
+    public ITextureRegion Texture;
 
     public Vector2 MinSize => Vector2.Zero;
-    public Vector2 PreferredSize => Texture?.Size ?? Vector2.Zero;
+    public Vector2 PreferredSize => Texture is null ? Vector2.Zero : (SizeF)Texture.Size;
 
     public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
@@ -27,7 +27,7 @@ public sealed class Sprite : Drawable
         var color = Color.WithOpacity(opacity);
 
         var texture0 = Vector2.Zero;
-        var texture1 = Texture.Size;
+        var texture1 = (SizeF)Texture.Size;
         var scaleVec = new Vector2(bounds.Width, bounds.Height) / texture1;
 
         float scale;
@@ -38,13 +38,13 @@ public sealed class Sprite : Drawable
                 {
                     scale = scaleVec.X;
                     texture0.Y = (Texture.Height - bounds.Height / scale) * .5f;
-                    texture1.Y = Texture.Height - texture0.Y;
+                    texture1.Height = Texture.Height - texture0.Y;
                 }
                 else
                 {
                     scale = scaleVec.Y;
                     texture0.X = (Texture.Width - bounds.Width / scale) * .5f;
-                    texture1.X = Texture.Width - texture0.X;
+                    texture1.Width = Texture.Width - texture0.X;
                 }
 
                 break;
@@ -72,7 +72,7 @@ public sealed class Sprite : Drawable
                         0,
                         color,
                         Vector2.Zero,
-                        Vector2.Min((new Vector2(bounds.Right, bounds.Bottom) - xy) / scale, Texture.Size));
+                        Vector2.Min((new Vector2(bounds.Right, bounds.Bottom) - xy) / scale, (SizeF)Texture.Size));
                 }
 
                 break;

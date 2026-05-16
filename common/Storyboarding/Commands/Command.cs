@@ -11,7 +11,7 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary> A command that can be given to an <see cref="OsbSprite"/> to change its properties over time. </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
-public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand, IOffsetable
+public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand
     where TValue : ICommandValue<TValue>
 {
     /// <summary> The end value of the command. </summary>
@@ -131,11 +131,11 @@ public abstract record Command<TValue> : IComparable<Command<TValue>>, ICommand,
     TempList<char> ToOsbString(ExportSettings exportSettings, scoped ref readonly StoryboardTransform transform)
     {
         using var startTimeString =
-            (exportSettings.UseFloatForTime ? startTime : (int)float.Round(startTime)).ToCharArray(
+            (exportSettings.UseFloatForTime ? startTime : float.Round(startTime)).ToCharArray(
                 provider: exportSettings.NumberFormat);
 
         using var endTimeString =
-            (exportSettings.UseFloatForTime ? endTime : (int)float.Round(endTime)).ToCharArray(
+            (exportSettings.UseFloatForTime ? endTime : float.Round(endTime)).ToCharArray(
                 provider: exportSettings.NumberFormat);
 
         var tranformedStartValue = GetTransformedStartValue(transform);

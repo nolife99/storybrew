@@ -1,5 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding;
 
+using System;
 using System.IO;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -40,7 +41,7 @@ public class OsbSample : StoryboardObject
         scoped ref readonly StoryboardTransform transform)
     {
         using var str = StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"Sample,{(int)Time},{layer},\"{AudioPath.Trim()}\",{(int)Volume}");
+            $"Sample,{float.ConvertToIntegerNative<int>(Time)},{layer},\"{audioPath.AsSpan().Trim()}\",{(int)Volume}");
 
         writer.WriteLine(str.AsReadOnlySpan());
     }

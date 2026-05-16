@@ -1,6 +1,8 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using BrewLib.Graphics.Backend;
+using BrewLib.Graphics.Backend.OpenGL;
 using BrewLib.IO;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
@@ -13,10 +15,11 @@ public sealed class TextureContainerAtlas : TextureContainer
     readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases;
     readonly int height, padding, width;
 
+    readonly ITextureFactory textureFactory;
     readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
-    readonly PooledDictionary<string, Texture2dRegion> textures;
-    readonly PooledDictionary<string, Texture2dRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+    readonly PooledDictionary<string, ITextureRegion> textures;
+    readonly PooledDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
 
     public TextureContainerAtlas(ResourceContainer resourceContainer = null,
         TextureOptions textureOptions = null,
@@ -24,7 +27,26 @@ public sealed class TextureContainerAtlas : TextureContainer
         int height = 1024,
         int padding = 0,
         string atlasDescription = nameof(TextureContainerAtlas))
+        : this(DrawState.Backend?.TextureFactory ?? new OpenGlTextureFactory(DrawState.Backend),
+            resourceContainer,
+            textureOptions,
+            width,
+            height,
+            padding,
+            atlasDescription)
     {
+    }
+
+    public TextureContainerAtlas(ITextureFactory textureFactory,
+        ResourceContainer resourceContainer = null,
+        TextureOptions textureOptions = null,
+        int width = 1024,
+        int height = 1024,
+        int padding = 0,
+        string atlasDescription = nameof(TextureContainerAtlas))
+    {
+        this.textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
+            new OpenGlTextureFactory(DrawState.Backend);
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
         this.width = width;
@@ -46,14 +68,14 @@ public sealed class TextureContainerAtlas : TextureContainer
                 if (texture is not null)
                 {
                     var size = texture.Size;
-                    sum += (long)(size.X * size.Y);
+                    sum += size.Width * size.Height;
                 }
 
             return sum * 4;
         }
     }
 
-    public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
+    public ITextureRegion Get(scoped ReadOnlySpan<char> filename)
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
 
@@ -61,17 +83,18 @@ public sealed class TextureContainerAtlas : TextureContainer
 
         var str = filename.ToString();
 
-        using var bitmap = Texture2d.LoadBitmap(str, resourceContainer);
-        return textures[str] = Add(bitmap, textureOptions ?? Texture2d.LoadTextureOptions(str, resourceContainer));
+        using var bitmap = TextureLoader.LoadBitmap(str, resourceContainer);
+        return textures[str] = Add(bitmap, textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer));
     }
 
-    public Texture2dRegion Add(Image<Rgba32> bitmap, TextureOptions options)
+    public ITextureRegion Add(Image<Rgba32> bitmap, TextureOptions options)
     {
         if (bitmap is null) return null;
 
         options ??= TextureOptions.Default;
         if (!atlases.TryGetValue(options, out var atlas))
-            atlases[options] = atlas = new(width,
+            atlases[options] = atlas = new(textureFactory,
+                width,
                 height,
                 $"{atlasDescription} (Option set {atlases.Count})",
                 options,

@@ -1,0 +1,43 @@
+<Project>
+  <PropertyGroup>
+    <StorybrewShaderOutputDir Condition="'$(StorybrewShaderOutputDir)' == ''">$(IntermediateOutputPath)compiled_shaders\</StorybrewShaderOutputDir>
+    <StorybrewShaderCompiler Condition="'$(StorybrewShaderCompiler)' == ''"></StorybrewShaderCompiler>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableStorybrewShaderBuild)' != 'false'">
+    <StorybrewShader Include="$(MSBuildProjectDirectory)\Graphics\Shaders\Source\**\*.hlsl" OutputExtension="spv"/>
+    <StorybrewShader Include="$(MSBuildProjectDirectory)\Graphics\Shaders\Source\**\*.glsl" OutputExtension="spv"/>
+  </ItemGroup>
+
+  <Target Name="CompileStorybrewShaders"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'@(StorybrewShader)' != ''">
+    <MakeDir Directories="$(StorybrewShaderOutputDir)"/>
+
+    <Message Importance="High"
+             Text="StorybrewShaderCompiler is not set; embedding shader sources as draft assets."
+             Condition="'$(StorybrewShaderCompiler)' == ''"/>
+
+    <Copy SourceFiles="@(StorybrewShader)"
+          DestinationFiles="@(StorybrewShader->'$(StorybrewShaderOutputDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'$(StorybrewShaderCompiler)' == ''"/>
+
+    <Exec Command="&quot;$(StorybrewShaderCompiler)&quot; &quot;%(StorybrewShader.FullPath)&quot; &quot;$(StorybrewShaderOutputDir)%(RecursiveDir)%(Filename).%(StorybrewShader.OutputExtension)&quot;"
+          Condition="'$(StorybrewShaderCompiler)' != ''"/>
+
+    <ItemGroup Condition="'$(StorybrewShaderCompiler)' == ''">
+      <StorybrewCompiledShader Include="@(StorybrewShader->'$(StorybrewShaderOutputDir)%(RecursiveDir)%(Filename)%(Extension)')"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(StorybrewShaderCompiler)' != ''">
+      <StorybrewCompiledShader Include="@(StorybrewShader->'$(StorybrewShaderOutputDir)%(RecursiveDir)%(Filename).%(OutputExtension)')"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="@(StorybrewCompiledShader)">
+        <LogicalName>BrewLib.Graphics.Shaders.Compiled.%(Filename)%(Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+</Project>

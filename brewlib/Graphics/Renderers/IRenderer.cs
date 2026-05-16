@@ -12,3 +12,9 @@ public interface IRenderer : IDisposable
 
     void Flush(bool canBuffer = false);
 }
+
+public interface IPrimitiveRenderer : IRenderer
+{
+    PrimitiveTopology Topology { get; }
+    PrimitiveBatchFeatures BatchFeatures { get; }
+}

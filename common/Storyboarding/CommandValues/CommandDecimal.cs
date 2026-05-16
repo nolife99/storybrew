@@ -16,7 +16,8 @@ public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, IS
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     CommandDecimal(double value) => this.value = value;
 
-    TempList<char> ICommandValue<CommandDecimal>.ToOsbString(ExportSettings exportSettings)
+    /// <inheritdoc/>
+    public TempList<char> ToOsbString(ExportSettings exportSettings)
     {
         Span<char> arr = stackalloc char[FloatG7MaxChars];
         value.TryFormat(arr, out var written, "G7", exportSettings.NumberFormat);
@@ -35,8 +36,6 @@ public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, IS
         result.AddRange(span);
         return result;
     }
-
-#pragma warning disable CS1591
 
     /// <inheritdoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,6 +56,8 @@ public readonly record struct CommandDecimal : ICommandValue<CommandDecimal>, IS
     /// <inheritdoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
+
+#pragma warning disable CS1591
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandDecimal(double value) => new(value);

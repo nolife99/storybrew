@@ -1,6 +1,4 @@
-﻿using Path = System.IO.Path;
-
-namespace StorybrewCommon.Subtitles;
+﻿namespace StorybrewCommon.Subtitles;
 
 using System;
 using System.Globalization;
@@ -174,8 +172,9 @@ public sealed class FontGenerator : IDisposable
         var padding = description.Padding;
 
         var measuredSize = TextMeasurer.MeasureAdvance(text, format);
-        var width = (int)float.Ceiling(measuredSize.Width + effectsWidth + padding.X * 2);
-        var height = (int)float.Ceiling(measuredSize.Height + effectsHeight + padding.Y * 2);
+        var width = float.ConvertToIntegerNative<int>(float.Ceiling(measuredSize.Width + effectsWidth + padding.X * 2));
+        var height =
+            float.ConvertToIntegerNative<int>(float.Ceiling(measuredSize.Height + effectsHeight + padding.Y * 2));
 
         var paddingX = padding.X + effectsWidth / 2;
         var paddingY = padding.Y + effectsHeight / 2;
@@ -184,8 +183,8 @@ public sealed class FontGenerator : IDisposable
         var offsetX = -paddingX;
         var offsetY = -paddingY;
 
-        var baseWidth = (int)float.Ceiling(measuredSize.Width);
-        var baseHeight = (int)float.Ceiling(measuredSize.Height);
+        var baseWidth = float.ConvertToIntegerNative<int>(float.Ceiling(measuredSize.Width));
+        var baseHeight = float.ConvertToIntegerNative<int>(float.Ceiling(measuredSize.Height));
 
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0)
             return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);

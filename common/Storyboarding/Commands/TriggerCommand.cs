@@ -1,47 +1,35 @@
-﻿namespace StorybrewCommon.Storyboarding.Commands;
+namespace StorybrewCommon.Storyboarding.Commands;
 
-using System;
-using System.Linq;
-using BrewLib.Util;
+using StorybrewCommon.Storyboarding.Display;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic.Temporary;
 
 #pragma warning disable CS1591
-public sealed class TriggerCommand : CommandGroup
+public readonly struct TriggerCommand
 {
-    public TriggerCommand(string triggerName, float startTime, float endTime, int group = 0)
+    readonly CommandGroup group;
+
+    internal TriggerCommand(CommandGroup group, string triggerName, float startTime, float endTime, int triggerGroup)
     {
+        this.group = group;
         TriggerName = triggerName;
         StartTime = startTime;
         EndTime = endTime;
-        Group = group;
+        Group = triggerGroup;
     }
 
+    public int Id => group.Id;
     public string TriggerName { get; }
+    public float StartTime { get; }
+    public float EndTime { get; }
     public int Group { get; }
+    public bool IsActive => group.IsActive;
 
-    /// <inheritdoc/>
-    public override bool IsFragmentableAt(float time) => false;
+    public void End() => group.End();
 
-    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
-        => StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"T,{TriggerName},{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(EndTime))},{Group}");
+    public bool Add(ICommand command) => group.Add(command);
+    public void AddCommand(ICommand command, float offset = 0) => group.AddCommand(command, offset);
 
-    public override int GetHashCode()
-    {
-        HashCode header = new();
-        header.Add('T');
-        header.Add(TriggerName);
-        header.Add(StartTime);
-        header.Add(EndTime);
-        header.Add(Group);
-        foreach (var command in commands) header.Add(command);
-        return header.ToHashCode();
-    }
-
-    public override bool Equals(object obj) => obj is TriggerCommand loop && Equals(loop);
-
-    public bool Equals(TriggerCommand other)
-        => other.TriggerName == TriggerName && other.StartTime == StartTime && other.EndTime == EndTime &&
-            other.Group == Group && commands.SequenceEqual(other.commands);
+    public void AddCommand<TValue>(CommandTimeline<TValue>.Command command, float offset = 0)
+        where TValue : struct, ICommandValue<TValue>
+        => group.AddCommand(command, offset);
 }

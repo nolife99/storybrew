@@ -196,7 +196,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
             foreach (var path in referencedAssemblies)
             {
-                if (Project.DefaultAssemblies.Contains(path)) continue;
+                if (Project.DefaultAssemblies.Contains(path) || !File.Exists(path)) continue;
 
                 var compileNode = document.CreateElement("Reference", xmlns);
                 compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);

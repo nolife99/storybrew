@@ -159,7 +159,7 @@ public sealed class TextDrawable : Drawable
                 0,
                 color,
                 Vector2.Zero,
-                texture.Size);
+                new(texture.Width, texture.Height));
         }
     }
 

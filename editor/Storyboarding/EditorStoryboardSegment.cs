@@ -1,4 +1,4 @@
-﻿namespace StorybrewEditor.Storyboarding;
+namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.IO;
@@ -25,6 +26,10 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
     readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
     readonly List<EditorStoryboardSegment> segments = [];
     readonly List<StoryboardObject> storyboardObjects = [];
+    readonly List<EditorOsbSprite.DrawWork> spriteDrawWork = [];
+
+    EditorOsbSprite.DrawResult[] spriteDrawResults = [];
+    readonly SpriteEvaluationContext spriteEvaluationContext = new();
 
     float startTime, endTime;
     public override string Name => identifier;
@@ -55,8 +60,120 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
             opacity *= ((float)double.Sin(drawContext.Get<Editor>().TimeSource.Current.TotalSeconds * 4) + 1) * .5f;
 
         StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
-        foreach (var o in CollectionsMarshal.AsSpan(displayableObjects))
+        foreach (var o in displayableObjects)
             o.Draw(drawContext, camera, bounds, opacity, ref newTransform, project, frameStats);
+    }
+
+    public void DrawParallel(DrawContext drawContext,
+        ICamera camera,
+        RectangleF bounds,
+        float opacity,
+        scoped ref readonly StoryboardTransform transform,
+        Project project,
+        FrameStats frameStats,
+        bool altDown,
+        float highlightOpacity)
+    {
+        var displayTime = project.DisplayTime.TotalMilliseconds;
+        if (displayTime < startTime || endTime < displayTime) return;
+
+        var parentTransform = transform.Matrix;
+        var parentRotationOffset = EditorOsbSprite.GetRotationOffset(parentTransform);
+        var parentScaleFactor = EditorOsbSprite.GetScaleFactor(parentTransform);
+
+        var count = spriteDrawWork.Count;
+        if (count <= 0) return;
+
+        if (spriteDrawResults.Length < count)
+            Array.Resize(ref spriteDrawResults, count);
+
+        spriteEvaluationContext.Reset(spriteDrawWork,
+            spriteDrawResults,
+            (float)displayTime,
+            altDown,
+            project.DimFactor,
+            Environment.TickCount64,
+            opacity,
+            highlightOpacity,
+            layer.Highlight || effect.Highlight,
+            parentTransform,
+            parentRotationOffset,
+            parentScaleFactor);
+
+        Parallel.For(0, count, spriteEvaluationContext.Evaluate);
+
+        for (var i = 0; i < count; i++)
+            EditorOsbSprite.Submit(in spriteDrawResults[i], drawContext, camera, bounds, project, frameStats);
+    }
+
+    sealed class SpriteEvaluationContext
+    {
+        List<EditorOsbSprite.DrawWork> work;
+        EditorOsbSprite.DrawResult[] results;
+        Matrix3x2 parentTransform;
+        float time, dimFactor, opacity, highlightOpacity, parentRotationOffset, parentScaleFactor;
+        bool altDown, highlightActive;
+        long tickCount;
+
+        public void Reset(List<EditorOsbSprite.DrawWork> work,
+            EditorOsbSprite.DrawResult[] results,
+            float time,
+            bool altDown,
+            float dimFactor,
+            long tickCount,
+            float opacity,
+            float highlightOpacity,
+            bool highlightActive,
+            Matrix3x2 parentTransform,
+            float parentRotationOffset,
+            float parentScaleFactor)
+        {
+            this.work = work;
+            this.results = results;
+            this.time = time;
+            this.altDown = altDown;
+            this.dimFactor = dimFactor;
+            this.tickCount = tickCount;
+            this.opacity = opacity;
+            this.highlightOpacity = highlightOpacity;
+            this.highlightActive = highlightActive;
+            this.parentTransform = parentTransform;
+            this.parentRotationOffset = parentRotationOffset;
+            this.parentScaleFactor = parentScaleFactor;
+        }
+
+        public void Evaluate(int index)
+            => results[index] = EditorOsbSprite.Evaluate(work[index],
+                time,
+                altDown,
+                dimFactor,
+                tickCount,
+                opacity,
+                highlightOpacity,
+                highlightActive,
+                parentTransform,
+                parentRotationOffset,
+                parentScaleFactor);
+    }
+
+    void buildSpriteDrawWork(List<EditorOsbSprite.DrawWork> work,
+        scoped ref readonly StoryboardTransform transform,
+        int highlightDepth)
+    {
+        StoryboardTransform newTransform = new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY);
+        var childHighlightDepth = highlightDepth + 1;
+
+        foreach (var storyboardObject in storyboardObjects)
+            switch (storyboardObject)
+            {
+                case EditorStoryboardSegment segment:
+                    segment.buildSpriteDrawWork(work, in newTransform, childHighlightDepth);
+                    break;
+
+                case OsbSprite sprite:
+                    work.Add(new(sprite, in newTransform, childHighlightDepth));
+                    break;
+            }
     }
 
     public void PostProcess()
@@ -77,6 +194,9 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
             startTime = float.Min(startTime, sbo.StartTime);
             endTime = float.Max(endTime, sbo.EndTime);
         }
+
+        spriteDrawWork.Clear();
+        buildSpriteDrawWork(spriteDrawWork, in StoryboardTransform.Identity, 0);
     }
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
@@ -162,19 +282,19 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
 
     public override StoryboardSegment GetSegment(string identifier) => getSegment(identifier);
 
-    EditorStoryboardSegment getSegment(string identifier = null)
+    EditorStoryboardSegment getSegment(string id = null)
     {
-        if (identifier is not null && Name is null)
-            throw new InvalidOperationException($"Cannot add a named segment to an unnamed segment ({identifier})");
+        if (id is not null && identifier is null)
+            throw new InvalidOperationException($"Cannot add a named segment to an unnamed segment ({id})");
 
-        if (identifier is not null && namedSegments.TryGetValue(identifier, out var segment)) return segment;
+        if (id is not null && namedSegments.TryGetValue(id, out var segment)) return segment;
 
-        segment = new(effect, layer, identifier);
+        segment = new(effect, layer, id);
         storyboardObjects.Add(segment);
         displayableObjects.Add(segment);
 
         segments.Add(segment);
-        if (identifier is not null) namedSegments[identifier] = segment;
+        if (id is not null) namedSegments[id] = segment;
 
         return segment;
     }

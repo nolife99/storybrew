@@ -51,7 +51,7 @@ public record ControlPoint : IComparable<ControlPoint>
     /// <summary> Compares this control point to <paramref name="other"/>. </summary>
     public int CompareTo(ControlPoint other)
     {
-        var value = (int)(Offset - other.Offset);
+        var value = float.ConvertToIntegerNative<int>(Offset - other.Offset);
         return value != 0 ? value : (other.IsInherited ? 0 : 1) - (IsInherited ? 0 : 1);
     }
 

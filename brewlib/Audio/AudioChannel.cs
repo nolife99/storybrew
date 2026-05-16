@@ -132,7 +132,7 @@ public class AudioChannel : IDisposable
     {
         if (channel == 0) return;
 
-        Bass.ChannelSetAttribute(channel, ChannelAttribute.Volume, SoundUtil.FromLinearVolume(volume * Manager.Volume));
+        Bass.ChannelSetAttribute(channel, ChannelAttribute.Volume, volume * SoundUtil.FromLinearVolume(Manager.Volume));
     }
 
     void updateTimeFactor()

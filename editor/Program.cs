@@ -1,22 +1,22 @@
 namespace StorybrewEditor;
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
+using BrewLib.Graphics.Backend;
+using BrewLib.Graphics.Backend.OpenGL;
+using BrewLib.Graphics.Backend.SDL;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics;
 using SDL3;
-using SixLabors.ImageSharp.Memory;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -30,7 +30,7 @@ public static class Program
 
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
-    static readonly ConcurrentDictionary<nint, StackTrace> managedAllocs = new();
+    static int managedAllocs;
 
     public static AudioManager AudioManager { get; private set; }
     public static Settings Settings { get; private set; }
@@ -39,34 +39,22 @@ public static class Program
     {
         SDL.SetMemoryFunctions(cb =>
             {
-                var addr = Marshal.AllocHGlobal((nint)cb);
-
-                managedAllocs.TryAdd(addr, new(true));
-                return addr;
+                Interlocked.Increment(ref managedAllocs);
+                return Marshal.AllocHGlobal((nint)cb);
             },
             (c, s) =>
             {
+                Interlocked.Increment(ref managedAllocs);
+
                 var addr = Marshal.AllocHGlobal((nint)(c * s));
                 addr.AsSpan<byte>((int)(c * s)).Clear();
-
-                managedAllocs.TryAdd(addr, new(true));
                 return addr;
             },
-            (addr, cb) =>
-            {
-                managedAllocs.TryRemove(addr, out _);
-
-                var newAddr = Marshal.ReAllocHGlobal(addr, (nint)cb);
-
-                managedAllocs.TryAdd(newAddr, new(true));
-                return newAddr;
-            },
+            (addr, cb) => Marshal.ReAllocHGlobal(addr, (nint)cb),
             addr =>
             {
-                if (!managedAllocs.TryRemove(addr, out _))
-                    throw new InvalidMemoryOperationException($"Attempted to free invalid memory: {addr}");
-
                 Marshal.FreeHGlobal(addr);
+                Interlocked.Decrement(ref managedAllocs);
             });
 
         if (args.Length != 0 && handleArguments(args)) return;
@@ -124,9 +112,11 @@ public static class Program
             throw new InvalidOperationException($"Unable to get display device: {SDL.GetError()}");
 
         var displayDeviceVal = displayDevice.Value;
-        var window = createWindow(displayDeviceVal, out var context);
+        var backendKind = getGraphicsBackendKind();
+        var window = createWindow(displayDeviceVal, backendKind, out var context);
+        var graphicsBackend = createGraphicsBackend(backendKind, window);
 
-        using Editor editor = new(window);
+        using Editor editor = new(window, graphicsBackend);
         using (NetHelper.Client = new())
         {
             NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
@@ -136,6 +126,7 @@ public static class Program
             using (AudioManager = audioCreateTask.Result)
                 runMainLoop(window,
                     editor,
+                    backendKind == GraphicsBackendKind.OpenGl,
                     TimeSpan.FromSeconds(1) / (Settings.UpdateRate > 0 ?
                         Settings.UpdateRate :
                         displayDeviceVal.RefreshRate),
@@ -148,13 +139,61 @@ public static class Program
 
         Settings.Save();
 
-        SDL.GLDestroyContext(context.Handle);
-        SDL.GLUnloadLibrary();
+        if (context.Handle != 0)
+        {
+            SDL.GLDestroyContext(context.Handle);
+            SDL.GLUnloadLibrary();
+        }
+
         SDL.DestroyWindow(window);
         SDL.Quit();
     }
 
-    static nint createWindow(DisplayMode displayDevice, out ContextHandle glContext)
+    static GraphicsBackendKind getGraphicsBackendKind()
+    {
+        var backend = Environment.GetEnvironmentVariable("STORYBREW_GRAPHICS");
+        return backend is not null &&
+               (backend.Equals("sdl", StringComparison.OrdinalIgnoreCase) ||
+                backend.Equals("sdlgpu", StringComparison.OrdinalIgnoreCase) ||
+                backend.Equals("sdl-gpu", StringComparison.OrdinalIgnoreCase)) ?
+            GraphicsBackendKind.SdlGpu :
+            GraphicsBackendKind.OpenGl;
+    }
+
+    static IGraphicsBackend createGraphicsBackend(GraphicsBackendKind backendKind, nint window)
+        => backendKind switch
+        {
+            GraphicsBackendKind.OpenGl => new OpenGlGraphicsBackend(),
+            GraphicsBackendKind.SdlGpu => new SdlGraphicsBackend(window,
+#if DEBUG
+                debug: true
+#else
+                debug: false
+#endif
+            ),
+            _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
+        };
+
+    static nint createWindow(DisplayMode displayDevice, GraphicsBackendKind backendKind, out ContextHandle glContext)
+        => backendKind switch
+        {
+            GraphicsBackendKind.OpenGl => createOpenGlWindow(displayDevice, out glContext),
+            GraphicsBackendKind.SdlGpu => createSdlWindow(out glContext),
+            _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
+        };
+
+    static nint createSdlWindow(out ContextHandle glContext)
+    {
+        glContext = default;
+
+        var window = SDL.CreateWindow(Name, 0, 0, WindowFlags.Resizable | WindowFlags.Hidden);
+        if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
+
+        Native.InitializeHandle(window);
+        return window;
+    }
+
+    static nint createOpenGlWindow(DisplayMode displayDevice, out ContextHandle glContext)
     {
         if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
 
@@ -219,12 +258,16 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(nint window, Editor editor, TimeSpan fixedRateUpdate, TimeSpan targetFrame)
+    static void runMainLoop(nint window,
+        Editor editor,
+        bool swapOpenGlWindow,
+        TimeSpan fixedRateUpdate,
+        TimeSpan targetFrame)
     {
         var startT = Stopwatch.GetTimestamp();
 
         TimeSpan prev = Stopwatch.GetElapsedTime(startT), fixedRate = TimeSpan.Zero, avActive = TimeSpan.Zero,
-            longest = TimeSpan.Zero, lastStat = TimeSpan.Zero, statsUpdate = targetFrame * 5;
+            longest = TimeSpan.Zero, lastStat = TimeSpan.Zero, statsUpdate = TimeSpan.FromSeconds(1) / 10;
 
         (int X, int Y) resize = default;
         var redraw = (bool pumpEvents) =>
@@ -232,7 +275,7 @@ public static class Program
             var cur = Stopwatch.GetElapsedTime(startT);
             var fixedUpdates = 0;
 
-            if (!pumpEvents && SDL.GetWindowSize(window, out var w, out var h) && (resize.X != w || resize.Y != h))
+            if (!pumpEvents && SDL.GetWindowSizeInPixels(window, out var w, out var h) && (resize.X != w || resize.Y != h))
                 editor.InputManager.Handler.OnResize(new() { Data1 = resize.X = w, Data2 = resize.Y = h });
 
             AudioManager.Update(targetFrame);
@@ -245,7 +288,7 @@ public static class Program
                 editor.Update(cur, false);
 
             var draws = editor.Draw();
-            if (!SDL.GLSwapWindow(window))
+            if (swapOpenGlWindow && !SDL.GLSwapWindow(window))
                 throw new InvalidOperationException($"Unable to swap framebuffer: {SDL.GetError()}");
 
             if (Monitor.TryEnter(scheduledActions))
@@ -260,7 +303,7 @@ public static class Program
             var active = Stopwatch.GetElapsedTime(startT) - cur;
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > TimeSpan.Zero) SDL.DelayNS((ulong)(sleepTime.Ticks * 97.5));
+            if (sleepTime > TimeSpan.Zero) SDL.DelayNS((ulong)sleepTime.Ticks * (TimeSpan.NanosecondsPerTick - 5));
 
             var frameTime = cur - prev;
             prev = cur;
@@ -275,7 +318,7 @@ public static class Program
         };
 
         var state = (false, UnsafeMemory.AsPointerUnconstrained(in redraw));
-        EventFilter filter = (nint s, ref readonly Event e) =>
+        EventFilter filter = (s, ref readonly e) =>
         {
             ref var localState = ref s.AsRef<(bool, nint)>();
 
@@ -300,22 +343,24 @@ public static class Program
         SDL.RemoveEventWatch(filter, state.AsPointer());
     }
 
-    static readonly Func<int> getCount = managedAllocs.GetType()
-        .GetMethod("GetCountNoLocks", BindingFlags.Instance | BindingFlags.NonPublic)
-        ?.CreateDelegate<Func<int>>(managedAllocs);
-
     static void buildStatsMessage(Label label, TimeSpan av, TimeSpan avActive, TimeSpan longest, int draws)
     {
         if (!label.Visible) return;
 
         var r = TimeSpan.FromSeconds(1);
         using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-            $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{getCount()} off-heap buffers");
+            $"{double.Round(r / av)}/{double.Round(r / avActive)}fps (act:{avActive.TotalMilliseconds:f2} avg:{av.TotalMilliseconds:f2} hi:{longest.TotalMilliseconds:f2})\n{draws} draws\n{managedAllocs} off-heap buffers");
 
         label.Text = result.AsReadOnlySpan();
     }
 
     #endregion
+
+    enum GraphicsBackendKind
+    {
+        OpenGl,
+        SdlGpu
+    }
 
     #region Scheduling
 
@@ -402,7 +447,7 @@ public static class Program
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataVersionString, Version.ToString());
         SDL.SetAppMetadataProperty(SDL.Props.AppMetadataURLString, Repository);
 
-        SDL.AddEventWatch((nint _, ref readonly Event e) =>
+        SDL.AddEventWatch((_, ref readonly e) =>
             {
                 if (e.Type is not EventType.Quit) return false;
 

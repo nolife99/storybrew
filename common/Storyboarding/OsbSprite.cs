@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.Commands;
@@ -19,12 +20,19 @@ public class OsbSprite : StoryboardObject
     ///<summary> Default position of sprites, unless modified elsewhere. </summary>
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-    internal readonly List<ICommand> commandGroups = [];
-
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue, displayEndTime = float.MaxValue,
         displayStartTime = float.MinValue;
 
-    CommandGroup currentCommandGroup;
+    CurrentGroupKind currentGroupKind;
+    int currentGroupId, nextGroupId;
+    float currentGroupStartTime, currentGroupEndTime, currentGroupCommandsStartTime, currentGroupCommandsEndTime;
+    int currentGroupLoopCount, currentGroupTriggerGroup;
+    string currentGroupTriggerName;
+
+    enum CurrentGroupKind : byte
+    {
+        None, Loop, Trigger
+    }
 
     CommandPosition initialPosition;
 
@@ -34,21 +42,7 @@ public class OsbSprite : StoryboardObject
     string texturePath = "";
 
     ///<summary> Constructs a new abstract sprite. </summary>
-    protected OsbSprite()
-    {
-        displayValueBuilders =
-        [
-            (c => c is MoveCommand, MoveTimeline), (c => c is MoveXCommand, MoveXTimeline),
-            (c => c is MoveYCommand, MoveYTimeline), (c => c is ScaleCommand, ScaleTimeline),
-            (c => c is VScaleCommand, ScaleVecTimeline), (c => c is RotateCommand, RotateTimeline),
-            (c => c is FadeCommand, FadeTimeline), (c => c is ColorCommand, ColorTimeline),
-            (c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending }, AdditiveTimeline),
-            (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, FlipHTimeline),
-            (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, FlipVTimeline)
-        ];
-
-        InitialPosition = DefaultPosition;
-    }
+    protected OsbSprite() => InitialPosition = DefaultPosition;
 
     public bool HasTrigger { get; private set; }
 
@@ -57,7 +51,7 @@ public class OsbSprite : StoryboardObject
     public int CommandSplitThreshold { get; set; }
 
     ///<returns> True if the sprite is in a command group, else returns false. </returns>
-    public bool InGroup => currentCommandGroup is not null;
+    public bool InGroup => currentGroupKind is not CurrentGroupKind.None;
 
     /// <returns> The path to the image of the <see cref="OsbSprite"/>. </returns>
     public string TexturePath { get => texturePath; set => texturePath = PathHelper.WithStandardSeparators(value); }
@@ -109,35 +103,28 @@ public class OsbSprite : StoryboardObject
         }
     }
 
-    public float DisplayStartTime
-    {
-        get
-        {
-            if (displayStartTime == float.MinValue) refreshStartEndTimes();
-            return displayStartTime;
-        }
-    }
-
-    public float DisplayEndTime
-    {
-        get
-        {
-            if (displayEndTime == float.MaxValue) refreshStartEndTimes();
-            return displayEndTime;
-        }
-    }
-
     /// <returns> Image of the sprite at <paramref name="time"/>. </returns>
     public virtual string GetTexturePathAt(float time) => texturePath;
 
     void refreshStartEndTimes()
     {
         clearStartEndTimes();
-        foreach (var command in commandGroups.AsValueEnumerable()
-            .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Timeline.Commands.AsValueEnumerable())))
+        includeTimeline(MoveTimeline);
+        includeTimeline(MoveXTimeline);
+        includeTimeline(MoveYTimeline);
+        includeTimeline(ScaleTimeline);
+        includeTimeline(ScaleVecTimeline);
+        includeTimeline(RotateTimeline);
+        includeTimeline(FadeTimeline);
+        includeTimeline(ColorTimeline);
+        includeTimeline(AdditiveTimeline);
+        includeTimeline(FlipHTimeline);
+        includeTimeline(FlipVTimeline);
+
+        void includeTimeline<TValue>(CommandTimeline<TValue> timeline)
+            where TValue : struct, ICommandValue<TValue>
         {
-            commandsStartTime = float.Min(commandsStartTime, command.StartTime);
-            commandsEndTime = float.Max(commandsEndTime, command.EndTime);
+            foreach (var command in timeline.ExpandedCommandViews) includeCommandTimes(command.StartTime, command.EndTime);
         }
 
         if (!HasTrigger)
@@ -194,6 +181,12 @@ public class OsbSprite : StoryboardObject
         displayEndTime = float.MaxValue;
     }
 
+    void includeCommandTimes(float startTime, float endTime)
+    {
+        commandsStartTime = float.Min(commandsStartTime, startTime);
+        commandsEndTime = float.Max(commandsEndTime, endTime);
+    }
+
     //==========M==========//
     /// <summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
@@ -207,7 +200,7 @@ public class OsbSprite : StoryboardObject
         float endTime,
         CommandPosition startPosition,
         CommandPosition endPosition)
-        => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
+        => addCommand(CommandKind.Move, MoveTimeline, easing, startTime, endTime, startPosition, endPosition);
 
     /// <summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
@@ -311,7 +304,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startX"> Start-X value of the command. </param>
     /// <param name="endX"> End-X value of the command. </param>
     public void MoveX(OsbEasing easing, float startTime, float endTime, double startX, double endX)
-        => addCommand(new MoveXCommand(easing, startTime, endTime, startX, endX));
+        => addCommand(CommandKind.MoveX, MoveXTimeline, easing, startTime, endTime, (CommandDecimal)startX, (CommandDecimal)endX);
 
     /// <summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
@@ -337,7 +330,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startY"> Start-Y value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
     public void MoveY(OsbEasing easing, float startTime, float endTime, double startY, double endY)
-        => addCommand(new MoveYCommand(easing, startTime, endTime, startY, endY));
+        => addCommand(CommandKind.MoveY, MoveYTimeline, easing, startTime, endTime, (CommandDecimal)startY, (CommandDecimal)endY);
 
     /// <summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
@@ -363,7 +356,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startScale"> Start scale of the command. </param>
     /// <param name="endScale"> End scale of the command. </param>
     public void Scale(OsbEasing easing, float startTime, float endTime, double startScale, double endScale)
-        => addCommand(new ScaleCommand(easing, startTime, endTime, startScale, endScale));
+        => addCommand(CommandKind.Scale, ScaleTimeline, easing, startTime, endTime, (CommandDecimal)startScale, (CommandDecimal)endScale);
 
     /// <summary> Change the size of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
@@ -393,7 +386,7 @@ public class OsbSprite : StoryboardObject
         float endTime,
         CommandScale startScale,
         CommandScale endScale)
-        => addCommand(new VScaleCommand(easing, startTime, endTime, startScale, endScale));
+        => addCommand(CommandKind.ScaleVec, ScaleVecTimeline, easing, startTime, endTime, startScale, endScale);
 
     /// <summary> Change the vector scale of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
@@ -480,7 +473,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startRotation"> Start radians of the command. </param>
     /// <param name="endRotation"> End radians of the command. </param>
     public void Rotate(OsbEasing easing, float startTime, float endTime, double startRotation, double endRotation)
-        => addCommand(new RotateCommand(easing, startTime, endTime, startRotation, endRotation));
+        => addCommand(CommandKind.Rotate, RotateTimeline, easing, startTime, endTime, (CommandDecimal)startRotation, (CommandDecimal)endRotation);
 
     /// <summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -503,7 +496,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startFade"> Start fade value of the command. </param>
     /// <param name="endFade"> End fade value of the command. </param>
     public void Fade(OsbEasing easing, float startTime, float endTime, double startFade, double endFade)
-        => addCommand(new FadeCommand(easing, startTime, endTime, startFade, endFade));
+        => addCommand(CommandKind.Fade, FadeTimeline, easing, startTime, endTime, (CommandDecimal)startFade, (CommandDecimal)endFade);
 
     /// <summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -526,7 +519,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
     /// <param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
     public void Color(OsbEasing easing, float startTime, float endTime, CommandColor startColor, CommandColor endColor)
-        => addCommand(new ColorCommand(easing, startTime, endTime, startColor, endColor));
+        => addCommand(CommandKind.Color, ColorTimeline, easing, startTime, endTime, startColor, endColor);
 
     /// <summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
@@ -732,7 +725,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="endTime"> End time of the command. </param>
     /// <param name="param"> The <see cref="CommandParameter"/> type to be applied. </param>
     public void Parameter(float startTime, float endTime, CommandParameter param)
-        => addCommand(new ParameterCommand(startTime, endTime, param));
+        => addParameterCommand(startTime, endTime, param);
 
     /// <summary> Flip an <see cref="OsbSprite"/> horizontally for a given duration. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -767,12 +760,36 @@ public class OsbSprite : StoryboardObject
     /// <param name="startTime"> Start time of the loop. </param>
     /// <param name="loopCount"> How many times the loop should repeat. </param>
     public LoopCommand StartLoopGroup(float startTime, int loopCount)
-    {
-        LoopCommand loopCommand = new(startTime, loopCount);
-        addCommand(loopCommand);
+        => StartLoopGroup(startTime, loopCount, 0);
 
-        foreach (var builders in displayValueBuilders) builders.Timeline.StartGroup(loopCommand);
-        return loopCommand;
+    internal LoopCommand StartLoopGroup(float startTime, int loopCount, int id)
+    {
+        if (InGroup) EndGroup();
+
+        currentGroupId = id != 0 ? id : ++nextGroupId;
+        if (id > nextGroupId) nextGroupId = id;
+        if (currentGroupId == 0) currentGroupId = ++nextGroupId;
+
+        currentGroupKind = CurrentGroupKind.Loop;
+        currentGroupStartTime = startTime;
+        currentGroupEndTime = 0;
+        currentGroupLoopCount = loopCount;
+        currentGroupCommandsStartTime = float.MaxValue;
+        currentGroupCommandsEndTime = float.MinValue;
+
+        MoveTimeline.StartLoopGroup(currentGroupId);
+        MoveXTimeline.StartLoopGroup(currentGroupId);
+        MoveYTimeline.StartLoopGroup(currentGroupId);
+        ScaleTimeline.StartLoopGroup(currentGroupId);
+        ScaleVecTimeline.StartLoopGroup(currentGroupId);
+        RotateTimeline.StartLoopGroup(currentGroupId);
+        FadeTimeline.StartLoopGroup(currentGroupId);
+        ColorTimeline.StartLoopGroup(currentGroupId);
+        AdditiveTimeline.StartLoopGroup(currentGroupId);
+        FlipHTimeline.StartLoopGroup(currentGroupId);
+        FlipVTimeline.StartLoopGroup(currentGroupId);
+
+        return new(new CommandGroup(this, currentGroupId), startTime, loopCount);
     }
 
     /// <summary>
@@ -785,43 +802,125 @@ public class OsbSprite : StoryboardObject
     /// <param name="endTime"> End time of the loop. </param>
     /// <param name="group"> Group number of the loop. </param>
     public TriggerCommand StartTriggerGroup(string triggerName, float startTime, float endTime, int group = 0)
+        => StartTriggerGroup(triggerName, startTime, endTime, group, 0);
+
+    internal TriggerCommand StartTriggerGroup(string triggerName, float startTime, float endTime, int group, int id)
     {
-        TriggerCommand triggerCommand = new(triggerName, startTime, endTime, group);
-        addCommand(triggerCommand);
-        foreach (var builders in displayValueBuilders) builders.Timeline.StartGroup(triggerCommand);
+        if (InGroup) EndGroup();
+
+        currentGroupId = id != 0 ? id : ++nextGroupId;
+        if (id > nextGroupId) nextGroupId = id;
+        if (currentGroupId == 0) currentGroupId = ++nextGroupId;
+
+        currentGroupKind = CurrentGroupKind.Trigger;
+        currentGroupStartTime = startTime;
+        currentGroupEndTime = endTime;
+        currentGroupLoopCount = 1;
+        currentGroupTriggerName = triggerName;
+        currentGroupTriggerGroup = group;
+        currentGroupCommandsStartTime = float.MaxValue;
+        currentGroupCommandsEndTime = float.MinValue;
+
+        MoveTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        MoveXTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        MoveYTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        ScaleTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        ScaleVecTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        RotateTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        FadeTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        ColorTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        AdditiveTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        FlipHTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+        FlipVTimeline.StartTriggerGroup(currentGroupId, triggerName, startTime, endTime, group);
+
         HasTrigger = true;
-        return triggerCommand;
+        return new(new CommandGroup(this, currentGroupId), triggerName, startTime, endTime, group);
     }
 
     ///<summary> Calls the end of a loop. </summary>
     public void EndGroup()
     {
-        currentCommandGroup.EndGroup();
-        currentCommandGroup = null;
+        switch (currentGroupKind)
+        {
+            case CurrentGroupKind.Loop:
+            {
+                var commandsStart = currentGroupCommandsStartTime == float.MaxValue ? 0 : currentGroupCommandsStartTime;
+                var commandsEnd = currentGroupCommandsEndTime == float.MinValue ? 0 : currentGroupCommandsEndTime;
+                var loopStart = currentGroupStartTime + commandsStart;
+                var loopDuration = commandsEnd - commandsStart;
+                var childOffset = -commandsStart;
 
-        foreach (var builders in displayValueBuilders) builders.Timeline.EndGroup();
+                MoveTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                MoveXTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                MoveYTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                ScaleTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                ScaleVecTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                RotateTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                FadeTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                ColorTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                AdditiveTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                FlipHTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+                FlipVTimeline.EndLoopGroup(loopStart, currentGroupLoopCount, loopDuration, childOffset);
+
+                break;
+            }
+
+            case CurrentGroupKind.Trigger:
+                MoveTimeline.EndTriggerGroup();
+                MoveXTimeline.EndTriggerGroup();
+                MoveYTimeline.EndTriggerGroup();
+                ScaleTimeline.EndTriggerGroup();
+                ScaleVecTimeline.EndTriggerGroup();
+                RotateTimeline.EndTriggerGroup();
+                FadeTimeline.EndTriggerGroup();
+                ColorTimeline.EndTriggerGroup();
+                AdditiveTimeline.EndTriggerGroup();
+                FlipHTimeline.EndTriggerGroup();
+                FlipVTimeline.EndTriggerGroup();
+                break;
+        }
+
+        currentGroupKind = CurrentGroupKind.None;
+        currentGroupId = 0;
     }
 
-    void addCommand(ICommand command)
+    void addParameterCommand(float startTime, float endTime, CommandParameter param)
     {
-        if (command is CommandGroup commandGroup)
+        switch (param.Type)
         {
-            currentCommandGroup = commandGroup;
-            commandGroups.Add(commandGroup);
+            case ParameterType.AdditiveBlending:
+                addCommand(CommandKind.Additive, AdditiveTimeline, OsbEasing.None, startTime, endTime, param, param);
+                break;
+            case ParameterType.FlipHorizontal:
+                addCommand(CommandKind.FlipH, FlipHTimeline, OsbEasing.None, startTime, endTime, param, param);
+                break;
+            case ParameterType.FlipVertical:
+                addCommand(CommandKind.FlipV, FlipVTimeline, OsbEasing.None, startTime, endTime, param, param);
+                break;
         }
-        else
+    }
+
+    void addCommand<TValue>(CommandKind kind,
+        CommandTimeline<TValue> timeline,
+        OsbEasing easing,
+        float startTime,
+        float endTime,
+        TValue startValue,
+        TValue endValue) where TValue : struct, ICommandValue<TValue>
+    {
+        if (timeline.Add(kind, easing, startTime, endTime, startValue, endValue)) ++CommandCost;
+
+        if (currentGroupKind is not CurrentGroupKind.None)
         {
-            currentCommandGroup?.Add(command);
-            foreach (var (predicate, timeline) in displayValueBuilders)
-                if (predicate(command))
-                {
-                    var result = timeline.Add(command);
-                    if (result) ++CommandCost;
-
-                    break;
-                }
+            currentGroupCommandsStartTime = float.Min(currentGroupCommandsStartTime, startTime);
+            currentGroupCommandsEndTime = float.Max(currentGroupCommandsEndTime, startTime > endTime ? startTime : endTime);
         }
 
+        afterCommandAdded();
+    }
+
+    void afterCommandAdded()
+    {
         clearStartEndTimes();
 
         HasOverlappedCommands = MoveTimeline.HasOverlap || MoveXTimeline.HasOverlap || MoveYTimeline.HasOverlap ||
@@ -845,7 +944,7 @@ public class OsbSprite : StoryboardObject
         switch (command)
         {
             case ColorCommand color:
-                Color(color.Easing, color.startTime, color.endTime + offset, color.StartValue, color.EndValue);
+                Color(color.Easing, color.startTime + offset, color.endTime + offset, color.StartValue, color.EndValue);
                 break;
 
             case FadeCommand fade:
@@ -890,32 +989,197 @@ public class OsbSprite : StoryboardObject
 
                 break;
 
-            case LoopCommand loop:
-                StartLoopGroup(loop.StartTime + offset, loop.LoopCount);
-                foreach (var cmd in loop.Commands) addCommand(cmd);
-                EndGroup();
-                break;
-
-            case TriggerCommand trigger:
-                StartTriggerGroup(trigger.TriggerName,
-                    trigger.StartTime + offset,
-                    trigger.EndTime + offset,
-                    trigger.Group);
-
-                foreach (var cmd in trigger.Commands) addCommand(cmd);
-                EndGroup();
-                break;
-
             default:
                 throw new NotSupportedException(
                     $"Failed to add command: No support for adding command of type {command.GetType().FullName}");
         }
     }
 
+    public void AddCommand<TValue>(CommandTimeline<TValue>.Command command, float offset = 0)
+        where TValue : struct, ICommandValue<TValue>
+    {
+        if (tryAddGroupCommand(command, offset)) return;
+
+        var startTime = command.StartTime + offset;
+        var endTime = command.EndTime + offset;
+
+        switch (command.Kind)
+        {
+            case CommandKind.Move:
+                addCommand(CommandKind.Move,
+                    MoveTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandPosition>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandPosition>(command.EndValue));
+                break;
+
+            case CommandKind.MoveX:
+                addCommand(CommandKind.MoveX,
+                    MoveXTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.EndValue));
+                break;
+
+            case CommandKind.MoveY:
+                addCommand(CommandKind.MoveY,
+                    MoveYTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.EndValue));
+                break;
+
+            case CommandKind.Scale:
+                addCommand(CommandKind.Scale,
+                    ScaleTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.EndValue));
+                break;
+
+            case CommandKind.ScaleVec:
+                addCommand(CommandKind.ScaleVec,
+                    ScaleVecTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandScale>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandScale>(command.EndValue));
+                break;
+
+            case CommandKind.Rotate:
+                addCommand(CommandKind.Rotate,
+                    RotateTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.EndValue));
+                break;
+
+            case CommandKind.Fade:
+                addCommand(CommandKind.Fade,
+                    FadeTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandDecimal>(command.EndValue));
+                break;
+
+            case CommandKind.Color:
+                addCommand(CommandKind.Color,
+                    ColorTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandColor>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandColor>(command.EndValue));
+                break;
+
+            case CommandKind.Additive:
+                addCommand(CommandKind.Additive,
+                    AdditiveTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.EndValue));
+                break;
+
+            case CommandKind.FlipH:
+                addCommand(CommandKind.FlipH,
+                    FlipHTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.EndValue));
+                break;
+
+            case CommandKind.FlipV:
+                addCommand(CommandKind.FlipV,
+                    FlipVTimeline,
+                    command.Easing,
+                    startTime,
+                    endTime,
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.StartValue),
+                    CommandChannel<TValue>.commandValue<TValue, CommandParameter>(command.EndValue));
+                break;
+
+            default:
+                throw new NotSupportedException(command.Kind.ToString());
+        }
+    }
+
+    bool tryAddGroupCommand<TValue>(CommandTimeline<TValue>.Command command, float offset)
+        where TValue : struct, ICommandValue<TValue>
+    {
+        switch (command.Type)
+        {
+            case CommandTimeline<TValue>.CommandType.Command:
+                return false;
+
+            case CommandTimeline<TValue>.CommandType.StartLoopGroup:
+                StartLoopGroup(command.StartTime + offset, command.LoopCount, command.Id);
+                return true;
+
+            case CommandTimeline<TValue>.CommandType.StartTriggerGroup:
+                StartTriggerGroup(command.TriggerName,
+                    command.StartTime + offset,
+                    command.EndTime + offset,
+                    command.TriggerGroup,
+                    command.Id);
+                return true;
+
+            case CommandTimeline<TValue>.CommandType.EndGroup:
+                EndGroup();
+                return true;
+
+            default:
+                throw new NotSupportedException(command.Type.ToString());
+        }
+    }
+
+    internal bool IsCommandGroupActive(int groupId)
+        => groupId != 0 && currentGroupId == groupId && currentGroupKind is not CurrentGroupKind.None;
+
+    internal void AddCommandToGroup(int groupId, ICommand command, float offset = 0)
+    {
+        ensureCommandGroupActive(groupId);
+        AddCommand(command, offset);
+    }
+
+    internal void AddCommandToGroup<TValue>(
+        int groupId,
+        CommandTimeline<TValue>.Command command,
+        float offset = 0)
+        where TValue : struct, ICommandValue<TValue>
+    {
+        ensureCommandGroupActive(groupId);
+        AddCommand(command, offset);
+    }
+
+    void ensureCommandGroupActive(int groupId)
+    {
+        if (!IsCommandGroupActive(groupId))
+            throw new InvalidOperationException("This command group is no longer active.");
+    }
+
     /// <returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsActive(float time) => commandsStartTime <= time && time <= commandsEndTime;
 
     /// <returns> True if the sprite is visible at <paramref name="time"/>, else returns false. </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool InDisplayInterval(float time) => displayStartTime <= time && time <= displayEndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
@@ -927,9 +1191,17 @@ public class OsbSprite : StoryboardObject
         if (CommandCost == 0) return;
 
         WriteHeader(writer, exportSettings, layer, transform);
-        foreach (var command in commandGroups.AsValueEnumerable()
-            .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Timeline.Commands.AsValueEnumerable())))
-            command.WriteOsb(writer, exportSettings, in transform, 1);
+        MoveTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        MoveXTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        MoveYTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        ScaleTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        ScaleVecTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        RotateTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        FadeTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        ColorTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        AdditiveTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        FlipHTimeline.WriteOsb(writer, exportSettings, in transform, 1);
+        FlipVTimeline.WriteOsb(writer, exportSettings, in transform, 1);
     }
 
     private protected virtual void WriteHeader(TextWriter writer,
@@ -952,10 +1224,26 @@ public class OsbSprite : StoryboardObject
                 (CommandPosition)transform.ApplyToPositionXY(InitialPosition) :
                 transform.ApplyToPosition(InitialPosition);
 
-        using var builder = StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"{layer},{Origin},\"{texturePath.AsSpan().Trim()}\",{(!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands ? transformedInitialPosition.X : 0)},{(!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands ? transformedInitialPosition.Y : 0)}");
+        writer.Write(Enum.GetName(layer));
+        writer.Write(',');
+        writer.Write(Enum.GetName(Origin));
+        writer.Write(",\"");
+        writer.Write(texturePath.AsSpan().Trim());
+        writer.Write("\",");
 
-        writer.Write(builder.AsReadOnlySpan());
+        writeDecimal(writer,
+            exportSettings,
+            !MoveTimeline.HasCommands && !MoveXTimeline.HasCommands ? transformedInitialPosition.X : 0);
+        writer.Write(',');
+        writeDecimal(writer,
+            exportSettings,
+            !MoveTimeline.HasCommands && !MoveYTimeline.HasCommands ? transformedInitialPosition.Y : 0);
+    }
+
+    static void writeDecimal(TextWriter writer, ExportSettings exportSettings, CommandDecimal value)
+    {
+        using var text = value.ToOsbString(exportSettings);
+        writer.Write(text.AsReadOnlySpan());
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>
@@ -963,6 +1251,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="size"> The image dimensions of the sprite texture. </param>
     /// <param name="rotation"> The rotation, in radians, of the sprite. </param>
     /// <param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool InScreenBounds(CommandPosition position,
         CommandScale size,
         CommandDecimal rotation,
@@ -990,7 +1279,6 @@ public class OsbSprite : StoryboardObject
 
     #region Display
 
-    internal readonly (Func<ICommand, bool> Predicate, ICommandTimeline Timeline)[] displayValueBuilders;
     public readonly CommandTimeline<CommandPosition> MoveTimeline = new();
 
     public readonly CommandTimeline<CommandDecimal> MoveXTimeline = new(), MoveYTimeline = new(),
@@ -1004,39 +1292,55 @@ public class OsbSprite : StoryboardObject
 
     /// <summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition PositionAt(float time)
-        => MoveTimeline.HasCommands ?
-            MoveTimeline.ValueAtTime(time) :
-            new(MoveXTimeline.ValueAtTime(time), MoveYTimeline.ValueAtTime(time));
+    {
+        if (MoveTimeline.HasCommands) return MoveTimeline.ValueAtTime(time);
+        if (!MoveXTimeline.HasCommands && !MoveYTimeline.HasCommands) return InitialPosition;
+
+        return new(MoveXTimeline.HasCommands ? MoveXTimeline.ValueAtTime(time) : InitialPosition.X,
+            MoveYTimeline.HasCommands ? MoveYTimeline.ValueAtTime(time) : InitialPosition.Y);
+    }
 
     /// <summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale ScaleAt(float time)
-        => ScaleVecTimeline.HasCommands ? ScaleVecTimeline.ValueAtTime(time) : new(ScaleTimeline.ValueAtTime(time));
+    {
+        if (ScaleVecTimeline.HasCommands) return ScaleVecTimeline.ValueAtTime(time);
+        return ScaleTimeline.HasCommands ? new(ScaleTimeline.ValueAtTime(time)) : Vector2.One;
+    }
 
     /// <summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal RotationAt(float time) => RotateTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the opacity level of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal OpacityAt(float time) => FadeTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the <see cref="CommandColor"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandColor ColorAt(float time) => ColorTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the additive value of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter AdditiveAt(float time) => AdditiveTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipHAt(float time) => FlipHTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the vertical flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipVAt(float time) => FlipVTimeline.ValueAtTime(time);
+
 
     #endregion
 }

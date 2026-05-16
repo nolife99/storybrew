@@ -5,13 +5,6 @@ using System.Runtime.CompilerServices;
 
 public static class MathUtil
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Matrix3x2 CreateRotationMatrixFast(float radians)
-    {
-        var (sin, cos) = float.SinCos(radians);
-        return new(cos, sin, -sin, cos, 0, 0);
-    }
-
     public static float ShortestAngleDelta(float from, float to)
     {
         if (from == to) return 0;

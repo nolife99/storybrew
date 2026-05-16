@@ -1,4 +1,7 @@
-﻿namespace BrewLib.Input;
+﻿using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
+
+namespace BrewLib.Input;
 
 using System;
 using System.Numerics;
@@ -30,13 +33,13 @@ public sealed class InputManager(nint window, IInputHandler handler)
     public void Update()
     {
         SDL.PumpEvents();
-        Span<Event> events = stackalloc Event[SDL.PeepEvents(0,
+        using var events = TempArray.Create<Event>(SDL.PeepEvents(0,
             0,
             EventAction.PeekEvent,
             EventType.First,
-            EventType.Last)];
+            EventType.Last));
 
-        if (SDL.PeepEvents(events, EventAction.GetEvent, EventType.First, EventType.Last) == -1)
+        if (SDL.PeepEvents(events.AsSpan(), EventAction.GetEvent, EventType.First, EventType.Last) == -1)
             throw new InvalidOperationException($"Unable to get events: {SDL.GetError()}");
 
         foreach (ref var e in events)
@@ -58,7 +61,10 @@ public sealed class InputManager(nint window, IInputHandler handler)
                 case EventType.MouseButtonUp: window_MouseUp(e.Button); break;
                 case EventType.MouseWheel: window_MouseWheel(e.Wheel); break;
 
-                case EventType.WindowResized: window_Resize(e.Window); break;
+                case EventType.WindowResized:
+                case EventType.WindowPixelSizeChanged:
+                    window_Resize(e.Window);
+                    break;
                 case EventType.Quit: window_Close(e.Quit); break;
             }
     }
@@ -123,7 +129,11 @@ public sealed class InputManager(nint window, IInputHandler handler)
 
     void window_MouseWheel(SDL.MouseWheelEvent e) => Handler.OnMouseWheel(e);
 
-    void window_Resize(WindowEvent e) => Handler.OnResize(e);
+    void window_Resize(WindowEvent e)
+    {
+        SDL.GetWindowSizeInPixels(Window, out var width, out var height);
+        Handler.OnResize(new() { Data1 = width, Data2 = height });
+    }
 
     void window_Close(SDL.QuitEvent e) => Handler.OnClose(e);
 }

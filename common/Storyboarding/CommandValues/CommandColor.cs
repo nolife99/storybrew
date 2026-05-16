@@ -91,8 +91,8 @@ public readonly record struct CommandColor : ICommandValue<CommandColor>,
     /// </summary>
     public static CommandColor FromHsb(double hue, double saturation, double brightness)
     {
-        var hi = (int)(hue / 60) % 6;
-        var f = hue / 60 - (int)(hue / 60);
+        var hi = double.ConvertToIntegerNative<int>(hue / 60) % 6;
+        var f = hue / 60 - double.ConvertToIntegerNative<int>(hue / 60);
 
         var p = brightness * (1 - saturation);
         var q = brightness * (1 - f * saturation);

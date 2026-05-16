@@ -1,48 +1,48 @@
-﻿namespace BrewLib.Graphics;
+namespace BrewLib.Graphics;
 
 using System;
-using System.Buffers;
-using System.Globalization;
-using System.IO;
-using System.Text;
+using BrewLib.Graphics.Backend;
+using BrewLib.Graphics.Backend.OpenGL;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Text;
 using BrewLib.Graphics.Textures;
 using BrewLib.IO;
-using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
-using SDL3;
 using SixLabors.ImageSharp;
-using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using ZLinq;
 
 public static class DrawState
 {
-    public static readonly SearchValues<string> Extensions = getExtensions();
-    public static readonly bool UseSrgb, SupportsImmutable = HasCapabilities(4, 4, "GL_ARB_buffer_storage");
-
     static IRenderer renderer;
-
     static bool flushingRenderer;
-    static int drawCalls, activeTextureUnit;
+    static int drawCalls;
+
+    public static bool UseSrgb { get; set; }
     public static bool UseTextureCompression { get; set; }
 
-    public static bool CanInvalidate { get; private set; }
-    public static bool ColorCorrected { get; private set; }
-    public static int MaxTextureSize { get; private set; }
+    public static IGraphicsBackend Backend { get; private set; }
+    public static IGraphicsDevice Device => Backend?.Device;
+
+    public static bool SupportsImmutable
+        => Backend?.Capabilities.Has(GraphicsBackendFeatures.ImmutableBuffers) ?? false;
+
+    public static bool CanInvalidate
+        => Backend?.Capabilities.Has(GraphicsBackendFeatures.FramebufferInvalidation) ?? false;
+
+    public static bool ColorCorrected
+        => Backend?.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer) ?? false;
+
+    public static int MaxTextureSize => Backend?.Capabilities.MaxTextureSize ?? 0;
+    public static int MaxTextureImageUnits => Backend?.Capabilities.MaxTextureImageUnits ?? 0;
+
+    static OpenGlGraphicsDevice OpenGlDevice => Device as OpenGlGraphicsDevice ??
+        throw new InvalidOperationException("The active graphics backend is not OpenGL");
 
     public static int ActiveTextureUnit
     {
-        get => activeTextureUnit;
-        set
-        {
-            if (activeTextureUnit == value) return;
-
-            GL.ActiveTexture(TextureUnit.Texture0 + value);
-            activeTextureUnit = value;
-        }
+        get => OpenGlDevice.ActiveTextureUnit;
+        set => OpenGlDevice.ActiveTextureUnit = value;
     }
 
     public static IRenderer Renderer
@@ -64,143 +64,31 @@ public static class DrawState
         }
     }
 
-    static SearchValues<string> getExtensions()
+    public static void Initialize(ResourceContainer resourceContainer,
+        TextureContainer textureContainer,
+        IGraphicsBackend backend = null)
     {
-        using var extensions = ValueEnumerable.Range(0, GL.GetInteger(GetPName.NumExtensions))
-            .Select(i => GL.GetString(StringNameIndexed.Extensions, i))
-            .ToArrayPool();
-
-        return SearchValues.Create(extensions.Span, StringComparison.OrdinalIgnoreCase);
-    }
-
-    public static void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer)
-    {
-        if (HasCapabilities(4, 3, "GL_KHR_debug"))
+        if (backend is null)
         {
-            GL.Enable(EnableCap.DebugOutputSynchronous);
-            GL.DebugMessageCallback((source, type, _, severity, length, message, _) =>
-                {
-                    var bytes = message.AsReadOnlySpan<byte>(length);
-
-                    Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
-                    Encoding.UTF8.GetChars(bytes, chars);
-
-                    using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                        $"{chars} (Source: {source switch
-                        {
-                            DebugSource.DebugSourceApi => "API",
-                            DebugSource.DebugSourceWindowSystem => "Window System",
-                            DebugSource.DebugSourceShaderCompiler => "Shader Compiler",
-                            DebugSource.DebugSourceThirdParty => "Third Party",
-                            DebugSource.DebugSourceApplication => "Application",
-                            DebugSource.DebugSourceOther => "Other",
-                            _ => ""
-                        }}, Type: {type switch
-                    {
-                        DebugType.DebugTypeError => "Error",
-                        DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
-                        DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
-                        DebugType.DebugTypePortability => "Portability",
-                        DebugType.DebugTypePerformance => "Performance",
-                        DebugType.DebugTypeMarker => "Marker",
-                        DebugType.DebugTypePushGroup => "Push Group",
-                        DebugType.DebugTypePopGroup => "Pop Group",
-                        DebugType.DebugTypeOther => "Other",
-                        _ => ""
-                    }}, Severity: {severity switch
-                {
-                    DebugSeverity.DebugSeverityHigh => "High",
-                    DebugSeverity.DebugSeverityMedium => "Medium",
-                    DebugSeverity.DebugSeverityLow => "Low",
-                    DebugSeverity.DebugSeverityNotification => "Notification",
-                    _ => ""
-                }})\n");
-
-                    switch (severity)
-                    {
-                        case DebugSeverity.DebugSeverityHigh:
-                            SDL.LogError(LogCategory.Render, str.AsReadOnlySpan());
-                            throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
-
-                        case DebugSeverity.DebugSeverityMedium:
-                            SDL.LogWarn(LogCategory.Render, str.AsReadOnlySpan());
-                            break;
-
-                        case DebugSeverity.DebugSeverityLow:
-                            SDL.LogInfo(LogCategory.Render, str.AsReadOnlySpan());
-                            break;
-
-                        case DebugSeverity.DebugSeverityNotification:
-                            SDL.LogDebug(LogCategory.Render, str.AsReadOnlySpan());
-                            break;
-                    }
-                },
-                0);
+            backend = new OpenGlGraphicsBackend();
+            backend.Initialize(resourceContainer, textureContainer);
+            return;
         }
 
-        retrieveRendererInfo();
-        if (UseSrgb)
-        {
-            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
-                FramebufferAttachment.BackLeft,
-                FramebufferParameterName.FramebufferAttachmentColorEncoding,
-                out var defaultFramebufferColorEncoding);
+        Backend = backend;
 
-            if (defaultFramebufferColorEncoding == 0x8C40)
-            {
-                SetCapability(EnableCap.FramebufferSrgb, true);
-                ColorCorrected = true;
-            }
-            else SDL.LogWarn(LogCategory.Render, "The default framebuffer isn't sRgb");
-        }
+        var textureFactory = Backend.TextureFactory;
 
-        UseTextureCompression &= Extensions.Contains("GL_EXT_texture_compression_s3tc");
-        CanInvalidate = HasCapabilities(4, 3, "GL_ARB_invalidate_subdata");
-
-        maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
-        maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
-        maxGeometryTextureImageUnits = Extensions.Contains("GL_ARB_geometry_shader4") ?
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
-            0;
-
-        maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
-        MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
-
-        GL.GetInternalformat(ImageTarget.Texture2D,
-            SizedInternalFormat.Rgba8,
-            InternalFormatParameter.TextureImageFormat,
-            1,
-            out int preferredFormat);
-
-        SDL.LogInfo(LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)preferredFormat)}");
-
-        GL.GetInternalformat(ImageTarget.Texture2D,
-            SizedInternalFormat.Rgba8,
-            InternalFormatParameter.TextureImageType,
-            1,
-            out preferredFormat);
-
-        SDL.LogInfo(LogCategory.Render, $"preferred texture type: 0x{preferredFormat:x}");
-
-        SDL.LogInfo(LogCategory.Render,
-            $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
-
-        SDL.LogInfo(LogCategory.Render, $"max texture size: {MaxTextureSize}");
-        SDL.LogInfo(LogCategory.Render, $"max uniform buffer size: {GL.GetInteger(GetPName.MaxUniformBlockSize)}");
-
-        samplerTextureIds = new int[maxTextureImageUnits];
-        samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
-
-        WhitePixel = Texture2d.Create(Color.White,
+        WhitePixel = textureFactory.Create(Color.White,
             textureOptions: new()
             {
-                TextureMagFilter = TextureMagFilter.Nearest, TextureMinFilter = TextureMinFilter.Nearest
+                TextureMagFilter = TextureFilter.Nearest, TextureMinFilter = TextureFilter.Nearest
             });
 
-        TransparentPixel = Texture2d.Create(Color.Transparent,
+        TransparentPixel = textureFactory.Create(Color.Transparent,
             textureOptions: new()
             {
-                TextureMagFilter = TextureMagFilter.Nearest, TextureMinFilter = TextureMinFilter.Nearest
+                TextureMagFilter = TextureFilter.Nearest, TextureMinFilter = TextureFilter.Nearest
             });
 
         TextGenerator = new(resourceContainer);
@@ -213,7 +101,6 @@ public static class DrawState
         TransparentPixel.Dispose();
         TextFontManager.Dispose();
         TextGenerator.Dispose();
-        capabilityCache.Dispose();
     }
 
     public static int CompleteFrame()
@@ -223,7 +110,7 @@ public static class DrawState
         var totalDraws = drawCalls;
         drawCalls = 0;
 
-        capabilityCache.Clear();
+        Device.ResetStateCache();
         RenderStates.ClearStateCache();
 
         return totalDraws;
@@ -234,10 +121,11 @@ public static class DrawState
         if (renderer is null || flushingRenderer) return;
 
         flushingRenderer = true;
-        if (canBuffer) ++drawCalls;
         renderer.Flush(canBuffer);
         flushingRenderer = false;
     }
+
+    internal static void CountDrawCall() => ++drawCalls;
 
     public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates) where T : IRenderer
     {
@@ -247,102 +135,24 @@ public static class DrawState
         return nextRenderer;
     }
 
+    public static bool SupportsShaderExtension(string extensionName)
+        => Backend?.SupportsShaderExtension(extensionName) ?? false;
+
     #region Texture states
 
-    public static Texture2d WhitePixel { get; private set; }
-    public static Texture2d TransparentPixel { get; private set; }
-
-    static int[] samplerTextureIds;
-    static TextureTarget[] samplerTexturingModes;
-
-    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits,
-        maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
-
-    static void SetTexturingMode(int samplerIndex, TextureTarget mode)
-    {
-        ref var previousMode = ref samplerTexturingModes[samplerIndex];
-        if (previousMode == mode) return;
-
-        if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        previousMode = mode;
-    }
+    public static ITextureRegion WhitePixel { get; private set; }
+    public static ITextureRegion TransparentPixel { get; private set; }
 
     public static void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
-        => BindTexture(textureId, 0, mode);
+        => OpenGlDevice.BindPrimaryTexture(textureId, mode);
 
-    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode)
-    {
-        ActiveTextureUnit = samplerIndex;
-        SetTexturingMode(samplerIndex, mode);
+    public static int BindTexture(ITexture texture) => Device.BindTexture(texture);
 
-        ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
-        if (samplerTextureId == textureId) return;
+    public static int BindTexture(int textureId) => OpenGlDevice.BindTexture(textureId);
 
-        GL.BindTexture(mode, textureId);
-        samplerTextureId = textureId;
-    }
+    public static void UnbindTexture(ITexture texture) => Device.UnbindTexture(texture);
 
-    public static int BindTexture(int textureId) => BindTextures([textureId]);
-
-    static int BindTextures(scoped ReadOnlySpan<int> textures)
-    {
-        Span<int> samplerIndexes = stackalloc int[textures.Length];
-        for (var i = 0; i < textures.Length; ++i)
-        {
-            var textureId = textures[i];
-
-            samplerIndexes[i] = -1;
-            for (var j = 0; j < samplerTextureIds.Length; ++j)
-                if (samplerTextureIds[j] == textureId)
-                {
-                    samplerIndexes[i] = j;
-                    break;
-                }
-        }
-
-        var samplerCount = samplerTextureIds.Length;
-        for (var i = 0; i < textures.Length; ++i)
-        {
-            if (samplerIndexes[i] != -1) continue;
-
-            var first = true;
-            var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-            for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
-                samplerIndex = (samplerIndex + 1) % samplerCount)
-            {
-                first = false;
-
-                var isFreeSamplerUnit = true;
-                foreach (var usedIndex in samplerIndexes)
-                {
-                    if (usedIndex != samplerIndex) continue;
-
-                    isFreeSamplerUnit = false;
-                    break;
-                }
-
-                if (!isFreeSamplerUnit) continue;
-
-                BindTexture(textures[i], samplerIndex, TextureTarget.Texture2D);
-                samplerIndexes[i] = samplerIndex;
-                lastRecycledTextureUnit = samplerIndex;
-                break;
-            }
-        }
-
-        return samplerIndexes[0];
-    }
-
-    public static void UnbindTexture(int textureId)
-    {
-        var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
-        if (i == -1) return;
-
-        samplerTextureIds[i] = 0;
-
-        ActiveTextureUnit = i;
-        GL.BindTexture(samplerTexturingModes[i], 0);
-    }
+    public static void UnbindTexture(int textureId) => OpenGlDevice.UnbindTexture(textureId);
 
     #endregion
 
@@ -359,7 +169,7 @@ public static class DrawState
 
             viewport = value;
 
-            GL.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
+            Device.SetViewport(viewport);
             ViewportChanged?.Invoke();
         }
     }
@@ -377,6 +187,10 @@ public static class DrawState
 
             FlushRenderer();
             clipRegion = value;
+
+            Device.SetScissor(clipRegion.HasValue ?
+                Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), viewport) :
+                null);
         }
     }
 
@@ -394,10 +208,10 @@ public static class DrawState
     public static Rectangle? Clip(RectangleF bounds, ICamera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
-        return Clip(new((int)float.Round(screenBounds.X),
-            viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height),
-            (int)float.Round(screenBounds.Width),
-            (int)float.Round(screenBounds.Height)));
+        return Clip(new(float.ConvertToIntegerNative<int>(screenBounds.X),
+            viewport.Height - float.ConvertToIntegerNative<int>(screenBounds.Y + screenBounds.Height),
+            float.ConvertToIntegerNative<int>(screenBounds.Width),
+            float.ConvertToIntegerNative<int>(screenBounds.Height)));
     }
 
     public static RectangleF? GetClipRegion(ICamera camera)
@@ -421,20 +235,8 @@ public static class DrawState
             if (programId == value) return;
 
             programId = value;
-            GL.UseProgram(programId);
+            Device.UseProgram(programId);
         }
-    }
-
-    static readonly PooledDictionary<EnableCap, bool> capabilityCache = new();
-
-    internal static void SetCapability(EnableCap capability, bool enable)
-    {
-        if (capabilityCache.TryGetValue(capability, out var isEnabled) && isEnabled == enable) return;
-
-        if (enable) GL.Enable(capability);
-        else GL.Disable(capability);
-
-        capabilityCache[capability] = enable;
     }
 
     #endregion
@@ -443,28 +245,6 @@ public static class DrawState
 
     public static TextGenerator TextGenerator { get; private set; }
     public static TextFontManager TextFontManager { get; private set; }
-
-    static Version glVer;
-
-    static void retrieveRendererInfo()
-    {
-        var glVerStr = GL.GetString(StringName.Version);
-        glVer = new(glVerStr.Split(' ')[0]);
-        SDL.LogInfo(LogCategory.Render, $"OpenGL v{glVerStr}");
-
-        var rendererName = GL.GetString(StringName.Renderer);
-        var rendererVendor = GL.GetString(StringName.Vendor);
-        SDL.LogInfo(LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
-
-        if (glVer < new Version(3, 2))
-            throw new NotSupportedException(
-                $"This application requires at least OpenGL 3.2 (version {glVer} found)\n{rendererName} ({rendererVendor})");
-
-        SDL.LogInfo(LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
-    }
-
-    public static bool HasCapabilities(int major, int minor, params ReadOnlySpan<string> extensions)
-        => extensions.AsValueEnumerable().All(Extensions.Contains) || glVer.Major >= major && glVer.Minor >= minor;
 
     #endregion
 }

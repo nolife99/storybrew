@@ -80,7 +80,7 @@ public static class StringHelper
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
 
-        return TempArray.Create<char>(temp[..written]);
+        return TempArray.Create(temp[..written]);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,7 +133,7 @@ public static class StringHelper
             }
         }
 
-        return (int)double.Log10(double.CreateChecked(value)) + result;
+        return float.ConvertToIntegerNative<int>(float.Log10(float.CreateChecked(value))) + result;
     }
 
     public static TempList<ValueArray<char>> SplitSlow(this scoped ReadOnlySpan<char> source,

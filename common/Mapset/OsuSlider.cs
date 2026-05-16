@@ -230,7 +230,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         for (var i = 0; i < sliderNodes.Length; i++)
         {
             var nodeStartTime = startTime + i * travelDuration;
-            var nodeControlPoint = beatmap.GetTimingPointAt((int)nodeStartTime);
+            var nodeControlPoint = beatmap.GetControlPointAt((int)nodeStartTime);
             sliderNodes[i] = new()
             {
                 Time = nodeStartTime,

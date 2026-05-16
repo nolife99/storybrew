@@ -1,21 +1,14 @@
-﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
+namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
 using BrewLib.Graphics.Shaders;
-using osuTK.Graphics.OpenGL;
 
 interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmanaged
 {
-    int QueuedRenders { get; }
-    int PrimitivesInBatch { get; }
-    GpuCommandSync FrameSync { get; }
-
-    void AddPrimitive(scoped ref readonly TPrimitive primitive);
+    ref TPrimitive PrimitiveAt(int index);
 
     void Bind(Shader shader);
     void Unbind();
 
-    void Render(PrimitiveType type, int vertexCount);
-
-    void QueueRender(int indexCount, int vertexCount);
+    void Render(PrimitiveTopology topology, int primitiveCount, int verticesPerPrimitive);
 }

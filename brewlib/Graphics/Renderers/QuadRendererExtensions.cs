@@ -10,7 +10,7 @@ using SixLabors.ImageSharp.PixelFormats;
 public static class QuadRendererExtensions
 {
     public static void Draw(this IQuadRenderer renderer,
-        Texture2dRegion texture,
+        ITextureRegion texture,
         Vector2 xy,
         Vector2 origin,
         Vector2 scale,
@@ -21,7 +21,7 @@ public static class QuadRendererExtensions
     {
         var fx2 = texture1 - texture0;
         var transform = Matrix3x2.CreateTranslation(-origin) * Matrix3x2.CreateScale(Vector2.Abs(scale)) *
-            MathUtil.CreateRotationMatrixFast(rotation) * Matrix3x2.CreateTranslation(xy);
+            Matrix3x2.CreateRotation(rotation) * Matrix3x2.CreateTranslation(xy);
 
         var corner0 = Vector2.Transform(Vector2.Zero, transform);
         var corner1 = Vector2.Transform(new(0, fx2.Y), transform);

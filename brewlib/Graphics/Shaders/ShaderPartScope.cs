@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public class ShaderPartScope(string variablePrefix)
@@ -12,7 +11,7 @@ public class ShaderPartScope(string variablePrefix)
     int lastId;
     string nextGenericName => $"_{variablePrefix}_{lastId++:000}";
 
-    public ShaderVariable AddVariable(ShaderContext context, ActiveUniformType shaderTypeName)
+    public ShaderVariable AddVariable(ShaderContext context, ShaderValueType shaderTypeName)
     {
         ShaderVariable variable = new(context, nextGenericName, shaderTypeName);
         variables.Add(variable);

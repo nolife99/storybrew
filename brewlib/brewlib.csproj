@@ -36,9 +36,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="ManagedBass.Fx" Version="4.0.1"/>
+    <PackageReference Include="ManagedBass.Fx" Version="4.0.2"/>
     <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3"/>
+    <PackageReference Include="SDL3-CS.Native.Shadercross" Version="3.0.0" GeneratePathProperty="true">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; native; contentfiles; build; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="SkipLocalsInit" Version="1.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -53,5 +57,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </ProjectReference>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(PkgSDL3-CS_Native_Shadercross)' != ''">
+    <Content Include="$(PkgSDL3-CS_Native_Shadercross)\runtimes\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <Import Project="..\build\StorybrewShaders.targets"/>
 
 </Project>

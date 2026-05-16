@@ -1,14 +1,13 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
-using osuTK.Graphics.OpenGL;
 
 public class ShaderVariable
 {
     public readonly ShaderContext Context;
     readonly Reference reference;
 
-    public ShaderVariable(ShaderContext context, string name, ActiveUniformType shaderTypeName, int count = -1)
+    public ShaderVariable(ShaderContext context, string name, ShaderValueType shaderTypeName, int count = -1)
     {
         Context = context;
         Name = name;
@@ -20,7 +19,7 @@ public class ShaderVariable
 
     public int ArrayCount { get; }
     public string Name { get; }
-    public ActiveUniformType ShaderTypeName { get; }
+    public ShaderValueType ShaderTypeName { get; }
 
     public virtual Reference Ref
     {

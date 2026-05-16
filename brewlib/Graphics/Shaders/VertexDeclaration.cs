@@ -1,7 +1,7 @@
-﻿namespace BrewLib.Graphics.Shaders;
+namespace BrewLib.Graphics.Shaders;
 
 using System;
-using osuTK.Graphics.OpenGL;
+using BrewLib.Graphics;
 
 public sealed class VertexDeclaration
 {
@@ -32,30 +32,10 @@ public sealed class VertexDeclaration
     }
 
     public void ActivateAttributes(Shader shader)
-    {
-        foreach (var attribute in vertexAttributes)
-        {
-            var attributeLocation = shader.GetAttributeLocation(attribute.Name);
-            if (attributeLocation < 0) continue;
-
-            GL.EnableVertexAttribArray(attributeLocation);
-            GL.VertexAttribPointer(attributeLocation,
-                attribute.ComponentCount,
-                attribute.Type,
-                attribute.Normalized,
-                VertexSize,
-                attribute.Offset);
-        }
-    }
+        => DrawState.Device.ActivateVertexAttributes(this, shader);
 
     public void DeactivateAttributes(Shader shader)
-    {
-        foreach (var attrib in vertexAttributes)
-        {
-            var attributeLocation = shader.GetAttributeLocation(attrib.Name);
-            if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
-        }
-    }
+        => DrawState.Device.DeactivateVertexAttributes(this, shader);
 
     public ReadOnlySpan<VertexAttribute>.Enumerator GetEnumerator()
         => ((ReadOnlySpan<VertexAttribute>)vertexAttributes).GetEnumerator();

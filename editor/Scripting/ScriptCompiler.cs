@@ -50,25 +50,37 @@ public static class ScriptCompiler
         using var assemblies = ValueList.Create<AssemblyMetadata>();
         foreach (var asmPath in referencedAssemblies)
         {
-            using FileStream stream = new(asmPath,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read,
-                0,
-                FileOptions.SequentialScan);
-
-            if (!Project.DefaultAssemblies.Contains(asmPath))
+            FileStream stream = null;
+            try
             {
-                using var memory = MemoryAllocator.Default.Allocate<byte>((int)stream.Length);
-                var writtenSpan = memory.Memory.Span;
+                stream = new(asmPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    0,
+                    FileOptions.SequentialScan);
 
-                stream.ReadExactly(writtenSpan);
-                InternalLoad(context, writtenSpan, default);
+                if (!Project.DefaultAssemblies.Contains(asmPath))
+                {
+                    using var memory = MemoryAllocator.Default.Allocate<byte>((int)stream.Length);
+                    var writtenSpan = memory.Memory.Span;
 
-                stream.Position = 0;
+                    stream.ReadExactly(writtenSpan);
+                    InternalLoad(context, writtenSpan, default);
+
+                    stream.Position = 0;
+                }
+
+                assemblies.Add(AssemblyMetadata.CreateFromStream(stream, PEStreamOptions.PrefetchMetadata));
             }
-
-            assemblies.Add(AssemblyMetadata.CreateFromStream(stream, PEStreamOptions.PrefetchMetadata));
+            catch (Exception e)
+            {
+                return new(e);
+            }
+            finally
+            {
+                stream?.Dispose();
+            }
         }
 
         EmitResult compilation;

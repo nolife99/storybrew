@@ -280,7 +280,8 @@ public abstract class StoryboardObjectGenerator : Script
         }
 
         var usedFftLength = frequencyCutOff > 0 ?
-            (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fftSpan.Length) :
+            float.ConvertToIntegerNative<int>(frequencyCutOff / (context.GetFftFrequency(path) * .5f) *
+                fftSpan.Length) :
             fftSpan.Length;
 
         var resultFft = MemoryAllocator.Default.Allocate<float>(magnitudes);

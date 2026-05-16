@@ -2,42 +2,37 @@
 
 using System;
 using System.Buffers;
-using System.Diagnostics;
-using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using BrewLib.IO;
-using BrewLib.Util;
+using BrewLib.Graphics.Backend;
+using BrewLib.Graphics.Backend.OpenGL;
+using IO;
 using osuTK.Graphics.OpenGL;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
-using Image = SixLabors.ImageSharp.Image;
+using Util;
 
-public sealed class Texture2d : Texture2dRegion
+public sealed class Texture2d : Texture2dRegion, IWritableTexture
 {
     const int StackAllocThreshold = 1024;
 
-    public static readonly bool BindlessTexturesSupported = DrawState.Extensions.Contains("GL_ARB_bindless_texture");
-    static readonly bool clearTex = DrawState.HasCapabilities(4, 4, "GL_ARB_clear_texture");
+    readonly IGraphicsBackend backend;
 
     int _textureId;
 
-    long bindlessId = -1, lastResetTime;
-
     nint fenceId;
-    Timer swapTimer;
 
-    Texture2d(int textureId, int width, int height, nint fence = 0) : base(null, new(0, 0, width, height))
+    Texture2d(IGraphicsBackend backend, int textureId, int width, int height, nint fence = 0)
+        : base(null, new(0, 0, width, height))
     {
+        this.backend = backend ?? DrawState.Backend;
         _textureId = textureId;
 
         fenceId = fence == 0 ? GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0) : fence;
-        GL.Flush();
+        if (fence == 0) GL.Flush();
     }
 
     public int TextureId
@@ -52,51 +47,16 @@ public sealed class Texture2d : Texture2dRegion
         }
     }
 
-    public long BindlessTextureHandle
-    {
-        get
-        {
-            var swapInterval = TimeSpan.FromSeconds(1);
-            if (bindlessId != -1)
-            {
-                Wait(true);
+    public IGraphicsBackend Backend => backend;
+    public GraphicsResourceHandle NativeHandle => new("OpenGL", TextureId);
 
-                if (Stopwatch.GetElapsedTime(lastResetTime) + TimeSpan.FromMilliseconds(50) >= swapInterval)
-                {
-                    swapTimer.Change(swapInterval, Timeout.InfiniteTimeSpan);
-                    lastResetTime = Stopwatch.GetTimestamp();
-                }
-
-                return bindlessId;
-            }
-
-            if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
-
-            GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
-
-            swapTimer ??= new(t => Native.MainThreadScheduler(opt =>
-                    {
-                        var tex = (Texture2d)opt!;
-                        GL.Arb.MakeTextureHandleNonResident(tex.bindlessId);
-                        tex.bindlessId = -1;
-                    },
-                    t),
-                this,
-                Timeout.InfiniteTimeSpan,
-                Timeout.InfiniteTimeSpan);
-
-            swapTimer.Change(swapInterval, Timeout.InfiniteTimeSpan);
-            lastResetTime = Stopwatch.GetTimestamp();
-
-            return bindlessId;
-        }
-    }
+    static bool ClearTextureSupported => DrawState.Backend?.Capabilities.Has(GraphicsBackendFeatures.ClearTexture) ?? false;
 
     public void Update(Color color, int x, int y, int width, int height)
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
-        if (clearTex)
+        if (ClearTextureSupported)
         {
             var pix = color.ToPixel<Rgba32>();
             GL.ClearTexSubImage(_textureId,
@@ -180,56 +140,28 @@ public sealed class Texture2d : Texture2dRegion
     }
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
-    {
-        using var stream = File.Exists(filename) ?
-            new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 0, FileOptions.SequentialScan) :
-            resourceContainer?.GetStream(filename, ResourceSource.Embedded);
-
-        if (stream is not null) return Image.Load<Rgba32>(stream);
-
-        SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
-        return null;
-    }
-
-    public static Task<Image<Rgba32>> LoadBitmapAsync(string filename, ResourceContainer resourceContainer = null)
-    {
-        var stream = File.Exists(filename) ?
-            new FileStream(filename,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read,
-                0,
-                FileOptions.Asynchronous | FileOptions.SequentialScan) :
-            resourceContainer?.GetStream(filename, ResourceSource.Embedded);
-
-        if (stream is not null)
-            return Image.LoadAsync<Rgba32>(stream)
-                .ContinueWith((t, s) =>
-                    {
-                        ((Stream)s).Dispose();
-                        return t.Result;
-                    },
-                    stream);
-
-        SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
-        return Task.FromResult<Image<Rgba32>>(null);
-    }
+        => TextureLoader.LoadBitmap(filename, resourceContainer);
 
     public static TextureOptions LoadTextureOptions(string forBitmapFilename,
         ResourceContainer resourceContainer = null)
-        => TextureOptions.Load(TextureOptions.GetOptionsFilename(forBitmapFilename), resourceContainer);
+        => TextureLoader.LoadTextureOptions(forBitmapFilename, resourceContainer);
 
     public static Texture2d Load(string filename,
         ResourceContainer resourceContainer = null,
-        TextureOptions textureOptions = null)
+        TextureOptions textureOptions = null,
+        IGraphicsBackend backend = null)
     {
         using var bitmap = LoadBitmap(filename, resourceContainer);
         return bitmap is not null ?
-            Load(bitmap, textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
+            Load(bitmap, textureOptions ?? LoadTextureOptions(filename, resourceContainer), backend) :
             null;
     }
 
-    public static Texture2d Create(Color color, int width = 1, int height = 1, TextureOptions textureOptions = null)
+    public static Texture2d Create(Color color,
+        int width = 1,
+        int height = 1,
+        TextureOptions textureOptions = null,
+        IGraphicsBackend backend = null)
     {
         if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 
@@ -243,7 +175,7 @@ public sealed class Texture2d : Texture2dRegion
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        if (clearTex)
+        if (ClearTextureSupported)
         {
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
@@ -259,10 +191,10 @@ public sealed class Texture2d : Texture2dRegion
             GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref pix);
 
             if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            textureOptions.ApplyParameters(TextureTarget.Texture2D);
+            OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
 
             DrawState.UnbindTexture(textureId);
-            return new(textureId, width, height);
+            return new(backend, textureId, width, height);
         }
 
         IMemoryOwner<Rgba32> spanOwner = null;
@@ -291,78 +223,15 @@ public sealed class Texture2d : Texture2dRegion
         spanOwner?.Dispose();
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        textureOptions.ApplyParameters(TextureTarget.Texture2D);
+        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
 
         DrawState.UnbindTexture(textureId);
-        return new(textureId, width, height);
+        return new(backend, textureId, width, height);
     }
 
-    public static async Task<Texture2d> LoadAsync(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
-    {
-        var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
-        var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
-
-        var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
-
-        int textureId = 0, pbo = 0;
-        nint mapped = 0, fence = 0;
-
-        await Native.MainThreadScheduler(_ =>
-            {
-                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo = GL.GenBuffer());
-                GL.BufferData(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferUsageHint.StreamDraw);
-
-                mapped = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly);
-                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            },
-            "");
-
-        var span = mapped.AsSpan<Rgba32>(width * height);
-        if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
-            MemoryMarshal
-                .CreateReadOnlySpan(ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)), width * height)
-                .CopyTo(span);
-        else
-            for (var i = 0; i < height; ++i)
-                buffer.DangerousGetRowSpan(i)[..width].CopyTo(span[(i * width)..]);
-
-        await Native.MainThreadScheduler(opt =>
-            {
-                var options = (TextureOptions)opt ?? TextureOptions.Default;
-                var compress = DrawState.UseTextureCompression;
-
-                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
-                GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-
-                DrawState.BindTexture(textureId = GL.GenTexture());
-                GL.TexImage2D(TextureTarget.Texture2D,
-                    0,
-                    options.Srgb && DrawState.ColorCorrected ?
-                        compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
-                        compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8,
-                    width,
-                    height,
-                    0,
-                    PixelFormat.Rgba,
-                    PixelType.UnsignedByte,
-                    0);
-
-                GL.DeleteBuffer(pbo);
-                GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-
-                if (options.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                options.ApplyParameters(TextureTarget.Texture2D);
-
-                DrawState.UnbindTexture(textureId);
-                fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-            },
-            textureOptions);
-
-        return new(textureId, width, height, fence);
-    }
-
-    public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
+    public static Texture2d Load(Image<Rgba32> bitmap,
+        TextureOptions textureOptions = null,
+        IGraphicsBackend backend = null)
     {
         var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
         var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
@@ -371,7 +240,7 @@ public sealed class Texture2d : Texture2dRegion
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
         var compress = DrawState.UseTextureCompression;
 
-        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgb : PixelInternalFormat.Srgb8 :
+        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
             compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
         var textureId = GL.GenTexture();
@@ -416,10 +285,10 @@ public sealed class Texture2d : Texture2dRegion
         }
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        textureOptions.ApplyParameters(TextureTarget.Texture2D);
+        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
 
         DrawState.UnbindTexture(textureId);
-        return new(textureId, width, height);
+        return new(backend, textureId, width, height);
     }
 
     internal bool Wait(bool canBlock)
@@ -429,7 +298,7 @@ public sealed class Texture2d : Texture2dRegion
 
         if (canBlock)
         {
-            GL.ClientWaitSync(fence, ClientWaitSyncFlags.SyncFlushCommandsBit, ulong.MaxValue);
+            GL.WaitSync(fence, WaitSyncFlags.None, ulong.MaxValue);
             GL.DeleteSync(fence);
             fenceId = -1;
 
@@ -453,11 +322,7 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (disposing)
             {
-                swapTimer?.Dispose();
                 Free(this);
-
-                _textureId = 0;
-                bindlessId = -1;
             }
             else Native.MainThreadScheduler(tex => Free((Texture2d)tex), this);
         }
@@ -467,10 +332,14 @@ public sealed class Texture2d : Texture2dRegion
 
     static void Free(Texture2d texture)
     {
+        if (texture._textureId == 0) return;
+
         if (texture.fenceId != -1) GL.DeleteSync(texture.fenceId);
 
         DrawState.UnbindTexture(texture._textureId);
         GL.DeleteTexture(texture._textureId);
+        texture._textureId = 0;
+        texture.fenceId = -1;
     }
 
     #endregion

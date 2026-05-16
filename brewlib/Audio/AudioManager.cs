@@ -102,7 +102,8 @@ public sealed class AudioManager : IDisposable
         {
             var channel = audioChannels[i];
             if (Bass.UpdateThreads == 0 && !channel.Completed && channel.Playing)
-                Bass.ChannelUpdate(channel.Channel, (int)(targetFrame.TotalMilliseconds * 1.5f));
+                Bass.ChannelUpdate(channel.Channel,
+                    double.ConvertToIntegerNative<int>(targetFrame.TotalMilliseconds * 1.5f));
 
             if (!channel.Temporary || !channel.Completed)
             {

@@ -55,14 +55,14 @@ public class OsbAnimation : OsbSprite
 
     int GetFrameAt(float time)
     {
-        var frame = (time - StartTime) / FrameDelay;
+        var frame = float.ConvertToIntegerNative<int>((time - StartTime) / FrameDelay);
         switch (LoopType)
         {
             case OsbLoopType.LoopForever: frame %= FrameCount; break;
-            case OsbLoopType.LoopOnce: frame = float.Min(frame, FrameCount - 1); break;
+            case OsbLoopType.LoopOnce: frame = int.Min(frame, FrameCount - 1); break;
         }
 
-        return int.Max(0, (int)frame);
+        return int.Max(0, frame);
     }
 
     private protected override void WriteHeader(TextWriter writer,

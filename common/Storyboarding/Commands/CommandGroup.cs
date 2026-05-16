@@ -1,109 +1,51 @@
-﻿namespace StorybrewCommon.Storyboarding.Commands;
+namespace StorybrewCommon.Storyboarding.Commands;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using StorybrewCommon.Storyboarding.Display;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 #pragma warning disable CS1591
-public abstract class CommandGroup : ICommand
+public readonly struct CommandGroup
 {
-    private protected readonly List<ICommand> commands = [];
-    public ReadOnlySpan<ICommand> Commands => CollectionsMarshal.AsSpan(commands);
+    readonly OsbSprite sprite;
+    readonly int id;
 
-    public float CommandsStartTime
+    public int Id => id;
+
+    internal CommandGroup(OsbSprite sprite, int id)
     {
-        get
-        {
-            var commandsStartTime = float.MaxValue;
-            foreach (var command in Commands) commandsStartTime = float.Min(commandsStartTime, command.StartTime);
-
-            return commandsStartTime;
-        }
+        this.sprite = sprite;
+        this.id = id;
     }
 
-    public float CommandsEndTime
+    public bool IsActive => sprite is not null && sprite.IsCommandGroupActive(id);
+
+    public void End()
     {
-        get
-        {
-            var commandsEndTime = float.MinValue;
-            foreach (var command in Commands) commandsEndTime = float.Max(commandsEndTime, command.EndTime);
-
-            return commandsEndTime;
-        }
+        EnsureActive();
+        sprite.EndGroup();
     }
-
-    public float CommandsDuration
-    {
-        get
-        {
-            var commandsStartTime = float.MaxValue;
-            var commandsEndTime = float.MinValue;
-
-            foreach (var command in Commands)
-            {
-                commandsStartTime = float.Min(commandsStartTime, command.StartTime);
-
-                commandsEndTime = float.Max(commandsEndTime, command.EndTime);
-            }
-
-            return commandsEndTime - commandsStartTime;
-        }
-    }
-
-    /// <inheritdoc/>
-    public float StartTime { get; protected set; }
-
-    /// <inheritdoc/>
-    public virtual float EndTime { get; protected set; }
-
-    /// <inheritdoc/>
-    public int CompareTo(ICommand other)
-    {
-        var result = StartTime.CompareTo(other.StartTime);
-        return result != 0 ? result : EndTime.CompareTo(other.EndTime);
-    }
-
-    void ICommand.WriteOsb(TextWriter writer,
-        ExportSettings exportSettings,
-        scoped ref readonly StoryboardTransform transform,
-        int indentation)
-    {
-        if (commands.Count <= 0) return;
-
-        for (var i = 0; i < indentation; ++i) writer.Write(' ');
-
-        using (var header = GetCommandGroupHeader(ExportSettings.Default)) writer.WriteLine(header.AsReadOnlySpan());
-
-        foreach (var command in Commands) command.WriteOsb(writer, exportSettings, in transform, indentation + 1);
-    }
-
-    /// <inheritdoc/>
-    public abstract bool IsFragmentableAt(float time);
 
     public bool Add(ICommand command)
     {
-        var index = commands.BinarySearch(command);
-        if (index >= 0)
-        {
-            commands[index] = command;
-            return false;
-        }
-
-        index = ~index;
-        while (index < commands.Count)
-        {
-            if (commands[index].StartTime < command.StartTime) break;
-
-            ++index;
-        }
-
-        commands.Insert(index, command);
+        AddCommand(command);
         return true;
     }
 
-    public virtual void EndGroup() { }
-    protected abstract TempList<char> GetCommandGroupHeader(ExportSettings exportSettings);
+    public void AddCommand(ICommand command, float offset = 0)
+    {
+        EnsureActive();
+        sprite.AddCommandToGroup(id, command, offset);
+    }
+
+    public void AddCommand<TValue>(CommandTimeline<TValue>.Command command, float offset = 0)
+        where TValue : struct, ICommandValue<TValue>
+    {
+        EnsureActive();
+        sprite.AddCommandToGroup(id, command, offset);
+    }
+
+    public void EnsureActive()
+    {
+        if (!IsActive) throw new System.InvalidOperationException("This command group is no longer active.");
+    }
 }

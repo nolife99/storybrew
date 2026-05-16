@@ -6,7 +6,7 @@
     <AssemblyName>StorybrewEditor</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
     <Version>1.95</Version>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <PublishReadyToRun>true</PublishReadyToRun>
     <LangVersion>default</LangVersion>
     <DebugType>embedded</DebugType>
@@ -73,7 +73,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0"/>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageReference Include="SkipLocalsInit" Version="1.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -107,7 +107,7 @@ foreach (var resource in Resources)
 
     if (string.IsNullOrEmpty(logicalName))
     {
-        string resourceNamespace = "StorybrewEditor";
+        var resourceNamespace = "StorybrewEditor";
         if (!string.IsNullOrEmpty(relativePath))
         {
             var subPath = relativePath.Replace('\\', '.').Replace('/', '.');
@@ -122,11 +122,20 @@ foreach (var resource in Resources)
 
     var compressedPath = Path.Combine(TempDir, filename + ".zz");
 
-    var originalBytes = File.ReadAllBytes(resourcePath);
+    Stream targetPath = null;
+    do
+    {
+        try
+        {
+            targetPath = File.Create(compressedPath);
+        }
+        catch (IOException) { }
+    }
+    while (targetPath is null);
 
     using (var originalStream = File.OpenRead(resourcePath))
-    using (var brotliStream = new DeflateStream(File.Create(compressedPath), CompressionLevel.Optimal, false))
-        originalStream.CopyTo(brotliStream);
+    using (var compressedStream = new DeflateStream(targetPath, CompressionLevel.Optimal, false))
+        originalStream.CopyTo(compressedStream);
 
     var item = new TaskItem(compressedPath);
     item.SetMetadata("LogicalName", logicalName + ".zz");

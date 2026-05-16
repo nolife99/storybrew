@@ -1,8 +1,9 @@
-﻿namespace StorybrewEditor.Storyboarding;
+namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Audio;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
@@ -18,6 +19,56 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 {
     static readonly RenderStates AlphaBlendStates = new(),
         AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
+
+    internal readonly struct DrawWork
+    {
+        public readonly OsbSprite Sprite;
+        public readonly Matrix3x2 Transform;
+        public readonly float RotationOffset;
+        public readonly float ScaleFactor;
+        public readonly float StartTime, EndTime;
+        public readonly int HighlightDepth;
+
+        public DrawWork(OsbSprite sprite, scoped ref readonly StoryboardTransform transform, int highlightDepth = 0)
+        {
+            var matrix = transform.Matrix;
+
+            Sprite = sprite;
+            Transform = matrix;
+            RotationOffset = GetRotationOffset(matrix);
+            ScaleFactor = GetScaleFactor(matrix);
+            StartTime = sprite.StartTime;
+            EndTime = sprite.EndTime;
+            HighlightDepth = highlightDepth;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static float GetRotationOffset(Matrix3x2 transform)
+        => float.Atan2(-transform.M21, transform.M11);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static float GetScaleFactor(Matrix3x2 transform)
+        => float.Sqrt(transform.M11 * transform.M11 + transform.M12 * transform.M12);
+
+    internal struct DrawResult
+    {
+        public bool Active;
+        public bool Visible;
+        public bool ForceVisible;
+        public bool Additive;
+
+        public OsbSprite Sprite;
+        public string TexturePath;
+
+        public Vector2 Position;
+        public Vector2 Scale;
+        public float Rotation;
+
+        public Color Color;
+        public float Fade;
+        public float Opacity;
+    }
 
     public void Draw(DrawContext drawContext,
         ICamera camera,
@@ -42,10 +93,119 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         FrameStats frameStats,
         OsbSprite sprite)
     {
-        var time = (float)project.DisplayTime.TotalMilliseconds;
-        if (!sprite.IsActive(time)) return;
+        var editor = drawContext.Get<Editor>();
+        var work = new DrawWork(sprite, in transform);
+        var result = Evaluate(in work,
+            (float)project.DisplayTime.TotalMilliseconds,
+            editor.InputManager.Alt,
+            project.DimFactor,
+            Environment.TickCount64,
+            opacity,
+            1,
+            false,
+            Matrix3x2.Identity,
+            0,
+            1);
 
-        var texturePath = sprite.GetTexturePathAt(time);
+        Submit(in result, drawContext, camera, bounds, project, frameStats);
+    }
+
+    internal static DrawResult Evaluate(scoped ref readonly DrawWork work,
+        float time,
+        bool altDown,
+        float dimFactor,
+        long tickCount,
+        float opacity,
+        float highlightOpacity,
+        bool highlightActive,
+        Matrix3x2 parentTransform,
+        float parentRotationOffset,
+        float parentScaleFactor)
+    {
+        var sprite = work.Sprite;
+
+        DrawResult result = new()
+        {
+            Sprite = sprite,
+            Opacity = highlightActive ? applyHighlightOpacity(opacity, highlightOpacity, work.HighlightDepth) : opacity
+        };
+
+        if (time < work.StartTime || work.EndTime < time || !sprite.IsActive(time)) return result;
+
+        result.Active = true;
+        result.TexturePath = sprite.GetTexturePathAt(time);
+
+        var inDisplayInterval = sprite.InDisplayInterval(time);
+        var forceVisible = !inDisplayInterval && altDown;
+        result.ForceVisible = forceVisible;
+
+        var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
+        if (forceVisible) fade = float.Max(fade, .5f);
+        else if (fade < .00001f) return result;
+
+        var scale = (Vector2)sprite.ScaleAt(time);
+        if (forceVisible)
+        {
+            if (scale.X == 0) scale.X = 1;
+            if (scale.Y == 0) scale.Y = 1;
+        }
+        else if (scale.X == 0 || scale.Y == 0) return result;
+
+        var additive = (bool)sprite.AdditiveTimeline.ValueAtTime(time);
+        var position = (Vector2)sprite.PositionAt(time);
+        var rotation = (float)sprite.RotateTimeline.ValueAtTime(time);
+
+        if (sprite.FlipHTimeline.ValueAtTime(time)) scale.X = -scale.X;
+        if (sprite.FlipVTimeline.ValueAtTime(time)) scale.Y = -scale.Y;
+
+        var transform = Matrix3x2.Multiply(parentTransform, work.Transform);
+
+        position = sprite.HasMoveCommands
+            ? new(Vector2.Transform(new(position.X, 0), transform).X,
+                Vector2.Transform(new(0, position.Y), transform).Y)
+            : Vector2.Transform(position, transform);
+
+        if (sprite.RotateTimeline.HasCommands) rotation += parentRotationOffset + work.RotationOffset;
+        if (sprite.HasScalingCommands) scale *= parentScaleFactor * work.ScaleFactor;
+
+        var color = (Color)sprite.ColorAt(time);
+        if (forceVisible)
+            color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
+                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(tickCount * .00025f) * .5f + .5f,
+                    1,
+                    1,
+                    1)));
+
+        result.Visible = true;
+        result.Fade = fade;
+        result.Scale = scale;
+        result.Additive = additive;
+        result.Position = position;
+        result.Rotation = rotation;
+        result.Color = color.LerpColor(SixLabors.ImageSharp.Color.Black, dimFactor);
+
+        return result;
+    }
+
+    static float applyHighlightOpacity(float opacity, float highlightOpacity, int depth)
+    {
+        for (var i = 0; i < depth; i++) opacity *= highlightOpacity;
+        return opacity;
+    }
+
+    internal static void Submit(scoped ref readonly DrawResult result,
+        DrawContext drawContext,
+        ICamera camera,
+        RectangleF bounds,
+        Project project,
+        FrameStats frameStats)
+    {
+        if (!result.Active) return;
+
+        var sprite = result.Sprite;
+        var texturePath = result.TexturePath;
+        var time = (float)project.DisplayTime.TotalMilliseconds;
+
         if (frameStats is not null)
         {
             ++frameStats.SpriteCount;
@@ -56,70 +216,16 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
-        var forceVisible = !sprite.InDisplayInterval(time) && drawContext.Get<Editor>().InputManager.Alt;
+        if (!result.Visible) return;
+        if (!tryResolveTexture(project, texturePath, out var texture)) return;
 
-        var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
-        if (forceVisible) fade = float.Max(fade, .5f);
-        else if (fade < .00001f) return;
+        var origin = GetOriginVector(sprite.Origin, (SizeF)texture.Size);
+        var scale = result.Scale;
 
-        var scale = (Vector2)sprite.ScaleAt(time);
-        if (forceVisible)
+        if (frameStats is not null && !result.ForceVisible)
         {
-            if (scale.X == 0) scale.X = 1;
-            if (scale.Y == 0) scale.Y = 1;
-        }
-        else if (scale.X == 0 || scale.Y == 0) return;
-
-        Span<char> span = stackalloc char[260];
-        Path.TryJoin(project.MapsetPath, texturePath, span, out var written);
-
-        var splitSpan = span[..written];
-        PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
-
-        Texture2dRegion texture;
-        try
-        {
-            texture = project.TextureContainer.Get(splitSpan);
-            if (texture is null)
-            {
-                Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span, out written);
-
-                splitSpan = span[..written];
-                PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
-
-                texture = project.TextureContainer.Get(splitSpan);
-            }
-        }
-        catch (IOException)
-        {
-            // Happens when another process is writing to the file, will try again later.
-            return;
-        }
-
-        if (texture is null) return;
-
-        var additive = (bool)sprite.AdditiveTimeline.ValueAtTime(time);
-        var position = (Vector2)sprite.PositionAt(time);
-        var rotation = (float)sprite.RotateTimeline.ValueAtTime(time);
-
-        if (sprite.FlipHTimeline.ValueAtTime(time)) scale.X = -scale.X;
-        if (sprite.FlipVTimeline.ValueAtTime(time)) scale.Y = -scale.Y;
-
-        var origin = GetOriginVector(sprite.Origin, texture.Size);
-        if (!transform.IsIdentity)
-        {
-            position = sprite.HasMoveCommands ?
-                transform.ApplyToPositionXY(position) :
-                transform.ApplyToPosition(position);
-
-            if (sprite.RotateTimeline.HasCommands) rotation = transform.ApplyToRotation(rotation);
-            if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
-        }
-
-        if (frameStats is not null && !forceVisible)
-        {
-            var size = texture.Size * scale;
-            OrientedBoundingBox spriteBox = new(position, origin * scale, size, rotation);
+            var size = (SizeF)texture.Size * scale;
+            OrientedBoundingBox spriteBox = new(result.Position, origin * scale, size, result.Rotation);
             if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
                 frameStats.EffectiveCommandCount += sprite.CommandCost;
@@ -141,11 +247,11 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 ++frameStats.Batches;
 
                 if (frameStats.LoadedPaths.Add(texturePath))
-                    frameStats.GpuPixelsFrame += (long)(texture.Size.X * texture.Size.Y);
+                    frameStats.GpuPixelsFrame += texture.Size.Width * texture.Size.Height;
             }
-            else if (frameStats.LastBlendingMode != additive)
+            else if (frameStats.LastBlendingMode != result.Additive)
             {
-                frameStats.LastBlendingMode = additive;
+                frameStats.LastBlendingMode = result.Additive;
                 ++frameStats.Batches;
             }
         }
@@ -153,23 +259,43 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var boundsScaling = bounds.Height / 480;
         scale *= boundsScaling;
 
-        var color = (Color)sprite.ColorAt(time);
-        if (forceVisible)
-            color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
-                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount64 * .00025f) * .5f + .5f,
-                    1,
-                    1,
-                    1)));
-
-        DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
+        DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, result.Additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,
                 new Vector2(bounds.X + bounds.Width * .5f, bounds.Y) +
-                new Vector2(position.X - 320, position.Y) * boundsScaling,
+                new Vector2(result.Position.X - 320, result.Position.Y) * boundsScaling,
                 origin,
                 scale,
-                rotation,
-                color.LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor).WithOpacity(opacity * fade),
+                result.Rotation,
+                result.Color.WithOpacity(result.Opacity * result.Fade),
                 Vector2.Zero,
-                texture.Size);
+                (SizeF)texture.Size);
+    }
+
+    static bool tryResolveTexture(Project project, string texturePath, out ITextureRegion texture)
+    {
+        Span<char> span = stackalloc char[260];
+        Path.TryJoin(project.MapsetPath, texturePath, span, out var written);
+
+        var splitSpan = span[..written];
+        PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
+
+        try
+        {
+            texture = project.TextureContainer.Get(splitSpan);
+            if (texture is not null) return true;
+
+            Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span, out written);
+
+            splitSpan = span[..written];
+            PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
+
+            texture = project.TextureContainer.Get(splitSpan);
+            return texture is not null;
+        }
+        catch (IOException)
+        {
+            texture = null;
+            return false;
+        }
     }
 }

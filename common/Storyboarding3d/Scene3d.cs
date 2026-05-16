@@ -37,10 +37,7 @@ public class Scene3d
         int divisor = 8)
     {
         Root.GenerateTreeSprite(segment);
-        beatmap.ForEachTick((int)startTime,
-            (int)endTime,
-            divisor,
-            (_, time, _, _) => Root.GenerateTreeStates(time, camera));
+        beatmap.ForEachTick(startTime, endTime, divisor, (_, time, _, _) => Root.GenerateTreeStates(time, camera));
 
         Root.GenerateTreeCommands();
     }

@@ -1,61 +1,58 @@
-﻿namespace BrewLib.Graphics.Shaders;
+namespace BrewLib.Graphics.Shaders;
 
 using System;
-using osuTK.Graphics.OpenGL;
 
 public sealed class VertexAttribute
 {
     public const string PositionAttributeName = "a_position", TextureCoordAttributeName = "a_textureCoord",
         ColorAttributeName = "a_color";
 
-    public int ComponentSize = 4, ComponentCount = 1, Offset;
-
+    public int Offset;
     public string Name;
-    public bool Normalized;
-    public VertexAttribPointerType Type = VertexAttribPointerType.Float;
+    public VertexAttributeFormat Format = VertexAttributeFormat.Float32;
     public AttributeUsage Usage = AttributeUsage.Undefined;
 
-    public string ShaderTypeName => ComponentCount == 1 ? "float" : $"vec{ComponentCount}";
+    public int ComponentSize => Format.GetComponentSize();
+    public int ComponentCount => Format.GetComponentCount();
+    public bool Normalized => Format.IsNormalized();
+    public string ShaderTypeName => Format.GetShaderTypeName();
     public int Size => ComponentCount * ComponentSize;
 
     public override bool Equals(object obj)
         => obj == this ?
             true :
-            obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
-            ComponentSize == otherAttribute.ComponentSize && ComponentCount == otherAttribute.ComponentCount &&
-            Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
+            obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Format == otherAttribute.Format &&
+            Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
 
     public override int GetHashCode()
-        => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);
+        => HashCode.Combine(Name, Format, Offset, Usage);
 
     public static VertexAttribute CreatePosition2d(bool packed)
         => packed ?
             new()
             {
                 Name = PositionAttributeName,
-                ComponentCount = 2,
-                ComponentSize = 2,
-                Type = VertexAttribPointerType.HalfFloat,
+                Format = VertexAttributeFormat.Float16x2,
                 Usage = AttributeUsage.Position
             } :
-            new() { Name = PositionAttributeName, ComponentCount = 2, Usage = AttributeUsage.Position };
+            new() { Name = PositionAttributeName, Format = VertexAttributeFormat.Float32x2, Usage = AttributeUsage.Position };
 
     public static VertexAttribute CreatePosition3d()
-        => new() { Name = PositionAttributeName, ComponentCount = 3, Usage = AttributeUsage.Position };
+        => new() { Name = PositionAttributeName, Format = VertexAttributeFormat.Float32x3, Usage = AttributeUsage.Position };
 
     public static VertexAttribute CreateDiffuseCoord(bool packed, int index = 0)
         => packed ?
             new()
             {
                 Name = TextureCoordAttributeName + index,
-                ComponentCount = 2,
-                ComponentSize = 2,
-                Type = VertexAttribPointerType.HalfFloat,
+                Format = VertexAttributeFormat.Float16x2,
                 Usage = AttributeUsage.DiffuseMapCoord
             } :
             new()
             {
-                Name = TextureCoordAttributeName + index, ComponentCount = 2, Usage = AttributeUsage.DiffuseMapCoord
+                Name = TextureCoordAttributeName + index,
+                Format = VertexAttributeFormat.Float32x2,
+                Usage = AttributeUsage.DiffuseMapCoord
             };
 
     public static VertexAttribute CreateColor(bool packed)
@@ -63,13 +60,10 @@ public sealed class VertexAttribute
             new()
             {
                 Name = ColorAttributeName,
-                ComponentCount = 4,
-                ComponentSize = 1,
-                Type = VertexAttribPointerType.UnsignedByte,
-                Normalized = true,
+                Format = VertexAttributeFormat.Unorm8x4,
                 Usage = AttributeUsage.Color
             } :
-            new() { Name = ColorAttributeName, ComponentCount = 4, Usage = AttributeUsage.Color };
+            new() { Name = ColorAttributeName, Format = VertexAttributeFormat.Float32x4, Usage = AttributeUsage.Color };
 }
 
 public enum AttributeUsage : byte

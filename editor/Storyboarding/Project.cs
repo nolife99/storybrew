@@ -158,7 +158,7 @@ public sealed partial class Project : IDisposable
         OsbLayer.Background, OsbLayer.Fail, OsbLayer.Pass, OsbLayer.Foreground, OsbLayer.Overlay
     ];
 
-    public TimeSpan DisplayTime { get; internal set; }
+    public TimeSpan DisplayTime;
     public float DimFactor { get; internal set; }
 
     public TextureContainer TextureContainer { get; private set; }
@@ -193,8 +193,10 @@ public sealed partial class Project : IDisposable
 
     void reloadTextures()
     {
+        if (Disposed) return;
+
         TextureContainer?.Dispose();
-        TextureContainer = new TextureContainerSeparate();
+        TextureContainer = new TextureContainerSeparate(DrawState.Backend?.TextureFactory);
     }
 
     void reloadAudio()
@@ -207,15 +209,17 @@ public sealed partial class Project : IDisposable
 
     void runReload()
     {
+        if (Disposed) return;
         if (reloadTask is not null && !reloadTask.IsCompleted) return;
 
-        reloadTask = Task.Factory.StartNew(async project =>
+        reloadTask = Task.Run(async () =>
             {
-                var p = (Project)project;
-                while (p.effectUpdateQueue.Running) await Task.Delay(200);
+                while (effectUpdateQueue.Running) await Task.Delay(200);
 
                 await Program.Schedule(proj =>
                     {
+                        if (proj.Disposed) return;
+
                         if (proj.isReloadingTextures)
                         {
                             proj.reloadTextures();
@@ -228,9 +232,8 @@ public sealed partial class Project : IDisposable
                             proj.isReloadingAudio = false;
                         }
                     },
-                    (Project)project);
-            },
-            this);
+                    this);
+            });
     }
 
     #endregion
@@ -1078,7 +1081,8 @@ public sealed partial class Project : IDisposable
     {
         if (Disposed) return;
 
-        reloadTask?.Wait();
+        Disposed = true;
+        if (!SDL.IsMainThread()) reloadTask?.Wait();
 
         effectUpdateQueue.Dispose();
         assetWatcher.Dispose();
@@ -1094,7 +1098,6 @@ public sealed partial class Project : IDisposable
 
         LayerManager.Dispose();
 
-        Disposed = true;
     }
 
     #endregion

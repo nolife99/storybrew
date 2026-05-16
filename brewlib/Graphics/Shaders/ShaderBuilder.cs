@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
 using SDL3;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -26,12 +25,12 @@ public sealed class ShaderBuilder
     public ShaderBuilder(VertexDeclaration vertexDeclaration)
     {
         VertexDeclaration = vertexDeclaration;
-        GlPosition = new(Context, "gl_Position", ActiveUniformType.FloatVec4);
-        GlFragCoord = new(Context, "gl_FragCoord", ActiveUniformType.FloatVec4);
-        GlPointSize = new(Context, "gl_PointSize", ActiveUniformType.Float);
-        GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", ActiveUniformType.FloatVec4, true);
-        GlFragDepth = new(Context, "gl_FragDepth", ActiveUniformType.Float);
-        glDrawID = new(Context, "gl_DrawIDARB", ActiveUniformType.Int);
+        GlPosition = new(Context, "gl_Position", ShaderValueType.FloatVec4);
+        GlFragCoord = new(Context, "gl_FragCoord", ShaderValueType.FloatVec4);
+        GlPointSize = new(Context, "gl_PointSize", ShaderValueType.Float);
+        GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", ShaderValueType.FloatVec4, true);
+        GlFragDepth = new(Context, "gl_FragDepth", ShaderValueType.Float);
+        glDrawID = new(Context, "gl_DrawIDARB", ShaderValueType.Int);
     }
 
     public ShaderVariable GlDrawId
@@ -45,16 +44,19 @@ public sealed class ShaderBuilder
         }
     }
 
-    public ShaderVariable AddUniform(string name, ActiveUniformType shaderTypeName, int count = -1)
+    public ShaderVariable AddUniform(string name, ShaderValueType shaderTypeName, int count = -1)
         => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
 
-    public ShaderVariable AddVarying(ActiveUniformType shaderTypeName)
+    public ShaderVariable AddUniform<T>(ShaderUniformBinding<T> uniform, int count = -1)
+        => ProgramScope.AddUniform(Context, uniform.Name, uniform.Type, count);
+
+    public ShaderVariable AddVarying(ShaderValueType shaderTypeName)
         => ProgramScope.AddVarying(Context, shaderTypeName);
 
-    public ShaderVariable AddVertexVariable(ActiveUniformType shaderTypeName)
+    public ShaderVariable AddVertexVariable(ShaderValueType shaderTypeName)
         => VertexShaderScope.AddVariable(Context, shaderTypeName);
 
-    public ShaderVariable AddFragmentVariable(ActiveUniformType shaderTypeName)
+    public ShaderVariable AddFragmentVariable(ShaderValueType shaderTypeName)
         => FragmentShaderScope.AddVariable(Context, shaderTypeName);
 
     public void AddRequiredExtension(params ReadOnlySpan<string> extensionName) => requiredExt.AddRange(extensionName);
@@ -99,7 +101,7 @@ public sealed class ShaderBuilder
 
         foreach (var extensionName in requiredExt)
         {
-            if (!DrawState.Extensions.Contains(extensionName))
+            if (!DrawState.SupportsShaderExtension(extensionName))
                 throw new NotSupportedException($"Required extension {extensionName} not supported");
 
             code.Append($"#extension {extensionName} : require\n");

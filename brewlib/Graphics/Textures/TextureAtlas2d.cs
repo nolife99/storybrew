@@ -7,18 +7,23 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 
-public sealed class TextureAtlas2d(int width, int height, TextureOptions textureOptions = null, int padding = 0)
+public sealed class TextureAtlas2d(
+    ITextureFactory textureFactory,
+    int width,
+    int height,
+    TextureOptions textureOptions = null,
+    int padding = 0)
     : IDisposable
 {
     readonly PooledList<Rectangle> freeRegions = [new(0, 0, width, height)];
-    readonly Texture2d texture = Texture2d.Create(Color.Transparent, width, height, textureOptions);
+    readonly IWritableTexture texture = textureFactory.Create(Color.Transparent, width, height, textureOptions);
 
     bool wasMerged;
 
     public float Fragmentation
-        => (float)freeRegions.Sum(region => region.Width * region.Height) / texture.Width / texture.Height * 100;
+        => (float)freeRegions.Sum(region => region.Width * region.Height) / texture.Size.Width / texture.Size.Height * 100;
 
-    public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
+    public ITextureRegion AddRegion(Image<Rgba32> bitmap)
     {
         var width = bitmap.Width;
         var height = bitmap.Height;
@@ -63,8 +68,8 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
         Rectangle freed = new(region.X, region.Y, region.Width + padding, region.Height + padding);
         freeRegions.Add(freed);
 
-        if (DrawState.CanInvalidate)
-            GL.InvalidateTexSubImage(texture.TextureId, 0, freed.X, freed.Y, 0, freed.Width, freed.Height, 1);
+        if (DrawState.CanInvalidate && texture is Texture2d texture2d)
+            GL.InvalidateTexSubImage(texture2d.TextureId, 0, freed.X, freed.Y, 0, freed.Width, freed.Height, 1);
 
         wasMerged = false;
     }
@@ -111,7 +116,7 @@ public sealed class TextureAtlas2d(int width, int height, TextureOptions texture
         wasMerged = true;
     }
 
-    sealed class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent)
+    sealed class Texture2dAtlasRegion(ITexture texture, Rectangle bounds, TextureAtlas2d parent)
         : Texture2dRegion(texture, bounds)
     {
         protected override void Dispose(bool disposing)

@@ -50,7 +50,7 @@ public readonly record struct CommandScale : ICommandValue<CommandScale>,
     ///<summary> Converts this instance to a .osb string. </summary>
     TempList<char> ICommandValue<CommandScale>.ToOsbString(ExportSettings exportSettings)
         => StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"{(exportSettings.UseFloatForMove ? X : (int)float.Round(X))},{(exportSettings.UseFloatForMove ? Y : (int)float.Round(Y))}");
+            $"{(exportSettings.UseFloatForMove ? X : float.ConvertToIntegerNative<int>(float.Round(X)))},{(exportSettings.UseFloatForMove ? Y : float.ConvertToIntegerNative<int>(float.Round(Y)))}");
 
     /// <inheritdoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

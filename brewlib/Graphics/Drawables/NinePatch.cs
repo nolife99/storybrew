@@ -13,7 +13,7 @@ public sealed class NinePatch : Drawable
     public FourSide Borders, Outset;
     public bool BordersOnly;
     public Color Color;
-    public Texture2dRegion Texture;
+    public ITextureRegion Texture;
 
     public Vector2 PreferredSize => MinSize;
 
@@ -121,7 +121,7 @@ public sealed class NinePatch : Drawable
             0,
             color,
             new(Borders.Right, Borders.Bottom),
-            Texture.Size);
+            new(Texture.Width, Texture.Height));
     }
 
     public void Dispose() => Texture.Dispose();

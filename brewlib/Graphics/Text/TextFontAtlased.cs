@@ -28,7 +28,9 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
                 out measuredSize,
                 true);
 
-            return new(null, (int)measuredSize.X, (int)measuredSize.Y);
+            return new(null,
+                float.ConvertToIntegerNative<int>(measuredSize.X),
+                float.ConvertToIntegerNative<int>(measuredSize.Y));
         }
 
         using var bitmap = DrawState.TextGenerator.CreateBitmap([c],
@@ -39,7 +41,9 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
             out measuredSize,
             false);
 
-        return new(container.Add(bitmap), (int)measuredSize.X, (int)measuredSize.Y);
+        return new(container.Add(bitmap),
+            float.ConvertToIntegerNative<int>(measuredSize.X),
+            float.ConvertToIntegerNative<int>(measuredSize.Y));
     }
 
     #region IDisposable Support

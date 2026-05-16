@@ -19,6 +19,13 @@ public readonly struct StoryboardTransform
         get => transform == Matrix3x2.Identity;
     }
 
+    /// <summary> Gets the underlying affine matrix. </summary>
+    public Matrix3x2 Matrix
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => transform;
+    }
+
     /// <summary> Initializes a new <see cref="StoryboardTransform"/> instance. </summary>
     /// <param name="parent"> The parent transform to inherit from. </param>
     /// <param name="origin"> The origin of the element. </param>

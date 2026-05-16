@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public class ProgramScope
@@ -32,7 +31,7 @@ public class ProgramScope
 
     public ShaderVariable AddUniform(ShaderContext context,
         string name,
-        ActiveUniformType shaderTypeName,
+        ShaderValueType shaderTypeName,
         int count = -1)
     {
         ShaderVariable uniform = new(context, name, shaderTypeName, count);
@@ -40,7 +39,7 @@ public class ProgramScope
         return uniform;
     }
 
-    public ShaderVariable AddVarying(ShaderContext context, ActiveUniformType shaderTypeName)
+    public ShaderVariable AddVarying(ShaderContext context, ShaderValueType shaderTypeName)
     {
         ShaderVariable varying = new(context, nextGenericVaryingName, shaderTypeName);
         varyings.Add(varying);
@@ -49,7 +48,7 @@ public class ProgramScope
 
     public ShaderVariable AddBuiltinVarying(ShaderContext context,
         string name,
-        ActiveUniformType shaderTypeName,
+        ShaderValueType shaderTypeName,
         bool isFragmentShader)
     {
         ShaderVariable varying = new(context, name, shaderTypeName);

@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using osuTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -78,7 +77,7 @@ public class ShaderContext
 
     public bool Uses(ShaderVariable variable) => usedVariables.Contains(variable);
 
-    public ShaderVariable Declare(ActiveUniformType shaderTypeName, Func<string> expression = null)
+    public ShaderVariable Declare(ShaderValueType shaderTypeName, Func<string> expression = null)
     {
         checkCanReceiveCommands();
 

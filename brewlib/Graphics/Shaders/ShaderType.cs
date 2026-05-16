@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using osuTK.Graphics.OpenGL;
 
 public class ShaderType(string name)
 {
@@ -12,7 +11,7 @@ public class ShaderType(string name)
     public readonly string Name = name;
     public ReadOnlySpan<Field> Fields => CollectionsMarshal.AsSpan(fields);
 
-    public Field AddField(string name, ActiveUniformType shaderTypeName, int arrayCount = -1)
+    public Field AddField(string name, ShaderValueType shaderTypeName, int arrayCount = -1)
     {
         Field field = new(name, shaderTypeName, arrayCount);
         fields.Add(field);
@@ -24,7 +23,7 @@ public class ShaderType(string name)
             !fields.Contains(field) ? throw new InvalidOperationException() :
             (ShaderVariable)new ShaderFieldVariable(variable.Context, variable, field);
 
-    public readonly record struct Field(string Name, ActiveUniformType ShaderTypeName, int ArrayCount);
+    public readonly record struct Field(string Name, ShaderValueType ShaderTypeName, int ArrayCount);
 }
 
 public class ShaderStorageType(string name, int bindingIndex) : ShaderType(name)

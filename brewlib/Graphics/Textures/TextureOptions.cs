@@ -5,10 +5,28 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using BrewLib.IO;
-using osuTK.Graphics.OpenGL;
 using SDL3;
 using Tiny;
 using Tiny.Formats.Json;
+
+public enum TextureFilter
+{
+    Nearest,
+    Linear,
+    NearestMipmapNearest,
+    LinearMipmapNearest,
+    NearestMipmapLinear,
+    LinearMipmapLinear
+}
+
+public enum TextureWrap
+{
+    Clamp,
+    ClampToEdge,
+    Repeat,
+    MirroredRepeat,
+    ClampToBorder
+}
 
 public class TextureOptions : IEquatable<TextureOptions>
 {
@@ -28,22 +46,14 @@ public class TextureOptions : IEquatable<TextureOptions>
     public bool Srgb, PreMultiply, GenerateMipmaps;
 
     // Parameters
-    public TextureMagFilter TextureMagFilter = TextureMagFilter.Linear;
-    public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
-    public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
+    public TextureFilter TextureMagFilter = TextureFilter.Linear;
+    public TextureFilter TextureMinFilter = TextureFilter.Linear;
+    public TextureWrap TextureWrapS = TextureWrap.ClampToEdge, TextureWrapT = TextureWrap.ClampToEdge;
 
     public bool Equals(TextureOptions other)
         => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps &&
             TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
             TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
-
-    public void ApplyParameters(TextureTarget texture)
-    {
-        GL.TexParameter(texture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter);
-        GL.TexParameter(texture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter);
-        GL.TexParameter(texture, TextureParameterName.TextureWrapS, (int)TextureWrapS);
-        GL.TexParameter(texture, TextureParameterName.TextureWrapT, (int)TextureWrapT);
-    }
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
 
@@ -100,7 +110,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     {
         if (fieldType.IsEnum) return data => Enum.Parse(fieldType, data.Value<string>());
 
-        while (fieldType != typeof(object))
+        while (fieldType is not null && fieldType != typeof(object))
         {
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
 

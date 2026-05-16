@@ -63,8 +63,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         };
 
         var measuredSize = TextMeasurer.MeasureAdvance(text, options);
-        var width = (int)(measuredSize.Width + padding.X * 2 + 1);
-        var height = (int)(measuredSize.Height + padding.Y * 2 + 1);
+        var width = float.ConvertToIntegerNative<int>(measuredSize.Width + padding.X * 2 + 1);
+        var height = float.ConvertToIntegerNative<int>(measuredSize.Height + padding.Y * 2 + 1);
 
         textureSize = new(width, height);
         if (measureOnly) return null;

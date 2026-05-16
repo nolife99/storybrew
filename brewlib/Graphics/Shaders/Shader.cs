@@ -1,231 +1,134 @@
-﻿namespace BrewLib.Graphics.Shaders;
+namespace BrewLib.Graphics.Shaders;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
-using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using BrewLib.Graphics.Backend;
 
-public sealed partial class Shader : IDisposable
+public sealed class Shader : IDisposable
 {
-    readonly StringBuilder log = new();
+    readonly IShaderProgramBackend program;
+    readonly Dictionary<string, ShaderUniform> uniforms = new(StringComparer.Ordinal);
 
-    PooledDictionary<string, Property<ActiveAttribType>> attributes;
+    bool disposed, started;
 
-    bool isInitialized, started;
-    int SortId = -1;
-    PooledDictionary<string, Property<ActiveUniformType>> uniforms;
-
-    public Shader(string vertexShaderCode, string fragmentShaderCode)
+    public Shader(string vertexShaderCode, string fragmentShaderCode, IGraphicsBackend backend = null)
+        : this(new ShaderProgramSource("generated", vertexShaderCode, fragmentShaderCode), backend)
     {
-        initialize(vertexShaderCode, fragmentShaderCode);
-        if (!isInitialized)
-        {
-            dispose();
-            throw new InvalidOperationException($"Failed to initialize shader:\n\n{log}");
-        }
-
-        retrieveAttributes();
-        retrieveUniforms();
     }
 
-    public void Dispose()
+    public Shader(ShaderProgramSource source, IGraphicsBackend backend = null)
     {
-        dispose();
+        var factory = backend?.ShaderPrograms ?? DrawState.Backend?.ShaderPrograms ??
+            throw new InvalidOperationException("A graphics backend must be initialized before creating shaders");
 
-        attributes.Dispose();
-        uniforms.Dispose();
-
-        GC.SuppressFinalize(this);
+        program = factory.CreateProgram(source);
     }
+
+    public GraphicsResourceHandle NativeHandle => program.NativeHandle;
 
     public void Begin()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (started) throw new InvalidOperationException("Already started");
 
-        DrawState.ProgramId = SortId;
+        program.Bind();
         started = true;
     }
 
     public void End()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (!started) throw new InvalidOperationException("Not started");
 
+        program.Unbind();
         started = false;
     }
 
     public int GetAttributeLocation(scoped ReadOnlySpan<char> name)
-        => attributes.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var property) ?
-            property.Location :
-            -1;
+        => program.GetAttribute(name).Location;
 
     public int GetUniformLocation(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
-        Span<char> buffer = stackalloc char[256];
-        buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
+        var identifier = GetUniformIdentifier(name, index, field);
+        var uniform = program.GetUniform(identifier);
 
-        var location = uniforms.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(buffer, out var property) ?
-            property.Location :
-            -1;
-
-        return location < 0 ?
-            throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})") :
-            location;
+        return uniform.Location < 0 ?
+            throw new ArgumentException($"{name} isn't a valid uniform identifier ({identifier})") :
+            uniform.Location;
     }
 
-    static int GetUniformIdentifier(scoped Span<char> buffer, scoped ReadOnlySpan<char> name, int index, string field)
+    public int GetUniformLocation(ShaderSamplerBinding sampler, int index = -1, string field = null)
+        => GetUniformLocation(sampler.Name, index, field);
+
+    public ShaderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
-        var total = 0;
-
-        name.CopyTo(buffer);
-        buffer = buffer[name.Length..];
-
-        if (index >= 0)
+        var identifier = GetUniformIdentifier(name, index, field);
+        if (uniforms.TryGetValue(identifier, out var cached))
         {
-            buffer[0] = '[';
-            buffer = buffer[1..];
+            if (cached is ShaderUniform<T> typed) return typed;
 
-            index.TryFormat(buffer, out var charsWritten, provider: CultureInfo.InvariantCulture);
-            buffer[charsWritten] = ']';
-
-            buffer = buffer[1..];
-            total += charsWritten + 2;
+            throw new ArgumentException(
+                $"Uniform {identifier} was already requested as {cached.GetType().GenericTypeArguments[0].Name}");
         }
 
-        if (field is not null)
-        {
-            buffer[0] = '.';
-            field.CopyTo(buffer[1..]);
+        var info = program.GetUniform(identifier);
+        if (info.Location < 0)
+            throw new ArgumentException($"{name} isn't a valid uniform identifier ({identifier})");
 
-            total += field.Length + 1;
-        }
+        if (!info.Type.IsCompatibleWith<T>())
+            throw new ArgumentException(
+                $"Uniform {identifier} has shader type {info.Type}, which is not compatible with {typeof(T).Name}");
 
-        return total + name.Length + 1;
+        var uniform = new ShaderUniform<T>(program, info);
+        uniforms.Add(identifier, uniform);
+        return uniform;
     }
 
-    void initialize(string vertexShaderCode, string fragmentShaderCode)
+    public ShaderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform, int index = -1, string field = null)
+        => GetUniform<T>(uniform.Name, index, field);
+
+    public ShaderUniform<T> TryGetUniform<T>(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
-        dispose();
+        var identifier = GetUniformIdentifier(name, index, field);
+        if (uniforms.TryGetValue(identifier, out var cached)) return cached as ShaderUniform<T>;
 
-        var vertexShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
-        var fragmentShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
+        var info = program.GetUniform(identifier);
+        if (info.Location < 0 || !info.Type.IsCompatibleWith<T>()) return null;
 
-        if (vertexShaderId == -1 || fragmentShaderId == -1) return;
-
-        SortId = linkProgram(vertexShaderId, fragmentShaderId);
-        isInitialized = SortId != -1;
+        var uniform = new ShaderUniform<T>(program, info);
+        uniforms.Add(identifier, uniform);
+        return uniform;
     }
 
-    int compileShader(osuTK.Graphics.OpenGL.ShaderType type, string code)
+    public void Dispose()
     {
-        var id = GL.CreateShader(type);
-        GL.ShaderSource(id, code);
-        GL.CompileShader(id);
-        GL.GetShader(id, ShaderParameter.CompileStatus, out var compileStatus);
-
-        if (compileStatus != 0) return id;
-
-        log.AppendLine(CultureInfo.InvariantCulture,
-            $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
-
-        return -1;
-    }
-
-    int linkProgram(params ReadOnlySpan<int> shaders)
-    {
-        var id = GL.CreateProgram();
-        foreach (var shader in shaders) GL.AttachShader(id, shader);
-        GL.LinkProgram(id);
-        foreach (var shader in shaders) GL.DetachShader(id, shader);
-
-        GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
-        if (linkStatus != 0)
-        {
-            foreach (var shader in shaders) GL.DeleteShader(shader);
-            return id;
-        }
-
-        log.AppendLine(GL.GetProgramInfoLog(id));
-        return -1;
-    }
-
-    void retrieveAttributes()
-    {
-        GL.GetProgram(SortId, GetProgramParameterName.ActiveAttributes, out var attributeCount);
-
-        attributes = new(attributeCount);
-        for (var i = 0; i < attributeCount; ++i)
-        {
-            var name = GL.GetActiveAttrib(SortId, i, out var size, out var type);
-            attributes[name] = new(size, type, GL.GetAttribLocation(SortId, name));
-        }
-    }
-
-    void retrieveUniforms()
-    {
-        GL.GetProgram(SortId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
-
-        uniforms = new(uniformCount);
-        for (var i = 0; i < uniformCount; ++i)
-        {
-            var name = GL.GetActiveUniform(SortId, i, out var size, out var type);
-            uniforms[name] = new(size, type, GL.GetUniformLocation(SortId, name));
-        }
-    }
-
-    ~Shader() => dispose();
-
-    void dispose()
-    {
-        if (!isInitialized) return;
-
-        isInitialized = false;
+        if (disposed) return;
 
         if (started) End();
 
-        if (SortId != -1) GL.DeleteProgram(SortId);
+        program.Dispose();
+        uniforms.Clear();
+
+        disposed = true;
+        GC.SuppressFinalize(this);
     }
 
-    static string addLineExtracts(string log, string code)
+    static string GetUniformIdentifier(scoped ReadOnlySpan<char> name, int index, string field)
     {
-        var errorRegex = ErrRegex();
+        if (index < 0 && field is null) return name.ToString();
 
-        var toSplit = code.Replace("\r\n", "\n").AsSpan();
-        using var splitCode = toSplit.Split(['\n']);
+        StringBuilder builder = new(name.Length + (index >= 0 ? 8 : 0) + (field?.Length + 1 ?? 0));
+        builder.Append(name);
 
-        using var sb = TempList.Create<char>();
-
-        var logSpan = log.AsSpan();
-        foreach (var line in logSpan.Split('\n'))
+        if (index >= 0) builder.Append(CultureInfo.InvariantCulture, $"[{index}]");
+        if (field is not null)
         {
-            var splitLine = logSpan[line];
-            sb.AddRange(splitLine);
-
-            if (!errorRegex.IsMatch(splitLine)) continue;
-
-            var match = errorRegex.Match(splitLine.ToString());
-
-            if (int.TryParse(match.Groups[2].ValueSpan, CultureInfo.InvariantCulture, out var lineNumber)) --lineNumber;
-
-            if (lineNumber > 0) sb.Append($"  {toSplit[splitCode[lineNumber - 1]]}\n");
-            sb.Append($"> {toSplit[splitCode[lineNumber]]}");
-
-            if (int.TryParse(match.Groups[1].ValueSpan, CultureInfo.InvariantCulture, out var character))
-                for (var i = 0; i < character + 2; ++i)
-                    sb.Add(' ');
-
-            sb.AddRange("^\n");
+            builder.Append('.');
+            builder.Append(field);
         }
 
-        return sb.AsReadOnlySpan().ToString();
+        return builder.ToString();
     }
-
-    [GeneratedRegex(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase, "en-US")]
-    private static partial Regex ErrRegex();
-
-    readonly record struct Property<TType>(int Size, TType Type, int Location);
 }

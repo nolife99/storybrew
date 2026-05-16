@@ -2,25 +2,31 @@
 
 using System;
 using System.Numerics;
+using BrewLib.Graphics.Backend;
 using SixLabors.ImageSharp;
 
-public class Texture2dRegion : IDisposable
+public class Texture2dRegion : ITextureRegion
 {
-    public readonly Texture2d BindableTexture;
     readonly Rectangle bounds;
 
-    public readonly Vector2 Size, UvOrigin, UvRatio;
+    public readonly ITexture BindableTexture;
 
-    protected Texture2dRegion(Texture2d texture, Rectangle bounds)
+    public ITexture Texture => BindableTexture;
+    public Rectangle Bounds => bounds;
+    public Size Size => bounds.Size;
+    public Vector2 UvOrigin { get; }
+    public Vector2 UvRatio { get; }
+
+    protected Texture2dRegion(ITexture texture, Rectangle bounds)
     {
-        texture ??= this as Texture2d;
+        texture ??= this as ITexture;
         BindableTexture = texture!;
 
         this.bounds = bounds;
 
-        Size = new(bounds.Width, bounds.Height);
-        UvOrigin = new Vector2(bounds.X, bounds.Y) / new Vector2(BindableTexture.Width, BindableTexture.Height);
-        UvRatio = Vector2.One / new Vector2(BindableTexture.Width, BindableTexture.Height);
+        UvOrigin = new Vector2(bounds.X, bounds.Y) /
+            new Vector2(BindableTexture.Size.Width, BindableTexture.Size.Height);
+        UvRatio = Vector2.One / new Vector2(BindableTexture.Size.Width, BindableTexture.Size.Height);
     }
 
     public int X => bounds.X;

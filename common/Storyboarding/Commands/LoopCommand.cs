@@ -1,66 +1,31 @@
-﻿namespace StorybrewCommon.Storyboarding.Commands;
+namespace StorybrewCommon.Storyboarding.Commands;
 
-using System;
-using System.Linq;
-using BrewLib.Util;
+using StorybrewCommon.Storyboarding.Display;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Tiny.PooledCollections.Generic.Temporary;
 
 #pragma warning disable CS1591
-public sealed class LoopCommand : CommandGroup
+public readonly struct LoopCommand
 {
-    public LoopCommand(float startTime, int loopCount)
+    readonly CommandGroup group;
+
+    internal LoopCommand(CommandGroup group, float startTime, int loopCount)
     {
+        this.group = group;
         StartTime = startTime;
         LoopCount = loopCount;
     }
 
-    public int LoopCount { get; private set; }
+    public int Id => group.Id;
+    public float StartTime { get; }
+    public int LoopCount { get; }
+    public bool IsActive => group.IsActive;
 
-    /// <inheritdoc/>
-    public override float EndTime
-    {
-        get => StartTime + CommandsEndTime * LoopCount;
-        protected set => LoopCount = (int)((value - StartTime) / CommandsEndTime);
-    }
+    public void End() => group.End();
 
-    public override int GetHashCode()
-    {
-        HashCode header = new();
-        header.Add('L');
-        header.Add(StartTime);
-        header.Add(LoopCount);
-        foreach (var command in commands) header.Add(command);
-        return header.ToHashCode();
-    }
+    public bool Add(ICommand command) => group.Add(command);
+    public void AddCommand(ICommand command, float offset = 0) => group.AddCommand(command, offset);
 
-    public override void EndGroup()
-    {
-        var commandsStartTime = CommandsStartTime;
-        if (commandsStartTime > 0)
-        {
-            StartTime += commandsStartTime;
-            foreach (var command in commands) ((IOffsetable)command).Offset(-commandsStartTime);
-        }
-
-        base.EndGroup();
-    }
-
-    public override bool IsFragmentableAt(float time)
-    {
-        for (var i = 1; i < LoopCount - 1; i++)
-            if (time == StartTime + i * CommandsEndTime)
-                return true;
-
-        return false;
-    }
-
-    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
-        => StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"L,{(CommandDecimal)(exportSettings.UseFloatForTime ? StartTime : float.Round(StartTime))},{LoopCount}");
-
-    public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
-
-    public bool Equals(LoopCommand other)
-        => other.StartTime == StartTime && other.LoopCount == LoopCount && commands.SequenceEqual(other.commands);
+    public void AddCommand<TValue>(CommandTimeline<TValue>.Command command, float offset = 0)
+        where TValue : struct, ICommandValue<TValue>
+        => group.AddCommand(command, offset);
 }

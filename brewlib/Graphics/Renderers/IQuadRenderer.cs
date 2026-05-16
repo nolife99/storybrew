@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 using BrewLib.Graphics.Textures;
 using SixLabors.ImageSharp.PixelFormats;
 
-public interface IQuadRenderer : IRenderer
+public interface IQuadRenderer : IPrimitiveRenderer
 {
-    internal void Draw(scoped ref readonly QuadPrimitive quad, Texture2dRegion texture);
+    internal void Draw(scoped ref readonly QuadPrimitive quad, ITextureRegion texture);
 }
 
 [StructLayout(LayoutKind.Sequential)]

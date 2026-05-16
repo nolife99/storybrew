@@ -10,16 +10,19 @@ public sealed class TextureMultiAtlas2d : IDisposable
 {
     readonly PooledList<TextureAtlas2d> atlases = [];
     readonly string description;
+    readonly ITextureFactory textureFactory;
     readonly TextureOptions textureOptions;
     readonly int width, height, padding;
-    PooledList<Texture2d> oversizeTextures;
+    PooledList<ITextureRegion> oversizeTextures;
 
-    public TextureMultiAtlas2d(int width,
+    public TextureMultiAtlas2d(ITextureFactory textureFactory,
+        int width,
         int height,
         string description,
         TextureOptions textureOptions = null,
         int padding = 0)
     {
+        this.textureFactory = textureFactory;
         this.width = width;
         this.height = height;
         this.description = description;
@@ -29,7 +32,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
         pushAtlas();
     }
 
-    public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
+    public ITextureRegion AddRegion(Image<Rgba32> bitmap)
     {
         if (bitmap.Width * bitmap.Height > width * height) return loadOversized(bitmap);
 
@@ -46,18 +49,18 @@ public sealed class TextureMultiAtlas2d : IDisposable
         return pushAtlas().AddRegion(bitmap);
     }
 
-    Texture2d loadOversized(Image<Rgba32> bitmap)
+    ITextureRegion loadOversized(Image<Rgba32> bitmap)
     {
         SDL.LogWarn(LogCategory.Video, $"Bitmap \"{bitmap.Size}\" doesn't fit in this atlas");
 
-        var texture = Texture2d.Load(bitmap, textureOptions);
+        var texture = textureFactory.Load(bitmap, textureOptions);
         (oversizeTextures ??= []).Add(texture);
         return texture;
     }
 
     TextureAtlas2d pushAtlas()
     {
-        TextureAtlas2d atlas = new(width, height, textureOptions, padding);
+        TextureAtlas2d atlas = new(textureFactory, width, height, textureOptions, padding);
         atlases.Add(atlas);
         return atlas;
     }

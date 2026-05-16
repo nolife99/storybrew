@@ -1,4 +1,4 @@
-﻿namespace StorybrewCommon.Storyboarding.Display;
+namespace StorybrewCommon.Storyboarding.Display;
 
 using System.Runtime.CompilerServices;
 using StorybrewCommon.Storyboarding.Commands;
@@ -9,40 +9,64 @@ using StorybrewCommon.Storyboarding.CommandValues;
 /// time.
 /// </summary>
 /// <typeparam name="TValue"> The type of value that this command changes over time. </typeparam>
-/// <seealso cref="Command{TValue}"/>
 public readonly struct CommandResult<TValue> where TValue : struct, ICommandValue<TValue>
 {
-    internal readonly Command<TValue> Command;
-    readonly float timeOffset;
+    internal readonly CommandChannel<TValue> Channel;
+    internal readonly int Index;
 
-    public readonly float StartTime, EndTime;
+    readonly float TimeOffset;
+
+    public float StartTime
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Channel.StartTimeAt(Index) + TimeOffset;
+    }
+
+    public float EndTime
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Channel.EndTimeAt(Index) + TimeOffset;
+    }
 
     public TValue StartValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Command.StartValue;
+        get => Channel.StartValueAt(Index);
     }
 
     public TValue EndValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Command.EndValue;
+        get => Channel.EndValueAt(Index);
+    }
+
+    public OsbEasing Easing
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Channel.EasingAt(Index);
+    }
+
+    public CommandKind Kind
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Channel.KindAt(Index);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal CommandResult(Command<TValue> command, float timeOffset = 0)
+    internal CommandResult(CommandChannel<TValue> channel, int index, float timeOffset = 0)
     {
-        Command = command;
-        this.timeOffset = timeOffset;
-
-        StartTime = command.startTime + timeOffset;
-        EndTime = command.endTime + timeOffset;
+        Channel = channel;
+        Index = index;
+        TimeOffset = timeOffset;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandResult<TValue> WithoutOffset() => new(Channel, Index);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsBefore(CommandResult<TValue> other)
         => StartTime < other.StartTime || StartTime == other.StartTime && EndTime < other.EndTime;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TValue ValueAtTime(float time) => Command.ValueAtTime(time - timeOffset);
+    public TValue ValueAtTime(float time) => Channel.ValueAtIndex(Index, time - TimeOffset);
 }

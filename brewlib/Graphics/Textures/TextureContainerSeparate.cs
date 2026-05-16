@@ -1,6 +1,8 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using BrewLib.Graphics.Backend;
+using BrewLib.Graphics.Backend.OpenGL;
 using BrewLib.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -8,13 +10,25 @@ using Tiny.PooledCollections.Generic;
 
 public sealed class TextureContainerSeparate : TextureContainer
 {
+    readonly ITextureFactory textureFactory;
     readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
-    readonly PooledDictionary<string, Texture2d> textures;
-    readonly PooledDictionary<string, Texture2d>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+    readonly PooledDictionary<string, ITextureRegion> textures;
+    readonly PooledDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
 
     public TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
+        : this(DrawState.Backend?.TextureFactory ?? new OpenGlTextureFactory(DrawState.Backend),
+            resourceContainer,
+            textureOptions)
     {
+    }
+
+    public TextureContainerSeparate(ITextureFactory textureFactory,
+        ResourceContainer resourceContainer = null,
+        TextureOptions textureOptions = null)
+    {
+        this.textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
+            new OpenGlTextureFactory(DrawState.Backend);
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
 
@@ -31,23 +45,26 @@ public sealed class TextureContainerSeparate : TextureContainer
                 if (texture is not null)
                 {
                     var size = texture.Size;
-                    pixels += (long)(size.X * size.Y);
+                    pixels += size.Width * size.Height;
                 }
 
             return pixels * 4;
         }
     }
 
-    public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
+    public ITextureRegion Get(scoped ReadOnlySpan<char> filename)
     {
         if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
 
         var str = filename.ToString();
-        return textures[str] = Texture2d.Load(str, resourceContainer, textureOptions);
+        using var bitmap = TextureLoader.LoadBitmap(str, resourceContainer);
+        return textures[str] = bitmap is not null ?
+            textureFactory.Load(bitmap, textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer)) :
+            null;
     }
 
-    public Texture2dRegion Add(Image<Rgba32> bitmap, TextureOptions options = null)
-        => Texture2d.Load(bitmap, textureOptions);
+    public ITextureRegion Add(Image<Rgba32> bitmap, TextureOptions options = null)
+        => bitmap is not null ? textureFactory.Load(bitmap, options ?? textureOptions) : null;
 
     #region IDisposable Support
 

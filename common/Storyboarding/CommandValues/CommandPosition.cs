@@ -47,7 +47,7 @@ public readonly record struct CommandPosition : ICommandValue<CommandPosition>,
 
     TempList<char> ICommandValue<CommandPosition>.ToOsbString(ExportSettings exportSettings)
         => StringHelper.Interpolate(exportSettings.NumberFormat,
-            $"{(exportSettings.UseFloatForMove ? X : (int)float.Round(X))},{(exportSettings.UseFloatForMove ? Y : (int)float.Round(Y))}");
+            $"{(exportSettings.UseFloatForMove ? X : float.ConvertToIntegerNative<int>(float.Round(X)))},{(exportSettings.UseFloatForMove ? Y : float.ConvertToIntegerNative<int>(float.Round(Y)))}");
 
     /// <inheritdoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

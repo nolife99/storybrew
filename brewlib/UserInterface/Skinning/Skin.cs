@@ -296,7 +296,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     {
         if (fieldType.IsEnum) return (data, _, _) => Enum.Parse(fieldType, data.Value<string>());
 
-        while (fieldType != typeof(object))
+        while (fieldType is not null && fieldType != typeof(object))
         {
             var parser = fieldParsers.GetValueRefOrNullRef(fieldType);
             if (parser is not null) return parser;
@@ -315,6 +315,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             [typeof(double)] = (data, _, _) => data.Value<double>(),
             [typeof(int)] = (data, _, _) => data.Value<int>(),
             [typeof(bool)] = (data, _, _) => data.Value<bool>(),
+            [typeof(ITextureRegion)] = (data, _, skin) => skin.TextureContainer.Get(data.Value<string>()),
             [typeof(Texture2dRegion)] = (data, _, skin) => skin.TextureContainer.Get(data.Value<string>()),
             [typeof(Drawable)] = (data, constants, skin) => skin.loadDrawable(data.Value<TinyToken>(), constants),
             [typeof(Vector2)] = (data, constants, _) =>
