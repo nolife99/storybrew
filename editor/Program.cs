@@ -151,13 +151,7 @@ public static class Program
 
     static GraphicsBackendKind getGraphicsBackendKind()
     {
-        var backend = Environment.GetEnvironmentVariable("STORYBREW_GRAPHICS");
-        return backend is not null &&
-               (backend.Equals("sdl", StringComparison.OrdinalIgnoreCase) ||
-                backend.Equals("sdlgpu", StringComparison.OrdinalIgnoreCase) ||
-                backend.Equals("sdl-gpu", StringComparison.OrdinalIgnoreCase)) ?
-            GraphicsBackendKind.SdlGpu :
-            GraphicsBackendKind.OpenGl;
+        return GraphicsBackendKind.SdlGpu;
     }
 
     static IGraphicsBackend createGraphicsBackend(GraphicsBackendKind backendKind, nint window)
@@ -170,6 +164,7 @@ public static class Program
 #else
                 debug: false
 #endif
+                , "direct3d12"
             ),
             _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
         };

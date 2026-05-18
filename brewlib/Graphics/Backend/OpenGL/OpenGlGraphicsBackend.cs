@@ -28,19 +28,23 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     public IGraphicsDevice Device { get; }
     public IRendererFactory RendererFactory => this;
     public IGraphicsBufferFactory Buffers { get; }
+    public ITransientGraphicsBufferFactory TransientBuffers { get; }
     public IRenderPipelineFactory RenderPipelines { get; }
     public IShaderAssetLoader ShaderAssets { get; } = new EmbeddedShaderAssetLoader();
     public IShaderProgramFactory ShaderPrograms { get; }
     public ITextureFactory TextureFactory { get; }
+    public IAsyncTextureUploader TextureUploader { get; }
 
     public OpenGlGraphicsBackend()
     {
         var device = new OpenGlGraphicsDevice();
         Device = device;
         Buffers = new OpenGlGraphicsBufferFactory();
+        TransientBuffers = new OpenGlTransientGraphicsBufferFactory(this);
         RenderPipelines = new OpenGlRenderPipelineFactory(this, device);
         ShaderPrograms = new OpenGlShaderProgramFactory(device);
         TextureFactory = new OpenGlTextureFactory(this);
+        TextureUploader = new OpenGlAsyncTextureUploader(this);
     }
 
     public bool SupportsShaderExtension(string extensionName)
@@ -89,6 +93,9 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
             glVersion is not null &&
             (glVersion.Major > major || glVersion.Major == major && glVersion.Minor >= minor);
     }
+
+    internal IGpuUploadFence CreateUploadFence()
+        => new OpenGlUploadFence(GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0));
 
     public void Dispose()
     {

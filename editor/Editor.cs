@@ -37,9 +37,9 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
         screenLayerManager.Dispose();
         overlay.Dispose();
         overlayCamera.Dispose();
-        drawContext.Dispose();
         Skin.Dispose();
         DrawState.Cleanup();
+        drawContext.Dispose();
     }
 
     public void Initialize(DisplayMode displayDevice)

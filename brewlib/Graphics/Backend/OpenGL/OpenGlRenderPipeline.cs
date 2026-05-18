@@ -79,14 +79,18 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
     }
 
     public void BindVertexBuffer(int slot, IGraphicsBuffer buffer)
+        => BindVertexBuffer(slot, buffer, 0);
+
+    public void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
         if (buffer is not OpenGlGraphicsBuffer openGlBuffer || openGlBuffer.Target != BufferTarget.ArrayBuffer)
             throw new InvalidOperationException($"{nameof(OpenGlRenderPipeline)} can only bind OpenGL vertex buffers");
 
         ref var binding = ref getVertexBuffer(slot);
-        if (binding.BufferId == openGlBuffer.BufferId) return;
+        if (binding.BufferId == openGlBuffer.BufferId && binding.BufferOffset == offset) return;
 
         GL.BindVertexArray(vertexArrayId);
         openGlBuffer.Bind();
@@ -102,12 +106,13 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
                 toOpenGlVertexAttributeType(element.Format),
                 element.Format.IsNormalized(),
                 binding.Layout.Stride,
-                element.Offset);
+                offset + element.Offset);
 
             GL.VertexAttribDivisor(location, binding.Layout.InputRate == VertexInputRate.Instance ? 1 : 0);
         }
 
         binding.BufferId = openGlBuffer.BufferId;
+        binding.BufferOffset = offset;
         if (!bound) GL.BindVertexArray(0);
     }
 
@@ -182,10 +187,12 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         {
             Layout = layout;
             BufferId = -1;
+            BufferOffset = 0;
         }
 
         public VertexBufferLayout Layout { get; }
         public int BufferId { get; set; }
+        public int BufferOffset { get; set; }
     }
 }
 

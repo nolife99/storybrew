@@ -4,6 +4,7 @@ using System;
 using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Backend.OpenGL;
 using BrewLib.IO;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
@@ -65,6 +66,28 @@ public sealed class TextureContainerSeparate : TextureContainer
 
     public ITextureRegion Add(Image<Rgba32> bitmap, TextureOptions options = null)
         => bitmap is not null ? textureFactory.Load(bitmap, options ?? textureOptions) : null;
+
+    public ITextureRegion Add(string filename, Image<Rgba32> bitmap, TextureOptions options = null)
+    {
+        if (bitmap is null) return null;
+        filename = PathHelper.WithStandardSeparators(filename);
+
+        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+
+        return textures[filename] = textureFactory.Load(bitmap, options ?? textureOptions);
+    }
+
+    public ITextureRegion Add(string filename,
+        PreparedTextureUpload upload,
+        IAsyncTextureUploader uploader)
+    {
+        if (upload is null || uploader is null) return null;
+        filename = PathHelper.WithStandardSeparators(filename);
+
+        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+
+        return textures[filename] = uploader.Upload(upload);
+    }
 
     #region IDisposable Support
 

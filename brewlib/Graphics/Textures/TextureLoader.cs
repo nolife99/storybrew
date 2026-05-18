@@ -1,6 +1,8 @@
 namespace BrewLib.Graphics.Textures;
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using BrewLib.IO;
 using SDL3;
 using SixLabors.ImageSharp;
@@ -16,6 +18,26 @@ public static class TextureLoader
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
         if (stream is not null) return Image.Load<Rgba32>(stream);
+
+        SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
+        return null;
+    }
+
+    public static async Task<Image<Rgba32>> LoadBitmapAsync(string filename,
+        ResourceContainer resourceContainer = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var stream = File.Exists(filename) ?
+            new FileStream(filename,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                4096,
+                FileOptions.Asynchronous | FileOptions.SequentialScan) :
+            resourceContainer?.GetStream(filename, ResourceSource.Embedded);
+
+        if (stream is not null)
+            return await Image.LoadAsync<Rgba32>(stream, cancellationToken).ConfigureAwait(false);
 
         SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
         return null;

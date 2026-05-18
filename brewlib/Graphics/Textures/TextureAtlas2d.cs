@@ -1,11 +1,10 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using osuTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Tiny.PooledCollections.Generic;
 
 public sealed class TextureAtlas2d(
     ITextureFactory textureFactory,
@@ -15,7 +14,7 @@ public sealed class TextureAtlas2d(
     int padding = 0)
     : IDisposable
 {
-    readonly PooledList<Rectangle> freeRegions = [new(0, 0, width, height)];
+    readonly List<Rectangle> freeRegions = [new(0, 0, width, height)];
     readonly IWritableTexture texture = textureFactory.Create(Color.Transparent, width, height, textureOptions);
 
     bool wasMerged;
@@ -64,14 +63,8 @@ public sealed class TextureAtlas2d(
     void FreeRegion(Texture2dAtlasRegion region)
     {
         if (disposed) return;
-
-        Rectangle freed = new(region.X, region.Y, region.Width + padding, region.Height + padding);
-        freeRegions.Add(freed);
-
-        if (DrawState.CanInvalidate && texture is Texture2d texture2d)
-            GL.InvalidateTexSubImage(texture2d.TextureId, 0, freed.X, freed.Y, 0, freed.Width, freed.Height, 1);
-
-        wasMerged = false;
+        
+        freeRegions.Add(new(region.X, region.Y, region.Width + padding, region.Height + padding));
     }
 
     void MergeRectangles()
@@ -121,6 +114,8 @@ public sealed class TextureAtlas2d(
     {
         protected override void Dispose(bool disposing)
         {
+            if (disposed) return;
+
             base.Dispose(disposing);
             parent.FreeRegion(this);
         }
@@ -135,8 +130,6 @@ public sealed class TextureAtlas2d(
         if (disposed) return;
 
         texture.Dispose();
-        freeRegions.Dispose();
-
         disposed = true;
     }
 

@@ -39,16 +39,14 @@ sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : 
 
         var loopTime = time - startTime;
         var loopDuration = LoopDuration;
-        if (loopDuration <= 0) return ValueAtIndex(Count - 1, endTimes[^1], defaultValue);
+        if (loopDuration <= 0) return ValueAtIndex(Count - 1, commands[^1].EndTime, defaultValue);
 
         if (loopTime >= LoopCount * loopDuration)
             return ValueAtIndex(Count - 1, time - (startTime + (LoopCount - 1) * loopDuration), defaultValue);
 
         if (loopTime < loopDuration) return ValueAtIndex(HasOverlap ? FindIndexSlowOverlap(loopTime) : FindIndex(loopTime), loopTime, defaultValue);
 
-        var loopNumber = float.ConvertToIntegerNative<int>(loopTime / loopDuration);
         loopTime %= loopDuration;
-
         if (loopTime <= startTimes[0])
             return ValueAtIndex(Count - 1, loopTime + loopDuration, defaultValue);
 

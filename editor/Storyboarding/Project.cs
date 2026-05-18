@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Graphics;
@@ -206,6 +208,8 @@ public sealed partial class Project : IDisposable
     }
 
     Task reloadTask;
+    Task texturePreloadTask;
+    CancellationTokenSource texturePreloadCancellation;
 
     void runReload()
     {
@@ -234,6 +238,182 @@ public sealed partial class Project : IDisposable
                     },
                     this);
             });
+    }
+
+    public void QueueTexturePreload(IEnumerable<string> texturePaths)
+    {
+        if (Disposed) return;
+
+        var previousTask = texturePreloadTask;
+        var previousCancellation = texturePreloadCancellation;
+        if (previousCancellation is not null)
+        {
+            previousCancellation.Cancel();
+            if (previousTask is null || previousTask.IsCompleted)
+                previousCancellation.Dispose();
+            else
+                _ = previousTask.ContinueWith(static (_, state) => ((CancellationTokenSource)state).Dispose(),
+                    previousCancellation,
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+        }
+
+        texturePreloadTask = null;
+        texturePreloadCancellation = null;
+
+        var paths = texturePaths
+            .Where(static path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (paths.Length == 0) return;
+
+        texturePreloadCancellation = new();
+        var cancellationToken = texturePreloadCancellation.Token;
+        texturePreloadTask = Task.Run(() => preloadTexturePaths(paths, cancellationToken), cancellationToken);
+        _ = texturePreloadTask.ContinueWith(static task =>
+            {
+                var exception = task.Exception?.GetBaseException();
+                if (exception is not null)
+                    SDL.LogWarn(LogCategory.Video, $"Texture preload failed: {exception}");
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    Task preloadTexturePaths(string[] texturePaths, CancellationToken cancellationToken)
+    {
+        var options = new ParallelOptions
+        {
+            CancellationToken = cancellationToken,
+            MaxDegreeOfParallelism = int.Max(1, Environment.ProcessorCount / 4),
+        };
+
+        return Parallel.ForEachAsync(texturePaths,
+            options,
+            async (texturePath, token) =>
+            {
+                if (!tryResolveTexturePath(texturePath, out var resolvedPath)) return;
+
+                Image<Rgba32> bitmap = null;
+                PreparedTextureUpload preparedUpload = null;
+                try
+                {
+                    var textureOptions = TextureLoader.LoadTextureOptions(resolvedPath);
+                    var textureUploader = DrawState.Backend?.TextureUploader;
+                    if (textureUploader is not null && TextureContainer is TextureContainerSeparate)
+                    {
+                        preparedUpload = await textureUploader.PrepareAsync(resolvedPath,
+                                textureOptions: textureOptions,
+                                cancellationToken: token)
+                            .ConfigureAwait(false);
+                        if (preparedUpload is null) return;
+
+                        token.ThrowIfCancellationRequested();
+                        await Program.Schedule(static upload => upload.Project.addPreloadedTexture(upload),
+                                new TexturePreloadUpload(this, resolvedPath, preparedUpload, textureUploader))
+                            .ConfigureAwait(false);
+                        preparedUpload = null;
+                        return;
+                    }
+
+                    bitmap = await TextureLoader.LoadBitmapAsync(resolvedPath, cancellationToken: token)
+                        .ConfigureAwait(false);
+                    if (bitmap is null) return;
+
+                    token.ThrowIfCancellationRequested();
+                    await Program.Schedule(static upload => upload.Project.addPreloadedTexture(upload),
+                            new TexturePreloadUpload(this, resolvedPath, bitmap, textureOptions))
+                        .ConfigureAwait(false);
+                    bitmap = null;
+                }
+                catch (IOException)
+                {
+                }
+                finally
+                {
+                    preparedUpload?.Dispose();
+                    bitmap?.Dispose();
+                }
+            });
+    }
+
+    bool tryResolveTexturePath(string texturePath, out string resolvedPath)
+    {
+        var mapsetPath = PathHelper.WithStandardSeparators(Path.Join(MapsetPath, texturePath));
+        if (File.Exists(mapsetPath))
+        {
+            resolvedPath = mapsetPath;
+            return true;
+        }
+
+        var assetPath = PathHelper.WithStandardSeparators(Path.Join(ProjectAssetFolderPath, texturePath));
+        if (File.Exists(assetPath))
+        {
+            resolvedPath = assetPath;
+            return true;
+        }
+
+        resolvedPath = null;
+        return false;
+    }
+
+    void addPreloadedTexture(TexturePreloadUpload upload)
+    {
+        try
+        {
+            if (!Disposed)
+            {
+                if (upload.PreparedUpload is not null &&
+                    upload.TextureUploader is not null &&
+                    TextureContainer is TextureContainerSeparate separate)
+                    separate.Add(upload.Path, upload.PreparedUpload, upload.TextureUploader);
+                else
+                    TextureContainer.Add(upload.Path, upload.Bitmap, upload.Options);
+            }
+        }
+        finally
+        {
+            upload.PreparedUpload?.Dispose();
+            upload.Bitmap?.Dispose();
+        }
+    }
+
+    readonly struct TexturePreloadUpload
+    {
+        public readonly Project Project;
+        public readonly string Path;
+        public readonly Image<Rgba32> Bitmap;
+        public readonly TextureOptions Options;
+        public readonly PreparedTextureUpload PreparedUpload;
+        public readonly IAsyncTextureUploader TextureUploader;
+
+        public TexturePreloadUpload(Project project,
+            string path,
+            Image<Rgba32> bitmap,
+            TextureOptions options)
+        {
+            Project = project;
+            Path = path;
+            Bitmap = bitmap;
+            Options = options;
+            PreparedUpload = null;
+            TextureUploader = null;
+        }
+
+        public TexturePreloadUpload(Project project,
+            string path,
+            PreparedTextureUpload preparedUpload,
+            IAsyncTextureUploader textureUploader)
+        {
+            Project = project;
+            Path = path;
+            PreparedUpload = preparedUpload;
+            TextureUploader = textureUploader;
+            Bitmap = null;
+            Options = null;
+        }
     }
 
     #endregion
@@ -1083,6 +1263,17 @@ public sealed partial class Project : IDisposable
 
         Disposed = true;
         if (!SDL.IsMainThread()) reloadTask?.Wait();
+
+        texturePreloadCancellation?.Cancel();
+        if (!SDL.IsMainThread() && texturePreloadTask is not null)
+            try
+            {
+                texturePreloadTask.Wait();
+            }
+            catch (AggregateException ex) when (ex.InnerExceptions.All(static e => e is OperationCanceledException))
+            {
+            }
+        texturePreloadCancellation?.Dispose();
 
         effectUpdateQueue.Dispose();
         assetWatcher.Dispose();

@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Collections.Generic;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -111,7 +112,13 @@ public class ScriptedEffect : Effect
             return;
         }
 
-        foreach (var layer in context.EditorLayers) layer.PostProcess();
+        HashSet<string> texturePaths = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var layer in context.EditorLayers)
+        {
+            layer.PostProcess();
+            layer.CollectTexturePaths(texturePaths);
+        }
+        Project.QueueTexturePreload(texturePaths);
 
         await changeStatus(EffectStatus.Ready, log: context.Log);
         if (Disposed)

@@ -35,7 +35,8 @@ public sealed class DrawContext : IDisposable
     {
         if (disposed) return;
 
-        foreach (var disposable in disposables) disposable.Dispose();
+        for (var i = disposables.Count - 1; i >= 0; --i)
+            disposables[i].Dispose();
         disposed = true;
     }
 

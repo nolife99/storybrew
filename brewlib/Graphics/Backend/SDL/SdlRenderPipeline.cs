@@ -2,21 +2,26 @@ namespace BrewLib.Graphics.Backend.SDL;
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 using SDL3;
 
 public sealed class SdlRenderPipeline : IRenderPipeline
 {
     readonly SdlGraphicsBackend backend;
     readonly SdlGraphicsDevice device;
-    readonly IGraphicsBuffer[] vertexBuffers;
+    readonly VertexBufferBinding[] vertexBuffers;
     readonly Dictionary<BlendingFactorState, nint> graphicsPipelines = [];
 
     nint vertexShader, fragmentShader;
+    uint boundRenderPassSerial;
+    BlendingFactorState boundBlendState;
+    bool pipelineBindingDirty = true;
     bool disposed;
 
     public SdlRenderPipeline(SdlGraphicsBackend backend, RenderPipelineDescription description)
@@ -24,7 +29,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         this.backend = backend;
         device = (SdlGraphicsDevice)backend.Device;
         Description = description;
-        vertexBuffers = new IGraphicsBuffer[description.VertexInput.Buffers.Length];
+        vertexBuffers = new VertexBufferBinding[description.VertexInput.Buffers.Length];
 
         if (description.ShaderSource.Language != ShaderSourceLanguage.Hlsl)
             throw new NotSupportedException(
@@ -53,16 +58,15 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         => new SdlRenderUniform<T>(this, uniform.Stage, uniform.Slot, uniform.Name);
 
     public IResourceSet CreateResourceSet()
-        => new SdlResourceSet(backend, Description.PipelineLayout);
+        => new SdlResourceSet(backend, this, Description.PipelineLayout);
 
     public void Bind()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var renderPass = requireRenderPass();
-        SDL.BindGPUGraphicsPipeline(renderPass, getGraphicsPipeline(device.BlendState));
-        bindVertexBuffers(renderPass);
-        device.ApplyRenderPassState(renderPass);
+        var renderPass = backend.RenderPass;
+        if (renderPass != nint.Zero) EnsureBound(renderPass);
+        else pipelineBindingDirty = true;
     }
 
     public void Unbind()
@@ -70,8 +74,12 @@ public sealed class SdlRenderPipeline : IRenderPipeline
     }
 
     public void BindVertexBuffer(int slot, IGraphicsBuffer buffer)
+        => BindVertexBuffer(slot, buffer, buffer is SdlGraphicsBuffer sdlBuffer ? sdlBuffer.BindingOffset : 0);
+
+    public void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
         if (buffer is not SdlGraphicsBuffer)
             throw new InvalidOperationException($"{nameof(SdlRenderPipeline)} can only bind SDL GPU buffers");
@@ -80,7 +88,11 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         for (var i = 0; i < buffers.Length; ++i)
             if (buffers[i].Slot == slot)
             {
-                vertexBuffers[i] = buffer;
+                vertexBuffers[i] = new((SdlGraphicsBuffer)buffer, offset);
+                pipelineBindingDirty = true;
+                var renderPass = backend.RenderPass;
+                if (renderPass != nint.Zero)
+                    bindVertexBuffer(renderPass, buffers[i], (SdlGraphicsBuffer)buffer, offset);
                 return;
             }
 
@@ -93,7 +105,9 @@ public sealed class SdlRenderPipeline : IRenderPipeline
 
         // Don't rebind - pipeline and resources are already bound by BeginRendering() and Flush()
         // Rebinding here would invalidate texture bindings set in Flush()
-        SDL.DrawGPUPrimitives(requireRenderPass(),
+        var renderPass = requireRenderPass();
+        EnsureBound(renderPass);
+        SDL.DrawGPUPrimitives(renderPass,
             (uint)command.VertexCount,
             1,
             (uint)command.FirstVertex,
@@ -106,7 +120,9 @@ public sealed class SdlRenderPipeline : IRenderPipeline
 
         // Don't rebind - pipeline and resources are already bound by BeginRendering() and Flush()
         // Rebinding here would invalidate texture bindings set in Flush()
-        SDL.DrawGPUPrimitives(requireRenderPass(),
+        var renderPass = requireRenderPass();
+        EnsureBound(renderPass);
+        SDL.DrawGPUPrimitives(renderPass,
             (uint)command.VertexCount,
             (uint)command.InstanceCount,
             (uint)command.FirstVertex,
@@ -118,10 +134,10 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         if (disposed) return;
 
         foreach (var pipeline in graphicsPipelines.Values)
-            SDL.ReleaseGPUGraphicsPipeline(backend.DeviceHandle, pipeline);
+            backend.ReleaseGraphicsPipeline(pipeline);
 
-        if (vertexShader != nint.Zero) SDL.ReleaseGPUShader(backend.DeviceHandle, vertexShader);
-        if (fragmentShader != nint.Zero) SDL.ReleaseGPUShader(backend.DeviceHandle, fragmentShader);
+        backend.ReleaseShader(vertexShader);
+        backend.ReleaseShader(fragmentShader);
 
         graphicsPipelines.Clear();
         vertexShader = nint.Zero;
@@ -129,34 +145,28 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         disposed = true;
     }
 
-    internal void PushUniform<T>(ShaderBindingStage stage, uint slot, string name, T value)
+    internal void PushUniform<T>(ShaderBindingStage stage, uint slot, string name, scoped ref readonly T value)
     {
         var commandBuffer = backend.CommandBuffer;
         if (commandBuffer == nint.Zero)
             throw new InvalidOperationException($"SDL uniform '{name}' cannot be pushed outside an active GPU frame");
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            throw new NotSupportedException($"SDL uniform '{name}' must be an unmanaged value");
 
-        var size = Marshal.SizeOf<T>();
-        var pointer = Marshal.AllocHGlobal(size);
-        try
+        var size = Unsafe.SizeOf<T>();
+        var pointer = UnsafeMemory.AsPointerUnconstrained(in value);
+        switch (stage)
         {
-            Marshal.StructureToPtr(value, pointer, false);
-            switch (stage)
-            {
-                case ShaderBindingStage.Vertex:
-                    SDL.PushGPUVertexUniformData(commandBuffer, slot, pointer, (uint)size);
-                    break;
+            case ShaderBindingStage.Vertex:
+                SDL.PushGPUVertexUniformData(commandBuffer, slot, pointer, (uint)size);
+                break;
 
-                case ShaderBindingStage.Fragment:
-                    SDL.PushGPUFragmentUniformData(commandBuffer, slot, pointer, (uint)size);
-                    break;
+            case ShaderBindingStage.Fragment:
+                SDL.PushGPUFragmentUniformData(commandBuffer, slot, pointer, (uint)size);
+                break;
 
-                default:
-                    throw new NotSupportedException($"SDL graphics pipelines do not support {stage} uniforms");
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(pointer);
+            default:
+                throw new NotSupportedException($"SDL graphics pipelines do not support {stage} uniforms");
         }
     }
 
@@ -271,27 +281,46 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         var layouts = Description.VertexInput.Buffers;
         for (var i = 0; i < vertexBuffers.Length; ++i)
         {
-            if (vertexBuffers[i] is not SdlGraphicsBuffer buffer)
+            var binding = vertexBuffers[i];
+            if (binding.Buffer is null)
                 throw new InvalidOperationException($"Vertex buffer slot {layouts[i].Slot} is not bound");
 
-            if (buffer.BufferHandle == nint.Zero)
-                continue;
-
-            SDL.GPUBufferBinding[] bindings =
-            [
-                new() { Buffer = buffer.BufferHandle }
-            ];
-            SDL.BindGPUVertexBuffers(renderPass, (uint)layouts[i].Slot, bindings, 1);
+            bindVertexBuffer(renderPass, layouts[i], binding.Buffer, binding.Offset);
         }
     }
 
-    nint requireRenderPass()
+    static void bindVertexBuffer(nint renderPass, VertexBufferLayout layout, SdlGraphicsBuffer buffer, int offset)
     {
-        var renderPass = backend.RenderPass;
-        if (renderPass == nint.Zero)
-            throw new InvalidOperationException("SDL draw submission requires an active GPU render pass");
+        if (buffer.BufferHandle == nint.Zero)
+            return;
 
-        return renderPass;
+        Span<SDL.GPUBufferBinding> bindings = stackalloc SDL.GPUBufferBinding[1];
+        bindings[0] = new()
+        {
+            Buffer = buffer.BufferHandle,
+            Offset = (uint)offset
+        };
+        SDL.BindGPUVertexBuffers(renderPass, (uint)layout.Slot, bindings.AsPointer(), 1);
+    }
+
+    nint requireRenderPass()
+        => backend.RequireRenderPass();
+
+    internal void EnsureBound(nint renderPass)
+    {
+        var blendState = device.BlendState;
+        if (!pipelineBindingDirty &&
+            boundRenderPassSerial == backend.RenderPassSerial &&
+            boundBlendState == blendState)
+            return;
+
+        SDL.BindGPUGraphicsPipeline(renderPass, getGraphicsPipeline(blendState));
+        bindVertexBuffers(renderPass);
+        device.ApplyRenderPassState(renderPass);
+
+        boundRenderPassSerial = backend.RenderPassSerial;
+        boundBlendState = blendState;
+        pipelineBindingDirty = false;
     }
 
     static SDL.GPUColorTargetBlendState toSdlBlendState(BlendingFactorState state)
@@ -357,60 +386,78 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         uint slot,
         string name) : IRenderUniform<T>
     {
-        public void SetValue(T value) => pipeline.PushUniform(stage, slot, name, value);
+        public void SetValue(T value) => pipeline.PushUniform(stage, slot, name, in value);
     }
+
+    readonly record struct VertexBufferBinding(SdlGraphicsBuffer Buffer, int Offset);
 }
 
 public sealed class SdlResourceSet : IResourceSet
 {
     readonly SdlGraphicsBackend backend;
-    readonly TextureBindingLayout[] textureBindings;
-    readonly ITexture[][] textureSets;
+    readonly SdlRenderPipeline pipeline;
+    readonly TextureBinding[] textureBindings;
     bool disposed;
 
-    public SdlResourceSet(SdlGraphicsBackend backend, PipelineLayout layout)
+    public SdlResourceSet(SdlGraphicsBackend backend, SdlRenderPipeline pipeline, PipelineLayout layout)
     {
         this.backend = backend;
-        textureBindings = layout.TextureBindings.ToArray();
-        textureSets = new ITexture[textureBindings.Length][];
+        this.pipeline = pipeline;
+
+        var pipelineTextureBindings = layout.TextureBindings;
+        textureBindings = new TextureBinding[pipelineTextureBindings.Length];
+        for (var i = 0; i < pipelineTextureBindings.Length; ++i)
+        {
+            var textureBinding = pipelineTextureBindings[i];
+            textureBindings[i] = new(textureBinding.Binding, textureBinding.Capacity);
+        }
     }
 
     public void SetTextures(int binding, scoped ReadOnlySpan<ITexture> textures)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var textureBindingIndex = getTextureBindingIndex(binding);
-        var textureBinding = textureBindings[textureBindingIndex];
-        if (textures.Length > textureBinding.Capacity)
+        ref var textureBinding = ref getTextureBinding(binding);
+        if (textures.Length > textureBinding.Textures.Length)
             throw new ArgumentException(
-                $"Texture binding {binding} accepts at most {textureBinding.Capacity} textures",
+                $"Texture binding {binding} accepts at most {textureBinding.Textures.Length} textures",
                 nameof(textures));
 
-        var targetTextures = new ITexture[textures.Length];
-        textures.CopyTo(targetTextures);
-        textureSets[textureBindingIndex] = targetTextures;
+        textures.CopyTo(textureBinding.Textures);
+        if (textureBinding.Count > textures.Length)
+            Array.Clear(textureBinding.Textures, textures.Length, textureBinding.Count - textures.Length);
+        textureBinding.Count = textures.Length;
     }
 
     public void Bind()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var renderPass = backend.RenderPass;
-        if (renderPass == nint.Zero)
-            throw new InvalidOperationException("SDL resource binding requires an active GPU render pass");
+        var renderPass = backend.RequireRenderPass();
+        pipeline.EnsureBound(renderPass);
+
+        var maxCount = 0;
+        for (var i = 0; i < textureBindings.Length; ++i)
+            maxCount = int.Max(maxCount, textureBindings[i].Count);
+
+        Span<SDL.GPUTextureSamplerBinding> samplerBindings = maxCount <= 0 ?
+            [] :
+            stackalloc SDL.GPUTextureSamplerBinding[maxCount];
 
         for (var i = 0; i < textureBindings.Length; ++i)
         {
-            var textures = textureSets[i];
-            if (textures is null || textures.Length == 0) continue;
+            ref var textureBinding = ref textureBindings[i];
+            var count = textureBinding.Count;
+            if (count == 0) continue;
 
-            var samplerBindings = new SDL.GPUTextureSamplerBinding[textures.Length];
-            for (var j = 0; j < textures.Length; ++j)
+            var bindingSpan = samplerBindings[..count];
+            var textures = textureBinding.Textures;
+            for (var j = 0; j < count; ++j)
             {
                 if (textures[j] is not SdlTexture texture)
                     throw new InvalidOperationException($"{nameof(SdlResourceSet)} can only bind SDL textures");
 
-                samplerBindings[j] = new()
+                bindingSpan[j] = new()
                 {
                     Texture = texture.TextureHandle,
                     Sampler = texture.SamplerHandle
@@ -418,9 +465,9 @@ public sealed class SdlResourceSet : IResourceSet
             }
 
             SDL.BindGPUFragmentSamplers(renderPass,
-                (uint)textureBindings[i].Binding,
-                samplerBindings,
-                (uint)samplerBindings.Length);
+                (uint)textureBinding.Binding,
+                bindingSpan.AsPointer(),
+                (uint)count);
         }
     }
 
@@ -428,19 +475,32 @@ public sealed class SdlResourceSet : IResourceSet
     {
         if (disposed) return;
 
-        for (var i = 0; i < textureSets.Length; ++i) textureSets[i] = null;
+        for (var i = 0; i < textureBindings.Length; ++i)
+            Array.Clear(textureBindings[i].Textures, 0, textureBindings[i].Count);
         disposed = true;
     }
 
-    int getTextureBindingIndex(int binding)
+    ref TextureBinding getTextureBinding(int binding)
     {
         for (var i = 0; i < textureBindings.Length; ++i)
             if (textureBindings[i].Binding == binding)
-                return i;
+                return ref textureBindings[i];
 
         throw new ArgumentException($"Texture binding {binding} is not part of this resource set", nameof(binding));
     }
 
+    struct TextureBinding
+    {
+        public TextureBinding(int binding, int capacity)
+        {
+            Binding = binding;
+            Textures = new ITexture[capacity];
+        }
+
+        public int Binding;
+        public ITexture[] Textures;
+        public int Count;
+    }
 }
 
 public sealed class SdlRenderPipelineFactory(SdlGraphicsBackend backend) : IRenderPipelineFactory

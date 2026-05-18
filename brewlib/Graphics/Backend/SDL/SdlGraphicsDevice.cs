@@ -13,7 +13,6 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
     BlendingFactorState blendState = new(BlendingMode.AlphaBlend);
     Rectangle viewport;
     Rectangle? scissor;
-    uint swapchainHeight;
     bool disposed;
 
     public SdlGraphicsDevice(SdlGraphicsBackend backend, nint deviceHandle)
@@ -36,7 +35,6 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
     public void SetViewport(Rectangle viewport)
     {
         this.viewport = viewport;
-        swapchainHeight = backend?.SwapchainHeight ?? 0;
         if (backend?.RenderPass != nint.Zero) applyViewport(backend.RenderPass);
     }
 
@@ -95,8 +93,8 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
     {
         if (viewport.Width <= 0 || viewport.Height <= 0) return;
 
-        // Convert from OpenGL coordinates (bottom-left origin) to SDL GPU coordinates (top-left origin)
-        var y = swapchainHeight > 0 ? (int)swapchainHeight - viewport.Y - viewport.Height : viewport.Y;
+        var framebufferHeight = getFramebufferHeight();
+        var y = framebufferHeight - viewport.Y - viewport.Height;
 
         SDL.GPUViewport gpuViewport = new()
         {
@@ -117,8 +115,8 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
         var region = scissor ?? viewport;
         if (region.Width <= 0 || region.Height <= 0) return;
 
-        // Convert from OpenGL framebuffer coordinates (bottom-left origin) to SDL GPU coordinates (top-left origin)
-        var y = swapchainHeight > 0 ? (int)swapchainHeight - region.Y - region.Height : region.Y;
+        var framebufferHeight = getFramebufferHeight();
+        var y = framebufferHeight - region.Y - region.Height;
         SDL.Rect rect = new()
         {
             X = region.X,
@@ -127,5 +125,11 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
             H = region.Height
         };
         SDL.SetGPUScissor(renderPass, in rect);
+    }
+
+    int getFramebufferHeight()
+    {
+        var height = backend?.SwapchainHeight ?? 0;
+        return height > 0 ? (int)height : viewport.Height;
     }
 }

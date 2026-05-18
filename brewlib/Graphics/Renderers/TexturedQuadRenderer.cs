@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -11,6 +10,7 @@ using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class TexturedQuadRenderer : IQuadRenderer
@@ -42,17 +42,20 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         new(1, 0)
     ];
 
-    readonly List<TexturedQuadInstance> instances;
     readonly TextureSlotter textureSlotter;
     readonly IRenderPipeline pipeline;
     readonly IResourceSet resources;
-    readonly IGraphicsBuffer vertexBuffer, instanceBuffer;
+    readonly IGraphicsBuffer vertexBuffer;
+    readonly ITransientGraphicsBuffer instanceBuffer;
     readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
+    readonly int instanceStride, instanceBatchCapacity;
 
     ICamera camera;
     bool disposed, rendering;
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
-    Matrix4x4 lastTransformMatrix;
+    TransientBufferAllocation instanceAllocation;
+    nint instanceData;
+    int instanceCount;
 
     public TexturedQuadRenderer(int initialBatchCapacity)
         : this(null, initialBatchCapacity)
@@ -67,7 +70,8 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         backend ??= DrawState.Backend ??
             throw new InvalidOperationException("A graphics backend must be initialized before creating renderers");
 
-        instances = new(initialBatchCapacity);
+        instanceStride = Unsafe.SizeOf<TexturedQuadInstance>();
+        instanceBatchCapacity = int.Max(1, initialBatchCapacity);
         textureSlotter = TextureSlotter.ForFragmentShader();
 
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage,
@@ -79,13 +83,14 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             GraphicsBufferTarget.Vertex,
             GraphicsBufferUsage.Static));
 
-        instanceBuffer = backend.Buffers.CreateBuffer(new(nameof(TexturedQuadRenderer) + ".Instances",
-            GraphicsBufferTarget.Vertex,
-            GraphicsBufferUsage.Stream));
+        instanceBuffer = backend.TransientBuffers.CreateBuffer(new(nameof(TexturedQuadRenderer) + ".Instances",
+                GraphicsBufferTarget.Vertex,
+                GraphicsBufferUsage.Stream),
+            getRingCapacity(instanceStride * instanceBatchCapacity));
 
         vertexBuffer.SetData<Vector2>(UnitQuadVertices);
         pipeline.BindVertexBuffer(0, vertexBuffer);
-        pipeline.BindVertexBuffer(1, instanceBuffer);
+        pipeline.BindVertexBuffer(1, instanceBuffer.Buffer);
 
     }
 
@@ -129,7 +134,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void IRenderer.EndRendering()
     {
-        if (instances.Count != 0) ((IRenderer)this).Flush();
+        if (instanceCount != 0) ((IRenderer)this).Flush();
 
         pipeline.Unbind();
         textureSlotter.Clear();
@@ -138,34 +143,33 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void IRenderer.Flush(bool canBuffer)
     {
-        var instanceCount = instances.Count;
         if (instanceCount == 0) return;
 
-        var combinedMatrix = transformMatrix * camera.ProjectionView;
-        if (combinedMatrix != lastTransformMatrix)
-        {
-            combinedMatrixUniform.SetValue(combinedMatrix);
-            lastTransformMatrix = combinedMatrix;
-        }
+        var usedBytes = instanceCount * instanceStride;
+        instanceBuffer.Commit(in instanceAllocation, usedBytes);
+
+        pipeline.Bind();
+
+        combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
+
+        pipeline.BindVertexBuffer(1, instanceAllocation.Buffer, instanceAllocation.Offset);
 
         resources.SetTextures(0, textureSlotter.Textures);
         resources.Bind();
 
-        var instanceData = CollectionsMarshal.AsSpan(instances);
-        instanceBuffer.SetData(instanceData);
-        pipeline.BindVertexBuffer(1, instanceBuffer);
-
         pipeline.DrawInstanced(new(VertexPerQuad, instanceCount));
         DrawState.CountDrawCall();
+        instanceBuffer.MarkSubmitted(in instanceAllocation, usedBytes);
 
-        instanceBuffer.Invalidate();
-
-        instances.Clear();
+        resetInstanceBatch();
         textureSlotter.Clear();
     }
 
     void IQuadRenderer.Draw(scoped ref readonly QuadPrimitive quad, ITextureRegion texture)
     {
+        if (instanceCount == instanceBatchCapacity)
+            DrawState.FlushRenderer();
+
         if (!textureSlotter.TryGetSlot(texture.Texture, out var textureSlot))
         {
             DrawState.FlushRenderer();
@@ -173,7 +177,8 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
                 throw new InvalidOperationException("Unable to allocate a texture slot for the quad batch");
         }
 
-        instances.Add(createInstance(in quad, textureSlot));
+        ensureInstanceBatch();
+        Unsafe.Add(ref instanceData.AsRef<TexturedQuadInstance>(), instanceCount++) = createInstance(in quad, textureSlot);
     }
 
     public void Dispose()
@@ -379,8 +384,26 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         disposed = true;
     }
 
+    void ensureInstanceBatch()
+    {
+        if (instanceData != nint.Zero) return;
+
+        instanceAllocation = instanceBuffer.Allocate(instanceStride * instanceBatchCapacity, 16);
+        instanceData = instanceAllocation.Data;
+    }
+
+    void resetInstanceBatch()
+    {
+        instanceAllocation = default;
+        instanceData = nint.Zero;
+        instanceCount = 0;
+    }
+
     static int OffsetOf(string fieldName)
         => (int)Marshal.OffsetOf<TexturedQuadInstance>(fieldName);
+
+    static int getRingCapacity(int batchSizeInBytes)
+        => int.Max(checked(batchSizeInBytes * 8), 1024 * 1024);
 
     [StructLayout(LayoutKind.Sequential)]
     struct TexturedQuadInstance

@@ -4,13 +4,16 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Backend;
+using BrewLib.Util;
 using SDL3;
 
 public sealed class SdlGraphicsBuffer : IGraphicsBuffer
 {
     readonly SdlGraphicsBackend backend;
 
-    nint bufferHandle;
+    nint bufferHandle, transferBufferHandle;
+    int transferBufferSize, streamOffset;
+    uint streamFrameSerial;
     bool disposed;
 
     public SdlGraphicsBuffer(SdlGraphicsBackend backend, GraphicsBufferDescription description)
@@ -25,20 +28,23 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
     public nint BufferHandle => bufferHandle;
+    public int BindingOffset { get; private set; }
 
     public void Allocate(int sizeInBytes)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
 
-        if (bufferHandle != nint.Zero) SDL.ReleaseGPUBuffer(backend.DeviceHandle, bufferHandle);
-
-        if (sizeInBytes == 0)
+        if (bufferHandle != nint.Zero)
         {
-            SizeInBytes = 0;
+            backend.ReleaseBuffer(bufferHandle);
             bufferHandle = nint.Zero;
-            return;
         }
+
+        SizeInBytes = 0;
+        BindingOffset = 0;
+
+        if (sizeInBytes == 0) return;
 
         var createInfo = new SDL.GPUBufferCreateInfo
         {
@@ -57,54 +63,32 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var sizeInBytes = data.Length * Unsafe.SizeOf<T>();
-        if (bufferHandle == nint.Zero || SizeInBytes != sizeInBytes) Allocate(sizeInBytes);
+        var sizeInBytes = checked(data.Length * Unsafe.SizeOf<T>());
         if (sizeInBytes == 0) return;
 
-        var bytes = MemoryMarshal.AsBytes(data).ToArray();
-        var transferCreateInfo = new SDL.GPUTransferBufferCreateInfo
-        {
-            Usage = SDL.GPUTransferBufferUsage.Upload,
-            Size = (uint)sizeInBytes
-        };
+        var uploadOffset = reserveUploadRegion(sizeInBytes);
+        var requiredSize = checked(uploadOffset + sizeInBytes);
+        if (bufferHandle == nint.Zero || SizeInBytes < requiredSize)
+            Allocate(getBufferAllocationSize(requiredSize));
 
-        var transferBuffer = SDL.CreateGPUTransferBuffer(backend.DeviceHandle, in transferCreateInfo);
+        BindingOffset = uploadOffset;
+        ensureTransferBuffer(sizeInBytes);
 
-        if (transferBuffer == nint.Zero)
+        var mapped = SDL.MapGPUTransferBuffer(backend.DeviceHandle, transferBufferHandle, true);
+        if (mapped == nint.Zero)
             throw new InvalidOperationException(
-                $"Unable to create SDL GPU transfer buffer for {Description.Name}: {SDL.GetError()}");
+                $"Unable to map SDL GPU transfer buffer for {Description.Name}: {SDL.GetError()}");
 
-        try
-        {
-            var mapped = SDL.MapGPUTransferBuffer(backend.DeviceHandle, transferBuffer, false);
-            if (mapped == nint.Zero)
-                throw new InvalidOperationException(
-                    $"Unable to map SDL GPU transfer buffer for {Description.Name}: {SDL.GetError()}");
+        MemoryMarshal.AsBytes(data).CopyTo(mapped.AsSpan<byte>(sizeInBytes));
+        SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBufferHandle);
 
-            Marshal.Copy(bytes, 0, mapped, bytes.Length);
-            SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
-
-            var commandBuffer = SDL.AcquireGPUCommandBuffer(backend.DeviceHandle);
-            var copyPass = SDL.BeginGPUCopyPass(commandBuffer);
-
-            var source = new SDL.GPUTransferBufferLocation { TransferBuffer = transferBuffer };
-            var destination = new SDL.GPUBufferRegion
-            {
-                Buffer = bufferHandle,
-                Size = (uint)sizeInBytes
-            };
-
-            SDL.UploadToGPUBuffer(copyPass, in source, in destination, true);
-            SDL.EndGPUCopyPass(copyPass);
-
-            if (!SDL.SubmitGPUCommandBuffer(commandBuffer))
-                throw new InvalidOperationException(
-                    $"Unable to submit SDL GPU upload for {Description.Name}: {SDL.GetError()}");
-        }
-        finally
-        {
-            SDL.ReleaseGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
-        }
+        backend.UploadBuffer(transferBufferHandle,
+            bufferHandle,
+            0,
+            (uint)uploadOffset,
+            (uint)sizeInBytes,
+            Description.Usage is not GraphicsBufferUsage.Static && uploadOffset == 0,
+            Description.Name);
     }
 
     public void Invalidate()
@@ -115,10 +99,83 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
     {
         if (disposed) return;
 
-        if (bufferHandle != nint.Zero) SDL.ReleaseGPUBuffer(backend.DeviceHandle, bufferHandle);
+        backend.ReleaseBuffer(bufferHandle);
+        backend.ReleaseTransferBuffer(transferBufferHandle);
+
         bufferHandle = nint.Zero;
+        transferBufferHandle = nint.Zero;
+        transferBufferSize = 0;
+        SizeInBytes = 0;
         disposed = true;
     }
+
+    void ensureTransferBuffer(int sizeInBytes)
+    {
+        if (transferBufferHandle != nint.Zero && transferBufferSize >= sizeInBytes) return;
+
+        backend.ReleaseTransferBuffer(transferBufferHandle);
+        transferBufferHandle = nint.Zero;
+
+        transferBufferSize = getTransferBufferAllocationSize(sizeInBytes);
+        var transferCreateInfo = new SDL.GPUTransferBufferCreateInfo
+        {
+            Usage = SDL.GPUTransferBufferUsage.Upload,
+            Size = (uint)transferBufferSize
+        };
+
+        transferBufferHandle = SDL.CreateGPUTransferBuffer(backend.DeviceHandle, in transferCreateInfo);
+        if (transferBufferHandle == nint.Zero)
+            throw new InvalidOperationException(
+                $"Unable to create SDL GPU transfer buffer for {Description.Name}: {SDL.GetError()}");
+    }
+
+    int getBufferAllocationSize(int sizeInBytes)
+    {
+        if (Description.Usage is GraphicsBufferUsage.Static) return sizeInBytes;
+
+        var minimum = int.Max(sizeInBytes, 256);
+        var current = SizeInBytes;
+        if (current <= 0) return minimum;
+
+        while (current < minimum)
+            current = checked(current * 2);
+
+        return current;
+    }
+
+    int getTransferBufferAllocationSize(int sizeInBytes)
+    {
+        if (Description.Usage is GraphicsBufferUsage.Static) return sizeInBytes;
+
+        var minimum = int.Max(sizeInBytes, 256);
+        var current = transferBufferSize;
+        if (current <= 0) return minimum;
+
+        while (current < minimum)
+            current = checked(current * 2);
+
+        return current;
+    }
+
+    int reserveUploadRegion(int sizeInBytes)
+    {
+        if (Description.Usage is GraphicsBufferUsage.Static)
+            return 0;
+
+        var frameSerial = backend.FrameSerial;
+        if (streamFrameSerial != frameSerial)
+        {
+            streamFrameSerial = frameSerial;
+            streamOffset = 0;
+        }
+
+        var offset = align(streamOffset, 16);
+        streamOffset = align(checked(offset + sizeInBytes), 16);
+        return offset;
+    }
+
+    static int align(int value, int alignment)
+        => (value + alignment - 1) & ~(alignment - 1);
 
     static SDL.GPUBufferUsageFlags toUsageFlags(GraphicsBufferTarget target)
         => target switch

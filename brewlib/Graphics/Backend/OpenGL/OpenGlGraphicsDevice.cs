@@ -100,15 +100,15 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
 
     public int BindTexture(ITexture texture)
     {
-        if (texture is not Texture2d texture2d)
+        if (texture is not OpenGlTexture openGlTexture)
             throw new InvalidOperationException($"{nameof(OpenGlGraphicsDevice)} can only bind OpenGL textures");
 
-        return BindTexture(texture2d.TextureId);
+        return BindTexture(openGlTexture.TextureId);
     }
 
     public int BindTexture(int textureId) => BindTextures([textureId]);
 
-    public void BindTextures(scoped ReadOnlySpan<ITexture> textures, Span<int> textureUnits)
+    public void BindTextures(scoped ReadOnlySpan<ITexture> textures, scoped Span<int> textureUnits)
     {
         if (textureUnits.Length < textures.Length)
             throw new ArgumentException("The texture unit output span is too small", nameof(textureUnits));
@@ -116,10 +116,10 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         Span<int> textureIds = stackalloc int[textures.Length];
         for (var i = 0; i < textures.Length; ++i)
         {
-            if (textures[i] is not Texture2d texture2d)
+            if (textures[i] is not OpenGlTexture openGlTexture)
                 throw new InvalidOperationException($"{nameof(OpenGlGraphicsDevice)} can only bind OpenGL textures");
 
-            textureIds[i] = texture2d.TextureId;
+            textureIds[i] = openGlTexture.TextureId;
         }
 
         BindTextures(textureIds, textureUnits[..textures.Length]);
@@ -130,7 +130,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
 
     public void UnbindTexture(ITexture texture)
     {
-        if (texture is Texture2d texture2d) UnbindTexture(texture2d.TextureId);
+        if (texture is OpenGlTexture openGlTexture) UnbindTexture(openGlTexture.TextureId);
     }
 
     public void UnbindTexture(int textureId)
@@ -174,7 +174,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         return samplerIndexes[0];
     }
 
-    void BindTextures(scoped ReadOnlySpan<int> textures, Span<int> samplerIndexes)
+    void BindTextures(scoped ReadOnlySpan<int> textures, scoped Span<int> samplerIndexes)
     {
         for (var i = 0; i < textures.Length; ++i)
         {

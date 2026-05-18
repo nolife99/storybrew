@@ -177,6 +177,9 @@ public sealed class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorS
         EstimatedSize = segment.CalculateSize(osbLayer);
     }
 
+    public void CollectTexturePaths(ISet<string> texturePaths)
+        => segment.CollectTexturePaths(texturePaths);
+
     public void WriteOsb(TextWriter writer, ExportSettings exportSettings)
         => WriteOsb(writer, exportSettings, osbLayer, in StoryboardTransform.Identity);
 

@@ -8,25 +8,24 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Animations;
-using BrewLib.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 {
-    const ushort EasingMask = 0x7F;
-    const ushort MaintainValueMask = 0x80;
+    const ushort EasingMask = 0x007F;
+    const ushort MaintainValueMask = 0x0080;
+    const ushort KindMask = 0x0F00;
+    const int KindShift = 8;
 
     protected readonly List<float> startTimes = [];
-    protected readonly List<float> endTimes = [];
-    protected readonly List<TValue> startValues = [];
-    protected readonly List<TValue> endValues = [];
-    protected readonly List<ushort> flags = [];
-    protected readonly List<CommandKind> kinds = [];
+    protected readonly List<CommandData> commands = [];
 
     public bool HasOverlap;
     public int Count => startTimes.Count;
+
+    protected record struct CommandData(float EndTime, TValue StartValue, TValue EndValue, ushort Flags);
 
     public bool Add(CommandKind kind,
         OsbEasing easing,
@@ -39,15 +38,13 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         if (startTime > endTime) endTime = startTime;
 
         var index = findInsertIndex(startTime, endTime);
-        HasOverlap |= index > 0 && startTime < endTimes[index - 1] ||
+        var commandSpan = CollectionsMarshal.AsSpan(commands);
+
+        HasOverlap |= index > 0 && startTime < commandSpan[index - 1].EndTime ||
                       index < Count && startTimes[index] < endTime;
 
         startTimes.Insert(index, startTime);
-        endTimes.Insert(index, endTime);
-        startValues.Insert(index, startValue);
-        endValues.Insert(index, endValue);
-        flags.Insert(index, packFlags(easing, maintainValue));
-        kinds.Insert(index, kind);
+        commands.Insert(index, new(endTime, startValue, endValue, packFlags(kind, easing, maintainValue)));
 
         return true;
     }
@@ -56,13 +53,14 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     {
         var lo = 0;
         var hi = Count;
+        var commandSpan = CollectionsMarshal.AsSpan(commands);
 
         while (lo < hi)
         {
             var mid = lo + hi >>> 1;
             var midStart = startTimes[mid];
 
-            if (startTime < midStart || startTime == midStart && endTime < endTimes[mid]) hi = mid;
+            if (startTime < midStart || startTime == midStart && endTime < commandSpan[mid].EndTime) hi = mid;
             else lo = mid + 1;
         }
 
@@ -70,65 +68,135 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static ushort packFlags(OsbEasing easing, bool maintainValue)
-        => (ushort)((byte)easing | (maintainValue ? MaintainValueMask : 0));
+    static ushort packFlags(CommandKind kind, OsbEasing easing, bool maintainValue)
+    {
+        return (ushort)((byte)easing |
+                        (maintainValue ? MaintainValueMask : 0) |
+                        (byte)kind << KindShift);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static OsbEasing easingFromFlags(ushort flags) => (OsbEasing)(flags & EasingMask);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool maintainsValueFromFlags(ushort flags) => (flags & MaintainValueMask) != 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static CommandKind kindFromFlags(ushort flags) => (CommandKind)((flags & KindMask) >> KindShift);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float StartTimeAt(int index) => startTimes[index];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public float EndTimeAt(int index) => endTimes[index];
+    public float EndTimeAt(int index) => commands[index].EndTime;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TValue StartValueAt(int index) => startValues[index];
+    public TValue StartValueAt(int index) => commands[index].StartValue;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TValue EndValueAt(int index) => endValues[index];
+    public TValue EndValueAt(int index) => commands[index].EndValue;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public OsbEasing EasingAt(int index) => (OsbEasing)(flags[index] & EasingMask);
+    public OsbEasing EasingAt(int index) => easingFromFlags(commands[index].Flags);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal CommandKind KindAt(int index) => kinds[index];
+    internal CommandKind KindAt(int index) => kindFromFlags(commands[index].Flags);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool MaintainsValueAt(int index) => (flags[index] & MaintainValueMask) != 0;
+    public bool MaintainsValueAt(int index) => maintainsValueFromFlags(commands[index].Flags);
 
     protected int FindIndex(float time)
+    {
+        var index = findIndexCore(time);
+        if (index <= 0) return index;
+
+        ref readonly var previous = ref CollectionsMarshal.AsSpan(commands)[index - 1];
+        return float.ConvertToIntegerNative<int>(float.Round(time)) == float.ConvertToIntegerNative<int>(float.Round(previous.EndTime)) ? index - 1 : index;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    int findIndexCore(float time)
     {
         var count = Count;
         if (count == 0) return -1;
 
         var times = CollectionsMarshal.AsSpan(startTimes);
+        ref var first = ref MemoryMarshal.GetReference(times);
 
-        if (time < times[0]) return 0;
+        if (time < first) return 0;
 
         var last = count - 1;
-        if (time >= times[last]) return last;
+        if (time > Unsafe.Add(ref first, last)) return last;
 
-        if (count < Vector128<float>.Count)
-            return times.Length == 3 && time >= times[1] ? 1 : 0;
+        var lower = lowerBound(ref first, count, time);
+        return Unsafe.Add(ref first, lower) == time ? lower : lower - 1;
+    }
 
-        return upperBound(times, time) - 1;
+    protected int FindIndexSlowOverlap(float time)
+    {
+        var index = findIndexCore(time);
+        if (index <= 0) return index;
+
+        var times = CollectionsMarshal.AsSpan(startTimes);
+        var commandSpan = CollectionsMarshal.AsSpan(commands);
+        var indexStart = times[index];
+
+        for (var i = 0; i < index; i++)
+            if (times[i] <= indexStart && time <= commandSpan[i].EndTime)
+                return i;
+
+        return index;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int upperBound(ReadOnlySpan<float> times, float time)
+    static int lowerBound(ref float first, int count, float time)
     {
-        var count = times.Length;
+        if (count < Vector128<float>.Count)
+            return lowerBoundScalar(ref first, count, time);
 
-        ref var first = ref MemoryMarshal.GetReference(times);
         if (Vector512.IsHardwareAccelerated && count >= Vector512<float>.Count)
-            return upperBoundVector512(ref first, count, time);
+            return lowerBoundVector512(ref first, count, time);
 
         if (Vector256.IsHardwareAccelerated && count >= Vector256<float>.Count)
-            return UpperBoundVector256(ref first, count, time);
+            return lowerBoundVector256(ref first, count, time);
 
-        return UpperBoundVector128(ref first, count, time);
+        if (Vector128.IsHardwareAccelerated)
+            return lowerBoundVector128(ref first, count, time);
+
+        return lowerBoundBinary(ref first, count, time);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int UpperBoundVector128(ref float first, int count, float time)
+    static int lowerBoundScalar(ref float first, int count, float time)
+    {
+        for (var i = 0; i < count; i++)
+            if (time <= Unsafe.Add(ref first, i))
+                return i;
+
+        return count;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static int lowerBoundBinary(ref float first, int count, float time)
+    {
+        var lo = 0;
+        var hi = count;
+
+        while (lo < hi)
+        {
+            var mid = lo + hi >>> 1;
+
+            if (time <= Unsafe.Add(ref first, mid))
+                hi = mid;
+            else
+                lo = mid + 1;
+        }
+
+        return lo;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static int lowerBoundVector128(ref float first, int count, float time)
     {
         var lo = 0;
         var hi = count;
@@ -137,24 +205,24 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         {
             var mid = lo + hi >>> 1;
 
-            if (time < Unsafe.Add(ref first, mid))
+            if (time <= Unsafe.Add(ref first, mid))
                 hi = mid;
             else
                 lo = mid + 1;
         }
 
-        var blockStart = Math.Max(hi - Vector128<float>.Count, 0);
+        var blockStart = hi >= Vector128<float>.Count ? hi - Vector128<float>.Count : 0;
 
         var values = Vector128.LoadUnsafe(in first, (nuint)blockStart);
         var needle = Vector128.Create(time);
 
-        var mask = Vector128.LessThanOrEqual(values, needle).ExtractMostSignificantBits();
+        var mask = Vector128.LessThan(values, needle).ExtractMostSignificantBits();
 
         return blockStart + BitOperations.PopCount(mask);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int UpperBoundVector256(ref float first, int count, float time)
+    static int lowerBoundVector256(ref float first, int count, float time)
     {
         var lo = 0;
         var hi = count;
@@ -163,24 +231,24 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         {
             var mid = lo + hi >>> 1;
 
-            if (time < Unsafe.Add(ref first, mid))
+            if (time <= Unsafe.Add(ref first, mid))
                 hi = mid;
             else
                 lo = mid + 1;
         }
 
-        var blockStart = Math.Max(hi - Vector256<float>.Count, 0);
+        var blockStart = hi >= Vector256<float>.Count ? hi - Vector256<float>.Count : 0;
 
         var values = Vector256.LoadUnsafe(in first, (nuint)blockStart);
         var needle = Vector256.Create(time);
 
-        var mask = Vector256.LessThanOrEqual(values, needle).ExtractMostSignificantBits();
+        var mask = Vector256.LessThan(values, needle).ExtractMostSignificantBits();
 
         return blockStart + BitOperations.PopCount(mask);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static int upperBoundVector512(ref float first, int count, float time)
+    static int lowerBoundVector512(ref float first, int count, float time)
     {
         var lo = 0;
         var hi = count;
@@ -189,35 +257,20 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         {
             var mid = lo + hi >>> 1;
 
-            if (time < Unsafe.Add(ref first, mid))
+            if (time <= Unsafe.Add(ref first, mid))
                 hi = mid;
             else
                 lo = mid + 1;
         }
 
-        var blockStart = Math.Max(hi - Vector512<float>.Count, 0);
+        var blockStart = hi >= Vector512<float>.Count ? hi - Vector512<float>.Count : 0;
 
         var values = Vector512.LoadUnsafe(in first, (nuint)blockStart);
         var needle = Vector512.Create(time);
 
-        var mask = Vector512.LessThanOrEqual(values, needle).ExtractMostSignificantBits();
+        var mask = Vector512.LessThan(values, needle).ExtractMostSignificantBits();
 
         return blockStart + BitOperations.PopCount(mask);
-    }
-
-    protected int FindIndexSlowOverlap(float time)
-    {
-        var index = FindIndex(time);
-        if (index <= 0) return index;
-
-        for (var i = 0; i < index; i++)
-            if (startTimes[i] <= startTimes[index] && time <= endTimes[i])
-            {
-                index = i;
-                break;
-            }
-
-        return index;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -231,14 +284,18 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     internal TValue ValueAtIndex(int index, float time, TValue defaultValue = default)
     {
         var startTime = startTimes[index];
-        if (time < startTime) return MaintainsValueAt(index) ? startValues[index] : defaultValue;
+        ref readonly var command = ref CollectionsMarshal.AsSpan(commands)[index];
 
-        var endTime = endTimes[index];
-        if (endTime < time) return MaintainsValueAt(index) ? endValues[index] : defaultValue;
+        if (time < startTime)
+            return maintainsValueFromFlags(command.Flags) ? command.StartValue : defaultValue;
+
+        var endTime = command.EndTime;
+        if (endTime < time)
+            return maintainsValueFromFlags(command.Flags) ? command.EndValue : defaultValue;
 
         var duration = endTime - startTime;
-        return startValues[index] + (endValues[index] - startValues[index]) *
-            (duration > 0 ? EasingAt(index).Ease((time - startTime) / duration) : 0);
+        return command.StartValue + (command.EndValue - command.StartValue) *
+            (duration > 0 ? easingFromFlags(command.Flags).Ease((time - startTime) / duration) : 0);
     }
 
     public virtual bool ResultAtTime(float time, out CommandResult<TValue> result)
@@ -270,15 +327,26 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     internal virtual CommandView<TValue> ViewAt(int viewIndex) => GetView(viewIndex);
 
     internal CommandView<TValue> GetView(int index, float timeOffset = 0)
-        => new(kinds[index], startTimes[index], endTimes[index], timeOffset, EasingAt(index), startValues[index],
-            endValues[index]);
+    {
+        ref readonly var command = ref CollectionsMarshal.AsSpan(commands)[index];
+
+        return new(kindFromFlags(command.Flags),
+            startTimes[index],
+            command.EndTime,
+            timeOffset,
+            easingFromFlags(command.Flags),
+            command.StartValue,
+            command.EndValue);
+    }
 
     internal void OffsetAll(float offset)
     {
+        var commandSpan = CollectionsMarshal.AsSpan(commands);
+
         for (var i = 0; i < Count; i++)
         {
             startTimes[i] += offset;
-            endTimes[i] += offset;
+            commandSpan[i].EndTime += offset;
         }
     }
 
@@ -297,11 +365,12 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         get
         {
             var result = float.MinValue;
-            for (var i = 0; i < Count; i++) result = float.Max(result, endTimes[i]);
+            var commandSpan = CollectionsMarshal.AsSpan(commands);
+
+            for (var i = 0; i < Count; i++) result = float.Max(result, commandSpan[i].EndTime);
             return result;
         }
     }
-
 
     internal virtual bool TryGetTimeRange(out float startTime, out float endTime)
     {
@@ -315,6 +384,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         endTime = CommandsEndTime;
         return true;
     }
+
     internal virtual void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         scoped ref readonly StoryboardTransform transform,
@@ -331,14 +401,16 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     {
         writeIndent(writer, indentation);
 
-        var kind = kinds[index];
+        ref readonly var command = ref CollectionsMarshal.AsSpan(commands)[index];
+        var kind = kindFromFlags(command.Flags);
+
         writeIdentifier(writer, kind);
         writer.Write(',');
-        writeInt(writer, (int)EasingAt(index));
+        writeInt(writer, (int)easingFromFlags(command.Flags));
         writer.Write(',');
 
         var startTime = startTimes[index];
-        var endTime = endTimes[index];
+        var endTime = command.EndTime;
         writeTime(writer, exportSettings, startTime);
         writer.Write(',');
 
@@ -346,7 +418,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             writeTime(writer, exportSettings, endTime);
 
         writer.Write(',');
-        writeValues(writer, exportSettings, in transform, index, kind);
+        writeValues(writer, exportSettings, in transform, in command, kind);
         writer.WriteLine();
     }
 
@@ -415,15 +487,15 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
     void writeValues(TextWriter writer,
         ExportSettings exportSettings,
         scoped ref readonly StoryboardTransform transform,
-        int index,
+        scoped ref readonly CommandData command,
         CommandKind kind)
     {
         switch (kind)
         {
             case CommandKind.Move:
             {
-                var start = commandValue<TValue, CommandPosition>(startValues[index]);
-                var end = commandValue<TValue, CommandPosition>(endValues[index]);
+                var start = commandValue<TValue, CommandPosition>(command.StartValue);
+                var end = commandValue<TValue, CommandPosition>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToPosition(start);
@@ -435,8 +507,8 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             }
             case CommandKind.MoveX:
             {
-                var start = commandValue<TValue, CommandDecimal>(startValues[index]);
-                var end = commandValue<TValue, CommandDecimal>(endValues[index]);
+                var start = commandValue<TValue, CommandDecimal>(command.StartValue);
+                var end = commandValue<TValue, CommandDecimal>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToPositionX(start);
@@ -448,8 +520,8 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             }
             case CommandKind.MoveY:
             {
-                var start = commandValue<TValue, CommandDecimal>(startValues[index]);
-                var end = commandValue<TValue, CommandDecimal>(endValues[index]);
+                var start = commandValue<TValue, CommandDecimal>(command.StartValue);
+                var end = commandValue<TValue, CommandDecimal>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToPositionY(start);
@@ -461,8 +533,8 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             }
             case CommandKind.Scale:
             {
-                var start = commandValue<TValue, CommandDecimal>(startValues[index]);
-                var end = commandValue<TValue, CommandDecimal>(endValues[index]);
+                var start = commandValue<TValue, CommandDecimal>(command.StartValue);
+                var end = commandValue<TValue, CommandDecimal>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToScale(start);
@@ -474,8 +546,8 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             }
             case CommandKind.ScaleVec:
             {
-                var start = commandValue<TValue, CommandScale>(startValues[index]);
-                var end = commandValue<TValue, CommandScale>(endValues[index]);
+                var start = commandValue<TValue, CommandScale>(command.StartValue);
+                var end = commandValue<TValue, CommandScale>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToScale(start);
@@ -487,8 +559,8 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             }
             case CommandKind.Rotate:
             {
-                var start = commandValue<TValue, CommandDecimal>(startValues[index]);
-                var end = commandValue<TValue, CommandDecimal>(endValues[index]);
+                var start = commandValue<TValue, CommandDecimal>(command.StartValue);
+                var end = commandValue<TValue, CommandDecimal>(command.EndValue);
                 if (!transform.IsIdentity)
                 {
                     start = transform.ApplyToRotation(start);
@@ -501,22 +573,22 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             case CommandKind.Fade:
                 writeCommandValues(writer,
                     exportSettings,
-                    commandValue<TValue, CommandDecimal>(startValues[index]),
-                    commandValue<TValue, CommandDecimal>(endValues[index]));
+                    commandValue<TValue, CommandDecimal>(command.StartValue),
+                    commandValue<TValue, CommandDecimal>(command.EndValue));
                 break;
             case CommandKind.Color:
                 writeCommandValues(writer,
                     exportSettings,
-                    commandValue<TValue, CommandColor>(startValues[index]),
-                    commandValue<TValue, CommandColor>(endValues[index]));
+                    commandValue<TValue, CommandColor>(command.StartValue),
+                    commandValue<TValue, CommandColor>(command.EndValue));
                 break;
             case CommandKind.Additive:
             case CommandKind.FlipH:
             case CommandKind.FlipV:
                 writeCommandValues(writer,
                     exportSettings,
-                    commandValue<TValue, CommandParameter>(startValues[index]),
-                    commandValue<TValue, CommandParameter>(startValues[index]),
+                    commandValue<TValue, CommandParameter>(command.StartValue),
+                    commandValue<TValue, CommandParameter>(command.StartValue),
                     false);
                 break;
             default:
@@ -537,13 +609,12 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
         if (!exportEndValue) return;
 
         using var endValueText = endValue.ToOsbString(exportSettings);
-        if (!startValueText.AsReadOnlySpan().SequenceEqual(endValueText.AsReadOnlySpan()))
-        {
-            writer.Write(',');
-            writer.Write(endValueText.AsReadOnlySpan());
-        }
+        if (startValueText.AsReadOnlySpan().SequenceEqual(endValueText.AsReadOnlySpan())) return;
+
+        writer.Write(',');
+        writer.Write(endValueText.AsReadOnlySpan());
     }
-    
+
     internal static TTo commandValue<TFrom, TTo>(TFrom value)
         where TFrom : struct, ICommandValue<TFrom>
         where TTo : struct, ICommandValue<TTo>
@@ -553,7 +624,7 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
 
         return Unsafe.As<TFrom, TTo>(ref value);
     }
-    
+
     internal readonly struct ViewEnumerable
     {
         readonly CommandChannel<TValue> channel;
@@ -591,5 +662,4 @@ class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>
             return true;
         }
     }
-
 }

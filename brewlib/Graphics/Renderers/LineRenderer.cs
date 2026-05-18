@@ -1,13 +1,13 @@
 namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Shaders;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -27,15 +27,18 @@ public sealed class LineRenderer : ILineRenderer
 
     static readonly float[] UnitLineVertices = [0, 1];
 
-    readonly List<LineInstance> instances;
     readonly IRenderPipeline pipeline;
-    readonly IGraphicsBuffer vertexBuffer, instanceBuffer;
+    readonly IGraphicsBuffer vertexBuffer;
+    readonly ITransientGraphicsBuffer instanceBuffer;
     readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
+    readonly int instanceStride, instanceBatchCapacity;
 
     ICamera camera;
     bool disposed, rendering;
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
-    Matrix4x4 lastTransformMatrix;
+    TransientBufferAllocation instanceAllocation;
+    nint instanceData;
+    int instanceCount;
 
     public LineRenderer(IGraphicsBackend backend = null, int initialBatchCapacity = 256)
     {
@@ -45,7 +48,8 @@ public sealed class LineRenderer : ILineRenderer
         backend ??= DrawState.Backend ??
             throw new InvalidOperationException("A graphics backend must be initialized before creating renderers");
 
-        instances = new(initialBatchCapacity);
+        instanceStride = Unsafe.SizeOf<LineInstance>();
+        instanceBatchCapacity = int.Max(1, initialBatchCapacity);
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage));
         combinedMatrixUniform = pipeline.GetUniform(CombinedMatrixUniform);
 
@@ -53,13 +57,14 @@ public sealed class LineRenderer : ILineRenderer
             GraphicsBufferTarget.Vertex,
             GraphicsBufferUsage.Static));
 
-        instanceBuffer = backend.Buffers.CreateBuffer(new(nameof(LineRenderer) + ".Instances",
-            GraphicsBufferTarget.Vertex,
-            GraphicsBufferUsage.Stream));
+        instanceBuffer = backend.TransientBuffers.CreateBuffer(new(nameof(LineRenderer) + ".Instances",
+                GraphicsBufferTarget.Vertex,
+                GraphicsBufferUsage.Stream),
+            getRingCapacity(instanceStride * instanceBatchCapacity));
 
         vertexBuffer.SetData<float>(UnitLineVertices);
         pipeline.BindVertexBuffer(0, vertexBuffer);
-        pipeline.BindVertexBuffer(1, instanceBuffer);
+        pipeline.BindVertexBuffer(1, instanceBuffer.Buffer);
 
     }
 
@@ -102,7 +107,7 @@ public sealed class LineRenderer : ILineRenderer
 
     void IRenderer.EndRendering()
     {
-        if (instances.Count != 0) ((IRenderer)this).Flush();
+        if (instanceCount != 0) ((IRenderer)this).Flush();
 
         pipeline.Unbind();
         rendering = false;
@@ -110,29 +115,31 @@ public sealed class LineRenderer : ILineRenderer
 
     void IRenderer.Flush(bool canBuffer)
     {
-        var instanceCount = instances.Count;
         if (instanceCount == 0) return;
 
-        var combinedMatrix = transformMatrix * camera.ProjectionView;
-        if (combinedMatrix != lastTransformMatrix)
-        {
-            combinedMatrixUniform.SetValue(combinedMatrix);
-            lastTransformMatrix = combinedMatrix;
-        }
+        var usedBytes = instanceCount * instanceStride;
+        instanceBuffer.Commit(in instanceAllocation, usedBytes);
 
-        instanceBuffer.SetData(CollectionsMarshal.AsSpan(instances));
-        pipeline.BindVertexBuffer(1, instanceBuffer);
+        pipeline.Bind();
+
+        combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
+
+        pipeline.BindVertexBuffer(1, instanceAllocation.Buffer, instanceAllocation.Offset);
         pipeline.DrawInstanced(new(VertexPerLine, instanceCount));
         DrawState.CountDrawCall();
+        instanceBuffer.MarkSubmitted(in instanceAllocation, usedBytes);
 
-        instanceBuffer.Invalidate();
-        instances.Clear();
+        resetInstanceBatch();
     }
 
     void ILineRenderer.Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)
     {
+        if (instanceCount == instanceBatchCapacity)
+            DrawState.FlushRenderer();
+
+        ensureInstanceBatch();
         var rgba = color.ToPixel<Rgba32>();
-        instances.Add(new() { From = start, To = end, Color = rgba });
+        Unsafe.Add(ref instanceData.AsRef<LineInstance>(), instanceCount++) = new() { From = start, To = end, Color = rgba };
     }
 
     public void Dispose()
@@ -271,8 +278,26 @@ public sealed class LineRenderer : ILineRenderer
         disposed = true;
     }
 
+    void ensureInstanceBatch()
+    {
+        if (instanceData != nint.Zero) return;
+
+        instanceAllocation = instanceBuffer.Allocate(instanceStride * instanceBatchCapacity, 16);
+        instanceData = instanceAllocation.Data;
+    }
+
+    void resetInstanceBatch()
+    {
+        instanceAllocation = default;
+        instanceData = nint.Zero;
+        instanceCount = 0;
+    }
+
     static int OffsetOf(string fieldName)
         => (int)Marshal.OffsetOf<LineInstance>(fieldName);
+
+    static int getRingCapacity(int batchSizeInBytes)
+        => int.Max(checked(batchSizeInBytes * 8), 64 * 1024);
 
     [StructLayout(LayoutKind.Sequential)]
     struct LineInstance

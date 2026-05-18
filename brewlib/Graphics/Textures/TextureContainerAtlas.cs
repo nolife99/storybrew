@@ -103,6 +103,16 @@ public sealed class TextureContainerAtlas : TextureContainer
         return atlas.AddRegion(bitmap);
     }
 
+    public ITextureRegion Add(string filename, Image<Rgba32> bitmap, TextureOptions options = null)
+    {
+        if (bitmap is null) return null;
+        filename = PathHelper.WithStandardSeparators(filename);
+
+        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+
+        return textures[filename] = Add(bitmap, options ?? textureOptions);
+    }
+
     #region IDisposable Support
 
     bool disposed;

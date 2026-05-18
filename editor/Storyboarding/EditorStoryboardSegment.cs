@@ -2,6 +2,7 @@ namespace StorybrewEditor.Storyboarding;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.IO;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
@@ -197,6 +199,65 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
 
         spriteDrawWork.Clear();
         buildSpriteDrawWork(spriteDrawWork, in StoryboardTransform.Identity, 0);
+    }
+
+    public void CollectTexturePaths(ISet<string> texturePaths)
+    {
+        foreach (var storyboardObject in storyboardObjects)
+            switch (storyboardObject)
+            {
+                case EditorStoryboardSegment segment:
+                    segment.CollectTexturePaths(texturePaths);
+                    break;
+
+                case OsbAnimation animation:
+                    addAnimationTexturePaths(texturePaths, animation);
+                    break;
+
+                case OsbSprite sprite:
+                    addTexturePath(texturePaths, sprite.TexturePath);
+                    break;
+            }
+    }
+
+    static void addTexturePath(ISet<string> texturePaths, string texturePath)
+    {
+        if (!string.IsNullOrWhiteSpace(texturePath))
+            texturePaths.Add(texturePath);
+    }
+
+    static void addAnimationTexturePaths(ISet<string> texturePaths, OsbAnimation animation)
+    {
+        if (animation.FrameCount <= 0)
+        {
+            addTexturePath(texturePaths, animation.TexturePath);
+            return;
+        }
+
+        for (var frame = 0; frame < animation.FrameCount; ++frame)
+            addTexturePath(texturePaths, getAnimationFramePath(animation.TexturePath, frame));
+    }
+
+    static string getAnimationFramePath(string texturePath, int frame)
+    {
+        var span = texturePath.AsSpan();
+        var dotIndex = span.LastIndexOf('.');
+        var digits = StringHelper.GetDigitCount(frame);
+
+        Span<char> chars = stackalloc char[span.Length + digits];
+        if (dotIndex < 0)
+        {
+            span.CopyTo(chars);
+            frame.TryFormat(chars[span.Length..], out _, default, CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            span[..dotIndex].CopyTo(chars);
+            frame.TryFormat(chars[dotIndex..], out _, default, CultureInfo.InvariantCulture);
+            span[dotIndex..].CopyTo(chars[(dotIndex + digits)..]);
+        }
+
+        return chars.ToString();
     }
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)

@@ -17,6 +17,7 @@ public interface IRenderPipeline : IDisposable
     void Bind();
     void Unbind();
     void BindVertexBuffer(int slot, IGraphicsBuffer buffer);
+    void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset);
     void Draw(DrawCommand command);
     void DrawInstanced(DrawInstancedCommand command);
 }
