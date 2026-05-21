@@ -3,7 +3,7 @@ namespace BrewLib.Graphics.Backend;
 using System;
 using System.IO;
 using System.Reflection;
-using BrewLib.Graphics.Shaders;
+using Shaders;
 
 public sealed class EmbeddedShaderAssetLoader(Assembly assembly = null) : IShaderAssetLoader
 {

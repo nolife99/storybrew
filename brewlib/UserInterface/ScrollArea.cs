@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Util;
+using Graphics;
 using SDL3;
+using Util;
 
 public class ScrollArea : Widget
 {

@@ -2,7 +2,7 @@ namespace BrewLib.Graphics.Textures;
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics.Backend;
+using Backend;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -17,6 +17,11 @@ public interface ITexture : IDisposable, ITextureExtent
 {
     IGraphicsBackend Backend { get; }
     GraphicsResourceHandle NativeHandle { get; }
+}
+
+internal interface ITextureSamplerIdentity
+{
+    GraphicsResourceHandle SamplerIdentity { get; }
 }
 
 public interface IWritableTexture : ITexture, ITextureRegion

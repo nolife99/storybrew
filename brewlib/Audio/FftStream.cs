@@ -2,9 +2,9 @@
 
 using System;
 using System.Buffers;
-using BrewLib.Util;
 using ManagedBass;
 using SixLabors.ImageSharp.Memory;
+using Util;
 
 public class FftStream : IDisposable
 {

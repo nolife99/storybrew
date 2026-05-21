@@ -3,45 +3,42 @@ namespace BrewLib.Graphics.Backend.SDL;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
-using BrewLib.IO;
-using BrewLib.Util;
+using System.Runtime.CompilerServices;
+using IO;
+using Renderers;
 using SDL3;
+using Shaders;
+using Textures;
+using Util;
 
 public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 {
-    readonly SdlShaderCrossContext shaderCrossContext;
-    readonly nint window;
-    readonly List<SubmittedWork> submittedWork = [];
-    readonly Stack<ResourceReleaseBatch> releaseBatchPool = [];
+    const int DefaultFrameTransferBufferPageSize = 4 * 1024 * 1024;
+    const uint FrameUploadLatency = 3;
 
-    ResourceReleaseBatch activeCommandReleases;
-    List<SdlUploadFence> activeUploadFences;
-    nint commandBuffer, renderPass, swapchainTexture;
-    uint swapchainWidth, swapchainHeight;
-    uint frameSerial, renderPassSerial;
+    readonly List<PendingBufferUpload> pendingBufferUploads = new(256);
+    readonly List<FrameTransferPage> frameTransferPages = new();
+    readonly SdlGraphicsDevice device;
+    readonly nint window;
+
+    nint swapchainTexture;
+    bool framebufferHasContents, swapchainAcquireAttempted, disposed;
     Vector4 frameClearColor;
-    bool framebufferHasContents, disposed;
+    uint swapchainWidth, swapchainHeight;
 
     public SdlGraphicsBackend(nint window = 0,
         bool debug = false,
         string preferredDriver = null)
     {
-        shaderCrossContext = new();
         this.window = window;
 
-        var requestedFormats = SdlShaderCrossContext.SupportedHlslShaderFormats |
-            SdlShaderCrossContext.SupportedSpirVShaderFormats |
-            SDL.GPUShaderFormat.SPIRV;
+        var requestedFormats = SdlShaderCompiler.SupportedShaderFormats;
 
         var deviceHandle = SDL.CreateGPUDevice(requestedFormats, debug, preferredDriver);
         if (deviceHandle == nint.Zero)
             throw new InvalidOperationException($"Unable to create SDL GPU device: {SDL.GetError()}");
 
-        var device = new SdlGraphicsDevice(this, deviceHandle);
+        device = new(this, deviceHandle);
         Device = device;
         Buffers = new SdlGraphicsBufferFactory(this);
         TransientBuffers = new SdlTransientGraphicsBufferFactory(this);
@@ -51,17 +48,132 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
         var driver = SDL.GetGPUDeviceDriver(deviceHandle) ?? "unknown";
         var shaderFormats = SDL.GetGPUShaderFormats(deviceHandle);
-        SDL.LogInfo(LogCategory.Render, $"SDL GPU driver: {driver}; shader formats: {shaderFormats}");
+        ShaderFormat = SdlShaderCompiler.SelectShaderFormat(shaderFormats);
+        SDL.LogInfo(LogCategory.Render, $"SDL GPU driver: {driver}; shader formats: {shaderFormats}; selected: {ShaderFormat}");
 
-        Capabilities = new(GraphicsBackendFeatures.TextureAtlases | GraphicsBackendFeatures.Instancing,
+        var fragmentSamplerCapacity = probeFragmentSamplerCapacity(deviceHandle,
+            ShaderFormat,
+            out var nativeNonUniformIndexing);
+        var baselineSupported = fragmentSamplerCapacity > 0;
+        SDL.LogInfo(LogCategory.Render,
+            $"SDL GPU fragment samplers: {fragmentSamplerCapacity}; baseline probe: {baselineSupported}; non-uniform indexing: {nativeNonUniformIndexing}");
+
+        var features = GraphicsBackendFeatures.TextureAtlases |
+            GraphicsBackendFeatures.Instancing |
+            GraphicsBackendFeatures.IndirectDraws;
+        if (nativeNonUniformIndexing)
+            features |= GraphicsBackendFeatures.NativeNonUniformTextureIndexing;
+
+        Capabilities = new(features,
             16384,
-            16,
+            fragmentSamplerCapacity,
             0,
             0,
-            16,
+            fragmentSamplerCapacity,
             0);
+
         TextureUploader = new SdlAsyncTextureUploader(this);
     }
+
+    static bool tryProbeFragmentShader(nint device,
+        SDL.GPUShaderFormat shaderFormat,
+        int samplerCount,
+        bool useNonUniformIndexing)
+    {
+        var probeName = $"SdlGraphicsBackend.ProbeFragment[{samplerCount}, nu={useNonUniformIndexing}]";
+        var hlsl = createFragmentProbeHlsl(samplerCount, useNonUniformIndexing);
+
+        try
+        {
+            var shader = SdlShaderCompiler.CompileGraphicsShaderFromHlsl(device,
+                shaderFormat,
+                probeName,
+                CompiledShaderStage.Fragment,
+                hlsl);
+            if (shader == nint.Zero)
+            {
+                SDL.LogInfo(LogCategory.Render, $"{probeName} SDL CreateGPUShader returned null: {SDL.GetError()}");
+                return false;
+            }
+
+            SDL.ReleaseGPUShader(device, shader);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            SDL.LogInfo(LogCategory.Render, $"{probeName} SDL shader create failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    static int probeFragmentSamplerCapacity(nint device,
+        SDL.GPUShaderFormat shaderFormat,
+        out bool nativeNonUniformIndexing)
+    {
+        nativeNonUniformIndexing = false;
+
+        ReadOnlySpan<int> candidates = [128, 64, 32, 16, 8, 4, 1];
+        foreach (var candidate in candidates)
+        {
+            if (!tryProbeFragmentShader(device, shaderFormat, candidate, useNonUniformIndexing: false))
+                continue;
+
+            if (tryProbeFragmentShader(device, shaderFormat, candidate, useNonUniformIndexing: true))
+            {
+                nativeNonUniformIndexing = true;
+                return candidate;
+            }
+
+            return int.Min(candidate, 16);
+        }
+
+        return 1;
+    }
+
+    static string createFragmentProbeHlsl(int samplerCount, bool useNonUniformIndexing)
+    {
+        var source = $$"""
+            Texture2D<float4> u_textures[{{samplerCount}}] : register(t0, space2);
+            SamplerState u_samplers[{{samplerCount}}] : register(s0, space2);
+
+            struct FragmentInput
+            {
+                float4 Position : SV_Position;
+                float2 TextureCoord : TEXCOORD0;
+                nointerpolation int TextureSlot : TEXCOORD1;
+            };
+
+            float4 main(FragmentInput input) : SV_Target0
+            {
+            """;
+
+        if (useNonUniformIndexing)
+            return source + """
+                    uint textureSlot = (uint)input.TextureSlot;
+                    return u_textures[NonUniformResourceIndex(textureSlot)].Sample(u_samplers[NonUniformResourceIndex(textureSlot)], input.TextureCoord);
+                }
+                """;
+
+        return source + $$"""
+                if (input.TextureSlot == {{samplerCount - 1}}) return u_textures[{{samplerCount - 1}}].Sample(u_samplers[{{samplerCount - 1}}], input.TextureCoord);
+                return u_textures[0].Sample(u_samplers[0], input.TextureCoord);
+            }
+            """;
+    }
+
+    internal nint DeviceHandle => device.DeviceHandle;
+    internal nint CommandBuffer { get; private set; }
+
+    internal nint RenderPass { get; private set; }
+
+    internal uint FrameSerial { get; private set; }
+
+    internal uint RenderPassSerial { get; private set; }
+
+    internal SDL.GPUTextureFormat SwapchainFormat { get; private set; }
+    internal SDL.GPUShaderFormat ShaderFormat { get; private set; }
+    internal uint SwapchainHeight => swapchainHeight;
+    internal bool HasActiveFrame => CommandBuffer != nint.Zero;
 
     public string Name => "SDL GPU";
     public GraphicsBackendCapabilities Capabilities { get; }
@@ -75,15 +187,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     public IShaderProgramFactory ShaderPrograms { get; }
     public ITextureFactory TextureFactory { get; }
     public IAsyncTextureUploader TextureUploader { get; }
-
-    internal nint DeviceHandle => ((SdlGraphicsDevice)Device).DeviceHandle;
-    internal nint CommandBuffer => commandBuffer;
-    internal nint RenderPass => renderPass;
-    internal uint FrameSerial => frameSerial;
-    internal uint RenderPassSerial => renderPassSerial;
-    internal SDL.GPUTextureFormat SwapchainFormat { get; private set; }
-    internal uint SwapchainHeight => swapchainHeight;
-    internal bool HasActiveFrame => commandBuffer != nint.Zero && swapchainTexture != nint.Zero;
+    public bool PrefersBufferedTransientDraws => true;
 
     public bool SupportsShaderExtension(string extensionName) => false;
 
@@ -98,49 +202,34 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         DrawState.Initialize(resourceContainer, textureContainer, this);
     }
 
-    public IQuadRenderer CreateQuadRenderer()
-        => new TexturedQuadRenderer(this);
-
-    public ILineRenderer CreateLineRenderer()
-        => new LineRenderer(this);
-
     public bool BeginFrame(Vector4 clearColor)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (window == nint.Zero)
             throw new InvalidOperationException("SDL frame rendering requires a claimed SDL window");
-        if (commandBuffer != nint.Zero)
+
+        if (CommandBuffer != nint.Zero)
             throw new InvalidOperationException("An SDL GPU frame is already active");
 
-        ReleaseCompletedSubmissions();
+        ResetFrameTransferPages();
 
-        commandBuffer = acquireCommandBuffer("frame");
-        ++frameSerial;
-
-        if (!SDL.WaitAndAcquireGPUSwapchainTexture(commandBuffer,
-                window,
-                out swapchainTexture,
-                out swapchainWidth,
-                out swapchainHeight))
-            throw new InvalidOperationException($"Unable to acquire SDL GPU swapchain texture: {SDL.GetError()}");
-
-        if (swapchainTexture == nint.Zero)
-        {
-            submitActiveCommandBuffer();
-            return false;
-        }
+        CommandBuffer = acquireCommandBuffer("frame");
+        ++FrameSerial;
 
         frameClearColor = clearColor;
         framebufferHasContents = false;
+        swapchainAcquireAttempted = false;
+        swapchainTexture = nint.Zero;
+        swapchainWidth = swapchainHeight = 0;
         return true;
     }
 
     public void EndFrame(bool discardFramebuffer)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (commandBuffer == nint.Zero) return;
+        if (CommandBuffer == nint.Zero) return;
 
-        if (swapchainTexture != nint.Zero && renderPass == nint.Zero && !framebufferHasContents)
+        if (!framebufferHasContents && RenderPass == nint.Zero && tryAcquireSwapchain())
             RequireRenderPass();
 
         EndRenderPass();
@@ -148,7 +237,23 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
         swapchainTexture = nint.Zero;
         swapchainWidth = swapchainHeight = 0;
-        ReleaseCompletedSubmissions();
+        swapchainAcquireAttempted = false;
+    }
+
+    bool tryAcquireSwapchain()
+    {
+        if (swapchainTexture != nint.Zero) return true;
+        if (swapchainAcquireAttempted) return false;
+        swapchainAcquireAttempted = true;
+
+        if (!SDL.WaitAndAcquireGPUSwapchainTexture(CommandBuffer,
+            window,
+            out swapchainTexture,
+            out swapchainWidth,
+            out swapchainHeight))
+            throw new InvalidOperationException($"Unable to acquire SDL GPU swapchain texture: {SDL.GetError()}");
+
+        return swapchainTexture != nint.Zero;
     }
 
     public void Dispose()
@@ -157,14 +262,20 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
         EndRenderPass();
         submitActiveCommandBuffer();
-        WaitIdleAndReleaseSubmittedWork();
+        WaitIdle();
+        ReleaseFrameTransferPages();
 
         if (window != nint.Zero) SDL.ReleaseWindowFromGPUDevice(DeviceHandle, window);
-        Device.Dispose();
-        shaderCrossContext.Dispose();
+        device.Dispose();
 
         disposed = true;
     }
+
+    public IQuadRenderer CreateQuadRenderer()
+        => new TexturedQuadRenderer(this);
+
+    public ILineRenderer CreateLineRenderer()
+        => new LineRenderer(this);
 
     internal void UploadBuffer(nint transferBuffer,
         nint buffer,
@@ -180,14 +291,19 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         var submitted = false;
         try
         {
-            var source = new SDL.GPUTransferBufferLocation { TransferBuffer = transferBuffer };
-            source.Offset = sourceOffset;
+            var source = new SDL.GPUTransferBufferLocation
+            {
+                TransferBuffer = transferBuffer,
+                Offset = sourceOffset
+            };
+
             var destination = new SDL.GPUBufferRegion
             {
                 Buffer = buffer,
                 Offset = offset,
                 Size = size
             };
+
             SDL.UploadToGPUBuffer(copyPass.Handle, in source, in destination, cycle);
 
             completeCopyPass(copyPass);
@@ -200,10 +316,56 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         }
     }
 
+    internal FrameTransferUpload AllocateFrameTransfer(int sizeInBytes, string description)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
+        if (sizeInBytes == 0) return default;
+
+        if (CommandBuffer == nint.Zero)
+            throw new InvalidOperationException(
+                $"SDL frame transfer allocation for {description} requires an active GPU command buffer");
+
+        var page = getFrameTransferPage(sizeInBytes);
+        var sourceOffset = align(page.Offset, 4);
+        page.Offset = checked(sourceOffset + sizeInBytes);
+
+        if (page.Mapped == nint.Zero)
+        {
+            page.Mapped = SDL.MapGPUTransferBuffer(DeviceHandle, page.Buffer, sourceOffset == 0);
+            if (page.Mapped == nint.Zero)
+                throw new InvalidOperationException(
+                    $"Unable to map SDL frame transfer buffer for {description}: {SDL.GetError()}");
+        }
+
+        return new(page.Buffer, (uint)sourceOffset, page.Mapped + sourceOffset);
+    }
+
+    internal void QueueBufferUpload(nint transferBuffer,
+        nint buffer,
+        uint sourceOffset,
+        uint offset,
+        uint size,
+        bool cycle,
+        string description)
+    {
+        if (transferBuffer == nint.Zero || buffer == nint.Zero || size == 0) return;
+
+        if (CommandBuffer == nint.Zero)
+        {
+            UploadBuffer(transferBuffer, buffer, sourceOffset, offset, size, cycle, description);
+            return;
+        }
+
+        pendingBufferUploads.Add(new(transferBuffer, buffer, sourceOffset, offset, size, cycle));
+    }
+
     internal void UploadTexture(nint transferBuffer,
         nint texture,
         int width,
         int height,
+        int pixelsPerRow,
+        int rowsPerLayer,
         int x,
         int y,
         bool generateMipmaps,
@@ -218,8 +380,8 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
             var source = new SDL.GPUTextureTransferInfo
             {
                 TransferBuffer = transferBuffer,
-                PixelsPerRow = (uint)width,
-                RowsPerLayer = (uint)height
+                PixelsPerRow = (uint)pixelsPerRow,
+                RowsPerLayer = (uint)rowsPerLayer
             };
 
             var destination = new SDL.GPUTextureRegion
@@ -244,43 +406,62 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     }
 
     internal void ReleaseBuffer(nint buffer)
-        => releaseOrRetire(buffer, ResourceKind.Buffer);
-
-    internal void ReleaseTransferBuffer(nint transferBuffer)
-        => releaseOrRetire(transferBuffer, ResourceKind.TransferBuffer);
-
-    internal void ReleaseTexture(nint texture)
-        => releaseOrRetire(texture, ResourceKind.Texture);
-
-    internal void ReleaseSampler(nint sampler)
-        => releaseOrRetire(sampler, ResourceKind.Sampler);
-
-    internal void ReleaseShader(nint shader)
-        => releaseOrRetire(shader, ResourceKind.Shader);
-
-    internal void ReleaseGraphicsPipeline(nint pipeline)
-        => releaseOrRetire(pipeline, ResourceKind.GraphicsPipeline);
-
-    internal IGpuUploadFence CreateUploadFence()
     {
-        var fence = new SdlUploadFence(this);
-        if (commandBuffer == nint.Zero)
-        {
-            fence.MarkCompleted();
-            return fence;
-        }
-
-        (activeUploadFences ??= []).Add(fence);
-        return fence;
+        if (buffer == nint.Zero || disposed) return;
+        SDL.ReleaseGPUBuffer(DeviceHandle, buffer);
     }
 
+    internal void ReleaseTransferBuffer(nint transferBuffer)
+    {
+        if (transferBuffer == nint.Zero || disposed) return;
+        SDL.ReleaseGPUTransferBuffer(DeviceHandle, transferBuffer);
+    }
+
+    internal void ReleaseTexture(nint texture)
+    {
+        if (texture == nint.Zero || disposed) return;
+        SDL.ReleaseGPUTexture(DeviceHandle, texture);
+    }
+
+    internal void ReleaseSampler(nint sampler)
+    {
+        if (sampler == nint.Zero || disposed) return;
+        SDL.ReleaseGPUSampler(DeviceHandle, sampler);
+    }
+
+    internal void ReleaseShader(nint shader)
+    {
+        if (shader == nint.Zero || disposed) return;
+        SDL.ReleaseGPUShader(DeviceHandle, shader);
+    }
+
+    internal void ReleaseGraphicsPipeline(nint pipeline)
+    {
+        if (pipeline == nint.Zero || disposed) return;
+        SDL.ReleaseGPUGraphicsPipeline(DeviceHandle, pipeline);
+    }
+
+    internal bool IsFrameFenceSignaled(uint submittedFrameSerial)
+        => unchecked(FrameSerial - submittedFrameSerial) >= FrameUploadLatency;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool TryGetReadyRenderPass(out nint renderPass)
+    {
+        renderPass = RenderPass;
+        return renderPass != nint.Zero && pendingBufferUploads.Count == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal nint RequireRenderPass()
     {
-        if (renderPass != nint.Zero) return renderPass;
-        if (commandBuffer == nint.Zero)
+        if (pendingBufferUploads.Count != 0) FlushPendingBufferUploads();
+        if (RenderPass != nint.Zero) return RenderPass;
+
+        if (CommandBuffer == nint.Zero)
             throw new InvalidOperationException("SDL render pass requested outside an active GPU command buffer");
-        if (swapchainTexture == nint.Zero)
-            throw new InvalidOperationException("SDL render pass requested without an acquired swapchain texture");
+
+        if (!tryAcquireSwapchain())
+            return nint.Zero;
 
         Span<SDL.GPUColorTargetInfo> colorTargets = stackalloc SDL.GPUColorTargetInfo[1];
         colorTargets[0] = new()
@@ -298,21 +479,23 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
             Cycle = 0
         };
 
-        renderPass = SDL.BeginGPURenderPass(commandBuffer, colorTargets.AsPointer(), 1, 0);
-        if (renderPass == nint.Zero)
+        RenderPass = SDL.BeginGPURenderPass(CommandBuffer, colorTargets.AsPointer(), 1, 0);
+        if (RenderPass == nint.Zero)
             throw new InvalidOperationException($"Unable to begin SDL GPU render pass: {SDL.GetError()}");
+        
+        DrawState.CountDrawCall();
 
-        ++renderPassSerial;
-        ((SdlGraphicsDevice)Device).ApplyRenderPassState(renderPass);
-        return renderPass;
+        ++RenderPassSerial;
+        device.ApplyRenderPassState(RenderPass);
+        return RenderPass;
     }
 
     internal void EndRenderPass()
     {
-        if (renderPass == nint.Zero) return;
+        if (RenderPass == nint.Zero) return;
 
-        SDL.EndGPURenderPass(renderPass);
-        renderPass = nint.Zero;
+        SDL.EndGPURenderPass(RenderPass);
+        RenderPass = nint.Zero;
         framebufferHasContents = true;
     }
 
@@ -322,17 +505,56 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         EndRenderPass();
     }
 
+    internal void FlushPendingBufferUploads()
+    {
+        if (pendingBufferUploads.Count == 0) return;
+
+        if (CommandBuffer == nint.Zero)
+            throw new InvalidOperationException("SDL queued buffer uploads require an active GPU command buffer");
+
+        EndRenderPass();
+        UnmapFrameTransferPages();
+
+        var copyPass = SDL.BeginGPUCopyPass(CommandBuffer);
+        if (copyPass == nint.Zero)
+            throw new InvalidOperationException($"Unable to begin SDL GPU copy pass for queued buffer uploads: {SDL.GetError()}");
+
+        foreach (var upload in pendingBufferUploads)
+        {
+            var source = new SDL.GPUTransferBufferLocation
+            {
+                TransferBuffer = upload.TransferBuffer,
+                Offset = upload.SourceOffset
+            };
+
+            var destination = new SDL.GPUBufferRegion
+            {
+                Buffer = upload.Buffer,
+                Offset = upload.Offset,
+                Size = upload.Size
+            };
+
+            SDL.UploadToGPUBuffer(copyPass, in source, in destination, upload.Cycle);
+        }
+
+        SDL.EndGPUCopyPass(copyPass);
+        pendingBufferUploads.Clear();
+    }
+
     CopyPass beginCopyPass(string description)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var standalone = commandBuffer == nint.Zero;
-        var copyCommandBuffer = standalone ? acquireCommandBuffer(description) : commandBuffer;
+        var standalone = CommandBuffer == nint.Zero;
+        var copyCommandBuffer = standalone ? acquireCommandBuffer(description) : CommandBuffer;
 
         try
         {
             if (!standalone)
+            {
+                if (pendingBufferUploads.Count != 0) FlushPendingBufferUploads();
                 EndRenderPass();
+            }
 
             var copyPass = SDL.BeginGPUCopyPass(copyCommandBuffer);
             if (copyPass == nint.Zero)
@@ -344,6 +566,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         {
             if (standalone)
                 SDL.CancelGPUCommandBuffer(copyCommandBuffer);
+
             throw;
         }
     }
@@ -356,7 +579,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
             SDL.GenerateMipmapsForGPUTexture(copyPass.CommandBuffer, textureToGenerateMipmapsFor);
 
         if (copyPass.Standalone)
-            submitStandaloneCommandBuffer(copyPass.CommandBuffer, null);
+            submitStandaloneCommandBuffer(copyPass.CommandBuffer);
     }
 
     static void cancelCopyPass(CopyPass copyPass, bool submitted)
@@ -365,92 +588,31 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
             SDL.CancelGPUCommandBuffer(copyPass.CommandBuffer);
     }
 
-    void releaseOrRetire(nint handle, ResourceKind kind)
-    {
-        if (handle == nint.Zero || disposed) return;
-
-        if (commandBuffer != nint.Zero)
-        {
-            (activeCommandReleases ??= rentReleaseBatch()).Add(kind, handle);
-            return;
-        }
-
-        if (submittedWork.Count != 0)
-        {
-            var index = submittedWork.Count - 1;
-            var submission = submittedWork[index];
-            (submission.Resources ??= rentReleaseBatch()).Add(kind, handle);
-            submittedWork[index] = submission;
-            return;
-        }
-
-        releaseResource(DeviceHandle, kind, handle);
-    }
-
     void submitActiveCommandBuffer()
     {
-        if (commandBuffer == nint.Zero) return;
+        if (CommandBuffer == nint.Zero) return;
 
-        var submittedCommandBuffer = commandBuffer;
-        commandBuffer = nint.Zero;
+        EndRenderPass();
+        if (pendingBufferUploads.Count != 0) FlushPendingBufferUploads();
+        UnmapFrameTransferPages();
 
-        submitCommandBufferWithFence(submittedCommandBuffer, activeCommandReleases, activeUploadFences);
-        activeCommandReleases = null;
-        activeUploadFences = null;
-    }
+        var submittedCommandBuffer = CommandBuffer;
+        CommandBuffer = nint.Zero;
 
-    void submitStandaloneCommandBuffer(nint submittedCommandBuffer, ResourceReleaseBatch resources)
-    {
-        submitCommandBufferWithFence(submittedCommandBuffer, resources, null);
-        ReleaseCompletedSubmissions();
-    }
-
-    void submitCommandBufferWithFence(nint submittedCommandBuffer,
-        ResourceReleaseBatch resources,
-        List<SdlUploadFence> uploadFences)
-    {
-        var fence = SDL.SubmitGPUCommandBufferAndAcquireFence(submittedCommandBuffer);
-        if (fence == nint.Zero)
-        {
-            releaseAndReturn(resources);
+        if (!SDL.SubmitGPUCommandBuffer(submittedCommandBuffer))
             throw new InvalidOperationException($"Unable to submit SDL GPU command buffer: {SDL.GetError()}");
-        }
-
-        if (uploadFences is not null)
-            for (var i = 0; i < uploadFences.Count; ++i)
-                uploadFences[i].Attach(fence);
-
-        submittedWork.Add(new(fence, resources, uploadFences));
     }
 
-    void ReleaseCompletedSubmissions()
+    static void submitStandaloneCommandBuffer(nint submittedCommandBuffer)
     {
-        for (var i = submittedWork.Count - 1; i >= 0; --i)
-        {
-            var submission = submittedWork[i];
-            if (!SDL.QueryGPUFence(DeviceHandle, submission.Fence)) continue;
-
-            submission.MarkUploadFencesCompleted();
-            releaseAndReturn(submission.Resources);
-            SDL.ReleaseGPUFence(DeviceHandle, submission.Fence);
-            submittedWork.RemoveAt(i);
-        }
+        if (!SDL.SubmitGPUCommandBuffer(submittedCommandBuffer))
+            throw new InvalidOperationException($"Unable to submit SDL GPU command buffer: {SDL.GetError()}");
     }
 
-    void WaitIdleAndReleaseSubmittedWork()
+    void WaitIdle()
     {
         if (!SDL.WaitForGPUIdle(DeviceHandle))
             throw new InvalidOperationException($"Unable to wait for SDL GPU idle: {SDL.GetError()}");
-
-        for (var i = 0; i < submittedWork.Count; ++i)
-        {
-            var submission = submittedWork[i];
-            submission.MarkUploadFencesCompleted();
-            releaseAndReturn(submission.Resources);
-            SDL.ReleaseGPUFence(DeviceHandle, submission.Fence);
-        }
-        submittedWork.Clear();
-        releaseBatchPool.Clear();
     }
 
     nint acquireCommandBuffer(string description)
@@ -462,110 +624,84 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         return acquiredCommandBuffer;
     }
 
-    ResourceReleaseBatch rentReleaseBatch()
-        => releaseBatchPool.Count != 0 ? releaseBatchPool.Pop() : new();
-
-    void releaseAndReturn(ResourceReleaseBatch resources)
+    FrameTransferPage getFrameTransferPage(int sizeInBytes)
     {
-        if (resources is null) return;
+        foreach (var candidate in frameTransferPages)
+        {
+            var offset = align(candidate.Offset, 4);
+            if (sizeInBytes <= candidate.Capacity - offset)
+                return candidate;
+        }
 
-        resources.ReleaseAll(DeviceHandle);
-        releaseBatchPool.Push(resources);
+        var capacity = DefaultFrameTransferBufferPageSize;
+        while (capacity < sizeInBytes)
+            capacity = checked(capacity * 2);
+
+        var transferCreateInfo = new SDL.GPUTransferBufferCreateInfo
+        {
+            Usage = SDL.GPUTransferBufferUsage.Upload,
+            Size = (uint)capacity
+        };
+
+        var transferBuffer = SDL.CreateGPUTransferBuffer(DeviceHandle, in transferCreateInfo);
+        if (transferBuffer == nint.Zero)
+            throw new InvalidOperationException($"Unable to create SDL frame transfer buffer: {SDL.GetError()}");
+
+        var createdPage = new FrameTransferPage(transferBuffer, capacity);
+        frameTransferPages.Add(createdPage);
+        return createdPage;
     }
 
-    static void releaseResource(nint device, ResourceKind kind, nint handle)
+    void ResetFrameTransferPages()
     {
-        switch (kind)
+        UnmapFrameTransferPages();
+
+        foreach (var page in frameTransferPages)
+            page.Offset = 0;
+    }
+
+    void UnmapFrameTransferPages()
+    {
+        foreach (var page in frameTransferPages)
         {
-            case ResourceKind.Buffer:
-                SDL.ReleaseGPUBuffer(device, handle);
-                break;
+            if (page.Mapped == nint.Zero) continue;
 
-            case ResourceKind.TransferBuffer:
-                SDL.ReleaseGPUTransferBuffer(device, handle);
-                break;
-
-            case ResourceKind.Texture:
-                SDL.ReleaseGPUTexture(device, handle);
-                break;
-
-            case ResourceKind.Sampler:
-                SDL.ReleaseGPUSampler(device, handle);
-                break;
-
-            case ResourceKind.Shader:
-                SDL.ReleaseGPUShader(device, handle);
-                break;
-
-            case ResourceKind.GraphicsPipeline:
-                SDL.ReleaseGPUGraphicsPipeline(device, handle);
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+            SDL.UnmapGPUTransferBuffer(DeviceHandle, page.Buffer);
+            page.Mapped = nint.Zero;
         }
     }
+
+    void ReleaseFrameTransferPages()
+    {
+        UnmapFrameTransferPages();
+
+        foreach (var page in frameTransferPages)
+            ReleaseTransferBuffer(page.Buffer);
+
+        frameTransferPages.Clear();
+    }
+
+    static int align(int value, int alignment)
+        => (value + alignment - 1) & ~(alignment - 1);
 
     readonly record struct CopyPass(nint CommandBuffer, nint Handle, bool Standalone);
 
-    struct SubmittedWork(nint fence, ResourceReleaseBatch resources, List<SdlUploadFence> uploadFences)
+    internal readonly record struct FrameTransferUpload(nint TransferBuffer, uint SourceOffset, nint Data);
+
+    sealed class FrameTransferPage(nint buffer, int capacity)
     {
-        public readonly nint Fence = fence;
-        public ResourceReleaseBatch Resources = resources;
-        readonly List<SdlUploadFence> uploadFences = uploadFences;
-
-        public void MarkUploadFencesCompleted()
-        {
-            if (uploadFences is null) return;
-
-            for (var i = 0; i < uploadFences.Count; ++i)
-                uploadFences[i].MarkCompleted();
-            uploadFences.Clear();
-        }
+        public readonly nint Buffer = buffer;
+        public readonly int Capacity = capacity;
+        public int Offset;
+        public nint Mapped;
     }
 
-    enum ResourceKind
-    {
-        Buffer,
-        TransferBuffer,
-        Texture,
-        Sampler,
-        Shader,
-        GraphicsPipeline
-    }
+    readonly record struct PendingBufferUpload(
+        nint TransferBuffer,
+        nint Buffer,
+        uint SourceOffset,
+        uint Offset,
+        uint Size,
+        bool Cycle);
 
-    sealed class ResourceReleaseBatch
-    {
-        readonly List<ResourceRelease> releases = [];
-
-        public void Add(ResourceKind kind, nint handle)
-        {
-            if (handle == nint.Zero) return;
-
-            releases.Add(new(kind, handle));
-        }
-
-        public void ReleaseAll(nint device)
-        {
-            releaseAll(device, ResourceKind.GraphicsPipeline);
-            releaseAll(device, ResourceKind.Shader);
-            releaseAll(device, ResourceKind.Sampler);
-            releaseAll(device, ResourceKind.Texture);
-            releaseAll(device, ResourceKind.Buffer);
-            releaseAll(device, ResourceKind.TransferBuffer);
-            releases.Clear();
-        }
-
-        void releaseAll(nint device, ResourceKind kind)
-        {
-            for (var i = 0; i < releases.Count; ++i)
-            {
-                var release = releases[i];
-                if (release.Kind == kind)
-                    releaseResource(device, kind, release.Handle);
-            }
-        }
-
-        readonly record struct ResourceRelease(ResourceKind Kind, nint Handle);
-    }
 }

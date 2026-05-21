@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
 using System.Numerics;
-using BrewLib.Util;
+using Util;
 
 public record ButtonStyle : WidgetStyle
 {

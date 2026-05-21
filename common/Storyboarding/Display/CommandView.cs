@@ -2,7 +2,7 @@ namespace StorybrewCommon.Storyboarding.Display;
 
 using System.Runtime.CompilerServices;
 using Animations;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 
 internal readonly struct CommandView<TValue> where TValue : struct, ICommandValue<TValue>
 {

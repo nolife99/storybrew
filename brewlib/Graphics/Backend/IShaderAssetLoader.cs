@@ -1,6 +1,6 @@
 namespace BrewLib.Graphics.Backend;
 
-using BrewLib.Graphics.Shaders;
+using Shaders;
 
 public interface IShaderAssetLoader
 {

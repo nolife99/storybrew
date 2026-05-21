@@ -26,6 +26,7 @@ public static class ShaderUtil
             ShaderValueType.BoolVec4 => "bvec4",
             ShaderValueType.FloatMat2 => "mat2",
             ShaderValueType.FloatMat3 => "mat3",
+            ShaderValueType.FloatMat3x2 => "mat3x2",
             ShaderValueType.FloatMat4 => "mat4",
             ShaderValueType.Sampler1D => "sampler1D",
             ShaderValueType.Sampler2D => "sampler2D",

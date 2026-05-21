@@ -4,16 +4,16 @@ using System;
 using System.Collections.Frozen;
 using System.IO;
 using System.Numerics;
-using BrewLib.Graphics.Drawables;
-using BrewLib.Graphics.Textures;
-using BrewLib.IO;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
+using Graphics.Drawables;
+using Graphics.Textures;
+using IO;
 using SDL3;
 using SixLabors.ImageSharp;
+using Styles;
 using Tiny;
 using Tiny.Formats.Json;
 using Tiny.PooledCollections.Generic;
+using Util;
 
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {

@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using BrewLib.IO;
-using BrewLib.Memory;
-using BrewLib.Util;
+using IO;
 using ManagedBass;
+using Memory;
+using Util;
 
 public class AudioSample : IDisposable
 {

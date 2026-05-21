@@ -1,13 +1,13 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
-using BrewLib.Graphics.Textures;
-using osuTK.Graphics.OpenGL;
+using Silk.NET.OpenGL;
+using Textures;
 
 static class OpenGlTextureOptions
 {
     public static void ApplyParameters(TextureOptions options, TextureTarget texture)
     {
-        GL.TexParameter(texture,
+        OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureMinFilter,
             (int)(options.TextureMinFilter switch
             {
@@ -19,7 +19,7 @@ static class OpenGlTextureOptions
                 _ => TextureMinFilter.Linear
             }));
 
-        GL.TexParameter(texture,
+        OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureMagFilter,
             (int)(options.TextureMagFilter switch
             {
@@ -27,10 +27,10 @@ static class OpenGlTextureOptions
                 _ => TextureMagFilter.Linear
             }));
 
-        GL.TexParameter(texture,
+        OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureWrapS,
             (int)toOpenGlWrap(options.TextureWrapS));
-        GL.TexParameter(texture,
+        OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureWrapT,
             (int)toOpenGlWrap(options.TextureWrapT));
     }
@@ -38,7 +38,7 @@ static class OpenGlTextureOptions
     static TextureWrapMode toOpenGlWrap(TextureWrap wrap)
         => wrap switch
         {
-            TextureWrap.Clamp => TextureWrapMode.Clamp,
+            TextureWrap.Clamp => TextureWrapMode.ClampToEdge,
             TextureWrap.Repeat => TextureWrapMode.Repeat,
             TextureWrap.MirroredRepeat => TextureWrapMode.MirroredRepeat,
             TextureWrap.ClampToBorder => TextureWrapMode.ClampToBorder,

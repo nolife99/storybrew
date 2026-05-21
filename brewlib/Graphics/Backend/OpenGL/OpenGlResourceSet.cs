@@ -1,9 +1,7 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Textures;
-using osuTK.Graphics.OpenGL;
+using Textures;
 
 public sealed class OpenGlResourceSet : IResourceSet
 {
@@ -57,7 +55,7 @@ public sealed class OpenGlResourceSet : IResourceSet
 
             var textures = textureBinding.Textures.AsSpan(0, textureBinding.Count);
             device.BindTextures(textures, textureBinding.TextureUnits);
-            GL.Uniform1(textureBinding.Location, textureBinding.Count, textureBinding.TextureUnits);
+            OpenGlApi.GL.Uniform1(textureBinding.Location, textureBinding.TextureUnits.AsSpan(0, textureBinding.Count));
         }
     }
 

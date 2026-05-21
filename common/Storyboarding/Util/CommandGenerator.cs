@@ -6,12 +6,12 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Animations;
 using BrewLib.Memory;
+using Commands;
+using CommandValues;
+using Scripting;
 using SixLabors.ImageSharp;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator

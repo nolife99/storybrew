@@ -1,25 +1,24 @@
 namespace BrewLib.Graphics;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Backend.OpenGL;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Text;
-using BrewLib.Graphics.Textures;
-using BrewLib.IO;
-using osuTK.Graphics.OpenGL;
+using Backend;
+using Backend.OpenGL;
+using Cameras;
+using IO;
+using Renderers;
+using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Text;
+using Textures;
 
 public static class DrawState
 {
     static IRenderer renderer;
     static bool flushingRenderer;
     static int drawCalls;
+    static int bufferedRendererFlushDepth;
 
     public static bool UseSrgb { get; set; }
-    public static bool UseTextureCompression { get; set; }
 
     public static IGraphicsBackend Backend { get; private set; }
     public static IGraphicsDevice Device => Backend?.Device;
@@ -82,13 +81,15 @@ public static class DrawState
         WhitePixel = textureFactory.Create(Color.White,
             textureOptions: new()
             {
-                TextureMagFilter = TextureFilter.Nearest, TextureMinFilter = TextureFilter.Nearest
+                TextureMagFilter = TextureFilter.Nearest,
+                TextureMinFilter = TextureFilter.Nearest
             });
 
         TransparentPixel = textureFactory.Create(Color.Transparent,
             textureOptions: new()
             {
-                TextureMagFilter = TextureFilter.Nearest, TextureMinFilter = TextureFilter.Nearest
+                TextureMagFilter = TextureFilter.Nearest,
+                TextureMinFilter = TextureFilter.Nearest
             });
 
         TextGenerator = new(resourceContainer);
@@ -116,13 +117,36 @@ public static class DrawState
         return totalDraws;
     }
 
+    public static void BeginBufferedRendererFlushes()
+        => ++bufferedRendererFlushDepth;
+
+    public static void EndBufferedRendererFlushes()
+    {
+        if (bufferedRendererFlushDepth <= 0)
+            throw new InvalidOperationException("Buffered renderer flushes are not active");
+
+        --bufferedRendererFlushDepth;
+    }
+
     public static void FlushRenderer(bool canBuffer = false)
+        => flushRenderer(canBuffer || bufferedRendererFlushDepth != 0);
+
+    public static void FlushRendererImmediate()
+        => flushRenderer(false);
+
+    static void flushRenderer(bool canBuffer)
     {
         if (renderer is null || flushingRenderer) return;
 
         flushingRenderer = true;
-        renderer.Flush(canBuffer);
-        flushingRenderer = false;
+        try
+        {
+            renderer.Flush(canBuffer);
+        }
+        finally
+        {
+            flushingRenderer = false;
+        }
     }
 
     internal static void CountDrawCall() => ++drawCalls;
@@ -167,6 +191,7 @@ public static class DrawState
         {
             if (viewport == value) return;
 
+            FlushRendererImmediate();
             viewport = value;
 
             Device.SetViewport(viewport);
@@ -185,7 +210,7 @@ public static class DrawState
         {
             if (clipRegion == value) return;
 
-            FlushRenderer();
+            FlushRendererImmediate();
             clipRegion = value;
 
             Device.SetScissor(clipRegion.HasValue ?

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using BrewLib.Graphics.Backend;
+using Backend;
 
 public sealed class Shader : IDisposable
 {
@@ -14,7 +14,7 @@ public sealed class Shader : IDisposable
     bool disposed, started;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode, IGraphicsBackend backend = null)
-        : this(new ShaderProgramSource("generated", vertexShaderCode, fragmentShaderCode), backend)
+        : this(new("generated", vertexShaderCode, fragmentShaderCode), backend)
     {
     }
 

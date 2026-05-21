@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-using BrewLib.Util;
 using SixLabors.ImageSharp;
+using Util;
 
 public record ImageStyle : WidgetStyle
 {

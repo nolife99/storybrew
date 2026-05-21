@@ -2,7 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using StorybrewCommon.Storyboarding;
+using Storyboarding;
 
 ///<summary> A static class providing keyframing easing functions. </summary>
 public static class EasingFunctions

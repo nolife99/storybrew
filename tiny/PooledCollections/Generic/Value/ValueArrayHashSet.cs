@@ -75,7 +75,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public Enumerator GetEnumerator() => new(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Add(T item) => TryGetIndex(item, out _);
@@ -99,7 +99,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     public bool Contains(T item) => TryFindIndex(item, out _);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Contains(in T item) => TryFindIndex(in item, out _);
+    public bool Contains(scoped ref readonly T item) => TryFindIndex(in item, out _);
 
     public void EnsureCapacity(int capacity)
     {
@@ -132,7 +132,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetIndex(in T item)
+    public int GetIndex(scoped ref readonly T item)
     {
 #if DEBUG
         if (TryFindIndex(in item, out var findIndex) == true) return findIndex;
@@ -274,7 +274,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     public bool Remove(T item) => Remove(item, out _);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Remove(in T item) => Remove(in item, out _);
+    public bool Remove(scoped ref readonly T item) => Remove(in item, out _);
 
     public bool Remove(T item, out int index)
     {
@@ -341,7 +341,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
         return true;
     }
 
-    public bool Remove(in T item, out int index)
+    public bool Remove(scoped ref readonly T item, out int index)
     {
         var hash = item.GetHashCode();
         var bucketIndex = Reduce((uint)hash, (uint)_buckets.Length, _fastModBucketsMultiplier);
@@ -433,7 +433,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
         return false;
     }
 
-    public bool TryFindIndex(in T item, out int findIndex)
+    public bool TryFindIndex(scoped ref readonly T item, out int findIndex)
     {
         var hash = item.GetHashCode();
 
@@ -458,21 +458,33 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest) => CopyTo(dest.AsSpan(), 0, Count);
+    public void CopyTo(T[] dest)
+    {
+        var span = dest.AsSpan();
+        CopyTo(in span, 0, Count);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] array, int arrayIndex) => CopyTo(array.AsSpan(), arrayIndex, Count);
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        var span = array.AsSpan();
+        CopyTo(in span, arrayIndex, Count);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
+    public void CopyTo(T[] dest, int destIndex, int count)
+    {
+        var span = dest.AsSpan();
+        CopyTo(in span, destIndex, count);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped in Span<T> dest) => CopyTo(in dest, 0, Count);
+    public void CopyTo(scoped ref readonly Span<T> dest) => CopyTo(in dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped in Span<T> dest, int destIndex) => CopyTo(in dest, destIndex, Count);
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex) => CopyTo(in dest, destIndex, Count);
 
-    public void CopyTo(scoped in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -544,10 +556,10 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
     void ICollection<T>.Add(T item) => Add(item);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
     public struct Enumerator : IEnumerator<T>
     {
@@ -560,7 +572,7 @@ public struct ValueArrayHashSet<T> : IArrayHashSet<T>, IDisposable where T : not
         int _count;
         int _index;
 
-        public Enumerator(in ValueArrayHashSet<T> set)
+        public Enumerator(scoped ref readonly ValueArrayHashSet<T> set)
         {
             _set = set;
             _index = -1;

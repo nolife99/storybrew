@@ -22,6 +22,7 @@ public enum ShaderValueType
     BoolVec4,
     FloatMat2,
     FloatMat3,
+    FloatMat3x2,
     FloatMat4,
     Sampler1D,
     Sampler2D,

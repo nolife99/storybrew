@@ -2,10 +2,10 @@ namespace BrewLib.Graphics.Backend;
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
-using BrewLib.IO;
+using IO;
+using Renderers;
+using Shaders;
+using Textures;
 
 public interface IGraphicsBackend : IDisposable
 {
@@ -22,6 +22,9 @@ public interface IGraphicsBackend : IDisposable
     IShaderProgramFactory ShaderPrograms { get; }
     ITextureFactory TextureFactory { get; }
     IAsyncTextureUploader TextureUploader { get; }
+
+    bool PrefersBufferedTransientDraws => false;
+    bool PrefersDeferredRendererFlushes => false;
 
     bool SupportsShaderExtension(string extensionName);
     void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer);

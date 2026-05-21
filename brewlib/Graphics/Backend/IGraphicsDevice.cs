@@ -1,9 +1,9 @@
 namespace BrewLib.Graphics.Backend;
 
 using System;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
+using Shaders;
 using SixLabors.ImageSharp;
+using Textures;
 
 public interface IGraphicsDevice : IDisposable
 {

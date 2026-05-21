@@ -18,6 +18,8 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
+using Mapset;
+using Scripting;
 using SDL3;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -26,15 +28,13 @@ using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
-using StorybrewEditor.Mapset;
-using StorybrewEditor.Scripting;
-using StorybrewEditor.Util;
 using Tiny;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
+using Util;
 using ZLinq;
 using Path = System.IO.Path;
 
@@ -217,27 +217,27 @@ public sealed partial class Project : IDisposable
         if (reloadTask is not null && !reloadTask.IsCompleted) return;
 
         reloadTask = Task.Run(async () =>
-            {
-                while (effectUpdateQueue.Running) await Task.Delay(200);
+        {
+            while (effectUpdateQueue.Running) await Task.Delay(200);
 
-                await Program.Schedule(proj =>
+            await Program.Schedule(proj =>
+                {
+                    if (proj.Disposed) return;
+
+                    if (proj.isReloadingTextures)
                     {
-                        if (proj.Disposed) return;
+                        proj.reloadTextures();
+                        proj.isReloadingTextures = false;
+                    }
 
-                        if (proj.isReloadingTextures)
-                        {
-                            proj.reloadTextures();
-                            proj.isReloadingTextures = false;
-                        }
-
-                        if (proj.isReloadingAudio)
-                        {
-                            proj.reloadAudio();
-                            proj.isReloadingAudio = false;
-                        }
-                    },
-                    this);
-            });
+                    if (proj.isReloadingAudio)
+                    {
+                        proj.reloadAudio();
+                        proj.isReloadingAudio = false;
+                    }
+                },
+                this);
+        });
     }
 
     public void QueueTexturePreload(IEnumerable<string> texturePaths)
@@ -266,6 +266,7 @@ public sealed partial class Project : IDisposable
             .Where(static path => !string.IsNullOrWhiteSpace(path))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
         if (paths.Length == 0) return;
 
         texturePreloadCancellation = new();
@@ -287,7 +288,7 @@ public sealed partial class Project : IDisposable
         var options = new ParallelOptions
         {
             CancellationToken = cancellationToken,
-            MaxDegreeOfParallelism = int.Max(1, Environment.ProcessorCount / 4),
+            MaxDegreeOfParallelism = int.Max(1, Environment.ProcessorCount / 4)
         };
 
         return Parallel.ForEachAsync(texturePaths,
@@ -308,29 +309,31 @@ public sealed partial class Project : IDisposable
                                 textureOptions: textureOptions,
                                 cancellationToken: token)
                             .ConfigureAwait(false);
+
                         if (preparedUpload is null) return;
 
                         token.ThrowIfCancellationRequested();
                         await Program.Schedule(static upload => upload.Project.addPreloadedTexture(upload),
                                 new TexturePreloadUpload(this, resolvedPath, preparedUpload, textureUploader))
                             .ConfigureAwait(false);
+
                         preparedUpload = null;
                         return;
                     }
 
                     bitmap = await TextureLoader.LoadBitmapAsync(resolvedPath, cancellationToken: token)
                         .ConfigureAwait(false);
+
                     if (bitmap is null) return;
 
                     token.ThrowIfCancellationRequested();
                     await Program.Schedule(static upload => upload.Project.addPreloadedTexture(upload),
                             new TexturePreloadUpload(this, resolvedPath, bitmap, textureOptions))
                         .ConfigureAwait(false);
+
                     bitmap = null;
                 }
-                catch (IOException)
-                {
-                }
+                catch (IOException) { }
                 finally
                 {
                     preparedUpload?.Dispose();
@@ -460,7 +463,10 @@ public sealed partial class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         ScriptedEffect effect =
-            new(this, scriptManager.Get(scriptName), multithreaded) { Name = GetUniqueEffectName(scriptName) };
+            new(this, scriptManager.Get(scriptName), multithreaded)
+            {
+                Name = GetUniqueEffectName(scriptName)
+            };
 
         effects.Add(effect);
         Changed = true;
@@ -673,7 +679,9 @@ public sealed partial class Project : IDisposable
 
         assetWatcher = new()
         {
-            Path = assetsFolderPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size
+            Path = assetsFolderPath,
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.Size
         };
 
         assetWatcher.Created += assetWatcher_OnFileChanged;
@@ -883,7 +891,7 @@ public sealed partial class Project : IDisposable
                 throw new InvalidDataException(
                     $"Corrupted project: expected {effectName.Length} characters got {read}");
 
-            using (var temp = TempArray.Create<char>(effectName)) effect.Name = temp.AsReadOnlySpan();
+            using (var temp = TempArray.Create(effectName)) effect.Name = temp.AsReadOnlySpan();
 
             var fieldCount = r.ReadInt32();
             for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
@@ -918,7 +926,9 @@ public sealed partial class Project : IDisposable
             var effect = effects[r.ReadInt32()];
             effect.AddPlaceholder(new(name, effect)
             {
-                DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean()
+                DiffSpecific = r.ReadBoolean(),
+                OsbLayer = (OsbLayer)r.ReadInt32(),
+                Visible = r.ReadBoolean()
             });
         }
 
@@ -949,11 +959,21 @@ public sealed partial class Project : IDisposable
         using SafeDirectoryWriter directoryWriter = new(targetDirectory);
         TinyObject indexRoot = new()
         {
-            { "FormatVersion", Version },
-            { "BeatmapId", MainBeatmap.Id },
-            { "BeatmapName", MainBeatmap.Name },
-            { "Assemblies", importedAssemblies },
-            { "Layers", LayerManager.Layers.Select(l => StringHelper.GetMd5(l.Identifier)) }
+            {
+                "FormatVersion", Version
+            },
+            {
+                "BeatmapId", MainBeatmap.Id
+            },
+            {
+                "BeatmapName", MainBeatmap.Name
+            },
+            {
+                "Assemblies", importedAssemblies
+            },
+            {
+                "Layers", LayerManager.Layers.Select(l => StringHelper.GetMd5(l.Identifier))
+            }
         };
 
         var indexPath = directoryWriter.GetPath("index.yaml");
@@ -961,11 +981,21 @@ public sealed partial class Project : IDisposable
 
         TinyObject userRoot = new()
         {
-            { "FormatVersion", Version },
-            { "Editor", Program.FullName },
-            { "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath) },
-            { "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime },
-            { "OwnsOsb", OwnsOsb }
+            {
+                "FormatVersion", Version
+            },
+            {
+                "Editor", Program.FullName
+            },
+            {
+                "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath)
+            },
+            {
+                "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime
+            },
+            {
+                "OwnsOsb", OwnsOsb
+            }
         };
 
         var userPath = directoryWriter.GetPath("user.yaml");
@@ -975,10 +1005,18 @@ public sealed partial class Project : IDisposable
         {
             TinyObject effectRoot = new()
             {
-                { "FormatVersion", Version },
-                { "Name", effect.Name.ToString() },
-                { "Script", effect.BaseName.ToString() },
-                { "Multithreaded", effect.Multithreaded }
+                {
+                    "FormatVersion", Version
+                },
+                {
+                    "Name", effect.Name.ToString()
+                },
+                {
+                    "Script", effect.BaseName.ToString()
+                },
+                {
+                    "Multithreaded", effect.Multithreaded
+                }
             };
 
             TinyObject configRoot = [];
@@ -988,7 +1026,12 @@ public sealed partial class Project : IDisposable
             {
                 TinyObject fieldRoot = new()
                 {
-                    { "Type", field.Type.FullName }, { "Value", ObjectSerializer.ToString(field.Type, field.Value) }
+                    {
+                        "Type", field.Type.FullName
+                    },
+                    {
+                        "Value", ObjectSerializer.ToString(field.Type, field.Value)
+                    }
                 };
 
                 if (field.DisplayName != field.Name) fieldRoot.Add("DisplayName", field.DisplayName);
@@ -1014,10 +1057,18 @@ public sealed partial class Project : IDisposable
                 {
                     TinyObject layerRoot = new()
                     {
-                        { "Name", layer.Name },
-                        { "OsbLayer", layer.OsbLayer },
-                        { "DiffSpecific", layer.DiffSpecific },
-                        { "Visible", layer.Visible }
+                        {
+                            "Name", layer.Name
+                        },
+                        {
+                            "OsbLayer", layer.OsbLayer
+                        },
+                        {
+                            "DiffSpecific", layer.DiffSpecific
+                        },
+                        {
+                            "Visible", layer.Visible
+                        }
                     };
 
                     layersRoot.Add(StringHelper.GetMd5(layer.Identifier), layerRoot);
@@ -1270,9 +1321,8 @@ public sealed partial class Project : IDisposable
             {
                 texturePreloadTask.Wait();
             }
-            catch (AggregateException ex) when (ex.InnerExceptions.All(static e => e is OperationCanceledException))
-            {
-            }
+            catch (AggregateException ex) when (ex.InnerExceptions.All(static e => e is OperationCanceledException)) { }
+
         texturePreloadCancellation?.Dispose();
 
         effectUpdateQueue.Dispose();
@@ -1288,7 +1338,6 @@ public sealed partial class Project : IDisposable
         AudioContainer.Dispose();
 
         LayerManager.Dispose();
-
     }
 
     #endregion

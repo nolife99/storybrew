@@ -1,7 +1,7 @@
 namespace BrewLib.Graphics.Renderers;
 
 using System;
-using BrewLib.Graphics.Textures;
+using Textures;
 
 public sealed class TextureSlotter
 {

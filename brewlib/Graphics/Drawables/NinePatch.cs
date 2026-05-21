@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System.Numerics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
+using Cameras;
+using Renderers;
 using SixLabors.ImageSharp;
+using Textures;
+using Util;
 
 public sealed class NinePatch : Drawable
 {

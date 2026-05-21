@@ -22,7 +22,7 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
     public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal TempDictionaryInternals(in TempDictionary<TKey, TValue> source)
+    internal TempDictionaryInternals(scoped ref readonly TempDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -55,7 +55,7 @@ partial class CollectionInternals
     public static TempDictionaryInternals<TKey, TValue> TransferOwner<TKey, TValue>(
         this scoped ref TempDictionary<TKey, TValue> source)
     {
-        TempDictionaryInternals<TKey, TValue> internals = new(source);
+        TempDictionaryInternals<TKey, TValue> internals = new(in source);
         source.Dispose();
 
         source = ref Unsafe.NullRef<TempDictionary<TKey, TValue>>();

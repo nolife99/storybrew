@@ -13,8 +13,7 @@ public class Settings
 {
     public const string DefaultPath = "settings.cfg";
 
-    public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true), VerboseVsCode = new(false),
-        TextureCompression = new(true);
+    public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true), VerboseVsCode = new(false);
 
     public readonly Setting<int> FrameRate = new(0), UpdateRate = new(0), EffectThreads = new(0);
 

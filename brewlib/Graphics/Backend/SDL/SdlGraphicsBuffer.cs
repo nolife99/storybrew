@@ -3,9 +3,8 @@ namespace BrewLib.Graphics.Backend.SDL;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using BrewLib.Graphics.Backend;
-using BrewLib.Util;
 using SDL3;
+using Util;
 
 public sealed class SdlGraphicsBuffer : IGraphicsBuffer
 {
@@ -72,6 +71,22 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             Allocate(getBufferAllocationSize(requiredSize));
 
         BindingOffset = uploadOffset;
+
+        if (backend.HasActiveFrame)
+        {
+            var upload = backend.AllocateFrameTransfer(sizeInBytes, Description.Name);
+            MemoryMarshal.AsBytes(data).CopyTo(upload.Data.AsSpan<byte>(sizeInBytes));
+
+            backend.QueueBufferUpload(upload.TransferBuffer,
+                bufferHandle,
+                upload.SourceOffset,
+                (uint)uploadOffset,
+                (uint)sizeInBytes,
+                Description.Usage is not GraphicsBufferUsage.Static && uploadOffset == 0,
+                Description.Name);
+            return;
+        }
+
         ensureTransferBuffer(sizeInBytes);
 
         var mapped = SDL.MapGPUTransferBuffer(backend.DeviceHandle, transferBufferHandle, true);
@@ -169,8 +184,8 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             streamOffset = 0;
         }
 
-        var offset = align(streamOffset, 16);
-        streamOffset = align(checked(offset + sizeInBytes), 16);
+        var offset = align(streamOffset, 4);
+        streamOffset = align(checked(offset + sizeInBytes), 4);
         return offset;
     }
 
@@ -184,6 +199,7 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             GraphicsBufferTarget.Index => SDL.GPUBufferUsageFlags.Index,
             GraphicsBufferTarget.Uniform => SDL.GPUBufferUsageFlags.GraphicsStorageRead,
             GraphicsBufferTarget.Storage => SDL.GPUBufferUsageFlags.GraphicsStorageRead | SDL.GPUBufferUsageFlags.ComputeStorageRead,
+            GraphicsBufferTarget.Indirect => SDL.GPUBufferUsageFlags.Indirect,
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
 }

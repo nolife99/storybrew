@@ -7,7 +7,7 @@ using System.IO;
 using System.Numerics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using StorybrewCommon.Storyboarding.CommandValues;
+using Storyboarding.CommandValues;
 using ZLinq;
 
 #pragma warning disable CS1591

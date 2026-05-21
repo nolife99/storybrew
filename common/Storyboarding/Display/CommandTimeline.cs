@@ -4,8 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Animations;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 
 public sealed class CommandTimeline<TValue> where TValue : struct, ICommandValue<TValue>
 {

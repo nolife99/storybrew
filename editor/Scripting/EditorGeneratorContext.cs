@@ -4,14 +4,14 @@ using System;
 using System.Buffers;
 using System.IO;
 using BrewLib.Audio;
+using Mapset;
+using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewEditor.Mapset;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
+using Util;
 
 public sealed class EditorGeneratorContext(Effect effect,
     string projectPath,

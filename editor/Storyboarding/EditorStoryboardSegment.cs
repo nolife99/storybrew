@@ -6,11 +6,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
+using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
@@ -23,14 +23,22 @@ using Tiny.PooledCollections.Generic.Value.Internals;
 public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
     : StoryboardSegment, IDisplayable, IPostProcessable
 {
+    const int ParallelEvaluationThreshold = 128;
+
     readonly List<IDisplayable> displayableObjects = [];
     readonly List<IEvent> eventObjects = [];
     readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
     readonly List<EditorStoryboardSegment> segments = [];
     readonly List<StoryboardObject> storyboardObjects = [];
     readonly List<EditorOsbSprite.DrawWork> spriteDrawWork = [];
+    readonly List<int> activeSpriteIndices = [];
 
     EditorOsbSprite.DrawResult[] spriteDrawResults = [];
+    int[] spriteStartOrder = [], spriteEndOrder = [];
+    bool[] activeSpriteFlags = [];
+    int activeStartCursor, activeEndCursor, activeSpriteCount;
+    float activeSpriteTime = float.NaN;
+    bool activeSpriteIndicesSorted = true;
     readonly SpriteEvaluationContext spriteEvaluationContext = new();
 
     float startTime, endTime;
@@ -79,17 +87,19 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
         var displayTime = project.DisplayTime.TotalMilliseconds;
         if (displayTime < startTime || endTime < displayTime) return;
 
+        var activeIndices = getActiveSpriteIndices((float)displayTime);
+        var count = activeIndices.Count;
+        if (count <= 0) return;
+
         var parentTransform = transform.Matrix;
         var parentRotationOffset = EditorOsbSprite.GetRotationOffset(parentTransform);
         var parentScaleFactor = EditorOsbSprite.GetScaleFactor(parentTransform);
-
-        var count = spriteDrawWork.Count;
-        if (count <= 0) return;
 
         if (spriteDrawResults.Length < count)
             Array.Resize(ref spriteDrawResults, count);
 
         spriteEvaluationContext.Reset(spriteDrawWork,
+            activeIndices,
             spriteDrawResults,
             (float)displayTime,
             altDown,
@@ -100,24 +110,36 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
             layer.Highlight || effect.Highlight,
             parentTransform,
             parentRotationOffset,
-            parentScaleFactor);
+            parentScaleFactor,
+            parentTransform.IsIdentity,
+            project.TextureContainer,
+            project.MapsetPath,
+            project.ProjectAssetFolderPath);
 
-        Parallel.For(0, count, spriteEvaluationContext.Evaluate);
+        if (count < ParallelEvaluationThreshold)
+            for (var i = 0; i < count; ++i)
+                spriteEvaluationContext.Evaluate(i);
+        else
+            Parallel.For(0, count, spriteEvaluationContext.Evaluate);
 
-        for (var i = 0; i < count; i++)
+        for (var i = 0; i < count; ++i)
             EditorOsbSprite.Submit(in spriteDrawResults[i], drawContext, camera, bounds, project, frameStats);
     }
 
     sealed class SpriteEvaluationContext
     {
         List<EditorOsbSprite.DrawWork> work;
+        List<int> activeIndices;
         EditorOsbSprite.DrawResult[] results;
+        TextureContainer textureContainer;
         Matrix3x2 parentTransform;
+        string mapsetPath, projectAssetFolderPath;
         float time, dimFactor, opacity, highlightOpacity, parentRotationOffset, parentScaleFactor;
-        bool altDown, highlightActive;
+        bool altDown, highlightActive, parentTransformIsIdentity;
         long tickCount;
 
         public void Reset(List<EditorOsbSprite.DrawWork> work,
+            List<int> activeIndices,
             EditorOsbSprite.DrawResult[] results,
             float time,
             bool altDown,
@@ -128,10 +150,18 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
             bool highlightActive,
             Matrix3x2 parentTransform,
             float parentRotationOffset,
-            float parentScaleFactor)
+            float parentScaleFactor,
+            bool parentTransformIsIdentity,
+            TextureContainer textureContainer,
+            string mapsetPath,
+            string projectAssetFolderPath)
         {
             this.work = work;
+            this.activeIndices = activeIndices;
             this.results = results;
+            this.textureContainer = textureContainer;
+            this.mapsetPath = mapsetPath;
+            this.projectAssetFolderPath = projectAssetFolderPath;
             this.time = time;
             this.altDown = altDown;
             this.dimFactor = dimFactor;
@@ -142,10 +172,13 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
             this.parentTransform = parentTransform;
             this.parentRotationOffset = parentRotationOffset;
             this.parentScaleFactor = parentScaleFactor;
+            this.parentTransformIsIdentity = parentTransformIsIdentity;
         }
 
         public void Evaluate(int index)
-            => results[index] = EditorOsbSprite.Evaluate(work[index],
+        {
+            var drawWork = work[activeIndices[index]];
+            results[index] = EditorOsbSprite.Evaluate(in drawWork,
                 time,
                 altDown,
                 dimFactor,
@@ -155,7 +188,124 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
                 highlightActive,
                 parentTransform,
                 parentRotationOffset,
-                parentScaleFactor);
+                parentScaleFactor,
+                parentTransformIsIdentity,
+                textureContainer,
+                mapsetPath,
+                projectAssetFolderPath);
+        }
+    }
+
+    List<int> getActiveSpriteIndices(float time)
+    {
+        if (float.IsNaN(activeSpriteTime) || time < activeSpriteTime)
+            rebuildActiveSpriteIndices(time);
+        else
+            advanceActiveSpriteIndices(time);
+
+        activeSpriteTime = time;
+        compactAndSortActiveSpriteIndices();
+        return activeSpriteIndices;
+    }
+
+    void rebuildActiveSpriteIndices(float time)
+    {
+        Array.Clear(activeSpriteFlags, 0, activeSpriteFlags.Length);
+        activeSpriteIndices.Clear();
+        activeStartCursor = 0;
+        activeEndCursor = 0;
+        activeSpriteCount = 0;
+        activeSpriteIndicesSorted = true;
+
+        advanceActiveSpriteIndices(time);
+    }
+
+    void advanceActiveSpriteIndices(float time)
+    {
+        while (activeStartCursor < spriteStartOrder.Length &&
+               spriteDrawWork[spriteStartOrder[activeStartCursor]].StartTime <= time)
+            addActiveSpriteIndex(spriteStartOrder[activeStartCursor++]);
+
+        while (activeEndCursor < spriteEndOrder.Length &&
+               spriteDrawWork[spriteEndOrder[activeEndCursor]].EndTime < time)
+            removeActiveSpriteIndex(spriteEndOrder[activeEndCursor++]);
+    }
+
+    void addActiveSpriteIndex(int index)
+    {
+        if (activeSpriteFlags[index]) return;
+
+        activeSpriteFlags[index] = true;
+        activeSpriteIndices.Add(index);
+        activeSpriteIndicesSorted = false;
+        ++activeSpriteCount;
+    }
+
+    void removeActiveSpriteIndex(int index)
+    {
+        if (!activeSpriteFlags[index]) return;
+
+        activeSpriteFlags[index] = false;
+        activeSpriteIndicesSorted = false;
+        --activeSpriteCount;
+    }
+
+    void compactAndSortActiveSpriteIndices()
+    {
+        if (activeSpriteIndices.Count != activeSpriteCount)
+        {
+            var writeIndex = 0;
+            for (var readIndex = 0; readIndex < activeSpriteIndices.Count; ++readIndex)
+            {
+                var spriteIndex = activeSpriteIndices[readIndex];
+                if (activeSpriteFlags[spriteIndex])
+                    activeSpriteIndices[writeIndex++] = spriteIndex;
+            }
+
+            activeSpriteIndices.RemoveRange(writeIndex, activeSpriteIndices.Count - writeIndex);
+            activeSpriteIndicesSorted = false;
+        }
+
+        if (activeSpriteIndicesSorted || activeSpriteIndices.Count <= 1) return;
+
+        activeSpriteIndices.Sort();
+        activeSpriteIndicesSorted = true;
+    }
+
+    void rebuildSpriteDrawWorkIndex()
+    {
+        var count = spriteDrawWork.Count;
+        if (spriteStartOrder.Length != count)
+        {
+            spriteStartOrder = new int[count];
+            spriteEndOrder = new int[count];
+            activeSpriteFlags = new bool[count];
+        }
+        else
+            Array.Clear(activeSpriteFlags, 0, activeSpriteFlags.Length);
+
+        for (var i = 0; i < count; ++i)
+            spriteStartOrder[i] = spriteEndOrder[i] = i;
+
+        Array.Sort(spriteStartOrder, compareSpriteStart);
+        Array.Sort(spriteEndOrder, compareSpriteEnd);
+
+        activeSpriteIndices.Clear();
+        activeStartCursor = activeEndCursor = activeSpriteCount = 0;
+        activeSpriteTime = float.NaN;
+        activeSpriteIndicesSorted = true;
+    }
+
+    int compareSpriteStart(int left, int right)
+    {
+        var value = spriteDrawWork[left].StartTime.CompareTo(spriteDrawWork[right].StartTime);
+        return value != 0 ? value : left.CompareTo(right);
+    }
+
+    int compareSpriteEnd(int left, int right)
+    {
+        var value = spriteDrawWork[left].EndTime.CompareTo(spriteDrawWork[right].EndTime);
+        return value != 0 ? value : left.CompareTo(right);
     }
 
     void buildSpriteDrawWork(List<EditorOsbSprite.DrawWork> work,
@@ -199,6 +349,7 @@ public sealed class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer
 
         spriteDrawWork.Clear();
         buildSpriteDrawWork(spriteDrawWork, in StoryboardTransform.Identity, 0);
+        rebuildSpriteDrawWorkIndex();
     }
 
     public void CollectTexturePaths(ISet<string> texturePaths)

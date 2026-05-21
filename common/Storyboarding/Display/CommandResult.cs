@@ -1,8 +1,7 @@
 namespace StorybrewCommon.Storyboarding.Display;
 
 using System.Runtime.CompilerServices;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 
 /// <summary>
 /// The absolute result of a command that can be given to an <see cref="OsbSprite"/> to change its properties over

@@ -12,9 +12,6 @@
     <BaseIntermediateOutputPath>..\..\cache\</BaseIntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="osuTK.Mathematics">
-      <HintPath>..\..\osuTK.Mathematics.dll</HintPath>
-    </Reference>
     <Reference Include="SixLabors.Fonts">
       <HintPath>..\..\SixLabors.Fonts.dll</HintPath>
     </Reference>

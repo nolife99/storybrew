@@ -2,16 +2,14 @@ namespace BrewLib.Graphics.Backend.OpenGL;
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using BrewLib.Graphics.Backend;
-using osuTK.Graphics.OpenGL;
+using Silk.NET.OpenGL;
 
 public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
 {
-    readonly BufferTarget target;
-    readonly BufferUsageHint usage;
+    readonly BufferTargetARB target;
+    readonly BufferUsageARB usage;
 
-    int bufferId;
+    uint bufferId;
     bool disposed;
 
     public OpenGlGraphicsBuffer(GraphicsBufferDescription description)
@@ -19,17 +17,17 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
         Description = description;
         target = toOpenGlTarget(description.Target);
         usage = toOpenGlUsage(description.Usage);
-        bufferId = GL.GenBuffer();
+        bufferId = OpenGlApi.GL.GenBuffer();
 
         if (description.SizeInBytes > 0) Allocate(description.SizeInBytes);
     }
 
-    public GraphicsResourceHandle NativeHandle => new("OpenGL", bufferId);
+    public GraphicsResourceHandle NativeHandle => new("OpenGL", (nint)bufferId);
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
 
-    internal int BufferId => bufferId;
-    internal BufferTarget Target => target;
+    internal uint BufferId => bufferId;
+    internal BufferTargetARB Target => target;
 
     public void Allocate(int sizeInBytes)
     {
@@ -37,7 +35,7 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
         if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
 
         Bind();
-        GL.BufferData(target, sizeInBytes, IntPtr.Zero, usage);
+        OpenGlApi.AllocateBuffer(target, sizeInBytes, usage);
         SizeInBytes = sizeInBytes;
     }
 
@@ -48,12 +46,8 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
         var sizeInBytes = data.Length * Unsafe.SizeOf<T>();
         Bind();
 
-        if (data.IsEmpty) GL.BufferData(target, sizeInBytes, IntPtr.Zero, usage);
-        else
-            GL.BufferData(target,
-                sizeInBytes,
-                ref MemoryMarshal.GetReference(data),
-                usage);
+        if (data.IsEmpty) OpenGlApi.AllocateBuffer(target, sizeInBytes, usage);
+        else OpenGlApi.GL.BufferData(target, data, usage);
 
         SizeInBytes = sizeInBytes;
     }
@@ -61,36 +55,37 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
     public void Invalidate()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (DrawState.CanInvalidate) GL.InvalidateBufferData(bufferId);
+        if (DrawState.CanInvalidate) OpenGlApi.GL.InvalidateBufferData(bufferId);
     }
 
-    internal void Bind() => GL.BindBuffer(target, bufferId);
+    internal void Bind() => OpenGlApi.GL.BindBuffer(target, bufferId);
 
     public void Dispose()
     {
         if (disposed) return;
 
-        GL.DeleteBuffer(bufferId);
+        OpenGlApi.GL.DeleteBuffer(bufferId);
         bufferId = 0;
         disposed = true;
     }
 
-    static BufferTarget toOpenGlTarget(GraphicsBufferTarget target)
+    static BufferTargetARB toOpenGlTarget(GraphicsBufferTarget target)
         => target switch
         {
-            GraphicsBufferTarget.Vertex => BufferTarget.ArrayBuffer,
-            GraphicsBufferTarget.Index => BufferTarget.ElementArrayBuffer,
-            GraphicsBufferTarget.Uniform => BufferTarget.UniformBuffer,
-            GraphicsBufferTarget.Storage => BufferTarget.ShaderStorageBuffer,
+            GraphicsBufferTarget.Vertex => BufferTargetARB.ArrayBuffer,
+            GraphicsBufferTarget.Index => BufferTargetARB.ElementArrayBuffer,
+            GraphicsBufferTarget.Uniform => BufferTargetARB.UniformBuffer,
+            GraphicsBufferTarget.Storage => BufferTargetARB.ShaderStorageBuffer,
+            GraphicsBufferTarget.Indirect => BufferTargetARB.DrawIndirectBuffer,
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
 
-    static BufferUsageHint toOpenGlUsage(GraphicsBufferUsage usage)
+    static BufferUsageARB toOpenGlUsage(GraphicsBufferUsage usage)
         => usage switch
         {
-            GraphicsBufferUsage.Static => BufferUsageHint.StaticDraw,
-            GraphicsBufferUsage.Dynamic => BufferUsageHint.DynamicDraw,
-            GraphicsBufferUsage.Stream => BufferUsageHint.StreamDraw,
+            GraphicsBufferUsage.Static => BufferUsageARB.StaticDraw,
+            GraphicsBufferUsage.Dynamic => BufferUsageARB.DynamicDraw,
+            GraphicsBufferUsage.Stream => BufferUsageARB.StreamDraw,
             _ => throw new ArgumentOutOfRangeException(nameof(usage), usage, null)
         };
 }

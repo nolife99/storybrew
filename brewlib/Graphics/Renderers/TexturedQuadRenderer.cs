@@ -1,33 +1,31 @@
 namespace BrewLib.Graphics.Renderers;
 
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
+using Backend;
+using Cameras;
+using Shaders;
 using SixLabors.ImageSharp.PixelFormats;
+using Textures;
+using Util;
 
 public sealed class TexturedQuadRenderer : IQuadRenderer
 {
     const int VertexPerQuad = 6;
 
     static readonly ShaderUniformBinding<Matrix4x4> CombinedMatrixUniform = new("u_combinedMatrix",
-        ShaderValueType.FloatMat4,
-        ShaderBindingStage.Vertex,
-        0);
+        ShaderValueType.FloatMat4);
 
     static readonly ShaderSamplerBinding TexturesSampler = new("u_textures");
 
     static readonly ShaderAttributeBinding VertexAttribute = new("a_vertex", ShaderValueType.FloatVec2);
-    static readonly ShaderAttributeBinding TransformXAttribute = new("a_transformX", ShaderValueType.FloatVec2);
-    static readonly ShaderAttributeBinding TransformYAttribute = new("a_transformY", ShaderValueType.FloatVec2);
-    static readonly ShaderAttributeBinding TransformOriginAttribute = new("a_transformOrigin", ShaderValueType.FloatVec2);
+    static readonly ShaderAttributeBinding TransformAttribute = new("a_transform", ShaderValueType.FloatMat3x2);
     static readonly ShaderAttributeBinding UvAttribute = new("a_uv", ShaderValueType.FloatVec4);
     static readonly ShaderAttributeBinding ColorAttribute = new("a_color", ShaderValueType.FloatVec4);
     static readonly ShaderAttributeBinding TextureSlotAttribute = new("a_textureSlot", ShaderValueType.Float);
@@ -42,25 +40,30 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         new(1, 0)
     ];
 
-    readonly TextureSlotter textureSlotter;
+    readonly bool bufferTransientDraws;
+    readonly bool useIndirectSplitDraws;
+    readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
+    readonly IGraphicsBuffer indirectBuffer;
+    readonly ITransientGraphicsBuffer instanceBuffer;
+    readonly int instanceStride, instanceBatchCapacity;
+    readonly List<TexturedQuadBatch> pendingBatches;
     readonly IRenderPipeline pipeline;
     readonly IResourceSet resources;
+    readonly TextureSlotter textureSlotter;
     readonly IGraphicsBuffer vertexBuffer;
-    readonly ITransientGraphicsBuffer instanceBuffer;
-    readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
-    readonly int instanceStride, instanceBatchCapacity;
 
     ICamera camera;
     bool disposed, rendering;
-    Matrix4x4 transformMatrix = Matrix4x4.Identity;
+    bool textureBatchHasSamplerIdentity;
+    GraphicsResourceHandle textureBatchSamplerIdentity;
+    IndirectDrawCommand[] indirectCommands;
     TransientBufferAllocation instanceAllocation;
-    nint instanceData;
-    int instanceCount;
+    int instanceCount, primaryInstanceCapacity;
+    nint instanceData, instanceDataSecondary;
+    Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
     public TexturedQuadRenderer(int initialBatchCapacity)
-        : this(null, initialBatchCapacity)
-    {
-    }
+        : this(null, initialBatchCapacity) { }
 
     public TexturedQuadRenderer(IGraphicsBackend backend = null, int initialBatchCapacity = 8192)
     {
@@ -72,10 +75,16 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
         instanceStride = Unsafe.SizeOf<TexturedQuadInstance>();
         instanceBatchCapacity = int.Max(1, initialBatchCapacity);
+        bufferTransientDraws = backend.PrefersBufferedTransientDraws;
+        useIndirectSplitDraws = bufferTransientDraws && backend.Capabilities.Has(GraphicsBackendFeatures.IndirectDraws);
+        pendingBatches = bufferTransientDraws ? [] : null;
         textureSlotter = TextureSlotter.ForFragmentShader();
 
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage,
-            textureSlotter.Capacity));
+            textureSlotter.Capacity,
+            backend.Capabilities.Has(GraphicsBackendFeatures.NativeNonUniformTextureIndexing),
+            backend.Capabilities.Has(GraphicsBackendFeatures.ManualColorCorrection)));
+
         resources = pipeline.CreateResourceSet();
         combinedMatrixUniform = pipeline.GetUniform(CombinedMatrixUniform);
 
@@ -88,19 +97,18 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
                 GraphicsBufferUsage.Stream),
             getRingCapacity(instanceStride * instanceBatchCapacity));
 
-        vertexBuffer.SetData<Vector2>(UnitQuadVertices);
+        if (useIndirectSplitDraws)
+        {
+            indirectCommands = new IndirectDrawCommand[2];
+            indirectBuffer = backend.Buffers.CreateBuffer(new(nameof(TexturedQuadRenderer) + ".Indirect",
+                GraphicsBufferTarget.Indirect,
+                GraphicsBufferUsage.Stream));
+        }
+
+        vertexBuffer.SetData(UnitQuadVertices);
         pipeline.BindVertexBuffer(0, vertexBuffer);
         pipeline.BindVertexBuffer(1, instanceBuffer.Buffer);
-
     }
-
-    public PrimitiveTopology Topology => PrimitiveTopology.Triangles;
-    public PrimitiveBatchFeatures BatchFeatures
-        => PrimitiveBatchFeatures.PainterOrdered |
-           PrimitiveBatchFeatures.Batched |
-           PrimitiveBatchFeatures.Instanced |
-           PrimitiveBatchFeatures.Textured |
-           PrimitiveBatchFeatures.VertexColored;
 
     public Matrix4x4 TransformMatrix
     {
@@ -113,6 +121,15 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             transformMatrix = value;
         }
     }
+
+    public PrimitiveTopology Topology => PrimitiveTopology.Triangles;
+
+    public PrimitiveBatchFeatures BatchFeatures
+        => PrimitiveBatchFeatures.PainterOrdered |
+            PrimitiveBatchFeatures.Batched |
+            PrimitiveBatchFeatures.Instanced |
+            PrimitiveBatchFeatures.Textured |
+            PrimitiveBatchFeatures.VertexColored;
 
     public ICamera Camera
     {
@@ -134,7 +151,8 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void IRenderer.EndRendering()
     {
-        if (instanceCount != 0) ((IRenderer)this).Flush();
+        if (instanceCount != 0) ((IRenderer)this).Flush(bufferTransientDraws);
+        replayPendingBatches();
 
         pipeline.Unbind();
         textureSlotter.Clear();
@@ -143,48 +161,348 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void IRenderer.Flush(bool canBuffer)
     {
-        if (instanceCount == 0) return;
+        if (instanceCount == 0)
+        {
+            if (!canBuffer) replayPendingBatches();
+            return;
+        }
 
-        var usedBytes = instanceCount * instanceStride;
-        instanceBuffer.Commit(in instanceAllocation, usedBytes);
+        if (bufferTransientDraws && canBuffer)
+        {
+            queueCurrentBatch();
+            return;
+        }
 
-        pipeline.Bind();
-
-        combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
-
-        pipeline.BindVertexBuffer(1, instanceAllocation.Buffer, instanceAllocation.Offset);
-
-        resources.SetTextures(0, textureSlotter.Textures);
-        resources.Bind();
-
-        pipeline.DrawInstanced(new(VertexPerQuad, instanceCount));
-        DrawState.CountDrawCall();
-        instanceBuffer.MarkSubmitted(in instanceAllocation, usedBytes);
-
-        resetInstanceBatch();
-        textureSlotter.Clear();
+        replayPendingBatches();
+        drawCurrentBatch();
     }
 
     void IQuadRenderer.Draw(scoped ref readonly QuadPrimitive quad, ITextureRegion texture)
     {
         if (instanceCount == instanceBatchCapacity)
-            DrawState.FlushRenderer();
+            DrawState.FlushRenderer(true);
 
-        if (!textureSlotter.TryGetSlot(texture.Texture, out var textureSlot))
+        var textureResource = texture.Texture;
+        if (shouldSplitBatchForSampler(textureResource))
+            DrawState.FlushRenderer(true);
+        trackSamplerState(textureResource);
+
+        if (!textureSlotter.TryGetSlot(textureResource, out var textureSlot))
         {
-            DrawState.FlushRenderer();
-            if (!textureSlotter.TryGetSlot(texture.Texture, out textureSlot))
+            DrawState.FlushRenderer(true);
+            trackSamplerState(textureResource);
+            if (!textureSlotter.TryGetSlot(textureResource, out textureSlot))
                 throw new InvalidOperationException("Unable to allocate a texture slot for the quad batch");
         }
 
         ensureInstanceBatch();
-        Unsafe.Add(ref instanceData.AsRef<TexturedQuadInstance>(), instanceCount++) = createInstance(in quad, textureSlot);
+
+        var instance = createInstance(in quad, textureSlot);
+        if (instanceCount < primaryInstanceCapacity)
+            Unsafe.Add(ref instanceData.AsRef<TexturedQuadInstance>(), instanceCount) = instance;
+        else
+            Unsafe.Add(ref instanceDataSecondary.AsRef<TexturedQuadInstance>(), instanceCount - primaryInstanceCapacity) = instance;
+        ++instanceCount;
     }
 
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    void queueCurrentBatch()
+    {
+        var usedBytes = instanceCount * instanceStride;
+        instanceBuffer.Commit(in instanceAllocation, usedBytes);
+
+        var textureCount = textureSlotter.Count;
+        var textures = ArrayPool<ITexture>.Shared.Rent(textureCount);
+        textureSlotter.Textures.CopyTo(textures);
+
+        pendingBatches.Add(new(instanceAllocation,
+            instanceCount,
+            usedBytes,
+            transformMatrix * camera.ProjectionView,
+            textures,
+            textureCount));
+
+        instanceBuffer.MarkSubmitted(in instanceAllocation, usedBytes);
+        resetInstanceBatch();
+        clearTextureBatchState();
+    }
+
+    void drawCurrentBatch()
+    {
+        var usedBytes = instanceCount * instanceStride;
+        instanceBuffer.Commit(in instanceAllocation, usedBytes);
+
+        var allocation = instanceAllocation;
+        var combinedMatrix = transformMatrix * camera.ProjectionView;
+        drawBatch(in allocation,
+            instanceCount,
+            usedBytes,
+            in combinedMatrix,
+            textureSlotter.Textures);
+
+        resetInstanceBatch();
+        clearTextureBatchState();
+    }
+
+    bool shouldSplitBatchForSampler(ITexture texture)
+        => textureBatchHasSamplerIdentity &&
+           texture is ITextureSamplerIdentity samplerIdentity &&
+           samplerIdentity.SamplerIdentity != textureBatchSamplerIdentity;
+
+    void trackSamplerState(ITexture texture)
+    {
+        if (textureBatchHasSamplerIdentity || texture is not ITextureSamplerIdentity samplerIdentity)
+            return;
+
+        textureBatchSamplerIdentity = samplerIdentity.SamplerIdentity;
+        textureBatchHasSamplerIdentity = true;
+    }
+
+    void clearTextureBatchState()
+    {
+        textureSlotter.Clear();
+        textureBatchSamplerIdentity = default;
+        textureBatchHasSamplerIdentity = false;
+    }
+
+    void replayPendingBatches()
+    {
+        if (pendingBatches is null || pendingBatches.Count == 0) return;
+
+        if (useIndirectSplitDraws && tryReplayMerged())
+        {
+            foreach (var batch in pendingBatches)
+            {
+                Array.Clear(batch.Textures, 0, batch.TextureCount);
+                ArrayPool<ITexture>.Shared.Return(batch.Textures);
+            }
+            pendingBatches.Clear();
+            return;
+        }
+
+        foreach (var batch in pendingBatches)
+        {
+            try
+            {
+                var allocation = batch.Allocation;
+                var combinedMatrix = batch.CombinedMatrix;
+                drawBatch(in allocation,
+                    batch.InstanceCount,
+                    batch.UsedBytes,
+                    in combinedMatrix,
+                    batch.Textures.AsSpan(0, batch.TextureCount),
+                    false);
+            }
+            finally
+            {
+                Array.Clear(batch.Textures, 0, batch.TextureCount);
+                ArrayPool<ITexture>.Shared.Return(batch.Textures);
+            }
+        }
+
+        pendingBatches.Clear();
+    }
+
+    bool tryReplayMerged()
+    {
+        var totalCommands = 0;
+        for (var i = 0; i < pendingBatches.Count; ++i)
+        {
+            var batch = pendingBatches[i];
+            var allocation = batch.Allocation;
+            var primaryCount = getPrimaryInstanceCount(in allocation, batch.InstanceCount);
+            ensureIndirectCommandCapacity(totalCommands + 2);
+            totalCommands += writeIndirectSplitCommands(in allocation,
+                batch.InstanceCount,
+                primaryCount,
+                indirectCommands.AsSpan(totalCommands));
+        }
+
+        if (totalCommands == 0) return true;
+
+        indirectBuffer.SetData(indirectCommands.AsSpan(0, totalCommands));
+
+        var commandStride = Unsafe.SizeOf<IndirectDrawCommand>();
+        var groupCommandStart = 0;
+        var groupCommandCount = 0;
+        var groupStartBatch = 0;
+
+        for (var i = 0; i < pendingBatches.Count; ++i)
+        {
+            var batch = pendingBatches[i];
+            var allocation = batch.Allocation;
+            var primaryCount = getPrimaryInstanceCount(in allocation, batch.InstanceCount);
+            var batchCommandCount = (primaryCount > 0 ? 1 : 0) +
+                (batch.InstanceCount > primaryCount ? 1 : 0);
+
+            if (i > groupStartBatch && !canMergeBatches(pendingBatches[groupStartBatch], batch))
+            {
+                var start = pendingBatches[groupStartBatch];
+                var startMatrix = start.CombinedMatrix;
+                emitMergedDrawGroup(in startMatrix,
+                    start.Textures.AsSpan(0, start.TextureCount),
+                    start.Allocation.Buffer,
+                    groupCommandStart,
+                    groupCommandCount,
+                    commandStride);
+                groupCommandStart += groupCommandCount;
+                groupCommandCount = 0;
+                groupStartBatch = i;
+            }
+
+            groupCommandCount += batchCommandCount;
+        }
+
+        if (groupCommandCount > 0)
+        {
+            var start = pendingBatches[groupStartBatch];
+            var startMatrix = start.CombinedMatrix;
+            emitMergedDrawGroup(in startMatrix,
+                start.Textures.AsSpan(0, start.TextureCount),
+                start.Allocation.Buffer,
+                groupCommandStart,
+                groupCommandCount,
+                commandStride);
+        }
+
+        return true;
+    }
+
+    static bool canMergeBatches(TexturedQuadBatch a, TexturedQuadBatch b)
+    {
+        // Batches must share the underlying instance buffer; otherwise the merged
+        // indirect draw would read instances from the wrong buffer (the transient
+        // ring spans multiple pages once exhausted).
+        if (!ReferenceEquals(a.Allocation.Buffer, b.Allocation.Buffer)) return false;
+        if (a.CombinedMatrix != b.CombinedMatrix) return false;
+        if (a.TextureCount != b.TextureCount) return false;
+        for (var i = 0; i < a.TextureCount; ++i)
+            if (!ReferenceEquals(a.Textures[i], b.Textures[i]))
+                return false;
+        return true;
+    }
+
+    void emitMergedDrawGroup(scoped ref readonly Matrix4x4 matrix,
+        scoped ReadOnlySpan<ITexture> textures,
+        IGraphicsBuffer instanceBufferToBind,
+        int firstCommand,
+        int commandCount,
+        int commandStride)
+    {
+        if (commandCount == 0) return;
+
+        combinedMatrixUniform.SetValue(matrix);
+        resources.SetTextures(0, textures);
+        resources.Bind();
+        pipeline.BindVertexBuffer(1, instanceBufferToBind, 0);
+        pipeline.DrawIndirect(new(indirectBuffer, firstCommand * commandStride, commandCount));
+    }
+
+    void drawBatch(scoped ref readonly TransientBufferAllocation allocation,
+        int count,
+        int usedBytes,
+        scoped ref readonly Matrix4x4 combinedMatrix,
+        scoped ReadOnlySpan<ITexture> textures,
+        bool markSubmitted = true,
+        DrawIndirectCommand preparedIndirectCommand = default,
+        bool allowInlineIndirectUpload = true)
+    {
+        var primaryCount = getPrimaryInstanceCount(in allocation, count);
+
+        var indirectCommand = preparedIndirectCommand;
+        if (indirectCommand.DrawCount != 0 ||
+            allowInlineIndirectUpload && tryPrepareIndirectSplitDraw(in allocation, count, primaryCount, out indirectCommand))
+        {
+            combinedMatrixUniform.SetValue(combinedMatrix);
+
+            resources.SetTextures(0, textures);
+            resources.Bind();
+
+            pipeline.BindVertexBuffer(1, allocation.Buffer, 0);
+            pipeline.DrawIndirect(indirectCommand);
+
+            if (markSubmitted) instanceBuffer.MarkSubmitted(in allocation, usedBytes);
+            return;
+        }
+
+        combinedMatrixUniform.SetValue(combinedMatrix);
+
+        resources.SetTextures(0, textures);
+        resources.Bind();
+
+        pipeline.BindVertexBuffer(1, allocation.Buffer, allocation.Offset);
+        pipeline.DrawInstanced(new(VertexPerQuad, primaryCount));
+
+        if (allocation.IsSplit && count > primaryCount)
+        {
+            pipeline.BindVertexBuffer(1, allocation.Buffer, 0);
+            pipeline.DrawInstanced(new(VertexPerQuad, count - primaryCount));
+        }
+
+        if (markSubmitted) instanceBuffer.MarkSubmitted(in allocation, usedBytes);
+    }
+
+    bool tryPrepareIndirectSplitDraw(scoped ref readonly TransientBufferAllocation allocation,
+        int count,
+        int primaryCount,
+        out DrawIndirectCommand command)
+    {
+        command = default;
+        if (!canUseIndirectSplitDraw(in allocation, count, primaryCount))
+            return false;
+
+        ensureIndirectCommandCapacity(2);
+        var commandCount = writeIndirectSplitCommands(in allocation,
+            count,
+            primaryCount,
+            indirectCommands);
+
+        indirectBuffer.SetData(indirectCommands.AsSpan(0, commandCount));
+        command = new(indirectBuffer, 0, commandCount);
+        return true;
+    }
+
+    int writeIndirectSplitCommands(scoped ref readonly TransientBufferAllocation allocation,
+        int count,
+        int primaryCount,
+        Span<IndirectDrawCommand> commands)
+    {
+        var commandCount = 0;
+        if (primaryCount > 0)
+            commands[commandCount++] = new(VertexPerQuad,
+                (uint)primaryCount,
+                0,
+                checked((uint)(allocation.Offset / instanceStride)));
+
+        var secondaryCount = count - primaryCount;
+        if (secondaryCount > 0)
+            commands[commandCount++] = new(VertexPerQuad, (uint)secondaryCount);
+
+        return commandCount;
+    }
+
+    int getPrimaryInstanceCount(scoped ref readonly TransientBufferAllocation allocation, int count)
+        => allocation.IsSplit ? int.Min(count, allocation.PrimarySize / instanceStride) : count;
+
+    bool canUseIndirectSplitDraw(scoped ref readonly TransientBufferAllocation allocation,
+        int count,
+        int primaryCount)
+        => useIndirectSplitDraws && allocation.IsSplit && count > primaryCount;
+
+    void ensureIndirectCommandCapacity(int commandCount)
+    {
+        if (indirectCommands.Length >= commandCount) return;
+
+        var capacity = indirectCommands.Length;
+        while (capacity < commandCount)
+            capacity = checked(capacity * 2);
+
+        Array.Resize(ref indirectCommands, capacity);
     }
 
     static TexturedQuadInstance createInstance(scoped ref readonly QuadPrimitive quad, float textureSlot)
@@ -196,21 +514,24 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         return new()
         {
             Transform = new(xAxis.X, xAxis.Y, yAxis.X, yAxis.Y, origin.X, origin.Y),
-            U = quad.u1,
-            V = quad.v1,
-            UAxis = (Half)((float)quad.u4 - (float)quad.u1),
-            VAxis = (Half)((float)quad.v2 - (float)quad.v1),
+            U = (Half)quad.u1,
+            V = (Half)quad.v1,
+            UAxis = (Half)(quad.u4 - quad.u1),
+            VAxis = (Half)(quad.v2 - quad.v1),
             Color = quad.color1,
             TextureSlot = textureSlot
         };
     }
 
-    static RenderPipelineDescription CreatePipelineDescription(ShaderSourceLanguage language, int textureSlots)
+    static RenderPipelineDescription CreatePipelineDescription(ShaderSourceLanguage language,
+        int textureSlots,
+        bool useNonUniformTextureIndexing,
+        bool useManualColorCorrection)
     {
         var instanceStride = Unsafe.SizeOf<TexturedQuadInstance>();
 
         return new(nameof(TexturedQuadRenderer),
-            createShaderSource(language, textureSlots),
+            createShaderSource(language, textureSlots, useNonUniformTextureIndexing, useManualColorCorrection),
             new(new TextureBindingLayout(0, TexturesSampler, textureSlots)),
             new(
                 new VertexBufferLayout(0,
@@ -220,9 +541,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
                 new VertexBufferLayout(1,
                     instanceStride,
                     VertexInputRate.Instance,
-                    new VertexElement(TransformXAttribute, VertexAttributeFormat.Float32x2, 0),
-                    new VertexElement(TransformYAttribute, VertexAttributeFormat.Float32x2, 8),
-                    new VertexElement(TransformOriginAttribute, VertexAttributeFormat.Float32x2, 16),
+                    new VertexElement(TransformAttribute, VertexAttributeFormat.Float32Mat3x2, 0),
                     new VertexElement(UvAttribute, VertexAttributeFormat.Float16x4, OffsetOf(nameof(TexturedQuadInstance.U))),
                     new VertexElement(ColorAttribute, VertexAttributeFormat.Unorm8x4, OffsetOf(nameof(TexturedQuadInstance.Color))),
                     new VertexElement(TextureSlotAttribute,
@@ -231,72 +550,21 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             PrimitiveTopology.Triangles);
     }
 
-    static ShaderProgramSource createShaderSource(ShaderSourceLanguage language, int textureSlots)
+    static ShaderProgramSource createShaderSource(ShaderSourceLanguage language,
+        int textureSlots,
+        bool useNonUniformTextureIndexing,
+        bool useManualColorCorrection)
         => language switch
         {
-            ShaderSourceLanguage.Glsl => new(nameof(TexturedQuadRenderer),
-                createGlslVertexShader(),
-                createGlslFragmentShader(textureSlots)),
             ShaderSourceLanguage.Hlsl => new(nameof(TexturedQuadRenderer),
                 createHlslVertexShader(),
-                createHlslFragmentShader(textureSlots),
-                ShaderSourceLanguage.Hlsl),
+                createHlslFragmentShader(textureSlots, useNonUniformTextureIndexing, useManualColorCorrection)),
+            ShaderSourceLanguage.Wgsl => new(nameof(TexturedQuadRenderer),
+                createWgslVertexShader(),
+                createWgslFragmentShader(textureSlots, useNonUniformTextureIndexing),
+                ShaderSourceLanguage.Wgsl),
             _ => throw new ArgumentOutOfRangeException(nameof(language), language, null)
         };
-
-    static string createGlslVertexShader()
-        => """
-           #version 150
-
-           in vec2 a_vertex;
-           in vec2 a_transformX;
-           in vec2 a_transformY;
-           in vec2 a_transformOrigin;
-           in vec4 a_uv;
-           in vec4 a_color;
-           in float a_textureSlot;
-
-           uniform mat4 u_combinedMatrix;
-
-           out vec2 v_textureCoord;
-           out vec4 v_color;
-           flat out int v_textureSlot;
-
-           void main()
-           {
-               vec2 position = a_transformOrigin + a_vertex.x * a_transformX + a_vertex.y * a_transformY;
-               v_textureCoord = a_uv.xy + a_vertex * a_uv.zw;
-               v_color = a_color;
-               v_textureSlot = int(a_textureSlot + 0.5);
-               gl_Position = u_combinedMatrix * vec4(position, 0, 1);
-           }
-           """;
-
-    static string createGlslFragmentShader(int textureSlots)
-    {
-        StringBuilder shader = new();
-        shader.AppendLine("#version 150");
-        shader.AppendLine();
-        shader.AppendLine("in vec2 v_textureCoord;");
-        shader.AppendLine("in vec4 v_color;");
-        shader.AppendLine("flat in int v_textureSlot;");
-        shader.AppendLine(CultureInfo.InvariantCulture, $"uniform sampler2D {TexturesSampler.Name}[{textureSlots}];");
-        shader.AppendLine("out vec4 fragColor;");
-        shader.AppendLine();
-        shader.AppendLine("void main()");
-        shader.AppendLine("{");
-        shader.AppendLine("    vec4 texel = vec4(0);");
-
-        shader.AppendLine(CultureInfo.InvariantCulture,
-            $"    if (v_textureSlot == 0) texel = texture({TexturesSampler.Name}[0], v_textureCoord);");
-        for (var i = 1; i < textureSlots; ++i)
-            shader.AppendLine(CultureInfo.InvariantCulture,
-                $"    else if (v_textureSlot == {i}) texel = texture({TexturesSampler.Name}[{i}], v_textureCoord);");
-
-        shader.AppendLine("    fragColor = v_color * texel;");
-        shader.AppendLine("}");
-        return shader.ToString();
-    }
 
     static string createHlslVertexShader()
         => """
@@ -310,12 +578,10 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
            struct VertexInput
            {
                [[vk::location(0)]] float2 Vertex : TEXCOORD0;
-               [[vk::location(1)]] float2 TransformX : TEXCOORD1;
-               [[vk::location(2)]] float2 TransformY : TEXCOORD2;
-               [[vk::location(3)]] float2 TransformOrigin : TEXCOORD3;
+               [[vk::location(1)]] float3x2 Transform : TEXCOORD1;
                [[vk::location(4)]] float4 Uv : TEXCOORD4;
-               [[vk::location(5)]] float4 Color : COLOR0;
-               [[vk::location(6)]] float TextureSlot : TEXCOORD5;
+               [[vk::location(5)]] float4 Color : TEXCOORD5;
+               [[vk::location(6)]] float TextureSlot : TEXCOORD6;
            };
 
            struct VertexOutput
@@ -329,7 +595,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
            VertexOutput main(VertexInput input)
            {
                VertexOutput output;
-               float2 position = input.TransformOrigin + input.Vertex.x * input.TransformX + input.Vertex.y * input.TransformY;
+               float2 position = mul(float3(input.Vertex, 1), input.Transform);
                output.Position = mul(float4(position, 0, 1), u_combinedMatrix);
                output.TextureCoord = input.Uv.xy + input.Vertex * input.Uv.zw;
                output.Color = input.Color;
@@ -338,11 +604,14 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
            }
            """;
 
-    static string createHlslFragmentShader(int textureSlots)
+    static string createHlslFragmentShader(int textureSlots,
+        bool useNonUniformTextureIndexing,
+        bool useManualColorCorrection)
     {
         StringBuilder shader = new();
         shader.AppendLine(CultureInfo.InvariantCulture,
             $"Texture2D<float4> {TexturesSampler.Name}[{textureSlots}] : register(t0, space2);");
+
         shader.AppendLine(CultureInfo.InvariantCulture, $"SamplerState u_samplers[{textureSlots}] : register(s0, space2);");
         shader.AppendLine();
         shader.AppendLine("struct FragmentInput");
@@ -353,18 +622,149 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         shader.AppendLine("    nointerpolation int TextureSlot : TEXCOORD1;");
         shader.AppendLine("};");
         shader.AppendLine();
+        if (useManualColorCorrection)
+        {
+            shader.AppendLine("float4 apply_output_color(float4 color)");
+            shader.AppendLine("{");
+            shader.AppendLine("    color.rgb = pow(saturate(color.rgb), float3(2.2, 2.2, 2.2));");
+            shader.AppendLine("    return color;");
+            shader.AppendLine("}");
+            shader.AppendLine();
+        }
+
         shader.AppendLine("float4 main(FragmentInput input) : SV_Target0");
         shader.AppendLine("{");
+        if (useNonUniformTextureIndexing)
+        {
+            shader.AppendLine("    uint textureSlot = (uint)input.TextureSlot;");
+            shader.AppendLine(CultureInfo.InvariantCulture,
+                $"    float4 texel = {TexturesSampler.Name}[NonUniformResourceIndex(textureSlot)].Sample(u_samplers[NonUniformResourceIndex(textureSlot)], input.TextureCoord);");
+
+            shader.AppendLine(useManualColorCorrection
+                ? "    return apply_output_color(input.Color * texel);"
+                : "    return input.Color * texel;");
+            shader.AppendLine("}");
+            return shader.ToString();
+        }
+
         shader.AppendLine("    float4 texel = float4(0, 0, 0, 0);");
 
         shader.AppendLine(CultureInfo.InvariantCulture,
             $"    if (input.TextureSlot == 0) texel = {TexturesSampler.Name}[0].Sample(u_samplers[0], input.TextureCoord);");
+
         for (var i = 1; i < textureSlots; ++i)
             shader.AppendLine(CultureInfo.InvariantCulture,
                 $"    else if (input.TextureSlot == {i}) texel = {TexturesSampler.Name}[{i}].Sample(u_samplers[{i}], input.TextureCoord);");
 
-        shader.AppendLine("    return input.Color * texel;");
+        shader.AppendLine(useManualColorCorrection
+            ? "    return apply_output_color(input.Color * texel);"
+            : "    return input.Color * texel;");
         shader.AppendLine("}");
+        return shader.ToString();
+    }
+
+    static string createWgslVertexShader()
+        => """
+           struct TransformUniforms {
+               rows: array<vec4<f32>, 4>,
+           };
+
+           @group(0) @binding(0) var<uniform> u_transform: TransformUniforms;
+
+           struct VertexInput {
+               @location(0) vertex: vec2<f32>,
+               @location(1) transform0: vec2<f32>,
+               @location(2) transform1: vec2<f32>,
+               @location(3) transform2: vec2<f32>,
+               @location(4) uv: vec4<f32>,
+               @location(5) color: vec4<f32>,
+               @location(6) texture_slot: f32,
+           };
+
+           struct VertexOutput {
+               @builtin(position) position: vec4<f32>,
+               @location(0) texture_coord: vec2<f32>,
+               @location(1) color: vec4<f32>,
+               @location(2) @interpolate(flat) texture_slot: u32,
+           };
+
+           fn transform_position(position: vec4<f32>) -> vec4<f32> {
+               return vec4<f32>(
+                   position.x * u_transform.rows[0].x + position.y * u_transform.rows[1].x + position.z * u_transform.rows[2].x + position.w * u_transform.rows[3].x,
+                   position.x * u_transform.rows[0].y + position.y * u_transform.rows[1].y + position.z * u_transform.rows[2].y + position.w * u_transform.rows[3].y,
+                   position.x * u_transform.rows[0].z + position.y * u_transform.rows[1].z + position.z * u_transform.rows[2].z + position.w * u_transform.rows[3].z,
+                   position.x * u_transform.rows[0].w + position.y * u_transform.rows[1].w + position.z * u_transform.rows[2].w + position.w * u_transform.rows[3].w);
+           }
+
+           @vertex
+           fn main(input: VertexInput) -> VertexOutput {
+               var output: VertexOutput;
+               let position = input.transform0 * input.vertex.x +
+                   input.transform1 * input.vertex.y +
+                   input.transform2;
+               output.position = transform_position(vec4<f32>(position, 0.0, 1.0));
+               output.texture_coord = input.uv.xy + input.vertex * input.uv.zw;
+               output.color = input.color;
+               output.texture_slot = u32(input.texture_slot + 0.5);
+               return output;
+           }
+           """;
+
+    static string createWgslFragmentShader(int textureSlots, bool useNonUniformTextureIndexing)
+    {
+        if (useNonUniformTextureIndexing)
+            return $$"""
+                   @group(1) @binding(0) var u_textures: binding_array<texture_2d<f32>, {{textureSlots}}>;
+                   @group(1) @binding(1) var u_sampler: sampler;
+
+                   struct FragmentInput {
+                       @location(0) texture_coord: vec2<f32>,
+                       @location(1) color: vec4<f32>,
+                       @location(2) @interpolate(flat) texture_slot: u32,
+                   };
+
+                   @fragment
+                   fn main(input: FragmentInput) -> @location(0) vec4<f32> {
+                       let texture_slot = input.texture_slot;
+                       let texel = textureSample(u_textures[texture_slot], u_sampler, input.texture_coord);
+                       return input.color * texel;
+                   }
+                   """;
+
+        StringBuilder shader = new();
+        for (var i = 0; i < textureSlots; ++i)
+        {
+            shader.AppendLine(CultureInfo.InvariantCulture,
+                $"@group(1) @binding({i * 2}) var u_texture{i}: texture_2d<f32>;");
+            shader.AppendLine(CultureInfo.InvariantCulture,
+                $"@group(1) @binding({i * 2 + 1}) var u_sampler{i}: sampler;");
+        }
+
+        shader.AppendLine();
+        shader.AppendLine("""
+            struct FragmentInput {
+                @location(0) texture_coord: vec2<f32>,
+                @location(1) color: vec4<f32>,
+                @location(2) @interpolate(flat) texture_slot: u32,
+            };
+
+            fn sample_texture(texture_slot: u32, texture_coord: vec2<f32>) -> vec4<f32> {
+            """);
+
+        for (var i = 0; i < textureSlots; ++i)
+            shader.AppendLine(CultureInfo.InvariantCulture,
+                $"    if (texture_slot == {i}u) {{ return textureSample(u_texture{i}, u_sampler{i}, texture_coord); }}");
+
+        shader.AppendLine("""
+                return vec4<f32>(0.0, 0.0, 0.0, 0.0);
+            }
+
+            @fragment
+            fn main(input: FragmentInput) -> @location(0) vec4<f32> {
+                let texel = sample_texture(input.texture_slot, input.texture_coord);
+                return input.color * texel;
+            }
+            """);
         return shader.ToString();
     }
 
@@ -377,6 +777,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         if (rendering) ((IRenderer)this).EndRendering();
 
         resources.Dispose();
+        indirectBuffer?.Dispose();
         vertexBuffer.Dispose();
         instanceBuffer.Dispose();
         pipeline.Dispose();
@@ -388,15 +789,19 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
     {
         if (instanceData != nint.Zero) return;
 
-        instanceAllocation = instanceBuffer.Allocate(instanceStride * instanceBatchCapacity, 16);
+        instanceAllocation = instanceBuffer.Allocate(instanceStride * instanceBatchCapacity);
         instanceData = instanceAllocation.Data;
+        instanceDataSecondary = instanceAllocation.SecondaryData;
+        primaryInstanceCapacity = instanceAllocation.PrimarySize / instanceStride;
     }
 
     void resetInstanceBatch()
     {
         instanceAllocation = default;
         instanceData = nint.Zero;
+        instanceDataSecondary = nint.Zero;
         instanceCount = 0;
+        primaryInstanceCapacity = 0;
     }
 
     static int OffsetOf(string fieldName)
@@ -413,4 +818,12 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
         public Rgba32 Color;
         public float TextureSlot;
     }
+
+    readonly record struct TexturedQuadBatch(
+        TransientBufferAllocation Allocation,
+        int InstanceCount,
+        int UsedBytes,
+        Matrix4x4 CombinedMatrix,
+        ITexture[] Textures,
+        int TextureCount);
 }

@@ -1,11 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using System;
 using System.Numerics;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Textures;
 
 public static class QuadRendererExtensions
 {
@@ -44,14 +42,14 @@ public static class QuadRendererExtensions
             vec2 = corner1,
             vec3 = corner2,
             vec4 = corner3,
-            u1 = (Half)u0u1.X,
-            v1 = (Half)v0v1.X,
-            u2 = (Half)u0u1.X,
-            v2 = (Half)v0v1.Y,
-            u3 = (Half)u0u1.Y,
-            v3 = (Half)v0v1.Y,
-            u4 = (Half)u0u1.Y,
-            v4 = (Half)v0v1.X,
+            u1 = u0u1.X,
+            v1 = v0v1.X,
+            u2 = u0u1.X,
+            v2 = v0v1.Y,
+            u3 = u0u1.Y,
+            v3 = v0v1.Y,
+            u4 = u0u1.Y,
+            v4 = v0v1.X,
             color1 = rgba,
             color2 = rgba,
             color3 = rgba,

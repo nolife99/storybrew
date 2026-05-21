@@ -1,6 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 
 #pragma warning disable CS1591
 public sealed record ColorCommand : Command<CommandColor>

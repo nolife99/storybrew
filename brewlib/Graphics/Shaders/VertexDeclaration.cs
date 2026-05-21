@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics.Shaders;
 
 using System;
-using BrewLib.Graphics;
 
 public sealed class VertexDeclaration
 {

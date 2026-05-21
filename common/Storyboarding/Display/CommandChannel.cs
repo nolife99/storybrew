@@ -8,8 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Animations;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 class CommandChannel<TValue> where TValue : struct, ICommandValue<TValue>

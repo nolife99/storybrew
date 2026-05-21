@@ -2,9 +2,9 @@
 
 using System;
 using System.Numerics;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
 using SDL3;
+using Skinning.Styles;
+using Util;
 
 public class Button : Widget, Field
 {

@@ -1,41 +1,24 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Backend.OpenGL;
-using BrewLib.IO;
-using BrewLib.Util;
+using System.Collections.Generic;
+using System.Threading;
+using Backend.OpenGL;
+using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Tiny.PooledCollections.Generic;
+using Util;
 
-public sealed class TextureContainerSeparate : TextureContainer
+public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
+    ResourceContainer resourceContainer = null,
+    TextureOptions textureOptions = null) : TextureContainer
 {
-    readonly ITextureFactory textureFactory;
-    readonly ResourceContainer resourceContainer;
-    readonly TextureOptions textureOptions;
-    readonly PooledDictionary<string, ITextureRegion> textures;
-    readonly PooledDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+    readonly ITextureFactory textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
+        new OpenGlTextureFactory(DrawState.Backend);
 
-    public TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
-        : this(DrawState.Backend?.TextureFactory ?? new OpenGlTextureFactory(DrawState.Backend),
-            resourceContainer,
-            textureOptions)
-    {
-    }
+    readonly Lock writeLock = new();
 
-    public TextureContainerSeparate(ITextureFactory textureFactory,
-        ResourceContainer resourceContainer = null,
-        TextureOptions textureOptions = null)
-    {
-        this.textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
-            new OpenGlTextureFactory(DrawState.Backend);
-        this.resourceContainer = resourceContainer;
-        this.textureOptions = textureOptions;
-
-        textures = new();
-        texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
-    }
+    volatile Dictionary<string, ITextureRegion> textures = new(StringComparer.OrdinalIgnoreCase);
 
     public long UncompressedMemoryUse
     {
@@ -48,21 +31,27 @@ public sealed class TextureContainerSeparate : TextureContainer
                     var size = texture.Size;
                     pixels += size.Width * size.Height;
                 }
-
             return pixels * 4;
         }
     }
 
     public ITextureRegion Get(scoped ReadOnlySpan<char> filename)
     {
-        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+        var snapshot = textures;
+        if (snapshot.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture))
+            return texture;
 
         var str = filename.ToString();
         using var bitmap = TextureLoader.LoadBitmap(str, resourceContainer);
-        return textures[str] = bitmap is not null ?
-            textureFactory.Load(bitmap, textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer)) :
-            null;
+        texture = bitmap is not null
+            ? textureFactory.Load(bitmap, textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer))
+            : null;
+
+        return GetOrAdd(str, texture);
     }
+
+    public bool TryGetLoaded(scoped ReadOnlySpan<char> filename, out ITextureRegion texture)
+        => textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out texture);
 
     public ITextureRegion Add(Image<Rgba32> bitmap, TextureOptions options = null)
         => bitmap is not null ? textureFactory.Load(bitmap, options ?? textureOptions) : null;
@@ -72,21 +61,40 @@ public sealed class TextureContainerSeparate : TextureContainer
         if (bitmap is null) return null;
         filename = PathHelper.WithStandardSeparators(filename);
 
-        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+        if (textures.TryGetValue(filename, out var existing)) return existing;
 
-        return textures[filename] = textureFactory.Load(bitmap, options ?? textureOptions);
+        var texture = textureFactory.Load(bitmap, options ?? textureOptions);
+        return GetOrAdd(filename, texture);
     }
 
-    public ITextureRegion Add(string filename,
-        PreparedTextureUpload upload,
-        IAsyncTextureUploader uploader)
+    public ITextureRegion Add(string filename, PreparedTextureUpload upload, IAsyncTextureUploader uploader)
     {
         if (upload is null || uploader is null) return null;
         filename = PathHelper.WithStandardSeparators(filename);
 
-        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
+        if (textures.TryGetValue(filename, out var existing)) return existing;
 
-        return textures[filename] = uploader.Upload(upload);
+        var texture = uploader.Upload(upload);
+        return GetOrAdd(filename, texture);
+    }
+
+    ITextureRegion GetOrAdd(string key, ITextureRegion candidate)
+    {
+        lock (writeLock)
+        {
+            if (textures.TryGetValue(key, out var winner))
+            {
+                candidate?.Dispose();
+                return winner;
+            }
+
+            var next = new Dictionary<string, ITextureRegion>(textures, StringComparer.Ordinal)
+            {
+                [key] = candidate
+            };
+            textures = next;
+            return candidate;
+        }
     }
 
     #region IDisposable Support
@@ -96,9 +104,7 @@ public sealed class TextureContainerSeparate : TextureContainer
     public void Dispose()
     {
         if (disposed) return;
-
         foreach (var texture in textures.Values) texture?.Dispose();
-        textures.Dispose();
         disposed = true;
     }
 

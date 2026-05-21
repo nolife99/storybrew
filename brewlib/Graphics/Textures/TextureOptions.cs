@@ -4,7 +4,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
-using BrewLib.IO;
+using IO;
 using SDL3;
 using Tiny;
 using Tiny.Formats.Json;

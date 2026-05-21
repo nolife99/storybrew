@@ -1,20 +1,22 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
+using Shaders;
+using Silk.NET.OpenGL;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Util;
+using GlShaderType = Silk.NET.OpenGL.ShaderType;
 
 internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
 {
+    readonly OpenGlGraphicsBackend backend;
     readonly OpenGlGraphicsDevice device;
     readonly StringBuilder log = new();
     readonly PooledDictionary<string, ShaderAttributeInfo> attributes = new();
@@ -23,8 +25,9 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
     bool initialized;
     int programId = -1;
 
-    public OpenGlShaderProgram(OpenGlGraphicsDevice device, ShaderProgramSource source)
+    public OpenGlShaderProgram(OpenGlGraphicsBackend backend, OpenGlGraphicsDevice device, ShaderProgramSource source)
     {
+        this.backend = backend;
         this.device = device;
 
         initialize(source);
@@ -51,7 +54,7 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
             return uniform;
 
         var identifier = name.ToString();
-        var location = GL.GetUniformLocation(programId, identifier);
+        var location = OpenGlApi.GL.GetUniformLocation((uint)programId, identifier);
         if (location < 0) return ShaderUniformInfo.Missing(name);
 
         var type = getArrayBaseType(identifier);
@@ -74,31 +77,31 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
         switch (value)
         {
             case int i:
-                GL.Uniform1(location, i);
+                OpenGlApi.GL.Uniform1(location, i);
                 break;
 
             case bool b:
-                GL.Uniform1(location, b ? 1 : 0);
+                OpenGlApi.GL.Uniform1(location, b ? 1 : 0);
                 break;
 
             case float f:
-                GL.Uniform1(location, f);
+                OpenGlApi.GL.Uniform1(location, f);
                 break;
 
             case Vector2 v:
-                GL.Uniform2(location, v.X, v.Y);
+                OpenGlApi.GL.Uniform2(location, v.X, v.Y);
                 break;
 
             case Vector3 v:
-                GL.Uniform3(location, v.X, v.Y, v.Z);
+                OpenGlApi.GL.Uniform3(location, v.X, v.Y, v.Z);
                 break;
 
             case Vector4 v:
-                GL.Uniform4(location, v.X, v.Y, v.Z, v.W);
+                OpenGlApi.GL.Uniform4(location, v.X, v.Y, v.Z, v.W);
                 break;
 
             case Matrix4x4 m:
-                GL.UniformMatrix4(location, 1, false, ref m.M11);
+                OpenGlApi.GL.UniformMatrix4(location, 1, false, ref m.M11);
                 break;
 
             default:
@@ -120,72 +123,96 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
     {
         dispose();
 
-        var vertexShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.VertexShader, source.VertexSource);
-        var fragmentShaderId = compileShader(osuTK.Graphics.OpenGL.ShaderType.FragmentShader, source.FragmentSource);
+        source = OpenGlShaderCompiler.CreateShaderSource(source,
+            backend.GlslVersion,
+            backend.GlslEs);
+        var vertexShaderId = compileShader(GlShaderType.VertexShader, source.VertexSource);
+        var fragmentShaderId = compileShader(GlShaderType.FragmentShader, source.FragmentSource);
 
         if (vertexShaderId == -1 || fragmentShaderId == -1)
         {
-            if (vertexShaderId != -1) GL.DeleteShader(vertexShaderId);
-            if (fragmentShaderId != -1) GL.DeleteShader(fragmentShaderId);
+            if (vertexShaderId != -1) OpenGlApi.GL.DeleteShader((uint)vertexShaderId);
+            if (fragmentShaderId != -1) OpenGlApi.GL.DeleteShader((uint)fragmentShaderId);
             return;
         }
 
         programId = linkProgram(vertexShaderId, fragmentShaderId);
         initialized = programId != -1;
+        if (initialized) bindUniformBlocks(source.UniformBlocks);
     }
 
-    int compileShader(osuTK.Graphics.OpenGL.ShaderType type, string code)
+    int compileShader(GlShaderType type, string code)
     {
-        var id = GL.CreateShader(type);
-        GL.ShaderSource(id, code);
-        GL.CompileShader(id);
-        GL.GetShader(id, ShaderParameter.CompileStatus, out var compileStatus);
+        var id = (int)OpenGlApi.GL.CreateShader(type);
+        OpenGlApi.GL.ShaderSource((uint)id, code);
+        OpenGlApi.GL.CompileShader((uint)id);
+        OpenGlApi.GL.GetShader((uint)id, ShaderParameterName.CompileStatus, out var compileStatus);
 
         if (compileStatus != 0) return id;
 
         log.AppendLine(CultureInfo.InvariantCulture,
-            $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
+            $"--- {type} ---\n{addLineExtracts(OpenGlApi.GL.GetShaderInfoLog((uint)id), code)}");
 
-        GL.DeleteShader(id);
+        OpenGlApi.GL.DeleteShader((uint)id);
         return -1;
     }
 
     int linkProgram(params ReadOnlySpan<int> shaders)
     {
-        var id = GL.CreateProgram();
-        foreach (var shader in shaders) GL.AttachShader(id, shader);
-        GL.LinkProgram(id);
-        foreach (var shader in shaders) GL.DetachShader(id, shader);
+        var id = (int)OpenGlApi.GL.CreateProgram();
+        foreach (var shader in shaders) OpenGlApi.GL.AttachShader((uint)id, (uint)shader);
+        OpenGlApi.GL.LinkProgram((uint)id);
+        foreach (var shader in shaders) OpenGlApi.GL.DetachShader((uint)id, (uint)shader);
 
-        GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
-        foreach (var shader in shaders) GL.DeleteShader(shader);
+        OpenGlApi.GL.GetProgram((uint)id, ProgramPropertyARB.LinkStatus, out var linkStatus);
+        foreach (var shader in shaders) OpenGlApi.GL.DeleteShader((uint)shader);
 
         if (linkStatus != 0) return id;
 
-        log.AppendLine(GL.GetProgramInfoLog(id));
-        GL.DeleteProgram(id);
+        log.AppendLine(OpenGlApi.GL.GetProgramInfoLog((uint)id));
+        OpenGlApi.GL.DeleteProgram((uint)id);
         return -1;
+    }
+
+    void bindUniformBlocks(IReadOnlyList<ShaderUniformBlockBinding> uniformBlocks)
+    {
+        if (uniformBlocks is null) return;
+
+        for (var i = 0; i < uniformBlocks.Count; ++i)
+        {
+            var uniformBlock = uniformBlocks[i];
+            var index = OpenGlApi.GL.GetUniformBlockIndex((uint)programId, uniformBlock.Name);
+            if (index == uint.MaxValue) continue;
+
+            OpenGlApi.GL.UniformBlockBinding((uint)programId, index, uniformBlock.Slot);
+        }
     }
 
     void retrieveAttributes()
     {
-        GL.GetProgram(programId, GetProgramParameterName.ActiveAttributes, out var attributeCount);
+        OpenGlApi.GL.GetProgram((uint)programId, ProgramPropertyARB.ActiveAttributes, out var attributeCount);
 
         for (var i = 0; i < attributeCount; ++i)
         {
-            var name = GL.GetActiveAttrib(programId, i, out var size, out var type);
-            attributes[name] = new(name, toShaderValueType(type), size, GL.GetAttribLocation(programId, name));
+            var name = OpenGlApi.GL.GetActiveAttrib((uint)programId, (uint)i, out var size, out var type);
+            attributes[name] = new(name,
+                toShaderValueType(type),
+                size,
+                OpenGlApi.GL.GetAttribLocation((uint)programId, name));
         }
     }
 
     void retrieveUniforms()
     {
-        GL.GetProgram(programId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
+        OpenGlApi.GL.GetProgram((uint)programId, ProgramPropertyARB.ActiveUniforms, out var uniformCount);
 
         for (var i = 0; i < uniformCount; ++i)
         {
-            var name = GL.GetActiveUniform(programId, i, out var size, out var type);
-            uniforms[name] = new(name, toShaderValueType(type), size, GL.GetUniformLocation(programId, name));
+            var name = OpenGlApi.GL.GetActiveUniform((uint)programId, (uint)i, out var size, out var type);
+            uniforms[name] = new(name,
+                toShaderValueType(type),
+                size,
+                OpenGlApi.GL.GetUniformLocation((uint)programId, name));
         }
     }
 
@@ -205,73 +232,73 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
         if (!initialized) return;
 
         initialized = false;
-        if (programId != -1) GL.DeleteProgram(programId);
+        if (programId != -1) OpenGlApi.GL.DeleteProgram((uint)programId);
         programId = -1;
     }
 
-    static ShaderValueType toShaderValueType(ActiveAttribType type)
+    static ShaderValueType toShaderValueType(AttributeType type)
         => type switch
         {
-            ActiveAttribType.Float => ShaderValueType.Float,
-            ActiveAttribType.FloatVec2 => ShaderValueType.FloatVec2,
-            ActiveAttribType.FloatVec3 => ShaderValueType.FloatVec3,
-            ActiveAttribType.FloatVec4 => ShaderValueType.FloatVec4,
-            ActiveAttribType.Int => ShaderValueType.Int,
-            ActiveAttribType.IntVec2 => ShaderValueType.IntVec2,
-            ActiveAttribType.IntVec3 => ShaderValueType.IntVec3,
-            ActiveAttribType.IntVec4 => ShaderValueType.IntVec4,
-            ActiveAttribType.UnsignedInt => ShaderValueType.UnsignedInt,
-            ActiveAttribType.UnsignedIntVec2 => ShaderValueType.UnsignedIntVec2,
-            ActiveAttribType.UnsignedIntVec3 => ShaderValueType.UnsignedIntVec3,
-            ActiveAttribType.UnsignedIntVec4 => ShaderValueType.UnsignedIntVec4,
+            AttributeType.Float => ShaderValueType.Float,
+            AttributeType.FloatVec2 => ShaderValueType.FloatVec2,
+            AttributeType.FloatVec3 => ShaderValueType.FloatVec3,
+            AttributeType.FloatVec4 => ShaderValueType.FloatVec4,
+            AttributeType.Int => ShaderValueType.Int,
+            AttributeType.IntVec2 => ShaderValueType.IntVec2,
+            AttributeType.IntVec3 => ShaderValueType.IntVec3,
+            AttributeType.IntVec4 => ShaderValueType.IntVec4,
+            AttributeType.UnsignedInt => ShaderValueType.UnsignedInt,
+            AttributeType.UnsignedIntVec2 => ShaderValueType.UnsignedIntVec2,
+            AttributeType.UnsignedIntVec3 => ShaderValueType.UnsignedIntVec3,
+            AttributeType.UnsignedIntVec4 => ShaderValueType.UnsignedIntVec4,
             _ => ShaderValueType.Unknown
         };
 
-    static ShaderValueType toShaderValueType(ActiveUniformType type)
+    static ShaderValueType toShaderValueType(UniformType type)
         => type switch
         {
-            ActiveUniformType.Int => ShaderValueType.Int,
-            ActiveUniformType.UnsignedInt => ShaderValueType.UnsignedInt,
-            ActiveUniformType.Float => ShaderValueType.Float,
-            ActiveUniformType.Double => ShaderValueType.Double,
-            ActiveUniformType.FloatVec2 => ShaderValueType.FloatVec2,
-            ActiveUniformType.FloatVec3 => ShaderValueType.FloatVec3,
-            ActiveUniformType.FloatVec4 => ShaderValueType.FloatVec4,
-            ActiveUniformType.IntVec2 => ShaderValueType.IntVec2,
-            ActiveUniformType.IntVec3 => ShaderValueType.IntVec3,
-            ActiveUniformType.IntVec4 => ShaderValueType.IntVec4,
-            ActiveUniformType.UnsignedIntVec2 => ShaderValueType.UnsignedIntVec2,
-            ActiveUniformType.UnsignedIntVec3 => ShaderValueType.UnsignedIntVec3,
-            ActiveUniformType.UnsignedIntVec4 => ShaderValueType.UnsignedIntVec4,
-            ActiveUniformType.Bool => ShaderValueType.Bool,
-            ActiveUniformType.BoolVec2 => ShaderValueType.BoolVec2,
-            ActiveUniformType.BoolVec3 => ShaderValueType.BoolVec3,
-            ActiveUniformType.BoolVec4 => ShaderValueType.BoolVec4,
-            ActiveUniformType.FloatMat2 => ShaderValueType.FloatMat2,
-            ActiveUniformType.FloatMat3 => ShaderValueType.FloatMat3,
-            ActiveUniformType.FloatMat4 => ShaderValueType.FloatMat4,
-            ActiveUniformType.Sampler1D => ShaderValueType.Sampler1D,
-            ActiveUniformType.Sampler2D => ShaderValueType.Sampler2D,
-            ActiveUniformType.Sampler3D => ShaderValueType.Sampler3D,
-            ActiveUniformType.SamplerCube => ShaderValueType.SamplerCube,
-            ActiveUniformType.Sampler1DArray => ShaderValueType.Sampler1DArray,
-            ActiveUniformType.Sampler2DArray => ShaderValueType.Sampler2DArray,
-            ActiveUniformType.SamplerCubeMapArray => ShaderValueType.SamplerCubeArray,
-            ActiveUniformType.SamplerBuffer => ShaderValueType.SamplerBuffer,
-            ActiveUniformType.IntSampler1D => ShaderValueType.IntSampler1D,
-            ActiveUniformType.IntSampler2D => ShaderValueType.IntSampler2D,
-            ActiveUniformType.IntSampler3D => ShaderValueType.IntSampler3D,
-            ActiveUniformType.IntSamplerCube => ShaderValueType.IntSamplerCube,
-            ActiveUniformType.IntSampler1DArray => ShaderValueType.IntSampler1DArray,
-            ActiveUniformType.IntSampler2DArray => ShaderValueType.IntSampler2DArray,
-            ActiveUniformType.IntSamplerBuffer => ShaderValueType.IntSamplerBuffer,
-            ActiveUniformType.UnsignedIntSampler1D => ShaderValueType.UnsignedIntSampler1D,
-            ActiveUniformType.UnsignedIntSampler2D => ShaderValueType.UnsignedIntSampler2D,
-            ActiveUniformType.UnsignedIntSampler3D => ShaderValueType.UnsignedIntSampler3D,
-            ActiveUniformType.UnsignedIntSamplerCube => ShaderValueType.UnsignedIntSamplerCube,
-            ActiveUniformType.UnsignedIntSampler1DArray => ShaderValueType.UnsignedIntSampler1DArray,
-            ActiveUniformType.UnsignedIntSampler2DArray => ShaderValueType.UnsignedIntSampler2DArray,
-            ActiveUniformType.UnsignedIntSamplerBuffer => ShaderValueType.UnsignedIntSamplerBuffer,
+            UniformType.Int => ShaderValueType.Int,
+            UniformType.UnsignedInt => ShaderValueType.UnsignedInt,
+            UniformType.Float => ShaderValueType.Float,
+            UniformType.Double => ShaderValueType.Double,
+            UniformType.FloatVec2 => ShaderValueType.FloatVec2,
+            UniformType.FloatVec3 => ShaderValueType.FloatVec3,
+            UniformType.FloatVec4 => ShaderValueType.FloatVec4,
+            UniformType.IntVec2 => ShaderValueType.IntVec2,
+            UniformType.IntVec3 => ShaderValueType.IntVec3,
+            UniformType.IntVec4 => ShaderValueType.IntVec4,
+            UniformType.UnsignedIntVec2 => ShaderValueType.UnsignedIntVec2,
+            UniformType.UnsignedIntVec3 => ShaderValueType.UnsignedIntVec3,
+            UniformType.UnsignedIntVec4 => ShaderValueType.UnsignedIntVec4,
+            UniformType.Bool => ShaderValueType.Bool,
+            UniformType.BoolVec2 => ShaderValueType.BoolVec2,
+            UniformType.BoolVec3 => ShaderValueType.BoolVec3,
+            UniformType.BoolVec4 => ShaderValueType.BoolVec4,
+            UniformType.FloatMat2 => ShaderValueType.FloatMat2,
+            UniformType.FloatMat3 => ShaderValueType.FloatMat3,
+            UniformType.FloatMat4 => ShaderValueType.FloatMat4,
+            UniformType.Sampler1D => ShaderValueType.Sampler1D,
+            UniformType.Sampler2D => ShaderValueType.Sampler2D,
+            UniformType.Sampler3D => ShaderValueType.Sampler3D,
+            UniformType.SamplerCube => ShaderValueType.SamplerCube,
+            UniformType.Sampler1DArray => ShaderValueType.Sampler1DArray,
+            UniformType.Sampler2DArray => ShaderValueType.Sampler2DArray,
+            UniformType.SamplerCubeMapArray => ShaderValueType.SamplerCubeArray,
+            UniformType.SamplerBuffer => ShaderValueType.SamplerBuffer,
+            UniformType.IntSampler1D => ShaderValueType.IntSampler1D,
+            UniformType.IntSampler2D => ShaderValueType.IntSampler2D,
+            UniformType.IntSampler3D => ShaderValueType.IntSampler3D,
+            UniformType.IntSamplerCube => ShaderValueType.IntSamplerCube,
+            UniformType.IntSampler1DArray => ShaderValueType.IntSampler1DArray,
+            UniformType.IntSampler2DArray => ShaderValueType.IntSampler2DArray,
+            UniformType.IntSamplerBuffer => ShaderValueType.IntSamplerBuffer,
+            UniformType.UnsignedIntSampler1D => ShaderValueType.UnsignedIntSampler1D,
+            UniformType.UnsignedIntSampler2D => ShaderValueType.UnsignedIntSampler2D,
+            UniformType.UnsignedIntSampler3D => ShaderValueType.UnsignedIntSampler3D,
+            UniformType.UnsignedIntSamplerCube => ShaderValueType.UnsignedIntSamplerCube,
+            UniformType.UnsignedIntSampler1DArray => ShaderValueType.UnsignedIntSampler1DArray,
+            UniformType.UnsignedIntSampler2DArray => ShaderValueType.UnsignedIntSampler2DArray,
+            UniformType.UnsignedIntSamplerBuffer => ShaderValueType.UnsignedIntSamplerBuffer,
             _ => ShaderValueType.Unknown
         };
 

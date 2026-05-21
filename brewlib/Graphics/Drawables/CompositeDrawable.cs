@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System.Numerics;
-using BrewLib.Graphics.Cameras;
+using Cameras;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
 

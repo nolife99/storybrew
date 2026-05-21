@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using BrewLib.IO;
+using IO;
 using ManagedBass;
 using SDL3;
 using Tiny.PooledCollections.Generic;

@@ -1,13 +1,13 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Backend.OpenGL;
-using BrewLib.IO;
-using BrewLib.Util;
+using System.Collections.Concurrent;
+using Backend.OpenGL;
+using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
+using Util;
 
 public sealed class TextureContainerAtlas : TextureContainer
 {
@@ -18,8 +18,8 @@ public sealed class TextureContainerAtlas : TextureContainer
     readonly ITextureFactory textureFactory;
     readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
-    readonly PooledDictionary<string, ITextureRegion> textures;
-    readonly PooledDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+    readonly ConcurrentDictionary<string, ITextureRegion> textures;
+    readonly ConcurrentDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
 
     public TextureContainerAtlas(ResourceContainer resourceContainer = null,
         TextureOptions textureOptions = null,
@@ -55,7 +55,7 @@ public sealed class TextureContainerAtlas : TextureContainer
         this.atlasDescription = atlasDescription;
 
         atlases = new();
-        textures = new();
+        textures = new(StringComparer.Ordinal);
         texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
@@ -84,23 +84,40 @@ public sealed class TextureContainerAtlas : TextureContainer
         var str = filename.ToString();
 
         using var bitmap = TextureLoader.LoadBitmap(str, resourceContainer);
-        return textures[str] = Add(bitmap, textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer));
+        var options = textureOptions ?? TextureLoader.LoadTextureOptions(str, resourceContainer);
+        lock (atlases)
+        {
+            if (texturesLookup.TryGetValue(str, out texture)) return texture;
+
+            texture = Add(bitmap, options);
+            textures[str] = texture;
+            return texture;
+        }
+    }
+
+    public bool TryGetLoaded(scoped ReadOnlySpan<char> filename, out ITextureRegion texture)
+    {
+        PathHelper.WithStandardSeparatorsUnsafe(filename);
+        return texturesLookup.TryGetValue(filename, out texture);
     }
 
     public ITextureRegion Add(Image<Rgba32> bitmap, TextureOptions options)
     {
         if (bitmap is null) return null;
 
-        options ??= TextureOptions.Default;
-        if (!atlases.TryGetValue(options, out var atlas))
-            atlases[options] = atlas = new(textureFactory,
-                width,
-                height,
-                $"{atlasDescription} (Option set {atlases.Count})",
-                options,
-                padding);
+        lock (atlases)
+        {
+            options ??= TextureOptions.Default;
+            if (!atlases.TryGetValue(options, out var atlas))
+                atlases[options] = atlas = new(textureFactory,
+                    width,
+                    height,
+                    $"{atlasDescription} (Option set {atlases.Count})",
+                    options,
+                    padding);
 
-        return atlas.AddRegion(bitmap);
+            return atlas.AddRegion(bitmap);
+        }
     }
 
     public ITextureRegion Add(string filename, Image<Rgba32> bitmap, TextureOptions options = null)
@@ -110,7 +127,14 @@ public sealed class TextureContainerAtlas : TextureContainer
 
         if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
 
-        return textures[filename] = Add(bitmap, options ?? textureOptions);
+        lock (atlases)
+        {
+            if (texturesLookup.TryGetValue(filename, out texture)) return texture;
+
+            texture = Add(bitmap, options ?? textureOptions);
+            textures[filename] = texture;
+            return texture;
+        }
     }
 
     #region IDisposable Support
@@ -124,7 +148,6 @@ public sealed class TextureContainerAtlas : TextureContainer
         foreach (var atlas in atlases.Values) atlas.Dispose();
         atlases.Dispose();
 
-        textures.Dispose();
         disposed = true;
     }
 

@@ -1,8 +1,5 @@
 namespace BrewLib.Util;
 
-using System.Numerics;
-using System.Runtime.CompilerServices;
-
 public static class MathUtil
 {
     public static float ShortestAngleDelta(float from, float to)

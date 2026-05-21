@@ -419,12 +419,12 @@ public ref struct TempQueue<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(dest, 0, _size);
+    public void CopyTo(scoped ref readonly Span<T> dest) => CopyTo(in dest, 0, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, _size);
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex) => CopyTo(in dest, destIndex, _size);
 
-    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();

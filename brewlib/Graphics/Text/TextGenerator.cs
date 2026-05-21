@@ -3,9 +3,8 @@
 using System;
 using System.Globalization;
 using System.Numerics;
-using BrewLib.IO;
-using BrewLib.Memory;
-using BrewLib.Util;
+using IO;
+using Memory;
 using SDL3;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -14,6 +13,7 @@ using SixLabors.ImageSharp.Drawing.Processing.Processors.Text;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Tiny.PooledCollections.Generic;
+using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
 {

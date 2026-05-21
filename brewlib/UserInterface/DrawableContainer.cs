@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Drawables;
+using Graphics;
+using Graphics.Drawables;
 
 public class DrawableContainer(WidgetManager manager) : Widget(manager)
 {

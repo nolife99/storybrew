@@ -3,10 +3,10 @@
 using System.IO;
 using System.Text;
 using BrewLib.Util;
-using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
+using Util;
 using ZLinq;
 
 ///<summary> Parsing methods for .ass subtitle files. </summary>

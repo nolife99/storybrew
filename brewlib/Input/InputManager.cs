@@ -1,11 +1,10 @@
-﻿using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
-
-namespace BrewLib.Input;
+﻿namespace BrewLib.Input;
 
 using System;
 using System.Numerics;
 using SDL3;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public sealed class InputManager(nint window, IInputHandler handler)
 {

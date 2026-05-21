@@ -3,16 +3,14 @@ namespace BrewLib.Graphics.Backend.OpenGL;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
 using SDL3;
+using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Textures;
+using Util;
 
 public sealed class OpenGlTextureFactory(IGraphicsBackend backend) : ITextureFactory
 {
@@ -67,14 +65,18 @@ public sealed class OpenGlAsyncTextureUploader(OpenGlGraphicsBackend backend)
     }
 }
 
-internal sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
+sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
 {
-    int pixelUnpackBuffer;
-    nint mapped;
+    const MapBufferAccessMask UploadMapFlags =
+        MapBufferAccessMask.WriteBit |
+        MapBufferAccessMask.InvalidateBufferBit;
+
     bool disposed;
+    nint mapped;
+    uint pixelUnpackBuffer;
 
     OpenGlPreparedTextureUpload(TextureUploadDescription description,
-        int pixelUnpackBuffer,
+        uint pixelUnpackBuffer,
         nint mapped)
         : base(description)
     {
@@ -95,29 +97,34 @@ internal sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
 
     internal static OpenGlPreparedTextureUpload Create(TextureUploadDescription description)
     {
-        var pbo = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+        var pbo = OpenGlApi.GL.GenBuffer();
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, pbo);
 
-        GL.BufferData(BufferTarget.PixelUnpackBuffer, description.ByteLength, 0, BufferUsageHint.StreamDraw);
+        OpenGlApi.AllocateBuffer(BufferTargetARB.PixelUnpackBuffer,
+            description.ByteLength,
+            BufferUsageARB.StreamDraw);
 
-        var mapped = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly);
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
+        var mapped = OpenGlApi.MapBufferRange(BufferTargetARB.PixelUnpackBuffer,
+            0,
+            description.ByteLength,
+            UploadMapFlags);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
 
         if (mapped != nint.Zero) return new(description, pbo, mapped);
 
-        GL.DeleteBuffer(pbo);
-        throw new InvalidOperationException($"Unable to map OpenGL texture upload PBO: {GL.GetError()}");
+        OpenGlApi.GL.DeleteBuffer(pbo);
+        throw new InvalidOperationException($"Unable to map OpenGL texture upload PBO: {OpenGlApi.GL.GetError()}");
     }
 
-    internal int UnmapAndDetach()
+    internal uint UnmapAndDetach()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
         var pbo = pixelUnpackBuffer;
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, pbo);
         if (mapped != nint.Zero)
         {
-            GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
+            OpenGlApi.GL.UnmapBuffer(BufferTargetARB.PixelUnpackBuffer);
             mapped = nint.Zero;
         }
 
@@ -128,6 +135,7 @@ internal sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
     public override void Dispose()
     {
         if (disposed) return;
+
         disposed = true;
 
         if (SDL.IsMainThread())
@@ -144,38 +152,38 @@ internal sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
         var pbo = pixelUnpackBuffer;
         if (pbo == 0) return;
 
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, pbo);
         if (mapped != nint.Zero)
         {
-            GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
+            OpenGlApi.GL.UnmapBuffer(BufferTargetARB.PixelUnpackBuffer);
             mapped = nint.Zero;
         }
 
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-        GL.DeleteBuffer(pbo);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+        OpenGlApi.GL.DeleteBuffer(pbo);
         pixelUnpackBuffer = 0;
     }
 }
 
-internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
+sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
 {
-    readonly IGraphicsBackend backend;
+    const MapBufferAccessMask UploadMapFlags =
+        MapBufferAccessMask.WriteBit |
+        MapBufferAccessMask.InvalidateBufferBit;
+
+    nint fenceId = -1;
 
     int textureId;
-    nint fenceId = -1;
 
     OpenGlTexture(IGraphicsBackend backend, int textureId, int width, int height, nint fence = 0)
         : base(null, new(0, 0, width, height))
     {
-        this.backend = backend ?? DrawState.Backend;
+        Backend = backend ?? DrawState.Backend;
         this.textureId = textureId;
 
-        if (fence == 0) setUploadFence(flush: true);
+        if (fence == 0) setUploadFence(true);
         else fenceId = fence;
     }
-
-    public IGraphicsBackend Backend => backend;
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, TextureId);
 
     public int TextureId
     {
@@ -191,101 +199,9 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
     static bool ClearTextureSupported
         => DrawState.Backend?.Capabilities.Has(GraphicsBackendFeatures.ClearTexture) ?? false;
 
-    public static OpenGlTexture Create(IGraphicsBackend backend,
-        Color color,
-        int width,
-        int height,
-        TextureOptions textureOptions = null)
-    {
-        if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
+    public IGraphicsBackend Backend { get; }
 
-        textureOptions ??= TextureOptions.Default;
-        if (textureOptions.PreMultiply)
-        {
-            var vec = color.ToScaledVector4();
-            color = Color.FromScaledVector(new(vec.AsVector3() * vec.W, vec.W));
-        }
-
-        var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
-
-        var format = textureOptions.Srgb && DrawState.ColorCorrected ? PixelInternalFormat.Srgb8 : PixelInternalFormat.Rgba8;
-        if (ClearTextureSupported)
-        {
-            GL.TexImage2D(TextureTarget.Texture2D,
-                0,
-                format,
-                width,
-                height,
-                0,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                0);
-
-            var pixel = color.ToPixel<Rgba32>();
-            GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref pixel);
-        }
-        else
-        {
-            uploadTextureImageWithPbo(width, height, format, color.ToPixel<Rgba32>());
-        }
-
-        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
-
-        DrawState.UnbindTexture(textureId);
-        return new(backend, textureId, width, height);
-    }
-
-    public static OpenGlTexture Load(IGraphicsBackend backend,
-        Image<Rgba32> bitmap,
-        TextureOptions textureOptions = null)
-    {
-        var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
-        var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
-
-        textureOptions ??= TextureOptions.Default;
-        var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
-
-        uploadTextureImageWithPbo(bitmap, width, height, getTextureFormat(textureOptions));
-
-        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
-
-        DrawState.UnbindTexture(textureId);
-        return new(backend, textureId, width, height);
-    }
-
-    internal static OpenGlTexture Load(IGraphicsBackend backend,
-        OpenGlPreparedTextureUpload upload)
-    {
-        if (upload.Width < 1 || upload.Height < 1)
-            throw new InvalidOperationException($"Invalid texture size: {upload.Width}x{upload.Height}");
-        if (upload.Format != TextureUploadFormat.Rgba8)
-            throw new NotSupportedException($"Unsupported OpenGL texture upload format: {upload.Format}");
-
-        var textureOptions = upload.Options ?? TextureOptions.Default;
-        var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
-
-        try
-        {
-            uploadPreparedTextureImage(upload, getTextureFormat(textureOptions));
-
-            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
-
-            DrawState.UnbindTexture(textureId);
-            return new(backend, textureId, upload.Width, upload.Height);
-        }
-        catch
-        {
-            DrawState.UnbindTexture(textureId);
-            GL.DeleteTexture(textureId);
-            throw;
-        }
-    }
+    public GraphicsResourceHandle NativeHandle => new(Backend.Name, TextureId);
 
     public void Update(Color color, int x, int y, int width, int height)
     {
@@ -294,13 +210,13 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         if (ClearTextureSupported)
         {
             var pixel = color.ToPixel<Rgba32>();
-            GL.ClearTexSubImage(textureId,
+            OpenGlApi.GL.ClearTexSubImage((uint)textureId,
                 0,
                 x,
                 y,
                 0,
-                width,
-                height,
+                (uint)width,
+                (uint)height,
                 1,
                 PixelFormat.Rgba,
                 PixelType.UnsignedByte,
@@ -326,6 +242,101 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         setUploadFence();
     }
 
+    public static OpenGlTexture Create(IGraphicsBackend backend,
+        Color color,
+        int width,
+        int height,
+        TextureOptions textureOptions = null)
+    {
+        if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
+
+        textureOptions ??= TextureOptions.Default;
+        if (textureOptions.PreMultiply)
+        {
+            var vec = color.ToScaledVector4();
+            color = Color.FromScaledVector(new(vec.AsVector3() * vec.W, vec.W));
+        }
+
+        var textureId = (int)OpenGlApi.GL.GenTexture();
+        DrawState.BindTexture(textureId);
+
+        var format = textureOptions.Srgb && DrawState.ColorCorrected ? InternalFormat.Srgb8Alpha8 : InternalFormat.Rgba8;
+        if (ClearTextureSupported)
+        {
+            OpenGlApi.UploadTextureImage2D(TextureTarget.Texture2D,
+                0,
+                format,
+                width,
+                height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte);
+
+            var pixel = color.ToPixel<Rgba32>();
+            OpenGlApi.GL.ClearTexImage((uint)textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref pixel);
+        }
+        else
+        {
+            uploadTextureImageWithPbo(width, height, format, color.ToPixel<Rgba32>());
+        }
+
+        if (textureOptions.GenerateMipmaps) OpenGlApi.GL.GenerateMipmap(TextureTarget.Texture2D);
+        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
+
+        DrawState.UnbindTexture(textureId);
+        return new(backend, textureId, width, height);
+    }
+
+    public static OpenGlTexture Load(IGraphicsBackend backend,
+        Image<Rgba32> bitmap,
+        TextureOptions textureOptions = null)
+    {
+        var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
+        var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
+
+        textureOptions ??= TextureOptions.Default;
+        var textureId = (int)OpenGlApi.GL.GenTexture();
+        DrawState.BindTexture(textureId);
+
+        uploadTextureImageWithPbo(bitmap, width, height, getTextureFormat(textureOptions));
+
+        if (textureOptions.GenerateMipmaps) OpenGlApi.GL.GenerateMipmap(TextureTarget.Texture2D);
+        OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
+
+        DrawState.UnbindTexture(textureId);
+        return new(backend, textureId, width, height);
+    }
+
+    internal static OpenGlTexture Load(IGraphicsBackend backend,
+        OpenGlPreparedTextureUpload upload)
+    {
+        if (upload.Width < 1 || upload.Height < 1)
+            throw new InvalidOperationException($"Invalid texture size: {upload.Width}x{upload.Height}");
+
+        if (upload.Format != TextureUploadFormat.Rgba8)
+            throw new NotSupportedException($"Unsupported OpenGL texture upload format: {upload.Format}");
+
+        var textureOptions = upload.Options ?? TextureOptions.Default;
+        var textureId = (int)OpenGlApi.GL.GenTexture();
+        DrawState.BindTexture(textureId);
+
+        try
+        {
+            uploadPreparedTextureImage(upload, getTextureFormat(textureOptions));
+
+            if (textureOptions.GenerateMipmaps) OpenGlApi.GL.GenerateMipmap(TextureTarget.Texture2D);
+            OpenGlTextureOptions.ApplyParameters(textureOptions, TextureTarget.Texture2D);
+
+            DrawState.UnbindTexture(textureId);
+            return new(backend, textureId, upload.Width, upload.Height);
+        }
+        catch
+        {
+            DrawState.UnbindTexture(textureId);
+            OpenGlApi.GL.DeleteTexture((uint)textureId);
+            throw;
+        }
+    }
+
     internal bool Wait(bool canBlock)
     {
         var fence = fenceId;
@@ -333,16 +344,16 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
 
         if (canBlock)
         {
-            GL.WaitSync(fence, WaitSyncFlags.None, ulong.MaxValue);
-            GL.DeleteSync(fence);
+            OpenGlApi.GL.WaitSync(fence, (uint)0, ulong.MaxValue);
+            OpenGlApi.GL.DeleteSync(fence);
             fenceId = -1;
             return true;
         }
 
-        GL.GetSync(fence, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
-        if (values == 0x9118) return false;
+        OpenGlApi.GL.GetSync(fence, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
+        if (values == (int)GLEnum.Unsignaled) return false;
 
-        GL.DeleteSync(fence);
+        OpenGlApi.GL.DeleteSync(fence);
         fenceId = -1;
         return true;
     }
@@ -367,62 +378,56 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         texture.deleteFence();
 
         DrawState.UnbindTexture(texture.textureId);
-        GL.DeleteTexture(texture.textureId);
+        OpenGlApi.GL.DeleteTexture((uint)texture.textureId);
         texture.textureId = 0;
     }
 
     void setUploadFence(bool flush = false)
     {
         deleteFence();
-        fenceId = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-        if (flush) GL.Flush();
+        fenceId = OpenGlApi.GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, (uint)0);
+        if (flush) OpenGlApi.GL.Flush();
     }
 
     void deleteFence()
     {
         if (fenceId == -1) return;
 
-        GL.DeleteSync(fenceId);
+        OpenGlApi.GL.DeleteSync(fenceId);
         fenceId = -1;
     }
 
-    static PixelInternalFormat getTextureFormat(TextureOptions textureOptions)
+    static InternalFormat getTextureFormat(TextureOptions textureOptions)
     {
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
-        var compress = DrawState.UseTextureCompression;
-
-        return sRgb ?
-            compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
+        return sRgb ? InternalFormat.Srgb8Alpha8 : InternalFormat.Rgba8;
     }
 
     static void uploadPreparedTextureImage(OpenGlPreparedTextureUpload upload,
-        PixelInternalFormat format)
+        InternalFormat format)
     {
         var pbo = upload.UnmapAndDetach();
         try
         {
-            GL.TexImage2D(TextureTarget.Texture2D,
+            OpenGlApi.UploadTextureImage2D(TextureTarget.Texture2D,
                 0,
                 format,
                 upload.Width,
                 upload.Height,
-                0,
                 PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                0);
+                PixelType.UnsignedByte);
         }
         finally
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
         }
     }
 
     static void uploadTextureImageWithPbo(Image<Rgba32> bitmap,
         int width,
         int height,
-        PixelInternalFormat format)
+        InternalFormat format)
     {
         var pbo = mapPixelUnpackBuffer(width, height, out var pixels);
         try
@@ -432,15 +437,15 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         }
         catch
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
             throw;
         }
     }
 
     static void uploadTextureImageWithPbo(int width,
         int height,
-        PixelInternalFormat format,
+        InternalFormat format,
         Rgba32 pixel)
     {
         var pbo = mapPixelUnpackBuffer(width, height, out var pixels);
@@ -451,8 +456,8 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         }
         catch
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
             throw;
         }
     }
@@ -471,8 +476,8 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         }
         catch
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
             throw;
         }
     }
@@ -491,72 +496,72 @@ internal sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
         }
         catch
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
             throw;
         }
     }
 
-    static int mapPixelUnpackBuffer(int width, int height, out Span<Rgba32> pixels)
+    static uint mapPixelUnpackBuffer(int width, int height, out Span<Rgba32> pixels)
     {
-        var pbo = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+        var pbo = OpenGlApi.GL.GenBuffer();
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, pbo);
 
         var pixelCount = checked(width * height);
         var byteCount = checked(pixelCount * Unsafe.SizeOf<Rgba32>());
-        GL.BufferData(BufferTarget.PixelUnpackBuffer, byteCount, 0, BufferUsageHint.StreamDraw);
+        OpenGlApi.AllocateBuffer(BufferTargetARB.PixelUnpackBuffer, byteCount, BufferUsageARB.StreamDraw);
 
-        var mapped = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly);
+        var mapped = OpenGlApi.MapBufferRange(BufferTargetARB.PixelUnpackBuffer,
+            0,
+            byteCount,
+            UploadMapFlags);
         if (mapped == nint.Zero)
         {
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-            GL.DeleteBuffer(pbo);
-            throw new InvalidOperationException($"Unable to map OpenGL texture upload PBO: {GL.GetError()}");
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+            OpenGlApi.GL.DeleteBuffer(pbo);
+            throw new InvalidOperationException($"Unable to map OpenGL texture upload PBO: {OpenGlApi.GL.GetError()}");
         }
 
         pixels = mapped.AsSpan<Rgba32>(pixelCount);
         return pbo;
     }
 
-    static void uploadMappedTextureImage(int pbo,
+    static void uploadMappedTextureImage(uint pbo,
         int width,
         int height,
-        PixelInternalFormat format)
+        InternalFormat format)
     {
-        GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-        GL.TexImage2D(TextureTarget.Texture2D,
+        OpenGlApi.GL.UnmapBuffer(BufferTargetARB.PixelUnpackBuffer);
+        OpenGlApi.UploadTextureImage2D(TextureTarget.Texture2D,
             0,
             format,
             width,
             height,
-            0,
             PixelFormat.Rgba,
-            PixelType.UnsignedByte,
-            0);
+            PixelType.UnsignedByte);
 
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-        GL.DeleteBuffer(pbo);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+        OpenGlApi.GL.DeleteBuffer(pbo);
     }
 
-    static void uploadMappedTextureSubImage(int pbo,
+    static void uploadMappedTextureSubImage(uint pbo,
         int x,
         int y,
         int width,
         int height)
     {
-        GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-        GL.TexSubImage2D(TextureTarget.Texture2D,
+        OpenGlApi.GL.UnmapBuffer(BufferTargetARB.PixelUnpackBuffer);
+        OpenGlApi.UploadTextureSubImage2D(TextureTarget.Texture2D,
             0,
             x,
             y,
             width,
             height,
             PixelFormat.Rgba,
-            PixelType.UnsignedByte,
-            0);
+            PixelType.UnsignedByte);
 
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-        GL.DeleteBuffer(pbo);
+        OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
+        OpenGlApi.GL.DeleteBuffer(pbo);
     }
 
     static void copyBitmapRows(Image<Rgba32> bitmap,

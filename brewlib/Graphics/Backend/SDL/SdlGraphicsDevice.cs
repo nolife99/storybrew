@@ -1,10 +1,10 @@
 namespace BrewLib.Graphics.Backend.SDL;
 
 using System;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
 using SDL3;
+using Shaders;
 using SixLabors.ImageSharp;
+using Textures;
 
 public sealed class SdlGraphicsDevice : IGraphicsDevice
 {

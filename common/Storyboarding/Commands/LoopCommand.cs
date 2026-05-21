@@ -1,7 +1,7 @@
 namespace StorybrewCommon.Storyboarding.Commands;
 
-using StorybrewCommon.Storyboarding.Display;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
+using Display;
 
 #pragma warning disable CS1591
 public readonly struct LoopCommand

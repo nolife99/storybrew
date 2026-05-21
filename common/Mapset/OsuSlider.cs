@@ -4,7 +4,7 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
-using StorybrewCommon.Curves;
+using Curves;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;

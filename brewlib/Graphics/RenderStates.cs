@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics;
 
 using System;
-using BrewLib.Graphics.Backend;
 
 public struct RenderStates
 {
@@ -27,7 +26,7 @@ public struct RenderStates
     {
         if (currentState.BlendingFactor == BlendingFactor) return;
 
-        DrawState.FlushRenderer();
+        DrawState.FlushRendererImmediate();
         DrawState.Device.SetBlendState(BlendingFactor);
         currentState.BlendingFactor = BlendingFactor;
     }

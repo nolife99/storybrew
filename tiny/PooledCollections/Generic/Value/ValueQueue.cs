@@ -128,14 +128,14 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
     // GetEnumerator returns an IEnumerator over this Queue.  This
     // Enumerator will support removing.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public Enumerator GetEnumerator() => new(in this);
 
     /// <internalonly/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
     // Removes the object at the head of the queue and returns it. If the queue
     // is empty, this method throws an
@@ -339,7 +339,7 @@ public partial struct ValueQueue<T> : IReadOnlyCollection<T>
         int _index; // -1 = not started, -2 = ended/disposed
         T _currentElement;
 
-        public Enumerator(in ValueQueue<T> q)
+        public Enumerator(scoped ref readonly ValueQueue<T> q)
         {
             _q = q;
             _version = q._version;

@@ -2,12 +2,12 @@
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Drawables;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
+using Graphics;
+using Graphics.Cameras;
+using Graphics.Drawables;
 using SixLabors.ImageSharp;
+using Skinning.Styles;
+using Util;
 
 public class Label(WidgetManager manager) : Widget(manager)
 {

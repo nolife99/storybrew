@@ -1,18 +1,16 @@
 namespace StorybrewCommon.Storyboarding;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.Util;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Display;
+using Commands;
+using CommandValues;
+using Display;
+using Mapset;
 using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using ZLinq;
 
 ///<summary> Base sprite in storyboards. </summary>
 public class OsbSprite : StoryboardObject
@@ -304,7 +302,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startX"> Start-X value of the command. </param>
     /// <param name="endX"> End-X value of the command. </param>
     public void MoveX(OsbEasing easing, float startTime, float endTime, double startX, double endX)
-        => addCommand(CommandKind.MoveX, MoveXTimeline, easing, startTime, endTime, (CommandDecimal)startX, (CommandDecimal)endX);
+        => addCommand(CommandKind.MoveX, MoveXTimeline, easing, startTime, endTime, startX, endX);
 
     /// <summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
@@ -330,7 +328,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startY"> Start-Y value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
     public void MoveY(OsbEasing easing, float startTime, float endTime, double startY, double endY)
-        => addCommand(CommandKind.MoveY, MoveYTimeline, easing, startTime, endTime, (CommandDecimal)startY, (CommandDecimal)endY);
+        => addCommand(CommandKind.MoveY, MoveYTimeline, easing, startTime, endTime, startY, endY);
 
     /// <summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
@@ -356,7 +354,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startScale"> Start scale of the command. </param>
     /// <param name="endScale"> End scale of the command. </param>
     public void Scale(OsbEasing easing, float startTime, float endTime, double startScale, double endScale)
-        => addCommand(CommandKind.Scale, ScaleTimeline, easing, startTime, endTime, (CommandDecimal)startScale, (CommandDecimal)endScale);
+        => addCommand(CommandKind.Scale, ScaleTimeline, easing, startTime, endTime, startScale, endScale);
 
     /// <summary> Change the size of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
@@ -473,7 +471,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startRotation"> Start radians of the command. </param>
     /// <param name="endRotation"> End radians of the command. </param>
     public void Rotate(OsbEasing easing, float startTime, float endTime, double startRotation, double endRotation)
-        => addCommand(CommandKind.Rotate, RotateTimeline, easing, startTime, endTime, (CommandDecimal)startRotation, (CommandDecimal)endRotation);
+        => addCommand(CommandKind.Rotate, RotateTimeline, easing, startTime, endTime, startRotation, endRotation);
 
     /// <summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -496,7 +494,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startFade"> Start fade value of the command. </param>
     /// <param name="endFade"> End fade value of the command. </param>
     public void Fade(OsbEasing easing, float startTime, float endTime, double startFade, double endFade)
-        => addCommand(CommandKind.Fade, FadeTimeline, easing, startTime, endTime, (CommandDecimal)startFade, (CommandDecimal)endFade);
+        => addCommand(CommandKind.Fade, FadeTimeline, easing, startTime, endTime, startFade, endFade);
 
     /// <summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>

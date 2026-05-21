@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using BrewLib.Time;
+using Time;
 
 public sealed class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 {

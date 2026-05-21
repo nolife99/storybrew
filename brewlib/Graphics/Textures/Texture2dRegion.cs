@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics.Backend;
 using SixLabors.ImageSharp;
 
 public class Texture2dRegion : ITextureRegion

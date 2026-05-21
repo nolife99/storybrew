@@ -289,7 +289,7 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
     #region IEnumerable methods
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public Enumerator GetEnumerator() => new(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
@@ -532,7 +532,8 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
     {
         ArgumentNullException.ThrowIfNull(dest);
 
-        CopyTo(dest.AsSpan(), destIndex, count);
+        var span = dest.AsSpan();
+        CopyTo(in span, destIndex, count);
     }
 
     public int RemoveWhere(Predicate<T> match)
@@ -1026,7 +1027,7 @@ public partial struct ValueHashSet<T> : ISet<T>, IReadOnlySet<T>
         readonly int _version;
         int _index;
 
-        public Enumerator(in ValueHashSet<T> hashSet)
+        public Enumerator(scoped ref readonly ValueHashSet<T> hashSet)
         {
             _hashSet = hashSet;
             _version = hashSet._version;

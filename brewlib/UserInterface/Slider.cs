@@ -2,7 +2,7 @@
 
 using System;
 using System.Numerics;
-using BrewLib.UserInterface.Skinning.Styles;
+using Skinning.Styles;
 
 public class Slider : ProgressBar
 {

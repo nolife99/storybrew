@@ -1,0 +1,218 @@
+<Project>
+  <UsingTask TaskName="StorybrewPackEmbeddedResourcesTask" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Resources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputPath ParameterType="System.String" Required="true" />
+      <LogicalName ParameterType="System.String" Required="true" />
+      <ResourceRoot ParameterType="System.String" Required="false" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+static string NormalizeKey(string path, string resourceRoot)
+{
+    path = path.Replace('\\', '/');
+    while (path.StartsWith("./", StringComparison.Ordinal)) path = path.Substring(2);
+
+    resourceRoot = string.IsNullOrWhiteSpace(resourceRoot) ? "Resources" : resourceRoot.Replace('\\', '/').Trim('/');
+    if (path.StartsWith(resourceRoot + "/", StringComparison.OrdinalIgnoreCase))
+        path = path.Substring(resourceRoot.Length + 1);
+
+    return path;
+}
+
+static string GetKey(ITaskItem resource, string resourceRoot)
+{
+    var targetPath = resource.GetMetadata("TargetPath");
+    if (!string.IsNullOrWhiteSpace(targetPath)) return NormalizeKey(targetPath, resourceRoot);
+
+    var link = resource.GetMetadata("Link");
+    if (!string.IsNullOrWhiteSpace(link)) return NormalizeKey(link, resourceRoot);
+
+    var identity = resource.ItemSpec;
+    if (!Path.IsPathRooted(identity)) return NormalizeKey(identity, resourceRoot);
+
+    var relativeDir = resource.GetMetadata("RelativeDir");
+    var filename = resource.GetMetadata("Filename") + resource.GetMetadata("Extension");
+    if (!string.IsNullOrEmpty(relativeDir)) return NormalizeKey(relativeDir + filename, resourceRoot);
+
+    return NormalizeKey(filename, resourceRoot);
+}
+
+static byte[] ReadAllBytesShared(string path)
+{
+    using (var stream = new FileStream(path,
+        FileMode.Open,
+        FileAccess.Read,
+        FileShare.ReadWrite | FileShare.Delete,
+        1024 * 1024,
+        FileOptions.SequentialScan))
+    using (var memory = new MemoryStream(stream.CanSeek ? checked((int)stream.Length) : 0))
+    {
+        stream.CopyTo(memory);
+        return memory.ToArray();
+    }
+}
+
+static byte[] Deflate(byte[] bytes)
+{
+    using (var memory = new MemoryStream())
+    {
+        using (var deflate = new DeflateStream(memory, CompressionLevel.Optimal, leaveOpen: true))
+            deflate.Write(bytes, 0, bytes.Length);
+        return memory.ToArray();
+    }
+}
+
+var entries = new List<(string Key, byte[] Data, byte Method, int UncompressedLength, long Offset)>(Resources.Length);
+var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+foreach (var resource in Resources)
+{
+    var path = resource.GetMetadata("FullPath");
+    if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        throw new FileNotFoundException("Embedded resource not found", path);
+
+    var key = GetKey(resource, ResourceRoot);
+    if (string.IsNullOrWhiteSpace(key))
+        throw new InvalidOperationException($"Unable to determine embedded asset key for '{path}'");
+    if (!keys.Add(key))
+        throw new InvalidOperationException($"Duplicate embedded asset key '{key}'");
+
+    var raw = ReadAllBytesShared(path);
+    var compressed = Deflate(raw);
+    var useCompressed = compressed.Length < raw.Length;
+
+    entries.Add((key,
+        useCompressed ? compressed : raw,
+        useCompressed ? (byte)1 : (byte)0,
+        raw.Length,
+        0));
+}
+
+entries.Sort((a, b) => string.CompareOrdinal(a.Key, b.Key));
+
+var magic = Encoding.ASCII.GetBytes("SBAPACK1");
+var indexLength = magic.Length + sizeof(int);
+foreach (var entry in entries)
+{
+    var nameLength = Encoding.UTF8.GetByteCount(entry.Key);
+    indexLength += sizeof(int) + nameLength + sizeof(byte) + sizeof(long) + sizeof(int) + sizeof(int);
+}
+
+var dataOffset = (long)indexLength;
+for (var i = 0; i < entries.Count; ++i)
+{
+    var entry = entries[i];
+    entries[i] = (entry.Key, entry.Data, entry.Method, entry.UncompressedLength, dataOffset);
+    dataOffset += entry.Data.Length;
+}
+
+var directory = Path.GetDirectoryName(OutputPath);
+if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+var temporaryPath = OutputPath + "." + System.Diagnostics.Process.GetCurrentProcess().Id + "." + Guid.NewGuid().ToString("N") + ".tmp";
+try
+{
+    using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+    using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false))
+    {
+        writer.Write(magic);
+        writer.Write(entries.Count);
+
+        foreach (var entry in entries)
+        {
+            var nameBytes = Encoding.UTF8.GetBytes(entry.Key);
+            writer.Write(nameBytes.Length);
+            writer.Write(nameBytes);
+            writer.Write(entry.Method);
+            writer.Write(entry.Offset);
+            writer.Write(entry.Data.Length);
+            writer.Write(entry.UncompressedLength);
+        }
+
+        foreach (var entry in entries)
+            writer.Write(entry.Data);
+    }
+
+    moveReplacing(temporaryPath, OutputPath);
+}
+finally
+{
+    if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+}
+
+static void moveReplacing(string sourcePath, string destinationPath)
+{
+    try
+    {
+        if (File.Exists(destinationPath))
+            File.Replace(sourcePath, destinationPath, null);
+        else
+            File.Move(sourcePath, destinationPath);
+    }
+    catch (IOException)
+    {
+        if (File.Exists(destinationPath))
+            File.Delete(destinationPath);
+
+        File.Move(sourcePath, destinationPath);
+    }
+    catch (PlatformNotSupportedException)
+    {
+        if (File.Exists(destinationPath))
+            File.Delete(destinationPath);
+
+        File.Move(sourcePath, destinationPath);
+    }
+}
+
+]]></Code>
+    </Task>
+  </UsingTask>
+
+  <PropertyGroup>
+    <StorybrewAssetPackDirectory Condition="'$(StorybrewAssetPackDirectory)' == ''">$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\assetpack\</StorybrewAssetPackDirectory>
+    <StorybrewAssetPackPath Condition="'$(StorybrewAssetPackPath)' == ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(StorybrewAssetPackDirectory)', '$(AssemblyName).assets.pack'))</StorybrewAssetPackPath>
+    <StorybrewAssetPackLogicalName Condition="'$(StorybrewAssetPackLogicalName)' == ''">$(RootNamespace).Resources.assets.pack</StorybrewAssetPackLogicalName>
+    <StorybrewAssetPackResourceRoot Condition="'$(StorybrewAssetPackResourceRoot)' == ''">Resources</StorybrewAssetPackResourceRoot>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != ''">
+    <EmbeddedResource Include="$(StorybrewAssetPackPath)"
+                      LogicalName="$(StorybrewAssetPackLogicalName)"
+                      StorybrewPack="false"
+                      Visible="false" />
+  </ItemGroup>
+
+  <Target Name="StorybrewPackEmbeddedResources" BeforeTargets="CreateManifestResourceNames" Condition="'$(TargetFramework)' != '' and '@(EmbeddedResource)' != ''">
+    <ItemGroup>
+      <StorybrewAssetToPack Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.StorybrewPack)' != 'false'" />
+    </ItemGroup>
+
+    <StorybrewPackEmbeddedResourcesTask Resources="@(StorybrewAssetToPack)"
+                                        OutputPath="$(StorybrewAssetPackPath)"
+                                        LogicalName="$(StorybrewAssetPackLogicalName)"
+                                        ResourceRoot="$(StorybrewAssetPackResourceRoot)"
+                                        Condition="'@(StorybrewAssetToPack)' != ''" />
+
+    <ItemGroup Condition="'@(StorybrewAssetToPack)' != ''">
+      <EmbeddedResource Remove="@(StorybrewAssetToPack)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="StorybrewDeleteAssetPack" AfterTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(StorybrewAssetPackPath)')">
+    <Delete Files="$(StorybrewAssetPackPath)" TreatErrorsAsWarnings="true" />
+  </Target>
+
+  <Target Name="StorybrewCleanAssetPack" BeforeTargets="Clean" Condition="Exists('$(StorybrewAssetPackPath)')">
+    <Delete Files="$(StorybrewAssetPackPath)" TreatErrorsAsWarnings="true" />
+  </Target>
+
+</Project>

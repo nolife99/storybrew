@@ -3,9 +3,9 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Animations;
 using BrewLib.Util;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 

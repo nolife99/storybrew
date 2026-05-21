@@ -6,6 +6,11 @@ public readonly record struct ShaderUniformBinding<T>(
     ShaderBindingStage Stage = ShaderBindingStage.Vertex,
     uint Slot = 0);
 
+public readonly record struct ShaderUniformBlockBinding(
+    string Name,
+    ShaderBindingStage Stage,
+    uint Slot);
+
 public readonly record struct ShaderSamplerBinding(
     string Name,
     ShaderValueType Type = ShaderValueType.Sampler2D);

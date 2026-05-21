@@ -27,6 +27,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         public readonly float RotationOffset;
         public readonly float ScaleFactor;
         public readonly float StartTime, EndTime;
+        public readonly string StaticTexturePath;
         public readonly int HighlightDepth;
 
         public DrawWork(OsbSprite sprite, scoped ref readonly StoryboardTransform transform, int highlightDepth = 0)
@@ -39,6 +40,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             ScaleFactor = GetScaleFactor(matrix);
             StartTime = sprite.StartTime;
             EndTime = sprite.EndTime;
+            StaticTexturePath = sprite is OsbAnimation ? null : sprite.TexturePath;
             HighlightDepth = highlightDepth;
         }
     }
@@ -60,6 +62,8 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 
         public OsbSprite Sprite;
         public string TexturePath;
+        public ITextureRegion Texture;
+        public bool TextureResolved;
 
         public Vector2 Position;
         public Vector2 Scale;
@@ -105,7 +109,8 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             false,
             Matrix3x2.Identity,
             0,
-            1);
+            1,
+            true);
 
         Submit(in result, drawContext, camera, bounds, project, frameStats);
     }
@@ -120,7 +125,11 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         bool highlightActive,
         Matrix3x2 parentTransform,
         float parentRotationOffset,
-        float parentScaleFactor)
+        float parentScaleFactor,
+        bool parentTransformIsIdentity,
+        TextureContainer textureContainer = null,
+        string mapsetPath = null,
+        string projectAssetFolderPath = null)
     {
         var sprite = work.Sprite;
 
@@ -133,7 +142,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         if (time < work.StartTime || work.EndTime < time || !sprite.IsActive(time)) return result;
 
         result.Active = true;
-        result.TexturePath = sprite.GetTexturePathAt(time);
+        result.TexturePath = work.StaticTexturePath ?? sprite.GetTexturePathAt(time);
 
         var inDisplayInterval = sprite.InDisplayInterval(time);
         var forceVisible = !inDisplayInterval && altDown;
@@ -158,15 +167,17 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         if (sprite.FlipHTimeline.ValueAtTime(time)) scale.X = -scale.X;
         if (sprite.FlipVTimeline.ValueAtTime(time)) scale.Y = -scale.Y;
 
-        var transform = Matrix3x2.Multiply(parentTransform, work.Transform);
+        var transform = parentTransformIsIdentity ? work.Transform : Matrix3x2.Multiply(parentTransform, work.Transform);
 
         position = sprite.HasMoveCommands
             ? new(Vector2.Transform(new(position.X, 0), transform).X,
                 Vector2.Transform(new(0, position.Y), transform).Y)
             : Vector2.Transform(position, transform);
 
-        if (sprite.RotateTimeline.HasCommands) rotation += parentRotationOffset + work.RotationOffset;
-        if (sprite.HasScalingCommands) scale *= parentScaleFactor * work.ScaleFactor;
+        if (sprite.RotateTimeline.HasCommands)
+            rotation += parentTransformIsIdentity ? work.RotationOffset : parentRotationOffset + work.RotationOffset;
+        if (sprite.HasScalingCommands)
+            scale *= parentTransformIsIdentity ? work.ScaleFactor : parentScaleFactor * work.ScaleFactor;
 
         var color = (Color)sprite.ColorAt(time);
         if (forceVisible)
@@ -183,6 +194,12 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         result.Position = position;
         result.Rotation = rotation;
         result.Color = color.LerpColor(SixLabors.ImageSharp.Color.Black, dimFactor);
+        if (textureContainer is not null)
+            result.TextureResolved = tryResolveLoadedTexture(textureContainer,
+                mapsetPath,
+                projectAssetFolderPath,
+                result.TexturePath,
+                out result.Texture);
 
         return result;
     }
@@ -217,7 +234,13 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         }
 
         if (!result.Visible) return;
-        if (!tryResolveTexture(project, texturePath, out var texture)) return;
+        ITextureRegion texture;
+        if (result.TextureResolved)
+        {
+            texture = result.Texture;
+            if (texture is null) return;
+        }
+        else if (!tryResolveTexture(project, texturePath, out texture)) return;
 
         var origin = GetOriginVector(sprite.Origin, (SizeF)texture.Size);
         var scale = result.Scale;
@@ -269,6 +292,31 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 result.Color.WithOpacity(result.Opacity * result.Fade),
                 Vector2.Zero,
                 (SizeF)texture.Size);
+    }
+
+    static bool tryResolveLoadedTexture(TextureContainer textureContainer,
+        string mapsetPath,
+        string projectAssetFolderPath,
+        string texturePath,
+        out ITextureRegion texture)
+    {
+        Span<char> span = stackalloc char[260];
+        Path.TryJoin(mapsetPath, texturePath, span, out var written);
+
+        var splitSpan = span[..written];
+        PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
+
+        var mapsetResolved = textureContainer.TryGetLoaded(splitSpan, out texture);
+        if (mapsetResolved && texture is not null) return true;
+
+        Path.TryJoin(projectAssetFolderPath, texturePath, span, out written);
+
+        splitSpan = span[..written];
+        PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
+
+        if (!textureContainer.TryGetLoaded(splitSpan, out texture)) return false;
+
+        return texture is not null || mapsetResolved;
     }
 
     static bool tryResolveTexture(Project project, string texturePath, out ITextureRegion texture)

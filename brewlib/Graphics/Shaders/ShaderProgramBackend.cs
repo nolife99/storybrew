@@ -1,7 +1,7 @@
 namespace BrewLib.Graphics.Shaders;
 
 using System;
-using BrewLib.Graphics.Backend;
+using Backend;
 
 public interface IShaderProgramFactory
 {

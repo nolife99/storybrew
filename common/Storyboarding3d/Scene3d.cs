@@ -1,9 +1,9 @@
 namespace StorybrewCommon.Storyboarding3d;
 
 using System;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Commands;
+using Mapset;
+using Storyboarding;
+using Storyboarding.Commands;
 
 ///<summary> Represents a 3D scene with a tree of nodes. </summary>
 public class Scene3d

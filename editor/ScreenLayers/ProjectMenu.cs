@@ -10,17 +10,17 @@ using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Scripting;
 using SDL3;
+using Storyboarding;
 using StorybrewCommon.Mapset;
-using StorybrewEditor.Scripting;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.UserInterface;
-using StorybrewEditor.UserInterface.Components;
-using StorybrewEditor.UserInterface.Drawables;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Tiny.PooledCollections.Generic.Value;
+using UserInterface;
+using UserInterface.Components;
+using UserInterface.Drawables;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {

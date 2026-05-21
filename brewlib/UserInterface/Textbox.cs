@@ -2,15 +2,15 @@
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Drawables;
-using BrewLib.Input;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
+using Graphics;
+using Graphics.Drawables;
+using Input;
 using SDL3;
 using SixLabors.ImageSharp;
+using Skinning.Styles;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Util;
 
 public class Textbox : Widget, Field
 {

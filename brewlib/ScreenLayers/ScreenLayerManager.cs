@@ -2,10 +2,10 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using BrewLib.Graphics;
-using BrewLib.Input;
-using BrewLib.Time;
+using Graphics;
+using Input;
 using SDL3;
+using Time;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;

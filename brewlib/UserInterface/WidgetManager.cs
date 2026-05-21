@@ -2,17 +2,17 @@
 
 using System;
 using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Drawables;
-using BrewLib.Input;
-using BrewLib.ScreenLayers;
-using BrewLib.UserInterface.Skinning;
-using BrewLib.Util;
+using Graphics;
+using Graphics.Cameras;
+using Graphics.Drawables;
+using Input;
+using ScreenLayers;
 using SDL3;
+using Skinning;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
+using Util;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {

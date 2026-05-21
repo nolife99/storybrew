@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System.Numerics;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
+using Textures;
 using Tiny.PooledCollections.Generic;
+using Util;
 
 public sealed class TextFontAtlased(string name, float size, TextureContainer container) : TextFont
 {

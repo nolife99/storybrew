@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using BrewLib.Graphics.Cameras;
+using Cameras;
 
 public interface IRenderer : IDisposable
 {

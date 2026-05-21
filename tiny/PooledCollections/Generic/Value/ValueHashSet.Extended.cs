@@ -407,12 +407,12 @@ partial struct ValueHashSet<T> : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> span) => CopyTo(span, 0, Count);
+    public void CopyTo(scoped ref readonly Span<T> span) => CopyTo(in span, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex) => CopyTo(in dest, destIndex, Count);
 
-    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped ref readonly Span<T> dest, int destIndex, int count)
     {
         // Check array index valid index into array.
         if (destIndex < 0 || destIndex > dest.Length)

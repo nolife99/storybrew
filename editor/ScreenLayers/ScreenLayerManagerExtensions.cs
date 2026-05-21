@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
 using SDL3;
-using StorybrewEditor.ScreenLayers.Util;
-using StorybrewEditor.Storyboarding;
+using Storyboarding;
+using Util;
 
 public static class ScreenLayerManagerExtensions
 {
@@ -178,8 +178,7 @@ public static class ScreenLayerManagerExtensions
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {
         if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
-        OpenFilePicker(screenLayer,
-            "",
+        screenLayer.OpenFilePicker("",
             Project.ProjectsFolder,
             Project.FileFilter,
             projectPath =>

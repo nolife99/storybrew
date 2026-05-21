@@ -40,6 +40,7 @@ using ER = Tiny.PooledCollections.ExceptionResource;
 namespace Tiny.PooledCollections;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -77,6 +78,9 @@ static class ThrowHelper
 
             // Generic key to move the boxing to the right hand side of throw
             GetAddingDuplicateWithKeyArgumentException(key);
+
+    public static void ThrowKeyNotFoundException<T>(T key)
+        => throw new KeyNotFoundException($"The given key '{key}' was not present in the dictionary.");
 
     public static void ThrowArgumentException(ER resource) => throw GetArgumentException(resource);
 

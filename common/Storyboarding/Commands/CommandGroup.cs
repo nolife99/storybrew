@@ -1,7 +1,8 @@
 namespace StorybrewCommon.Storyboarding.Commands;
 
-using StorybrewCommon.Storyboarding.Display;
-using StorybrewCommon.Storyboarding.CommandValues;
+using System;
+using CommandValues;
+using Display;
 
 #pragma warning disable CS1591
 public readonly struct CommandGroup
@@ -46,6 +47,6 @@ public readonly struct CommandGroup
 
     public void EnsureActive()
     {
-        if (!IsActive) throw new System.InvalidOperationException("This command group is no longer active.");
+        if (!IsActive) throw new InvalidOperationException("This command group is no longer active.");
     }
 }

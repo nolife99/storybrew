@@ -7,7 +7,6 @@ public enum GraphicsBackendFeatures
 {
     None = 0,
     SrgbFramebuffer = 1 << 0,
-    TextureCompression = 1 << 1,
     TextureAtlases = 1 << 2,
     NonUniformTextureIndexing = 1 << 3,
     Instancing = 1 << 4,
@@ -16,7 +15,9 @@ public enum GraphicsBackendFeatures
     FramebufferInvalidation = 1 << 7,
     ImmutableBuffers = 1 << 8,
     ClearTexture = 1 << 9,
-    VertexArrays = 1 << 10
+    VertexArrays = 1 << 10,
+    NativeNonUniformTextureIndexing = 1 << 11,
+    ManualColorCorrection = 1 << 12
 }
 
 public readonly record struct GraphicsBackendCapabilities(

@@ -1,10 +1,9 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Shaders;
+using Shaders;
 
-public sealed class OpenGlShaderProgramFactory(OpenGlGraphicsDevice device) : IShaderProgramFactory
+public sealed class OpenGlShaderProgramFactory(OpenGlGraphicsBackend backend, OpenGlGraphicsDevice device) : IShaderProgramFactory
 {
     public IShaderProgramBackend CreateProgram(ShaderProgramSource source)
-        => new OpenGlShaderProgram(device, source);
+        => new OpenGlShaderProgram(backend, device, source);
 }

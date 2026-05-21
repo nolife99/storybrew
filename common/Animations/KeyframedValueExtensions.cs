@@ -2,7 +2,7 @@
 
 using System;
 using System.Numerics;
-using StorybrewCommon.Storyboarding.CommandValues;
+using Storyboarding.CommandValues;
 
 /// <summary> Extension methods for <see cref="KeyframedValue{TValue}"/>. </summary>
 public static class KeyframedValueExtensions

@@ -1,12 +1,12 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
-using osuTK.Graphics.OpenGL;
+using Shaders;
+using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
+using Textures;
 using Tiny.PooledCollections.Generic;
+using Shader = Shaders.Shader;
 
 public sealed class OpenGlGraphicsDevice : IGraphicsDevice
 {
@@ -23,7 +23,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         {
             if (activeTextureUnit == value) return;
 
-            GL.ActiveTexture(TextureUnit.Texture0 + value);
+            OpenGlApi.GL.ActiveTexture((TextureUnit)((int)TextureUnit.Texture0 + value));
             activeTextureUnit = value;
         }
     }
@@ -39,7 +39,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
     public void ResetStateCache() => capabilityCache.Clear();
 
     public void SetViewport(Rectangle viewport)
-        => GL.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
+        => OpenGlApi.GL.Viewport(viewport.X, viewport.Y, (uint)viewport.Width, (uint)viewport.Height);
 
     public void SetScissor(Rectangle? region)
     {
@@ -47,7 +47,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         if (!region.HasValue) return;
 
         var value = region.Value;
-        GL.Scissor(value.X, value.Y, value.Width, value.Height);
+        OpenGlApi.GL.Scissor(value.X, value.Y, (uint)value.Width, (uint)value.Height);
     }
 
     public void SetCapability(GraphicsCapability capability, bool enabled)
@@ -58,10 +58,10 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         SetCapability(GraphicsCapability.Blend, state.Enabled);
         if (!state.Enabled) return;
 
-        GL.BlendFuncSeparate(toOpenGlBlendFactorSrc(state.Source),
-            toOpenGlBlendFactorDest(state.Destination),
-            toOpenGlBlendFactorSrc(state.AlphaSource),
-            toOpenGlBlendFactorDest(state.AlphaDestination));
+        OpenGlApi.GL.BlendFuncSeparate(toOpenGlBlendFactor(state.Source),
+            toOpenGlBlendFactor(state.Destination),
+            toOpenGlBlendFactor(state.AlphaSource),
+            toOpenGlBlendFactor(state.AlphaDestination));
     }
 
     public void UseProgram(int programId)
@@ -69,7 +69,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         if (this.programId == programId) return;
 
         this.programId = programId;
-        GL.UseProgram(programId);
+        OpenGlApi.GL.UseProgram((uint)programId);
     }
 
     public void ActivateVertexAttributes(VertexDeclaration declaration, Shader shader)
@@ -79,12 +79,12 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
             var attributeLocation = shader.GetAttributeLocation(attribute.Name);
             if (attributeLocation < 0) continue;
 
-            GL.EnableVertexAttribArray(attributeLocation);
-            GL.VertexAttribPointer(attributeLocation,
+            OpenGlApi.GL.EnableVertexAttribArray((uint)attributeLocation);
+            OpenGlApi.GL.VertexAttribPointer((uint)attributeLocation,
                 attribute.ComponentCount,
                 toOpenGlVertexAttributeType(attribute.Format),
                 attribute.Normalized,
-                declaration.VertexSize,
+                (uint)declaration.VertexSize,
                 attribute.Offset);
         }
     }
@@ -94,7 +94,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         foreach (var attribute in declaration)
         {
             var attributeLocation = shader.GetAttributeLocation(attribute.Name);
-            if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
+            if (attributeLocation >= 0) OpenGlApi.GL.DisableVertexAttribArray((uint)attributeLocation);
         }
     }
 
@@ -105,8 +105,6 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
 
         return BindTexture(openGlTexture.TextureId);
     }
-
-    public int BindTexture(int textureId) => BindTextures([textureId]);
 
     public void BindTextures(scoped ReadOnlySpan<ITexture> textures, scoped Span<int> textureUnits)
     {
@@ -125,13 +123,17 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         BindTextures(textureIds, textureUnits[..textures.Length]);
     }
 
-    public void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
-        => BindTexture(textureId, 0, mode);
-
     public void UnbindTexture(ITexture texture)
     {
         if (texture is OpenGlTexture openGlTexture) UnbindTexture(openGlTexture.TextureId);
     }
+
+    public void Dispose() => capabilityCache.Dispose();
+
+    public int BindTexture(int textureId) => BindTextures([textureId]);
+
+    public void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
+        => BindTexture(textureId, 0, mode);
 
     public void UnbindTexture(int textureId)
     {
@@ -141,10 +143,8 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         samplerTextureIds[i] = 0;
 
         ActiveTextureUnit = i;
-        GL.BindTexture(samplerTexturingModes[i], 0);
+        OpenGlApi.GL.BindTexture(samplerTexturingModes[i], 0);
     }
-
-    public void Dispose() => capabilityCache.Dispose();
 
     void BindTexture(int textureId, int samplerIndex, TextureTarget mode)
     {
@@ -154,7 +154,7 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
         ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
         if (samplerTextureId == textureId) return;
 
-        GL.BindTexture(mode, textureId);
+        OpenGlApi.GL.BindTexture(mode, (uint)textureId);
         samplerTextureId = textureId;
     }
 
@@ -224,8 +224,8 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
     {
         if (capabilityCache.TryGetValue(capability, out var isEnabled) && isEnabled == enable) return;
 
-        if (enable) GL.Enable(capability);
-        else GL.Disable(capability);
+        if (enable) OpenGlApi.GL.Enable(capability);
+        else OpenGlApi.GL.Disable(capability);
 
         capabilityCache[capability] = enable;
     }
@@ -251,23 +251,13 @@ public sealed class OpenGlGraphicsDevice : IGraphicsDevice
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
         };
 
-    static BlendingFactorSrc toOpenGlBlendFactorSrc(BlendFactor factor)
+    static BlendingFactor toOpenGlBlendFactor(BlendFactor factor)
         => factor switch
         {
-            BlendFactor.Zero => BlendingFactorSrc.Zero,
-            BlendFactor.One => BlendingFactorSrc.One,
-            BlendFactor.SrcAlpha => BlendingFactorSrc.SrcAlpha,
-            BlendFactor.OneMinusSrcAlpha => BlendingFactorSrc.OneMinusSrcAlpha,
-            _ => throw new ArgumentOutOfRangeException(nameof(factor), factor, null)
-        };
-
-    static BlendingFactorDest toOpenGlBlendFactorDest(BlendFactor factor)
-        => factor switch
-        {
-            BlendFactor.Zero => BlendingFactorDest.Zero,
-            BlendFactor.One => BlendingFactorDest.One,
-            BlendFactor.SrcAlpha => BlendingFactorDest.SrcAlpha,
-            BlendFactor.OneMinusSrcAlpha => BlendingFactorDest.OneMinusSrcAlpha,
+            BlendFactor.Zero => BlendingFactor.Zero,
+            BlendFactor.One => BlendingFactor.One,
+            BlendFactor.SrcAlpha => BlendingFactor.SrcAlpha,
+            BlendFactor.OneMinusSrcAlpha => BlendingFactor.OneMinusSrcAlpha,
             _ => throw new ArgumentOutOfRangeException(nameof(factor), factor, null)
         };
 }

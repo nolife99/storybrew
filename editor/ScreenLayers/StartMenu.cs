@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using SDL3;
-using StorybrewEditor.Storyboarding;
+using Storyboarding;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;

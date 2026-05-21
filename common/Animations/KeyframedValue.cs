@@ -269,7 +269,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         pair(loopable ? previousPairEndValue : endPair, endPair);
     }
 
-    static Keyframe<TValue> editKeyframe(ref readonly Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null)
+    static Keyframe<TValue> editKeyframe(scoped ref readonly Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null)
         => edit is not null ? new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
     ///<summary> Removes all keyframes in the set. </summary>

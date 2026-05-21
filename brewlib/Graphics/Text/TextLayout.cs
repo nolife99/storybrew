@@ -2,10 +2,10 @@ namespace BrewLib.Graphics.Text;
 
 using System;
 using System.Numerics;
-using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Value;
 using Tiny.PooledCollections.Generic.Value.Internals;
+using Util;
 
 public struct TextLayout : IDisposable
 {

@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Audio;
 
 using System.IO;
-using BrewLib.IO;
-using BrewLib.Util;
+using IO;
 using ManagedBass;
 using ManagedBass.Fx;
 using SDL3;
+using Util;
 
 public class AudioStream : AudioChannel
 {

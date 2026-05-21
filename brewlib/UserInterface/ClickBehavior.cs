@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using BrewLib.Input;
+using Input;
 using SDL3;
 
 public sealed class ClickBehavior : IDisposable

@@ -11,11 +11,11 @@ public static class UnsafeMemory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this nint ptr, int length) where T : struct
-        => MemoryMarshal.CreateSpan(ref AsRef<T>(ptr), length);
+        => MemoryMarshal.CreateSpan(ref ptr.AsRef<T>(), length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this nint ptr, int length) where T : struct
-        => MemoryMarshal.CreateSpan(ref AsRef<T>(ptr), length);
+        => MemoryMarshal.CreateSpan(ref ptr.AsRef<T>(), length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static nint AsPointer<T>(this Span<T> pinned) where T : struct

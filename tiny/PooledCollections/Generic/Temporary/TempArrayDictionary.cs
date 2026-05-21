@@ -653,7 +653,7 @@ public ref struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         readonly int _count;
         int _index;
 
-        public KeyValuePairEnumerator(in TempArrayDictionary<TKey, TValue> dictionary)
+        public KeyValuePairEnumerator(scoped ref readonly TempArrayDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _index = -1;

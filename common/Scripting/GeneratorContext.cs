@@ -2,8 +2,8 @@
 
 using System;
 using System.Buffers;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding;
+using Mapset;
+using Storyboarding;
 
 /// <summary>
 /// Represents a generator context, which provides information about the project, mapset, and beatmap being processed,

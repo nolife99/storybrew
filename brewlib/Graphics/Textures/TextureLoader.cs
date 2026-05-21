@@ -3,7 +3,7 @@ namespace BrewLib.Graphics.Textures;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using BrewLib.IO;
+using IO;
 using SDL3;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;

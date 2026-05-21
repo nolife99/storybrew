@@ -1,10 +1,12 @@
 namespace BrewLib.Graphics.Backend.OpenGL;
 
 using System;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Shaders;
-using osuTK.Graphics.OpenGL;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Renderers;
+using Shaders;
+using Silk.NET.OpenGL;
+using Shader = Shaders.Shader;
 
 public sealed class OpenGlRenderPipeline : IRenderPipeline
 {
@@ -12,7 +14,8 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
     readonly Shader shader;
     readonly OpenGlTextureBindingInfo[] textureBindings;
     readonly OpenGlVertexBufferBinding[] vertexBuffers;
-    readonly int vertexArrayId;
+    readonly List<IDisposable> uniforms = [];
+    readonly uint vertexArrayId;
 
     bool bound, disposed;
 
@@ -23,8 +26,11 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         this.device = device;
         Description = description;
 
-        shader = new(description.ShaderSource, backend);
-        vertexArrayId = GL.GenVertexArray();
+        var shaderSource = OpenGlShaderCompiler.CreateShaderSource(description,
+            backend.GlslVersion,
+            backend.GlslEs);
+        shader = new(shaderSource, backend);
+        vertexArrayId = OpenGlApi.GL.GenVertexArray();
 
         var pipelineTextureBindings = description.PipelineLayout.TextureBindings;
         textureBindings = new OpenGlTextureBindingInfo[pipelineTextureBindings.Length];
@@ -50,7 +56,11 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         => new OpenGlRenderUniform<T>(shader.GetUniform<T>(name));
 
     public IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform)
-        => new OpenGlRenderUniform<T>(shader.GetUniform(uniform));
+    {
+        var renderUniform = new OpenGlUniformBufferRenderUniform<T>(uniform);
+        uniforms.Add(renderUniform);
+        return renderUniform;
+    }
 
     public IResourceSet CreateResourceSet()
         => new OpenGlResourceSet(device, this);
@@ -65,7 +75,7 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
             bound = true;
         }
 
-        GL.BindVertexArray(vertexArrayId);
+        OpenGlApi.GL.BindVertexArray(vertexArrayId);
     }
 
     public void Unbind()
@@ -73,7 +83,7 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         ObjectDisposedException.ThrowIf(disposed, this);
         if (!bound) return;
 
-        GL.BindVertexArray(0);
+        OpenGlApi.GL.BindVertexArray(0);
         shader.End();
         bound = false;
     }
@@ -86,13 +96,13 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         ObjectDisposedException.ThrowIf(disposed, this);
         if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-        if (buffer is not OpenGlGraphicsBuffer openGlBuffer || openGlBuffer.Target != BufferTarget.ArrayBuffer)
+        if (buffer is not OpenGlGraphicsBuffer openGlBuffer || openGlBuffer.Target != BufferTargetARB.ArrayBuffer)
             throw new InvalidOperationException($"{nameof(OpenGlRenderPipeline)} can only bind OpenGL vertex buffers");
 
         ref var binding = ref getVertexBuffer(slot);
         if (binding.BufferId == openGlBuffer.BufferId && binding.BufferOffset == offset) return;
 
-        GL.BindVertexArray(vertexArrayId);
+        OpenGlApi.GL.BindVertexArray(vertexArrayId);
         openGlBuffer.Bind();
 
         foreach (var element in binding.Layout.Elements)
@@ -100,20 +110,25 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
             var location = shader.GetAttributeLocation(element.Name);
             if (location < 0) continue;
 
-            GL.EnableVertexAttribArray(location);
-            GL.VertexAttribPointer(location,
-                element.Format.GetComponentCount(),
-                toOpenGlVertexAttributeType(element.Format),
-                element.Format.IsNormalized(),
-                binding.Layout.Stride,
-                offset + element.Offset);
+            var locationCount = element.Format.GetLocationCount();
+            for (var column = 0; column < locationCount; ++column)
+            {
+                var columnLocation = location + column;
+                OpenGlApi.GL.EnableVertexAttribArray((uint)columnLocation);
+                OpenGlApi.GL.VertexAttribPointer((uint)columnLocation,
+                    element.Format.GetComponentCount(),
+                    toOpenGlVertexAttributeType(element.Format),
+                    element.Format.IsNormalized(),
+                    (uint)binding.Layout.Stride,
+                    offset + element.Offset + element.Format.GetLocationOffset(column));
 
-            GL.VertexAttribDivisor(location, binding.Layout.InputRate == VertexInputRate.Instance ? 1 : 0);
+                OpenGlApi.GL.VertexAttribDivisor((uint)columnLocation, binding.Layout.InputRate == VertexInputRate.Instance ? 1u : 0u);
+            }
         }
 
         binding.BufferId = openGlBuffer.BufferId;
         binding.BufferOffset = offset;
-        if (!bound) GL.BindVertexArray(0);
+        if (!bound) OpenGlApi.GL.BindVertexArray(0);
     }
 
     public void Draw(DrawCommand command)
@@ -121,7 +136,9 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         if (command.VertexCount == 0) return;
 
         Bind();
-        GL.DrawArrays(toOpenGlPrimitiveType(Description.Topology), command.FirstVertex, command.VertexCount);
+        OpenGlApi.GL.DrawArrays(toOpenGlPrimitiveType(Description.Topology), command.FirstVertex, (uint)command.VertexCount);
+        
+        DrawState.CountDrawCall();
     }
 
     public void DrawInstanced(DrawInstancedCommand command)
@@ -129,10 +146,41 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         if (command.VertexCount == 0 || command.InstanceCount == 0) return;
 
         Bind();
-        GL.DrawArraysInstanced(toOpenGlPrimitiveType(Description.Topology),
+        OpenGlApi.GL.DrawArraysInstanced(toOpenGlPrimitiveType(Description.Topology),
             command.FirstVertex,
-            command.VertexCount,
-            command.InstanceCount);
+            (uint)command.VertexCount,
+            (uint)command.InstanceCount);
+        
+        DrawState.CountDrawCall();
+    }
+
+    public unsafe void DrawIndirect(DrawIndirectCommand command)
+    {
+        if (command.DrawCount == 0) return;
+        if (command.Offset < 0)
+            throw new ArgumentOutOfRangeException(nameof(command), command.Offset, "Offset must be non-negative.");
+        if (command.DrawCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(command), command.DrawCount, "Draw count must be non-negative.");
+        if (command.Buffer is not OpenGlGraphicsBuffer openGlBuffer ||
+            openGlBuffer.Target != BufferTargetARB.DrawIndirectBuffer)
+            throw new InvalidOperationException($"{nameof(OpenGlRenderPipeline)} can only draw from OpenGL indirect buffers");
+        
+        DrawState.CountDrawCall();
+
+        Bind();
+        openGlBuffer.Bind();
+
+        var offset = (void*)command.Offset;
+        if (command.DrawCount == 1)
+        {
+            OpenGlApi.GL.DrawArraysIndirect(toOpenGlPrimitiveType(Description.Topology), offset);
+            return;
+        }
+
+        OpenGlApi.GL.MultiDrawArraysIndirect(toOpenGlPrimitiveType(Description.Topology),
+            offset,
+            (uint)command.DrawCount,
+            (uint)Unsafe.SizeOf<IndirectDrawCommand>());
     }
 
     public void Dispose()
@@ -141,7 +189,10 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
 
         if (bound) Unbind();
 
-        GL.DeleteVertexArray(vertexArrayId);
+        OpenGlApi.GL.DeleteVertexArray(vertexArrayId);
+        foreach (var uniform in uniforms)
+            uniform.Dispose();
+        uniforms.Clear();
         shader.Dispose();
         disposed = true;
     }
@@ -161,7 +212,8 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
             VertexAttributeFormat.Float32 or
                 VertexAttributeFormat.Float32x2 or
                 VertexAttributeFormat.Float32x3 or
-                VertexAttributeFormat.Float32x4 => VertexAttribPointerType.Float,
+                VertexAttributeFormat.Float32x4 or
+                VertexAttributeFormat.Float32Mat3x2 => VertexAttribPointerType.Float,
             VertexAttributeFormat.Float16x2 or VertexAttributeFormat.Float16x4 => VertexAttribPointerType.HalfFloat,
             VertexAttributeFormat.Unorm8x4 => VertexAttribPointerType.UnsignedByte,
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
@@ -181,17 +233,49 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         public void SetValue(T value) => uniform.Set(value);
     }
 
+    sealed class OpenGlUniformBufferRenderUniform<T>(ShaderUniformBinding<T> uniform) : IRenderUniform<T>, IDisposable
+    {
+        uint bufferId;
+        bool disposed;
+
+        public unsafe void SetValue(T value)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                throw new NotSupportedException($"OpenGL uniform '{uniform.Name}' must be an unmanaged value");
+
+            bufferId = bufferId == 0 ? OpenGlApi.GL.GenBuffer() : bufferId;
+
+            var size = Unsafe.SizeOf<T>();
+            OpenGlApi.GL.BindBuffer(BufferTargetARB.UniformBuffer, bufferId);
+            OpenGlApi.GL.BufferData(BufferTargetARB.UniformBuffer,
+                (nuint)size,
+                Unsafe.AsPointer(ref value),
+                BufferUsageARB.DynamicDraw);
+            OpenGlApi.GL.BindBufferBase(BufferTargetARB.UniformBuffer, uniform.Slot, bufferId);
+        }
+
+        public void Dispose()
+        {
+            if (disposed) return;
+
+            if (bufferId != 0) OpenGlApi.GL.DeleteBuffer(bufferId);
+            bufferId = 0;
+            disposed = true;
+        }
+    }
+
     struct OpenGlVertexBufferBinding
     {
         public OpenGlVertexBufferBinding(VertexBufferLayout layout)
         {
             Layout = layout;
-            BufferId = -1;
+            BufferId = 0;
             BufferOffset = 0;
         }
 
         public VertexBufferLayout Layout { get; }
-        public int BufferId { get; set; }
+        public uint BufferId { get; set; }
         public int BufferOffset { get; set; }
     }
 }

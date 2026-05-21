@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Util;
+using Animations;
+using Storyboarding;
+using Storyboarding.Util;
 
 ///<summary> Represents two triangles which form complex 3D geometry. </summary>
 public class Triangle3d : Node3d, HasOsbSprites

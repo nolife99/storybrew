@@ -7,7 +7,9 @@ using SixLabors.ImageSharp.PixelFormats;
 
 public interface ILineRenderer : IPrimitiveRenderer
 {
-    internal void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color);
+    internal void Draw(scoped ref readonly Vector3 start,
+        scoped ref readonly Vector3 end,
+        scoped ref readonly Color color);
 }
 
 [StructLayout(LayoutKind.Sequential)]

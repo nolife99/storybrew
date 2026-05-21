@@ -15,7 +15,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
 
     internal ValueDictionaryKeyCollection(ValueDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
 
-    public Enumerator GetEnumerator() => new(_dictionary);
+    public Enumerator GetEnumerator() => new(in _dictionary);
 
     public void CopyTo(TKey[] array, int arrayIndex)
     {
@@ -52,9 +52,9 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
         return false;
     }
 
-    IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+    IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(in _dictionary);
 
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in _dictionary);
 
     public struct Enumerator : IEnumerator<TKey>
     {
@@ -62,7 +62,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
         int _index;
         readonly int _version;
 
-        public Enumerator(in ValueDictionary<TKey, TValue> dictionary)
+        public Enumerator(scoped ref readonly ValueDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _version = dictionary._version;

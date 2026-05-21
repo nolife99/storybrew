@@ -6,7 +6,6 @@ using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Backend;
 using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Input;
 using BrewLib.IO;
@@ -15,8 +14,8 @@ using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
+using ScreenLayers;
 using SDL3;
-using StorybrewEditor.ScreenLayers;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : InputAdapter, IDisposable
@@ -57,11 +56,10 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
 
         drawContext.Register(textureContainer, true);
 
-        DrawState.UseTextureCompression = Program.Settings.TextureCompression;
         graphicsBackend.Initialize(ResourceContainer, textureContainer);
 
-        drawContext.Register<IQuadRenderer>(graphicsBackend.RendererFactory.CreateQuadRenderer(), true);
-        drawContext.Register<ILineRenderer>(graphicsBackend.RendererFactory.CreateLineRenderer(), true);
+        drawContext.Register(graphicsBackend.RendererFactory.CreateQuadRenderer(), true);
+        drawContext.Register(graphicsBackend.RendererFactory.CreateLineRenderer(), true);
         drawContext.Freeze();
 
         try
@@ -154,7 +152,11 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
         if (!SDL.GetWindowSizeInPixels(window, out var pixelWidth, out var pixelHeight))
             throw new InvalidOperationException($"Unable to get window size in pixels: {SDL.GetError()}");
 
-        inputDispatcher.OnResize(new() { Data1 = pixelWidth, Data2 = pixelHeight });
+        inputDispatcher.OnResize(new()
+        {
+            Data1 = pixelWidth,
+            Data2 = pixelHeight
+        });
 
         Restart();
     }
@@ -177,15 +179,27 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
 
     public int Draw()
     {
-        if (!DrawState.Backend.BeginFrame(Vector4.Zero)) return 0;
+        var deferRendererFlushes = DrawState.Backend.PrefersDeferredRendererFlushes;
+        if (deferRendererFlushes)
+            DrawState.BeginBufferedRendererFlushes();
 
-        screenLayerManager.Draw(drawContext);
-        overlay.Draw(drawContext);
+        try
+        {
+            if (!DrawState.Backend.BeginFrame(Vector4.Zero)) return -1;
 
-        var draws = DrawState.CompleteFrame();
-        DrawState.Backend.EndFrame(DrawState.CanInvalidate);
+            screenLayerManager.Draw(drawContext);
+            overlay.Draw(drawContext);
 
-        return draws;
+            var draws = DrawState.CompleteFrame();
+            DrawState.Backend.EndFrame(DrawState.CanInvalidate);
+
+            return draws;
+        }
+        finally
+        {
+            if (deferRendererFlushes)
+                DrawState.EndBufferedRendererFlushes();
+        }
     }
 
     #region Overlay
@@ -197,7 +211,10 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
     internal Label statsLabel;
 
     WidgetManager createOverlay(ScreenLayerManager manager)
-        => overlay = new(manager, InputManager, Skin) { Camera = overlayCamera = new() };
+        => overlay = new(manager, InputManager, Skin)
+        {
+            Camera = overlayCamera = new()
+        };
 
     void initializeOverlay()
     {
@@ -234,8 +251,15 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
             Displayed = false,
             Children =
             [
-                new Label(overlay) { StyleName = "icon", Icon = IconFont.VolumeUp },
-                volumeSlider = new(overlay) { Step = .01f }
+                new Label(overlay)
+                {
+                    StyleName = "icon",
+                    Icon = IconFont.VolumeUp
+                },
+                volumeSlider = new(overlay)
+                {
+                    Step = .01f
+                }
             ]
         });
 

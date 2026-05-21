@@ -1,16 +1,18 @@
 namespace BrewLib.Graphics.Backend.SDL;
 
 using System;
+using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
 using SDL3;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
+using Textures;
+using Util;
 
 public sealed class SdlTextureFactory(SdlGraphicsBackend backend) : ITextureFactory
 {
@@ -27,23 +29,20 @@ public sealed class SdlTextureFactory(SdlGraphicsBackend backend) : ITextureFact
 public sealed class SdlAsyncTextureUploader(SdlGraphicsBackend backend)
     : AsyncTextureUploaderBase(() => backend.Capabilities.MaxTextureSize)
 {
-    protected override async ValueTask<PreparedTextureUpload> PrepareAsync(string source,
+    protected override ValueTask<PreparedTextureUpload> PrepareAsync(string source,
         Image<Rgba32> bitmap,
         TextureOptions textureOptions,
         CancellationToken cancellationToken)
     {
         var description = CreateDescription(source, bitmap, textureOptions);
-        var state = new CreateUploadState(backend, description);
         SdlPreparedTextureUpload upload = null;
 
         try
         {
-            await RunOnMainThread(static s => ((CreateUploadState)s).Run(), state, cancellationToken)
-                .ConfigureAwait(false);
-
-            upload = state.Upload;
+            upload = SdlPreparedTextureUpload.Create(description);
             CopyBitmapRows(bitmap, upload);
-            return upload;
+            cancellationToken.ThrowIfCancellationRequested();
+            return new(upload);
         }
         catch
         {
@@ -56,104 +55,49 @@ public sealed class SdlAsyncTextureUploader(SdlGraphicsBackend backend)
         => upload is SdlPreparedTextureUpload sdlUpload ?
             SdlTexture.Load(backend, sdlUpload) :
             throw new InvalidOperationException("SDL async texture uploader received an upload prepared by another backend");
-
-    sealed class CreateUploadState(SdlGraphicsBackend backend, TextureUploadDescription description)
-    {
-        public SdlPreparedTextureUpload Upload { get; private set; }
-
-        public void Run() => Upload = SdlPreparedTextureUpload.Create(backend, description);
-    }
 }
 
-internal sealed class SdlPreparedTextureUpload : PreparedTextureUpload
+sealed class SdlPreparedTextureUpload : PreparedTextureUpload
 {
-    readonly SdlGraphicsBackend backend;
-    nint transferBuffer, mapped;
     bool disposed;
+    IMemoryOwner<Rgba32> pixels;
 
-    SdlPreparedTextureUpload(SdlGraphicsBackend backend,
-        TextureUploadDescription description,
-        nint transferBuffer,
-        nint mapped)
+    SdlPreparedTextureUpload(TextureUploadDescription description,
+        IMemoryOwner<Rgba32> pixels)
         : base(description)
-    {
-        this.backend = backend;
-        this.transferBuffer = transferBuffer;
-        this.mapped = mapped;
-    }
+        => this.pixels = pixels;
 
     internal override Span<byte> WritableBytes
     {
         get
         {
             ObjectDisposedException.ThrowIf(disposed, this);
-            if (mapped == nint.Zero) throw new InvalidOperationException("SDL texture upload is not mapped");
-
-            return mapped.AsSpan<byte>(ByteLength);
+            return MemoryMarshal.AsBytes(WritablePixels);
         }
     }
 
-    internal static SdlPreparedTextureUpload Create(SdlGraphicsBackend backend,
-        TextureUploadDescription description)
+    internal ReadOnlySpan<Rgba32> ReadablePixels => WritablePixels;
+
+    Span<Rgba32> WritablePixels
     {
-        var transferCreateInfo = new SDL.GPUTransferBufferCreateInfo
+        get
         {
-            Usage = SDL.GPUTransferBufferUsage.Upload,
-            Size = (uint)description.ByteLength
-        };
-
-        var transferBuffer = SDL.CreateGPUTransferBuffer(backend.DeviceHandle, in transferCreateInfo);
-        if (transferBuffer == nint.Zero)
-            throw new InvalidOperationException($"Unable to create SDL GPU texture transfer buffer: {SDL.GetError()}");
-
-        var mapped = SDL.MapGPUTransferBuffer(backend.DeviceHandle, transferBuffer, false);
-        if (mapped != nint.Zero) return new(backend, description, transferBuffer, mapped);
-
-        backend.ReleaseTransferBuffer(transferBuffer);
-        throw new InvalidOperationException($"Unable to map SDL GPU texture transfer buffer: {SDL.GetError()}");
-    }
-
-    internal nint UnmapAndDetach()
-    {
-        ObjectDisposedException.ThrowIf(disposed, this);
-
-        if (mapped != nint.Zero)
-        {
-            SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
-            mapped = nint.Zero;
+            ObjectDisposedException.ThrowIf(disposed, this);
+            return pixels.Memory.Span[..checked(Width * Height)];
         }
-
-        var detached = transferBuffer;
-        transferBuffer = nint.Zero;
-        return detached;
     }
+
+    internal static SdlPreparedTextureUpload Create(TextureUploadDescription description)
+        => new(description, MemoryAllocator.Default.Allocate<Rgba32>(checked(description.Width * description.Height)));
 
     public override void Dispose()
     {
         if (disposed) return;
+
         disposed = true;
 
-        if (SDL.IsMainThread())
-            releaseResources();
-        else if (Native.MainThreadScheduler is not null)
-            _ = Native.MainThreadScheduler(static s => ((SdlPreparedTextureUpload)s).releaseResources(), this)
-                .AsTask();
-        else
-            releaseResources();
-    }
-
-    void releaseResources()
-    {
-        if (mapped != nint.Zero && transferBuffer != nint.Zero)
-        {
-            SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
-            mapped = nint.Zero;
-        }
-
-        if (transferBuffer == nint.Zero) return;
-
-        backend.ReleaseTransferBuffer(transferBuffer);
-        transferBuffer = nint.Zero;
+        pixels.Dispose();
+        pixels = null;
     }
 }
 
@@ -161,8 +105,6 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
 {
     readonly SdlGraphicsBackend backend;
     readonly TextureOptions textureOptions;
-
-    nint textureHandle, samplerHandle;
     bool disposedTexture;
 
     SdlTexture(SdlGraphicsBackend backend,
@@ -174,15 +116,32 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
         : base(null, new(0, 0, width, height))
     {
         this.backend = backend;
-        this.textureHandle = textureHandle;
-        this.samplerHandle = samplerHandle;
+        TextureHandle = textureHandle;
+        SamplerHandle = samplerHandle;
         this.textureOptions = textureOptions;
     }
 
+    public nint TextureHandle { get; private set; }
+
+    public nint SamplerHandle { get; private set; }
+
     public IGraphicsBackend Backend => backend;
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, textureHandle);
-    public nint TextureHandle => textureHandle;
-    public nint SamplerHandle => samplerHandle;
+    public GraphicsResourceHandle NativeHandle => new(backend.Name, TextureHandle);
+
+    public void Update(Color color, int x, int y, int width, int height)
+    {
+        ObjectDisposedException.ThrowIf(disposedTexture, this);
+
+        var pixel = color.ToPixel<Rgba32>();
+        uploadColor(pixel, width, height, x, y, textureOptions.GenerateMipmaps, true);
+    }
+
+    public void Update(Image<Rgba32> bitmap, int x, int y)
+    {
+        ObjectDisposedException.ThrowIf(disposedTexture, this);
+
+        uploadBitmap(bitmap, bitmap.Width, bitmap.Height, x, y, textureOptions.GenerateMipmaps, true);
+    }
 
     public static SdlTexture Create(SdlGraphicsBackend backend,
         Color color,
@@ -206,7 +165,8 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
             0,
             0,
             textureOptions.GenerateMipmaps,
-            flushRenderer: false);
+            false);
+
         return texture;
     }
 
@@ -220,7 +180,7 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
         textureOptions ??= TextureOptions.Default;
         var texture = createEmptyTexture(backend, width, height, textureOptions);
 
-        texture.uploadBitmap(bitmap, width, height, 0, 0, textureOptions.GenerateMipmaps, flushRenderer: false);
+        texture.uploadBitmap(bitmap, width, height, 0, 0, textureOptions.GenerateMipmaps, false);
         return texture;
     }
 
@@ -229,23 +189,16 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
     {
         if (upload.Width < 1 || upload.Height < 1)
             throw new InvalidOperationException($"Invalid texture size: {upload.Width}x{upload.Height}");
+
         if (upload.Format != TextureUploadFormat.Rgba8)
             throw new NotSupportedException($"Unsupported SDL texture upload format: {upload.Format}");
 
         var textureOptions = upload.Options ?? TextureOptions.Default;
         var texture = createEmptyTexture(backend, upload.Width, upload.Height, textureOptions);
-        var transferBuffer = nint.Zero;
 
         try
         {
-            transferBuffer = upload.UnmapAndDetach();
-            texture.uploadMappedTransferBuffer(transferBuffer,
-                upload.Width,
-                upload.Height,
-                0,
-                0,
-                textureOptions.GenerateMipmaps,
-                flushRenderer: false);
+            texture.uploadPrepared(upload, textureOptions.GenerateMipmaps, false);
             return texture;
         }
         catch
@@ -253,37 +206,17 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
             texture.Dispose();
             throw;
         }
-        finally
-        {
-            if (transferBuffer != nint.Zero)
-                backend.ReleaseTransferBuffer(transferBuffer);
-        }
-    }
-
-    public void Update(Color color, int x, int y, int width, int height)
-    {
-        ObjectDisposedException.ThrowIf(disposedTexture, this);
-
-        var pixel = color.ToPixel<Rgba32>();
-        uploadColor(pixel, width, height, x, y, textureOptions.GenerateMipmaps, flushRenderer: true);
-    }
-
-    public void Update(Image<Rgba32> bitmap, int x, int y)
-    {
-        ObjectDisposedException.ThrowIf(disposedTexture, this);
-
-        uploadBitmap(bitmap, bitmap.Width, bitmap.Height, x, y, textureOptions.GenerateMipmaps, flushRenderer: true);
     }
 
     protected override void Dispose(bool disposing)
     {
         if (!disposedTexture)
         {
-            backend.ReleaseTexture(textureHandle);
-            backend.ReleaseSampler(samplerHandle);
+            backend.ReleaseTexture(TextureHandle);
+            backend.ReleaseSampler(SamplerHandle);
 
-            textureHandle = nint.Zero;
-            samplerHandle = nint.Zero;
+            TextureHandle = nint.Zero;
+            SamplerHandle = nint.Zero;
             disposedTexture = true;
         }
 
@@ -330,7 +263,7 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
         bool generateMipmaps,
         bool flushRenderer)
     {
-        var transferBuffer = createTransferBuffer(width, height);
+        var transferBuffer = createTransferBuffer(width, height, out var bytesPerRow);
 
         try
         {
@@ -338,7 +271,11 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
             if (mapped == nint.Zero)
                 throw new InvalidOperationException($"Unable to map SDL GPU texture transfer buffer: {SDL.GetError()}");
 
-            mapped.AsSpan<Rgba32>(checked(width * height)).Fill(pixel);
+            var pixelsPerRow = bytesPerRow / Unsafe.SizeOf<Rgba32>();
+            var pixels = mapped.AsSpan<Rgba32>(checked(pixelsPerRow * height));
+            for (var row = 0; row < height; ++row)
+                pixels.Slice(row * pixelsPerRow, width).Fill(pixel);
+
             SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
 
             uploadMappedTransferBuffer(transferBuffer, width, height, x, y, generateMipmaps, flushRenderer);
@@ -357,7 +294,7 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
         bool generateMipmaps,
         bool flushRenderer)
     {
-        var transferBuffer = createTransferBuffer(width, height);
+        var transferBuffer = createTransferBuffer(width, height, out var bytesPerRow);
 
         try
         {
@@ -365,10 +302,14 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
             if (mapped == nint.Zero)
                 throw new InvalidOperationException($"Unable to map SDL GPU texture transfer buffer: {SDL.GetError()}");
 
-            var pixels = mapped.AsSpan<Rgba32>(checked(width * height));
+            var target = mapped.AsSpan<byte>(checked(bytesPerRow * height));
             var source = bitmap.Frames.RootFrame.PixelBuffer;
+            var sourceRowBytes = checked(width * Unsafe.SizeOf<Rgba32>());
             for (var row = 0; row < height; ++row)
-                source.DangerousGetRowSpan(row)[..width].CopyTo(pixels.Slice(row * width, width));
+            {
+                var sourceRow = MemoryMarshal.AsBytes(source.DangerousGetRowSpan(row)[..width]);
+                sourceRow.CopyTo(target.Slice(row * bytesPerRow, sourceRowBytes));
+            }
 
             SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
 
@@ -380,12 +321,50 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
         }
     }
 
-    nint createTransferBuffer(int width, int height)
+    void uploadPrepared(SdlPreparedTextureUpload upload,
+        bool generateMipmaps,
+        bool flushRenderer)
     {
+        var transferBuffer = createTransferBuffer(upload.Width, upload.Height, out var bytesPerRow);
+
+        try
+        {
+            var mapped = SDL.MapGPUTransferBuffer(backend.DeviceHandle, transferBuffer, false);
+            if (mapped == nint.Zero)
+                throw new InvalidOperationException($"Unable to map SDL GPU texture transfer buffer: {SDL.GetError()}");
+
+            var target = mapped.AsSpan<byte>(checked(bytesPerRow * upload.Height));
+            var source = upload.ReadablePixels;
+            var sourceRowBytes = checked(upload.Width * Unsafe.SizeOf<Rgba32>());
+            for (var row = 0; row < upload.Height; ++row)
+            {
+                var sourceRow = MemoryMarshal.AsBytes(source.Slice(row * upload.Width, upload.Width));
+                sourceRow.CopyTo(target.Slice(row * bytesPerRow, sourceRowBytes));
+            }
+
+            SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBuffer);
+
+            uploadMappedTransferBuffer(transferBuffer,
+                upload.Width,
+                upload.Height,
+                0,
+                0,
+                generateMipmaps,
+                flushRenderer);
+        }
+        finally
+        {
+            backend.ReleaseTransferBuffer(transferBuffer);
+        }
+    }
+
+    nint createTransferBuffer(int width, int height, out int bytesPerRow)
+    {
+        bytesPerRow = getUploadBytesPerRow(width);
         var transferCreateInfo = new SDL.GPUTransferBufferCreateInfo
         {
             Usage = SDL.GPUTransferBufferUsage.Upload,
-            Size = (uint)checked(width * height * Unsafe.SizeOf<Rgba32>())
+            Size = (uint)checked(bytesPerRow * height)
         };
 
         var transferBuffer = SDL.CreateGPUTransferBuffer(backend.DeviceHandle, in transferCreateInfo);
@@ -407,14 +386,19 @@ public sealed class SdlTexture : Texture2dRegion, IWritableTexture
             backend.PrepareCopyFromDraw();
 
         backend.UploadTexture(transferBuffer,
-            textureHandle,
+            TextureHandle,
             width,
             height,
+            0,
+            0,
             x,
             y,
             generateMipmaps,
             nameof(SdlTexture));
     }
+
+    int getUploadBytesPerRow(int width)
+        => checked(width * Unsafe.SizeOf<Rgba32>());
 
     static SDL.GPUSamplerCreateInfo createSamplerInfo(TextureOptions options)
         => new()

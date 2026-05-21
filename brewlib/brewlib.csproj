@@ -11,6 +11,7 @@
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <LangVersion>default</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
@@ -24,7 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="runtimes\**" Pack="false" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="runtimes\**" Pack="false" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,13 +37,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="ManagedBass.Fx" Version="4.0.2"/>
-    <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
-    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3"/>
-    <PackageReference Include="SDL3-CS.Native.Shadercross" Version="3.0.0" GeneratePathProperty="true">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; native; contentfiles; build; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="ManagedBass.Fx" Version="4.0.2" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.Shaderc" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.SPIRV.Cross" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.SPIRV.Reflect" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.WebGPU" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.23.0" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.3" />
     <PackageReference Include="SkipLocalsInit" Version="1.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -50,21 +52,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\tiny\tiny.csproj"/>
-    <ProjectReference Include="..\SDL3-CS\SDL3-CS\SDL3-CS.csproj"/>
+    <ProjectReference Include="..\tiny\tiny.csproj" />
+    <ProjectReference Include="..\SDL3-CS\SDL3-CS\SDL3-CS.csproj" />
     <ProjectReference Include="..\SDL3-CS\SDL3-CS.Native\SDL3-CS.Native.csproj">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PkgSDL3-CS_Native_Shadercross)' != ''">
-    <Content Include="$(PkgSDL3-CS_Native_Shadercross)\runtimes\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>runtimes\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Content>
-  </ItemGroup>
-
-  <Import Project="..\build\StorybrewShaders.targets"/>
+  <Import Project="..\build\StorybrewShaders.targets" />
 
 </Project>

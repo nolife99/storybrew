@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Util;
+using Animations;
+using Storyboarding;
+using Storyboarding.Commands;
+using Storyboarding.CommandValues;
+using Storyboarding.Util;
 
 ///<summary> Represents a basic 3D object. </summary>
 public class Object3d

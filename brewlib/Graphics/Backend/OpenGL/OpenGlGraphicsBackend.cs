@@ -6,25 +6,37 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Text;
-using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Textures;
-using BrewLib.IO;
-using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
+using IO;
+using Renderers;
 using SDL3;
+using Shaders;
+using Silk.NET.OpenGL;
+using Textures;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Util;
 using ZLinq;
 
 public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 {
     SearchValues<string> extensions;
     Version glVersion;
+    bool isOpenGlEs = true;
 
-    public string Name => "OpenGL";
+    public OpenGlGraphicsBackend()
+    {
+        var device = new OpenGlGraphicsDevice();
+        Device = device;
+        Buffers = new OpenGlGraphicsBufferFactory();
+        TransientBuffers = new OpenGlTransientGraphicsBufferFactory(this);
+        RenderPipelines = new OpenGlRenderPipelineFactory(this, device);
+        ShaderPrograms = new OpenGlShaderProgramFactory(this, device);
+        TextureFactory = new OpenGlTextureFactory(this);
+        TextureUploader = new OpenGlAsyncTextureUploader(this);
+    }
+
+    public string Name => "OpenGL ES";
     public GraphicsBackendCapabilities Capabilities { get; private set; }
-    public ShaderSourceLanguage ShaderSourceLanguage => BrewLib.Graphics.Shaders.ShaderSourceLanguage.Glsl;
+    public ShaderSourceLanguage ShaderSourceLanguage => ShaderSourceLanguage.Hlsl;
     public IGraphicsDevice Device { get; }
     public IRendererFactory RendererFactory => this;
     public IGraphicsBufferFactory Buffers { get; }
@@ -35,23 +47,15 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     public ITextureFactory TextureFactory { get; }
     public IAsyncTextureUploader TextureUploader { get; }
 
-    public OpenGlGraphicsBackend()
-    {
-        var device = new OpenGlGraphicsDevice();
-        Device = device;
-        Buffers = new OpenGlGraphicsBufferFactory();
-        TransientBuffers = new OpenGlTransientGraphicsBufferFactory(this);
-        RenderPipelines = new OpenGlRenderPipelineFactory(this, device);
-        ShaderPrograms = new OpenGlShaderProgramFactory(device);
-        TextureFactory = new OpenGlTextureFactory(this);
-        TextureUploader = new OpenGlAsyncTextureUploader(this);
-    }
+    internal uint GlslVersion { get; private set; } = 300;
+    internal bool GlslEs { get; private set; } = true;
 
     public bool SupportsShaderExtension(string extensionName)
         => extensions is not null && extensions.Contains(extensionName);
 
     public void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer)
     {
+        OpenGlApi.Load();
         initializeContext();
         DrawState.Initialize(resourceContainer, textureContainer, this);
     }
@@ -59,7 +63,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     public bool BeginFrame(Vector4 clearColor)
     {
         Span<float> color = [clearColor.X, clearColor.Y, clearColor.Z, clearColor.W];
-        GL.ClearBuffer(ClearBuffer.Color, 0, ref color.GetPinnableReference());
+        OpenGlApi.GL.ClearBuffer(BufferKind.Color, 0, ref color.GetPinnableReference());
         return true;
     }
 
@@ -67,10 +71,15 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     {
         if (!discardFramebuffer) return;
 
-        Span<FramebufferAttachment> attachments = [FramebufferAttachment.Color];
-        GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer,
-            attachments.Length,
+        Span<InvalidateFramebufferAttachment> attachments = [InvalidateFramebufferAttachment.Color];
+        OpenGlApi.GL.InvalidateFramebuffer(FramebufferTarget.Framebuffer,
+            (uint)attachments.Length,
             ref attachments.GetPinnableReference());
+    }
+
+    public void Dispose()
+    {
+        Device.Dispose();
     }
 
     public IQuadRenderer CreateQuadRenderer()
@@ -89,18 +98,15 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
             extensions is not null &&
             requiredExtensions.AsValueEnumerable().All(extensions.Contains);
 
-        return hasExtensions ||
-            glVersion is not null &&
-            (glVersion.Major > major || glVersion.Major == major && glVersion.Minor >= minor);
+        return hasExtensions || HasVersion(major, minor);
     }
+
+    bool HasVersion(int major, int minor)
+        => glVersion is not null &&
+           (glVersion.Major > major || glVersion.Major == major && glVersion.Minor >= minor);
 
     internal IGpuUploadFence CreateUploadFence()
-        => new OpenGlUploadFence(GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0));
-
-    public void Dispose()
-    {
-        Device.Dispose();
-    }
+        => new OpenGlUploadFence(OpenGlApi.GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, (uint)0));
 
     void initializeContext()
     {
@@ -110,45 +116,47 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
         var features = GraphicsBackendFeatures.TextureAtlases;
 
-        if (HasCapabilities(3, 0, "GL_ARB_vertex_array_object"))
+        if (isOpenGlEs ? HasVersion(3, 0) : HasCapabilities(3, 0, "GL_ARB_vertex_array_object"))
             features |= GraphicsBackendFeatures.VertexArrays;
 
-        if (HasCapabilities(3, 3, "GL_ARB_instanced_arrays"))
+        if (isOpenGlEs ? HasVersion(3, 0) : HasCapabilities(3, 3, "GL_ARB_instanced_arrays"))
             features |= GraphicsBackendFeatures.Instancing;
 
-        if (HasCapabilities(4, 0, "GL_ARB_draw_indirect"))
+        if (isOpenGlEs ?
+                HasVersion(3, 1) && SupportsShaderExtension("GL_EXT_multi_draw_indirect") :
+                HasCapabilities(4, 3, "GL_ARB_multi_draw_indirect"))
             features |= GraphicsBackendFeatures.IndirectDraws;
 
-        if (HasCapabilities(4, 3, "GL_ARB_compute_shader"))
+        if (isOpenGlEs ? HasVersion(3, 1) : HasCapabilities(4, 3, "GL_ARB_compute_shader"))
             features |= GraphicsBackendFeatures.ComputeShaders;
 
-        if (HasCapabilities(4, 3, "GL_ARB_invalidate_subdata"))
+        if (!isOpenGlEs && HasCapabilities(4, 3, "GL_ARB_invalidate_subdata"))
             features |= GraphicsBackendFeatures.FramebufferInvalidation;
 
-        if (HasCapabilities(4, 4, "GL_ARB_buffer_storage"))
+        if ((!isOpenGlEs && HasCapabilities(4, 4, "GL_ARB_buffer_storage")) ||
+            (isOpenGlEs && SupportsShaderExtension("GL_EXT_buffer_storage")))
             features |= GraphicsBackendFeatures.ImmutableBuffers;
 
-        if (HasCapabilities(4, 4, "GL_ARB_clear_texture"))
+        if (!isOpenGlEs && HasCapabilities(4, 4, "GL_ARB_clear_texture"))
             features |= GraphicsBackendFeatures.ClearTexture;
 
         if (tryEnableSrgbFramebuffer())
             features |= GraphicsBackendFeatures.SrgbFramebuffer;
+        else if (shouldUseManualColorCorrection())
+            features |= GraphicsBackendFeatures.ManualColorCorrection;
 
-        DrawState.UseTextureCompression &= SupportsShaderExtension("GL_EXT_texture_compression_s3tc");
-        if (DrawState.UseTextureCompression)
-            features |= GraphicsBackendFeatures.TextureCompression;
-
-        var maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
-        var maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
+        var maxTextureImageUnits = OpenGlApi.GL.GetInteger(GetPName.MaxTextureImageUnits);
+        var maxVertexTextureImageUnits = OpenGlApi.GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
         var maxGeometryTextureImageUnits = SupportsShaderExtension("GL_ARB_geometry_shader4") ?
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
+            OpenGlApi.GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
             0;
 
-        var maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
-        var maxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
-        var maxUniformBufferSize = GL.GetInteger(GetPName.MaxUniformBlockSize);
+        var maxCombinedTextureImageUnits = OpenGlApi.GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
+        var maxTextureSize = OpenGlApi.GL.GetInteger(GetPName.MaxTextureSize);
+        var maxUniformBufferSize = OpenGlApi.GL.GetInteger(GetPName.MaxUniformBlockSize);
 
-        logTextureFormatPreferences();
+        if (!isOpenGlEs)
+            logTextureFormatPreferences();
 
         SDL.LogInfo(LogCategory.Render,
             $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
@@ -169,27 +177,33 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
     SearchValues<string> getExtensions()
     {
-        using var extensionNames = ValueEnumerable.Range(0, GL.GetInteger(GetPName.NumExtensions))
-            .Select(i => GL.GetString(StringNameIndexed.Extensions, i))
+        using var extensionNames = ValueEnumerable.Range(0, OpenGlApi.GL.GetInteger(GetPName.NumExtensions))
+            .Select(i => OpenGlApi.GL.GetStringS(StringName.Extensions, (uint)i))
             .ToArrayPool();
 
         return SearchValues.Create(extensionNames.Span, StringComparison.OrdinalIgnoreCase);
     }
 
-    void initializeDebugCallback()
+    unsafe void initializeDebugCallback()
     {
-        if (!HasCapabilities(4, 3, "GL_KHR_debug")) return;
+        if (isOpenGlEs ?
+                !SupportsShaderExtension("GL_KHR_debug") :
+                !HasCapabilities(4, 3, "GL_KHR_debug"))
+            return;
 
-        GL.Enable(EnableCap.DebugOutputSynchronous);
-        GL.DebugMessageCallback((source, type, _, severity, length, message, _) =>
+        OpenGlApi.GL.Enable(EnableCap.DebugOutputSynchronous);
+        OpenGlApi.GL.DebugMessageCallback((source, type, _, severity, length, message, _) =>
             {
                 var bytes = message.AsReadOnlySpan<byte>(length);
+                var debugSource = (DebugSource)source;
+                var debugType = (DebugType)type;
+                var debugSeverity = (DebugSeverity)severity;
 
                 Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                 Encoding.UTF8.GetChars(bytes, chars);
 
                 using var str = StringHelper.Interpolate(CultureInfo.InvariantCulture,
-                    $"{chars} (Source: {source switch
+                    $"{chars} (Source: {debugSource switch
                     {
                         DebugSource.DebugSourceApi => "API",
                         DebugSource.DebugSourceWindowSystem => "Window System",
@@ -198,28 +212,28 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
                         DebugSource.DebugSourceApplication => "Application",
                         DebugSource.DebugSourceOther => "Other",
                         _ => ""
-                    }}, Type: {type switch
-                    {
-                        DebugType.DebugTypeError => "Error",
-                        DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
-                        DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
-                        DebugType.DebugTypePortability => "Portability",
-                        DebugType.DebugTypePerformance => "Performance",
-                        DebugType.DebugTypeMarker => "Marker",
-                        DebugType.DebugTypePushGroup => "Push Group",
-                        DebugType.DebugTypePopGroup => "Pop Group",
-                        DebugType.DebugTypeOther => "Other",
-                        _ => ""
-                    }}, Severity: {severity switch
-                    {
-                        DebugSeverity.DebugSeverityHigh => "High",
-                        DebugSeverity.DebugSeverityMedium => "Medium",
-                        DebugSeverity.DebugSeverityLow => "Low",
-                        DebugSeverity.DebugSeverityNotification => "Notification",
-                        _ => ""
-                    }})\n");
+                    }}, Type: {debugType switch
+                {
+                    DebugType.DebugTypeError => "Error",
+                    DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
+                    DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
+                    DebugType.DebugTypePortability => "Portability",
+                    DebugType.DebugTypePerformance => "Performance",
+                    DebugType.DebugTypeMarker => "Marker",
+                    DebugType.DebugTypePushGroup => "Push Group",
+                    DebugType.DebugTypePopGroup => "Pop Group",
+                    DebugType.DebugTypeOther => "Other",
+                    _ => ""
+                }}, Severity: {debugSeverity switch
+            {
+                DebugSeverity.DebugSeverityHigh => "High",
+                DebugSeverity.DebugSeverityMedium => "Medium",
+                DebugSeverity.DebugSeverityLow => "Low",
+                DebugSeverity.DebugSeverityNotification => "Notification",
+                _ => ""
+            }})\n");
 
-                switch (severity)
+                switch (debugSeverity)
                 {
                     case DebugSeverity.DebugSeverityHigh:
                         SDL.LogError(LogCategory.Render, str.AsReadOnlySpan());
@@ -238,21 +252,24 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
                         break;
                 }
             },
-            0);
+            null);
     }
 
     bool tryEnableSrgbFramebuffer()
     {
         if (!DrawState.UseSrgb) return false;
 
-        GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
-            FramebufferAttachment.BackLeft,
-            FramebufferParameterName.FramebufferAttachmentColorEncoding,
-            out var defaultFramebufferColorEncoding);
-
-        if (defaultFramebufferColorEncoding != 0x8C40)
+        if (!tryGetDefaultFramebufferColorEncoding(out var defaultFramebufferColorEncoding) ||
+            defaultFramebufferColorEncoding != (int)GLEnum.Srgb)
         {
             SDL.LogWarn(LogCategory.Render, "The default framebuffer isn't sRgb");
+            return false;
+        }
+
+        if (isOpenGlEs && !SupportsShaderExtension("GL_EXT_sRGB_write_control"))
+        {
+            SDL.LogWarn(LogCategory.Render,
+                "OpenGL ES sRGB framebuffer write control is unavailable; using shader-side output correction");
             return false;
         }
 
@@ -260,19 +277,49 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
         return true;
     }
 
+    bool shouldUseManualColorCorrection()
+    {
+        if (!DrawState.UseSrgb || !isOpenGlEs || SupportsShaderExtension("GL_EXT_sRGB_write_control"))
+            return false;
+        if (!tryGetDefaultFramebufferColorEncoding(out var defaultFramebufferColorEncoding) ||
+            defaultFramebufferColorEncoding != (int)GLEnum.Srgb)
+            return false;
+
+        SDL.LogInfo(LogCategory.Render, "OpenGL ES default framebuffer is sRGB; enabling shader-side output correction");
+        return true;
+    }
+
+    bool tryGetDefaultFramebufferColorEncoding(out int colorEncoding)
+    {
+        try
+        {
+            OpenGlApi.GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
+                isOpenGlEs ? GLEnum.Back : GLEnum.BackLeft,
+                FramebufferAttachmentParameterName.ColorEncoding,
+                out colorEncoding);
+            return true;
+        }
+        catch (Exception e)
+        {
+            SDL.LogWarn(LogCategory.Render, $"Unable to query default framebuffer color encoding: {e.Message}");
+            colorEncoding = 0;
+            return false;
+        }
+    }
+
     void logTextureFormatPreferences()
     {
-        GL.GetInternalformat(ImageTarget.Texture2D,
-            SizedInternalFormat.Rgba8,
-            InternalFormatParameter.TextureImageFormat,
+        OpenGlApi.GL.GetInternalformat(TextureTarget.Texture2D,
+            InternalFormat.Rgba8,
+            InternalFormatPName.TextureImageFormat,
             1,
-            out int preferredFormat);
+            out long preferredFormat);
 
-        SDL.LogInfo(LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)preferredFormat)}");
+        SDL.LogInfo(LogCategory.Render, $"preferred texture format: {Enum.GetName((PixelFormat)(int)preferredFormat)}");
 
-        GL.GetInternalformat(ImageTarget.Texture2D,
-            SizedInternalFormat.Rgba8,
-            InternalFormatParameter.TextureImageType,
+        OpenGlApi.GL.GetInternalformat(TextureTarget.Texture2D,
+            InternalFormat.Rgba8,
+            InternalFormatPName.TextureImageType,
             1,
             out preferredFormat);
 
@@ -281,18 +328,46 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
     void retrieveRendererInfo()
     {
-        var glVersionString = GL.GetString(StringName.Version);
-        glVersion = new(glVersionString.Split(' ')[0]);
-        SDL.LogInfo(LogCategory.Render, $"OpenGL v{glVersionString}");
+        var glVersionString = OpenGlApi.GL.GetStringS(StringName.Version);
+        glVersion = parseVersion(glVersionString);
+        isOpenGlEs = glVersionString.Contains("OpenGL ES", StringComparison.OrdinalIgnoreCase) || GlslEs;
+        GlslEs = isOpenGlEs;
+        GlslVersion = isOpenGlEs ? 300u : 150u;
+        SDL.LogInfo(LogCategory.Render, $"{(isOpenGlEs ? "OpenGL ES" : "OpenGL")} v{glVersionString}");
 
-        var rendererName = GL.GetString(StringName.Renderer);
-        var rendererVendor = GL.GetString(StringName.Vendor);
+        var rendererName = OpenGlApi.GL.GetStringS(StringName.Renderer);
+        var rendererVendor = OpenGlApi.GL.GetStringS(StringName.Vendor);
         SDL.LogInfo(LogCategory.Render, $"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
-        if (glVersion < new Version(3, 2))
+        var minimumVersion = isOpenGlEs ? new(3, 0) : new Version(3, 2);
+        if (glVersion < minimumVersion)
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 3.2 (version {glVersion} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least {(isOpenGlEs ? "OpenGL ES 3.0" : "OpenGL 3.2")} " +
+                $"(version {glVersion} found)\n{rendererName} ({rendererVendor})");
 
-        SDL.LogInfo(LogCategory.Render, $"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
+        SDL.LogInfo(LogCategory.Render, $"GLSL v{OpenGlApi.GL.GetStringS(StringName.ShadingLanguageVersion)}");
+    }
+
+    static Version parseVersion(string versionString)
+    {
+        var start = -1;
+        for (var i = 0; i < versionString.Length; ++i)
+            if (char.IsAsciiDigit(versionString[i]))
+            {
+                start = i;
+                break;
+            }
+
+        if (start < 0)
+            throw new InvalidOperationException($"Unable to parse OpenGL version string '{versionString}'");
+
+        var end = start;
+        while (end < versionString.Length &&
+               (char.IsAsciiDigit(versionString[end]) || versionString[end] == '.'))
+            ++end;
+
+        return Version.TryParse(versionString.AsSpan(start, end - start), out var version)
+            ? version
+            : throw new InvalidOperationException($"Unable to parse OpenGL version string '{versionString}'");
     }
 }

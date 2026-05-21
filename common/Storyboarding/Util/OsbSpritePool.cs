@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
-using StorybrewCommon.Storyboarding.CommandValues;
+using CommandValues;
 using Tiny.PooledCollections.Generic;
 
 /// <summary> Provides a way for sprites to be reused. </summary>

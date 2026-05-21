@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
-using BrewLib.Graphics;
-using BrewLib.Input;
+using Graphics;
+using Input;
 using SDL3;
 
 public abstract class ScreenLayer : InputAdapter, IDisposable
