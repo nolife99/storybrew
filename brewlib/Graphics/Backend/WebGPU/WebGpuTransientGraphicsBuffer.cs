@@ -18,15 +18,14 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
     readonly GraphicsBufferDescription description;
     readonly List<Page> pages = [];
     readonly Dictionary<WebGpuGraphicsBuffer, Page> pagesByBuffer = [];
-    readonly int pageCapacityInBytes;
 
     Page activePage;
-    Page mappedPage;
+    int committedOffset, committedSize;
     Page committedPage;
     bool disposed;
-    bool registeredForFlush;
     int mappedOffset, mappedSize, mappedAllocatedSize;
-    int committedOffset, committedSize;
+    Page mappedPage;
+    bool registeredForFlush;
 
     public WebGpuTransientGraphicsBuffer(WebGpuGraphicsBackend backend,
         GraphicsBufferDescription description,
@@ -37,33 +36,35 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
 
         this.backend = backend;
         this.description = description;
-        pageCapacityInBytes = int.Min(capacityInBytes, backend.MaxBufferSize);
-        activePage = createPage(pageCapacityInBytes);
+        CapacityInBytes = int.Min(capacityInBytes, backend.MaxBufferSize);
+        activePage = createPage(CapacityInBytes);
     }
 
     public IGraphicsBuffer Buffer => activePage.Buffer;
-    public int CapacityInBytes => pageCapacityInBytes;
+    public int CapacityInBytes { get; }
 
     public TransientBufferAllocation Allocate(int sizeInBytes)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (mappedPage is not null)
             throw new InvalidOperationException($"{nameof(WebGpuTransientGraphicsBuffer)} already has a mapped range");
+
         if (sizeInBytes < 0)
             throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
+
         var allocatedSize = alignCopySize(sizeInBytes);
-        if (allocatedSize > pageCapacityInBytes)
+        if (allocatedSize > CapacityInBytes)
             throw new ArgumentOutOfRangeException(nameof(sizeInBytes),
                 sizeInBytes,
-                $"Transient WebGPU allocation exceeds page size {pageCapacityInBytes}.");
+                $"Transient WebGPU allocation exceeds page size {CapacityInBytes}.");
 
         var page = tryAllocate(allocatedSize, out var offset);
         if (page is null)
         {
-            page = createPage(pageCapacityInBytes);
+            page = createPage(CapacityInBytes);
             if (!page.TryAllocate(backend, backend.FrameSerial, allocatedSize, out offset))
                 throw new InvalidOperationException(
-                    $"Unable to allocate {sizeInBytes} bytes from a {pageCapacityInBytes} byte WebGPU transient page");
+                    $"Unable to allocate {sizeInBytes} bytes from a {CapacityInBytes} byte WebGPU transient page");
         }
 
         activePage = page;
@@ -84,11 +85,13 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (mappedPage is null) return;
+
         if (!ReferenceEquals(allocation.Buffer, mappedPage.Buffer) ||
             allocation.Offset != mappedOffset ||
             allocation.PrimarySize != mappedSize ||
             allocation.SecondarySize != 0)
             throw new InvalidOperationException("Transient buffer allocation is not the active mapped range");
+
         if (usedSizeInBytes < 0 || usedSizeInBytes > mappedSize)
             throw new ArgumentOutOfRangeException(nameof(usedSizeInBytes), usedSizeInBytes, null);
 
@@ -118,11 +121,13 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (usedSizeInBytes <= 0) return;
+
         if (usedSizeInBytes > allocation.TotalSize)
             throw new ArgumentOutOfRangeException(nameof(usedSizeInBytes), usedSizeInBytes, null);
 
         var page = tryGetCommittedPage(in allocation, usedSizeInBytes) ??
             getPageForAllocation(in allocation, usedSizeInBytes);
+
         page.MarkSubmitted(backend.FrameSerial);
     }
 
@@ -147,7 +152,7 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
         if (disposed) return;
 
         foreach (var page in pages)
-            page.Flush(backend);
+            page.Flush();
     }
 
     Page tryAllocate(int sizeInBytes, out int offset)
@@ -159,6 +164,7 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
         {
             var page = pages[i];
             if (ReferenceEquals(page, activePage)) continue;
+
             if (page.TryAllocate(backend, backend.FrameSerial, sizeInBytes, out offset))
                 return page;
         }
@@ -215,20 +221,24 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
     }
 
     static int alignCopySize(int value)
-        => (value + 3) & ~3;
+        => value + 3 & ~3;
 
     sealed class Page : IDisposable
     {
-        bool disposed;
-        int nextOffset;
+        readonly WebGpuGraphicsBackend backend;
         int dirtyStart = int.MaxValue, dirtyEnd;
+
+        bool disposed;
         uint frameSerial, submittedFrameSerial;
         bool hasFrame, hasSubmitted;
+        int nextOffset;
 
         public Page(WebGpuGraphicsBackend backend,
             GraphicsBufferDescription description,
             int capacityInBytes)
         {
+            this.backend = backend;
+
             CapacityInBytes = capacityInBytes;
             Buffer = new(backend,
                 new(description.Name,
@@ -236,7 +246,7 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
                     GraphicsBufferUsage.Stream,
                     capacityInBytes));
 
-            Arena = GC.AllocateUninitializedArray<byte>(capacityInBytes, pinned: true);
+            Arena = GC.AllocateUninitializedArray<byte>(capacityInBytes, true);
         }
 
         public int CapacityInBytes { get; }
@@ -244,11 +254,22 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
         public byte[] Arena { get; private set; }
         public ref byte ArenaPointer => ref MemoryMarshal.GetArrayDataReference(Arena);
 
+        public void Dispose()
+        {
+            if (disposed) return;
+
+            Arena = null;
+
+            Buffer.Dispose();
+            disposed = true;
+        }
+
         public bool TryAllocate(WebGpuGraphicsBackend backend, uint currentFrameSerial, int sizeInBytes, out int offset)
         {
             offset = 0;
             if (!ensureFrame(backend, currentFrameSerial))
                 return false;
+
             if (CapacityInBytes - nextOffset < sizeInBytes)
                 return false;
 
@@ -276,7 +297,7 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
             hasSubmitted = true;
         }
 
-        public unsafe void Flush(WebGpuGraphicsBackend backend)
+        public unsafe void Flush()
         {
             if (dirtyStart >= dirtyEnd) return;
 
@@ -288,16 +309,6 @@ sealed class WebGpuTransientGraphicsBuffer : ITransientGraphicsBuffer
 
             dirtyStart = int.MaxValue;
             dirtyEnd = 0;
-        }
-
-        public void Dispose()
-        {
-            if (disposed) return;
-
-            Arena = null;
-
-            Buffer.Dispose();
-            disposed = true;
         }
 
         bool ensureFrame(WebGpuGraphicsBackend backend, uint currentFrameSerial)

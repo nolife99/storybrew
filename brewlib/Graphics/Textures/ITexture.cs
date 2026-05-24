@@ -19,7 +19,7 @@ public interface ITexture : IDisposable, ITextureExtent
     GraphicsResourceHandle NativeHandle { get; }
 }
 
-internal interface ITextureSamplerIdentity
+interface ITextureSamplerIdentity
 {
     GraphicsResourceHandle SamplerIdentity { get; }
 }

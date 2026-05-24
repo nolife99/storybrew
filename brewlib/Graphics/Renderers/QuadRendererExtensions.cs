@@ -1,5 +1,6 @@
-﻿namespace BrewLib.Graphics.Renderers;
+namespace BrewLib.Graphics.Renderers;
 
+using System;
 using System.Numerics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -17,45 +18,40 @@ public static class QuadRendererExtensions
         Vector2 texture0,
         Vector2 texture1)
     {
+        // Build the affine transform once and feed it straight to the renderer
+        // — the unit-quad shader reads (column0, column1, translation) directly.
         var fx2 = texture1 - texture0;
         var transform = Matrix3x2.CreateTranslation(-origin) * Matrix3x2.CreateScale(Vector2.Abs(scale)) *
             Matrix3x2.CreateRotation(rotation) * Matrix3x2.CreateTranslation(xy);
 
-        var corner0 = Vector2.Transform(Vector2.Zero, transform);
-        var corner1 = Vector2.Transform(new(0, fx2.Y), transform);
-        var corner2 = Vector2.Transform(fx2, transform);
-        var corner3 = corner2 - corner1 + corner0;
+        // Scale the transform's basis vectors by the sprite size so vertex (1,0)/(0,1)
+        // map to the original sprite's right/bottom edges.
+        var instanceTransform = new Matrix3x2(
+            transform.M11 * fx2.X,
+            transform.M12 * fx2.X,
+            transform.M21 * fx2.Y,
+            transform.M22 * fx2.Y,
+            transform.M31,
+            transform.M32);
 
         var uvOrigin = texture.UvOrigin;
         var uvRatio = texture.UvRatio;
-
         var uv0 = Vector2.MultiplyAddEstimate(texture0, uvRatio, uvOrigin);
         var uv1 = Vector2.MultiplyAddEstimate(texture1, uvRatio, uvOrigin);
 
-        Vector2 u0u1 = scale.X > 0 ? new(uv0.X, uv1.X) : new(uv1.X, uv0.X);
-        Vector2 v0v1 = scale.Y > 0 ? new(uv0.Y, uv1.Y) : new(uv1.Y, uv0.Y);
+        var u0u1 = scale.X > 0 ? new(uv0.X, uv1.X) : new Vector2(uv1.X, uv0.X);
+        var v0v1 = scale.Y > 0 ? new(uv0.Y, uv1.Y) : new Vector2(uv1.Y, uv0.Y);
 
-        var rgba = color.ToPixel<Rgba32>();
-        QuadPrimitive primitive = new()
+        QuadInstance instance = new()
         {
-            vec1 = corner0,
-            vec2 = corner1,
-            vec3 = corner2,
-            vec4 = corner3,
-            u1 = u0u1.X,
-            v1 = v0v1.X,
-            u2 = u0u1.X,
-            v2 = v0v1.Y,
-            u3 = u0u1.Y,
-            v3 = v0v1.Y,
-            u4 = u0u1.Y,
-            v4 = v0v1.X,
-            color1 = rgba,
-            color2 = rgba,
-            color3 = rgba,
-            color4 = rgba
+            Transform = instanceTransform,
+            U = (Half)u0u1.X,
+            V = (Half)v0v1.X,
+            UAxis = (Half)(u0u1.Y - u0u1.X),
+            VAxis = (Half)(v0v1.Y - v0v1.X),
+            Color = color.ToPixel<Rgba32>()
         };
 
-        renderer.Draw(ref primitive, texture);
+        renderer.Draw(in instance, texture);
     }
 }

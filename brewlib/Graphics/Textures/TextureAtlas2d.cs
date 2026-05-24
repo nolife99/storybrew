@@ -63,7 +63,7 @@ public sealed class TextureAtlas2d(
     void FreeRegion(Texture2dAtlasRegion region)
     {
         if (disposed) return;
-        
+
         freeRegions.Add(new(region.X, region.Y, region.Width + padding, region.Height + padding));
     }
 

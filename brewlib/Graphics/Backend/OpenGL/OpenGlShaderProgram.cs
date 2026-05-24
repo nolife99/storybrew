@@ -14,12 +14,12 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 using GlShaderType = Silk.NET.OpenGL.ShaderType;
 
-internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
+sealed partial class OpenGlShaderProgram : IShaderProgramBackend
 {
+    readonly PooledDictionary<string, ShaderAttributeInfo> attributes = new();
     readonly OpenGlGraphicsBackend backend;
     readonly OpenGlGraphicsDevice device;
     readonly StringBuilder log = new();
-    readonly PooledDictionary<string, ShaderAttributeInfo> attributes = new();
     readonly PooledDictionary<string, ShaderUniformInfo> uniforms = new();
 
     bool initialized;
@@ -65,9 +65,7 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
 
     public void Bind() => device.UseProgram(programId);
 
-    public void Unbind()
-    {
-    }
+    public void Unbind() { }
 
     public void SetUniform<T>(ShaderUniform<T> uniform, T value)
     {
@@ -126,6 +124,7 @@ internal sealed partial class OpenGlShaderProgram : IShaderProgramBackend
         source = OpenGlShaderCompiler.CreateShaderSource(source,
             backend.GlslVersion,
             backend.GlslEs);
+
         var vertexShaderId = compileShader(GlShaderType.VertexShader, source.VertexSource);
         var fragmentShaderId = compileShader(GlShaderType.FragmentShader, source.FragmentSource);
 

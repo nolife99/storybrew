@@ -71,9 +71,7 @@ public sealed class PipelineLayout(params TextureBindingLayout[] textureBindings
 public readonly record struct TextureBindingLayout
 {
     public TextureBindingLayout(int binding, string name, int capacity)
-        : this(binding, new ShaderSamplerBinding(name), capacity)
-    {
-    }
+        : this(binding, new ShaderSamplerBinding(name), capacity) { }
 
     public TextureBindingLayout(int binding, ShaderSamplerBinding sampler, int capacity)
     {
@@ -117,9 +115,7 @@ public sealed class VertexBufferLayout(
 public readonly record struct VertexElement
 {
     public VertexElement(string name, VertexAttributeFormat format, int offset)
-        : this(new ShaderAttributeBinding(name, ShaderValueType.Unknown), format, offset)
-    {
-    }
+        : this(new ShaderAttributeBinding(name, ShaderValueType.Unknown), format, offset) { }
 
     public VertexElement(ShaderAttributeBinding attribute, VertexAttributeFormat format, int offset)
     {

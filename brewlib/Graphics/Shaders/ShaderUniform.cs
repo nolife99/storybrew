@@ -5,10 +5,7 @@ using System.Numerics;
 
 public abstract class ShaderUniform
 {
-    protected ShaderUniform(ShaderUniformInfo info)
-    {
-        Info = info;
-    }
+    protected ShaderUniform(ShaderUniformInfo info) => Info = info;
 
     public ShaderUniformInfo Info { get; }
     public string Name => Info.Name;
@@ -26,9 +23,7 @@ public sealed class ShaderUniform<T> : ShaderUniform
 
     internal ShaderUniform(IShaderProgramBackend program, ShaderUniformInfo info)
         : base(info)
-    {
-        this.program = program;
-    }
+        => this.program = program;
 
     public void Set(T value)
     {

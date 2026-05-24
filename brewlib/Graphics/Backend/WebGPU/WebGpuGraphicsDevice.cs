@@ -6,13 +6,12 @@ using Silk.NET.WebGPU;
 using SixLabors.ImageSharp;
 using Textures;
 
-sealed unsafe class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraphicsDevice
+unsafe sealed class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraphicsDevice
 {
-    BlendingFactorState blendState = new(BlendingMode.AlphaBlend);
-    Rectangle viewport;
     Rectangle? scissor;
+    Rectangle viewport;
 
-    public BlendingFactorState BlendState => blendState;
+    public BlendingFactorState BlendState { get; private set; } = new(BlendingMode.AlphaBlend);
 
     public void InitializeTextureSlots(int textureSlotCount) { }
     public void ResetStateCache() { }
@@ -35,7 +34,7 @@ sealed unsafe class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraph
     }
 
     public void SetCapability(GraphicsCapability capability, bool enabled) { }
-    public void SetBlendState(BlendingFactorState state) => blendState = state;
+    public void SetBlendState(BlendingFactorState state) => BlendState = state;
     public void UseProgram(int programId) { }
     public void ActivateVertexAttributes(VertexDeclaration declaration, Shader shader) => throw prototype();
     public void DeactivateVertexAttributes(VertexDeclaration declaration, Shader shader) => throw prototype();
@@ -71,6 +70,7 @@ sealed unsafe class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraph
         {
             if (scissor.HasValue)
                 backend.Api.RenderPassEncoderSetScissorRect(renderPass, 0, 0, 0, 0);
+
             return;
         }
 
@@ -98,6 +98,7 @@ sealed unsafe class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraph
         var boundsWidth = framebufferWidth != 0 && framebufferWidth <= int.MaxValue
             ? (int)framebufferWidth
             : viewport.Width;
+
         var boundsHeight = framebufferHeight != 0 && framebufferHeight <= int.MaxValue
             ? (int)framebufferHeight
             : viewport.Height;

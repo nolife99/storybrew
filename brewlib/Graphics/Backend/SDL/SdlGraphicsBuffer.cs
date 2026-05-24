@@ -10,10 +10,10 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
 {
     readonly SdlGraphicsBackend backend;
 
-    nint bufferHandle, transferBufferHandle;
-    int transferBufferSize, streamOffset;
-    uint streamFrameSerial;
+    nint transferBufferHandle;
     bool disposed;
+    uint streamFrameSerial;
+    int transferBufferSize, streamOffset;
 
     public SdlGraphicsBuffer(SdlGraphicsBackend backend, GraphicsBufferDescription description)
     {
@@ -23,21 +23,23 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
         if (description.SizeInBytes > 0) Allocate(description.SizeInBytes);
     }
 
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, bufferHandle);
+    public nint BufferHandle { get; private set; }
+
+    public int BindingOffset { get; private set; }
+
+    public GraphicsResourceHandle NativeHandle => new(backend.Name, BufferHandle);
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
-    public nint BufferHandle => bufferHandle;
-    public int BindingOffset { get; private set; }
 
     public void Allocate(int sizeInBytes)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
 
-        if (bufferHandle != nint.Zero)
+        if (BufferHandle != nint.Zero)
         {
-            backend.ReleaseBuffer(bufferHandle);
-            bufferHandle = nint.Zero;
+            backend.ReleaseBuffer(BufferHandle);
+            BufferHandle = nint.Zero;
         }
 
         SizeInBytes = 0;
@@ -51,8 +53,8 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             Size = (uint)sizeInBytes
         };
 
-        bufferHandle = SDL.CreateGPUBuffer(backend.DeviceHandle, in createInfo);
-        if (bufferHandle == nint.Zero)
+        BufferHandle = SDL.CreateGPUBuffer(backend.DeviceHandle, in createInfo);
+        if (BufferHandle == nint.Zero)
             throw new InvalidOperationException($"Unable to create SDL GPU buffer {Description.Name}: {SDL.GetError()}");
 
         SizeInBytes = sizeInBytes;
@@ -67,7 +69,7 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
 
         var uploadOffset = reserveUploadRegion(sizeInBytes);
         var requiredSize = checked(uploadOffset + sizeInBytes);
-        if (bufferHandle == nint.Zero || SizeInBytes < requiredSize)
+        if (BufferHandle == nint.Zero || SizeInBytes < requiredSize)
             Allocate(getBufferAllocationSize(requiredSize));
 
         BindingOffset = uploadOffset;
@@ -78,12 +80,13 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             MemoryMarshal.AsBytes(data).CopyTo(upload.Data.AsSpan<byte>(sizeInBytes));
 
             backend.QueueBufferUpload(upload.TransferBuffer,
-                bufferHandle,
+                BufferHandle,
                 upload.SourceOffset,
                 (uint)uploadOffset,
                 (uint)sizeInBytes,
                 Description.Usage is not GraphicsBufferUsage.Static && uploadOffset == 0,
                 Description.Name);
+
             return;
         }
 
@@ -98,7 +101,7 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
         SDL.UnmapGPUTransferBuffer(backend.DeviceHandle, transferBufferHandle);
 
         backend.UploadBuffer(transferBufferHandle,
-            bufferHandle,
+            BufferHandle,
             0,
             (uint)uploadOffset,
             (uint)sizeInBytes,
@@ -106,18 +109,16 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
             Description.Name);
     }
 
-    public void Invalidate()
-    {
-    }
+    public void Invalidate() { }
 
     public void Dispose()
     {
         if (disposed) return;
 
-        backend.ReleaseBuffer(bufferHandle);
+        backend.ReleaseBuffer(BufferHandle);
         backend.ReleaseTransferBuffer(transferBufferHandle);
 
-        bufferHandle = nint.Zero;
+        BufferHandle = nint.Zero;
         transferBufferHandle = nint.Zero;
         transferBufferSize = 0;
         SizeInBytes = 0;
@@ -190,7 +191,7 @@ public sealed class SdlGraphicsBuffer : IGraphicsBuffer
     }
 
     static int align(int value, int alignment)
-        => (value + alignment - 1) & ~(alignment - 1);
+        => value + alignment - 1 & ~(alignment - 1);
 
     static SDL.GPUBufferUsageFlags toUsageFlags(GraphicsBufferTarget target)
         => target switch

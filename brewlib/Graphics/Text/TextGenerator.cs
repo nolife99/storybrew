@@ -17,7 +17,14 @@ using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
 {
-    static readonly DrawingOptions drawOptions = new() { GraphicsOptions = new() { AntialiasSubpixelDepth = 2 } };
+    static readonly DrawingOptions drawOptions = new()
+    {
+        GraphicsOptions = new()
+        {
+            AntialiasSubpixelDepth = 2
+        }
+    };
+
     static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromScaledVector(new(0, 0, 0, .85f)));
     readonly PooledDictionary<string, FontFamily> families = new();
 
@@ -70,8 +77,15 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         if (measureOnly) return null;
 
         Image<Rgba32> bitmap = new(width, height);
-        RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback },
-            shadowTextOptions = new(textOptions) { Origin = padding + Vector2.One };
+        RichTextOptions textOptions = new(font)
+            {
+                Origin = padding,
+                FallbackFontFamilies = fallback
+            },
+            shadowTextOptions = new(textOptions)
+            {
+                Origin = padding + Vector2.One
+            };
 
         var str = text.ToString();
         bitmap.Mutate(new DrawTextProcessor(drawOptions, shadowTextOptions, str, shadow, null),

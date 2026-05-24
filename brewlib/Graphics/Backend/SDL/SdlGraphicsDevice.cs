@@ -10,10 +10,9 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
 {
     readonly SdlGraphicsBackend backend;
 
-    BlendingFactorState blendState = new(BlendingMode.AlphaBlend);
-    Rectangle viewport;
-    Rectangle? scissor;
     bool disposed;
+    Rectangle? scissor;
+    Rectangle viewport;
 
     public SdlGraphicsDevice(SdlGraphicsBackend backend, nint deviceHandle)
     {
@@ -22,15 +21,11 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
     }
 
     public nint DeviceHandle { get; }
-    public BlendingFactorState BlendState => blendState;
+    public BlendingFactorState BlendState { get; private set; } = new(BlendingMode.AlphaBlend);
 
-    public void InitializeTextureSlots(int textureSlotCount)
-    {
-    }
+    public void InitializeTextureSlots(int textureSlotCount) { }
 
-    public void ResetStateCache()
-    {
-    }
+    public void ResetStateCache() { }
 
     public void SetViewport(Rectangle viewport)
     {
@@ -44,18 +39,14 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
         if (backend?.RenderPass != nint.Zero) applyScissor(backend.RenderPass);
     }
 
-    public void SetCapability(GraphicsCapability capability, bool enabled)
-    {
-    }
+    public void SetCapability(GraphicsCapability capability, bool enabled) { }
 
     public void SetBlendState(BlendingFactorState state)
     {
-        blendState = state;
+        BlendState = state;
     }
 
-    public void UseProgram(int programId)
-    {
-    }
+    public void UseProgram(int programId) { }
 
     public void ActivateVertexAttributes(VertexDeclaration declaration, Shader shader)
         => throw new NotSupportedException("SDL GPU does not use the legacy OpenGL vertex attribute path");
@@ -69,9 +60,7 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
     public void BindTextures(scoped ReadOnlySpan<ITexture> textures, Span<int> textureUnits)
         => throw new NotSupportedException("SDL GPU textures are bound through resource sets, not global texture units");
 
-    public void UnbindTexture(ITexture texture)
-    {
-    }
+    public void UnbindTexture(ITexture texture) { }
 
     public void Dispose()
     {
@@ -105,6 +94,7 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
             MinDepth = 0,
             MaxDepth = 1
         };
+
         SDL.SetGPUViewport(renderPass, in gpuViewport);
     }
 
@@ -124,6 +114,7 @@ public sealed class SdlGraphicsDevice : IGraphicsDevice
             W = region.Width,
             H = region.Height
         };
+
         SDL.SetGPUScissor(renderPass, in rect);
     }
 

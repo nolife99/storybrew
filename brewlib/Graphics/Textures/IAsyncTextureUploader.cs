@@ -30,15 +30,15 @@ public abstract class PreparedTextureUpload(TextureUploadDescription description
     public string Source => Description.Source;
     public TextureUploadFormat Format => Description.Format;
     public TextureOptions Options => Description.Options;
-    public Size Size => new(Width, Height);
-    public int Width => Description.Width;
-    public int Height => Description.Height;
     public int BytesPerRow => Description.BytesPerRow;
     public int ByteLength => Description.ByteLength;
 
     internal abstract Span<byte> WritableBytes { get; }
 
     public abstract void Dispose();
+    public Size Size => new(Width, Height);
+    public int Width => Description.Width;
+    public int Height => Description.Height;
 }
 
 public interface IAsyncTextureUploader : IDisposable
@@ -62,6 +62,7 @@ public abstract class AsyncTextureUploaderBase(Func<int> maxTextureSizeProvider)
 
         using var bitmap = await TextureLoader.LoadBitmapAsync(filename, resourceContainer, cancellationToken)
             .ConfigureAwait(false);
+
         if (bitmap is null) return null;
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -69,16 +70,14 @@ public abstract class AsyncTextureUploaderBase(Func<int> maxTextureSizeProvider)
             .ConfigureAwait(false);
     }
 
+    public abstract ITextureRegion Upload(PreparedTextureUpload upload);
+
+    public virtual void Dispose() { }
+
     protected abstract ValueTask<PreparedTextureUpload> PrepareAsync(string source,
         Image<Rgba32> bitmap,
         TextureOptions textureOptions,
         CancellationToken cancellationToken);
-
-    public abstract ITextureRegion Upload(PreparedTextureUpload upload);
-
-    public virtual void Dispose()
-    {
-    }
 
     protected TextureUploadDescription CreateDescription(string source,
         Image<Rgba32> bitmap,

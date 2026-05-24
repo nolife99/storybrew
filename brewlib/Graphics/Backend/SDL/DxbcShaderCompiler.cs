@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Shaders;
 
-internal static class DxbcShaderCompiler
+static class DxbcShaderCompiler
 {
     const uint D3DCompileDebug = 1 << 0;
     const uint D3DCompileSkipOptimization = 1 << 2;

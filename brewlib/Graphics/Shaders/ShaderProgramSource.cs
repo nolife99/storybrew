@@ -14,8 +14,8 @@ public readonly record struct ShaderProgramSource(
     string VertexSource,
     string FragmentSource,
     ShaderSourceLanguage Language = ShaderSourceLanguage.Hlsl,
-       string VertexEntryPoint = "main",
-       string FragmentEntryPoint = "main",
-       IReadOnlyList<string> VertexInputNames = null,
-       IReadOnlyList<string> FragmentTextureNames = null,
-       IReadOnlyList<ShaderUniformBlockBinding> UniformBlocks = null);
+    string VertexEntryPoint = "main",
+    string FragmentEntryPoint = "main",
+    IReadOnlyList<string> VertexInputNames = null,
+    IReadOnlyList<string> FragmentTextureNames = null,
+    IReadOnlyList<ShaderUniformBlockBinding> UniformBlocks = null);

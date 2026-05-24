@@ -5,10 +5,10 @@ using Silk.NET.WebGPU;
 using WgpuBuffer = Silk.NET.WebGPU.Buffer;
 using WgpuRenderPipeline = Silk.NET.WebGPU.RenderPipeline;
 
-sealed unsafe class WebGpuRenderPassState
+unsafe sealed class WebGpuRenderPassState
 {
-    public WgpuRenderPipeline* Pipeline;
     public BindGroupBinding[] BindGroups = new BindGroupBinding[4];
+    public WgpuRenderPipeline* Pipeline;
     public VertexBufferBinding[] VertexBuffers = new VertexBufferBinding[8];
 
     public void Reset()

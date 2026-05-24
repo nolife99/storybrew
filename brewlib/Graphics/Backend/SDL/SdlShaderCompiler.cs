@@ -15,6 +15,7 @@ public static class SdlShaderCompiler
     {
         if (hasFormat(supportedFormats, SDL.GPUShaderFormat.DXBC))
             return SDL.GPUShaderFormat.DXBC;
+
         if (hasFormat(supportedFormats, SDL.GPUShaderFormat.SPIRV))
             return SDL.GPUShaderFormat.SPIRV;
 

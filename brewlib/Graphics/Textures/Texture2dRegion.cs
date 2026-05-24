@@ -6,15 +6,8 @@ using SixLabors.ImageSharp;
 
 public class Texture2dRegion : ITextureRegion
 {
-    readonly Rectangle bounds;
-
     public readonly ITexture BindableTexture;
-
-    public ITexture Texture => BindableTexture;
-    public Rectangle Bounds => bounds;
-    public Size Size => bounds.Size;
-    public Vector2 UvOrigin { get; }
-    public Vector2 UvRatio { get; }
+    readonly Rectangle bounds;
 
     protected Texture2dRegion(ITexture texture, Rectangle bounds)
     {
@@ -25,11 +18,18 @@ public class Texture2dRegion : ITextureRegion
 
         UvOrigin = new Vector2(bounds.X, bounds.Y) /
             new Vector2(BindableTexture.Size.Width, BindableTexture.Size.Height);
+
         UvRatio = Vector2.One / new Vector2(BindableTexture.Size.Width, BindableTexture.Size.Height);
     }
 
     public int X => bounds.X;
     public int Y => bounds.Y;
+
+    public ITexture Texture => BindableTexture;
+    public Rectangle Bounds => bounds;
+    public Size Size => bounds.Size;
+    public Vector2 UvOrigin { get; }
+    public Vector2 UvRatio { get; }
     public int Width => bounds.Width;
     public int Height => bounds.Height;
 

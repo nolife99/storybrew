@@ -17,9 +17,9 @@ sealed class SdlTransientGraphicsBuffer : ITransientGraphicsBuffer
     readonly Dictionary<SdlGraphicsBuffer, Page> pagesByBuffer = [];
 
     Page activePage, mappedPage;
-    SdlGraphicsBackend.FrameTransferUpload mappedUpload;
     bool disposed;
     int mappedOffset, mappedSize;
+    SdlGraphicsBackend.FrameTransferUpload mappedUpload;
 
     public SdlTransientGraphicsBuffer(SdlGraphicsBackend backend,
         GraphicsBufferDescription description,
@@ -141,6 +141,7 @@ sealed class SdlTransientGraphicsBuffer : ITransientGraphicsBuffer
         var capacity = activePage?.CapacityInBytes ?? 1;
         while (capacity < sizeInBytes)
             capacity = checked(capacity * 2);
+
         return capacity;
     }
 
@@ -173,9 +174,9 @@ sealed class SdlTransientGraphicsBuffer : ITransientGraphicsBuffer
     sealed class Page : IDisposable
     {
         bool disposed;
-        int nextOffset;
         uint frameSerial, submittedFrameSerial;
         bool hasFrame, hasSubmitted;
+        int nextOffset;
 
         public Page(SdlGraphicsBackend backend,
             GraphicsBufferDescription description,
@@ -192,11 +193,20 @@ sealed class SdlTransientGraphicsBuffer : ITransientGraphicsBuffer
         public int CapacityInBytes { get; }
         public SdlGraphicsBuffer Buffer { get; }
 
+        public void Dispose()
+        {
+            if (disposed) return;
+
+            Buffer.Dispose();
+            disposed = true;
+        }
+
         public bool TryAllocate(SdlGraphicsBackend backend, uint currentFrameSerial, int sizeInBytes, out int offset)
         {
             offset = 0;
             if (!ensureFrame(backend, currentFrameSerial))
                 return false;
+
             if (CapacityInBytes - nextOffset < sizeInBytes)
                 return false;
 
@@ -215,14 +225,6 @@ sealed class SdlTransientGraphicsBuffer : ITransientGraphicsBuffer
         {
             submittedFrameSerial = currentFrameSerial;
             hasSubmitted = true;
-        }
-
-        public void Dispose()
-        {
-            if (disposed) return;
-
-            Buffer.Dispose();
-            disposed = true;
         }
 
         bool ensureFrame(SdlGraphicsBackend backend, uint currentFrameSerial)

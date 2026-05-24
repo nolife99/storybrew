@@ -34,6 +34,9 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
         TextureUploader = new OpenGlAsyncTextureUploader(this);
     }
 
+    internal uint GlslVersion { get; private set; } = 300;
+    internal bool GlslEs { get; private set; } = true;
+
     public string Name => "OpenGL ES";
     public GraphicsBackendCapabilities Capabilities { get; private set; }
     public ShaderSourceLanguage ShaderSourceLanguage => ShaderSourceLanguage.Hlsl;
@@ -46,9 +49,6 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     public IShaderProgramFactory ShaderPrograms { get; }
     public ITextureFactory TextureFactory { get; }
     public IAsyncTextureUploader TextureUploader { get; }
-
-    internal uint GlslVersion { get; private set; } = 300;
-    internal bool GlslEs { get; private set; } = true;
 
     public bool SupportsShaderExtension(string extensionName)
         => extensions is not null && extensions.Contains(extensionName);
@@ -103,7 +103,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
     bool HasVersion(int major, int minor)
         => glVersion is not null &&
-           (glVersion.Major > major || glVersion.Major == major && glVersion.Minor >= minor);
+            (glVersion.Major > major || glVersion.Major == major && glVersion.Minor >= minor);
 
     internal IGpuUploadFence CreateUploadFence()
         => new OpenGlUploadFence(OpenGlApi.GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, (uint)0));
@@ -123,8 +123,8 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
             features |= GraphicsBackendFeatures.Instancing;
 
         if (isOpenGlEs ?
-                HasVersion(3, 1) && SupportsShaderExtension("GL_EXT_multi_draw_indirect") :
-                HasCapabilities(4, 3, "GL_ARB_multi_draw_indirect"))
+            HasVersion(3, 1) && SupportsShaderExtension("GL_EXT_multi_draw_indirect") :
+            HasCapabilities(4, 3, "GL_ARB_multi_draw_indirect"))
             features |= GraphicsBackendFeatures.IndirectDraws;
 
         if (isOpenGlEs ? HasVersion(3, 1) : HasCapabilities(4, 3, "GL_ARB_compute_shader"))
@@ -133,8 +133,8 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
         if (!isOpenGlEs && HasCapabilities(4, 3, "GL_ARB_invalidate_subdata"))
             features |= GraphicsBackendFeatures.FramebufferInvalidation;
 
-        if ((!isOpenGlEs && HasCapabilities(4, 4, "GL_ARB_buffer_storage")) ||
-            (isOpenGlEs && SupportsShaderExtension("GL_EXT_buffer_storage")))
+        if (!isOpenGlEs && HasCapabilities(4, 4, "GL_ARB_buffer_storage") ||
+            isOpenGlEs && SupportsShaderExtension("GL_EXT_buffer_storage"))
             features |= GraphicsBackendFeatures.ImmutableBuffers;
 
         if (!isOpenGlEs && HasCapabilities(4, 4, "GL_ARB_clear_texture"))
@@ -187,8 +187,8 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     unsafe void initializeDebugCallback()
     {
         if (isOpenGlEs ?
-                !SupportsShaderExtension("GL_KHR_debug") :
-                !HasCapabilities(4, 3, "GL_KHR_debug"))
+            !SupportsShaderExtension("GL_KHR_debug") :
+            !HasCapabilities(4, 3, "GL_KHR_debug"))
             return;
 
         OpenGlApi.GL.Enable(EnableCap.DebugOutputSynchronous);
@@ -270,6 +270,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
         {
             SDL.LogWarn(LogCategory.Render,
                 "OpenGL ES sRGB framebuffer write control is unavailable; using shader-side output correction");
+
             return false;
         }
 
@@ -281,6 +282,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
     {
         if (!DrawState.UseSrgb || !isOpenGlEs || SupportsShaderExtension("GL_EXT_sRGB_write_control"))
             return false;
+
         if (!tryGetDefaultFramebufferColorEncoding(out var defaultFramebufferColorEncoding) ||
             defaultFramebufferColorEncoding != (int)GLEnum.Srgb)
             return false;
@@ -297,6 +299,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
                 isOpenGlEs ? GLEnum.Back : GLEnum.BackLeft,
                 FramebufferAttachmentParameterName.ColorEncoding,
                 out colorEncoding);
+
             return true;
         }
         catch (Exception e)
@@ -363,7 +366,7 @@ public sealed class OpenGlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
         var end = start;
         while (end < versionString.Length &&
-               (char.IsAsciiDigit(versionString[end]) || versionString[end] == '.'))
+            (char.IsAsciiDigit(versionString[end]) || versionString[end] == '.'))
             ++end;
 
         return Version.TryParse(versionString.AsSpan(start, end - start), out var version)

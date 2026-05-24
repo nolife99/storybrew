@@ -37,6 +37,7 @@ public sealed class DrawContext : IDisposable
 
         for (var i = disposables.Count - 1; i >= 0; --i)
             disposables[i].Dispose();
+
         disposed = true;
     }
 

@@ -13,14 +13,14 @@ public sealed class SdlRenderPipeline : IRenderPipeline
 {
     readonly SdlGraphicsBackend backend;
     readonly SdlGraphicsDevice device;
-    readonly VertexBufferBinding[] vertexBuffers;
     readonly Dictionary<BlendingFactorState, nint> graphicsPipelines = [];
+    readonly VertexBufferBinding[] vertexBuffers;
+    BlendingFactorState boundBlendState;
+    uint boundRenderPassSerial = uint.MaxValue;
+    bool disposed;
+    bool pipelineRebindNeeded = true;
 
     nint vertexShader, fragmentShader;
-    uint boundRenderPassSerial = uint.MaxValue;
-    BlendingFactorState boundBlendState;
-    bool pipelineRebindNeeded = true;
-    bool disposed;
 
     public SdlRenderPipeline(SdlGraphicsBackend backend, RenderPipelineDescription description)
     {
@@ -59,9 +59,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         else pipelineRebindNeeded = true;
     }
 
-    public void Unbind()
-    {
-    }
+    public void Unbind() { }
 
     public void BindVertexBuffer(int slot, IGraphicsBuffer buffer)
         => BindVertexBuffer(slot, buffer, buffer is SdlGraphicsBuffer sdlBuffer ? sdlBuffer.BindingOffset : 0);
@@ -92,6 +90,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
 
         var renderPass = requireRenderPass();
         if (renderPass == nint.Zero) return;
+
         EnsureBound(renderPass);
         SDL.DrawGPUPrimitives(renderPass,
             (uint)command.VertexCount,
@@ -106,6 +105,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
 
         var renderPass = requireRenderPass();
         if (renderPass == nint.Zero) return;
+
         EnsureBound(renderPass);
         SDL.DrawGPUPrimitives(renderPass,
             (uint)command.VertexCount,
@@ -117,17 +117,22 @@ public sealed class SdlRenderPipeline : IRenderPipeline
     public void DrawIndirect(DrawIndirectCommand command)
     {
         if (command.DrawCount == 0) return;
+
         if (command.Offset < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.Offset, "Offset must be non-negative.");
+
         if (command.DrawCount < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.DrawCount, "Draw count must be non-negative.");
+
         if (command.Buffer is not SdlGraphicsBuffer sdlBuffer)
             throw new InvalidOperationException($"{nameof(SdlRenderPipeline)} can only draw from SDL indirect buffers");
+
         if (sdlBuffer.BufferHandle == nint.Zero)
             return;
 
         var renderPass = requireRenderPass();
         if (renderPass == nint.Zero) return;
+
         EnsureBound(renderPass);
 
         SDL.DrawGPUPrimitivesIndirect(renderPass,
@@ -157,6 +162,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
         var commandBuffer = backend.CommandBuffer;
         if (commandBuffer == nint.Zero)
             throw new InvalidOperationException($"SDL uniform '{name}' cannot be pushed outside an active GPU frame");
+
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             throw new NotSupportedException($"SDL uniform '{name}' must be an unmanaged value");
 
@@ -204,6 +210,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
                 InputRate = toSdlInputRate(layout.InputRate),
                 InstanceStepRate = 0
             };
+
             foreach (var element in layout.Elements)
                 attributeCount += element.Format.GetLocationCount();
         }
@@ -225,6 +232,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
                         Format = toSdlVertexElementFormat(element.Format),
                         Offset = (uint)(element.Offset + element.Format.GetLocationOffset(column))
                     };
+
                     ++attributeIndex;
                 }
             }
@@ -325,6 +333,7 @@ public sealed class SdlRenderPipeline : IRenderPipeline
                 Buffer = handle,
                 Offset = (uint)binding.Offset
             };
+
             SDL.BindGPUVertexBuffers(renderPass, (uint)layouts[i].Slot, bindings.AsPointer(), 1);
 
             binding.BoundSerial = currentSerial;
@@ -343,9 +352,9 @@ public sealed class SdlRenderPipeline : IRenderPipeline
             DstAlphaBlendfactor = toSdlBlendFactor(state.AlphaDestination),
             AlphaBlendOp = SDL.GPUBlendOp.Add,
             ColorWriteMask = SDL.GPUColorComponentFlags.R |
-                             SDL.GPUColorComponentFlags.G |
-                             SDL.GPUColorComponentFlags.B |
-                             SDL.GPUColorComponentFlags.A,
+                SDL.GPUColorComponentFlags.G |
+                SDL.GPUColorComponentFlags.B |
+                SDL.GPUColorComponentFlags.A,
             EnableBlend = state.Enabled ? (byte)1 : (byte)0,
             EnableColorWriteMask = 1
         };
@@ -453,6 +462,7 @@ public sealed class SdlResourceSet : IResourceSet
 
         if (textureBinding.Count > textures.Length)
             Array.Clear(textureBinding.Textures, textures.Length, textureBinding.Count - textures.Length);
+
         textureBinding.Count = textures.Length;
         if (changed)
             ++textureBinding.Version;
@@ -465,7 +475,9 @@ public sealed class SdlResourceSet : IResourceSet
         var renderPass = backend.TryGetReadyRenderPass(out var readyRenderPass)
             ? readyRenderPass
             : backend.RequireRenderPass();
+
         if (renderPass == nint.Zero) return;
+
         pipeline.EnsureBound(renderPass);
 
         var currentSerial = backend.RenderPassSerial;
@@ -474,7 +486,7 @@ public sealed class SdlResourceSet : IResourceSet
         for (var i = 0; i < textureBindings.Length; ++i)
             maxCount = int.Max(maxCount, textureBindings[i].Count);
 
-        Span<SDL.GPUTextureSamplerBinding> samplerBindings = maxCount <= 0 ?
+        var samplerBindings = maxCount <= 0 ?
             [] :
             stackalloc SDL.GPUTextureSamplerBinding[maxCount];
 
@@ -515,6 +527,7 @@ public sealed class SdlResourceSet : IResourceSet
 
         for (var i = 0; i < textureBindings.Length; ++i)
             Array.Clear(textureBindings[i].Textures, 0, textureBindings[i].Count);
+
         disposed = true;
     }
 
@@ -536,8 +549,8 @@ public sealed class SdlResourceSet : IResourceSet
             BoundSerial = uint.MaxValue;
         }
 
-        public int Binding;
-        public SdlTexture[] Textures;
+        public readonly int Binding;
+        public readonly SdlTexture[] Textures;
         public int Count;
         public uint Version;
         public uint BoundSerial;

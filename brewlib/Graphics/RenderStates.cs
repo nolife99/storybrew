@@ -10,15 +10,9 @@ public struct RenderStates
 
     public BlendingFactorState BlendingFactor;
 
-    public RenderStates()
-    {
-        BlendingFactor = new(BlendingMode.AlphaBlend);
-    }
+    public RenderStates() => BlendingFactor = new(BlendingMode.AlphaBlend);
 
-    public RenderStates(BlendingMode blendingMode)
-    {
-        BlendingFactor = new(blendingMode);
-    }
+    public RenderStates(BlendingMode blendingMode) => BlendingFactor = new(blendingMode);
 
     public static void ClearStateCache() => currentState = default;
 
@@ -92,11 +86,11 @@ public readonly struct BlendingFactorState : IEquatable<BlendingFactorState>
 
     public bool Equals(BlendingFactorState other)
         => !Enabled && !other.Enabled ||
-           Enabled == other.Enabled &&
-           Source == other.Source &&
-           Destination == other.Destination &&
-           AlphaSource == other.AlphaSource &&
-           AlphaDestination == other.AlphaDestination;
+            Enabled == other.Enabled &&
+            Source == other.Source &&
+            Destination == other.Destination &&
+            AlphaSource == other.AlphaSource &&
+            AlphaDestination == other.AlphaDestination;
 
     public override bool Equals(object obj) => obj is BlendingFactorState other && Equals(other);
 

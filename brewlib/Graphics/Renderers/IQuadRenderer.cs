@@ -1,31 +1,18 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
+using System;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
 public interface IQuadRenderer : IPrimitiveRenderer
 {
-    internal void Draw(scoped ref readonly QuadPrimitive quad, ITextureRegion texture);
+    internal void Draw(scoped ref readonly QuadInstance instance, ITextureRegion texture);
 }
 
-[StructLayout(LayoutKind.Sequential)]
-struct QuadPrimitive
+struct QuadInstance
 {
-    public Vector2 vec1;
-    public float u1, v1;
-    public Rgba32 color1;
-
-    public Vector2 vec2;
-    public float u2, v2;
-    public Rgba32 color2;
-
-    public Vector2 vec3;
-    public float u3, v3;
-    public Rgba32 color3;
-
-    public Vector2 vec4;
-    public float u4, v4;
-    public Rgba32 color4;
+    public Matrix3x2 Transform;
+    public Half U, V, UAxis, VAxis;
+    public Rgba32 Color;
 }

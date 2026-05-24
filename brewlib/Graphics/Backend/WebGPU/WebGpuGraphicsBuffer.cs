@@ -11,10 +11,9 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 {
     readonly WebGpuGraphicsBackend backend;
 
-    WgpuBuffer* buffer;
-    int streamOffset;
-    uint streamFrameSerial;
     bool disposed;
+    uint streamFrameSerial;
+    int streamOffset;
 
     public WebGpuGraphicsBuffer(WebGpuGraphicsBackend backend, GraphicsBufferDescription description)
     {
@@ -24,11 +23,13 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
         if (description.SizeInBytes > 0) Allocate(description.SizeInBytes);
     }
 
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, (nint)buffer);
+    public WgpuBuffer* BufferHandle { get; private set; }
+
+    public int BindingOffset { get; private set; }
+
+    public GraphicsResourceHandle NativeHandle => new(backend.Name, (nint)BufferHandle);
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
-    public WgpuBuffer* BufferHandle => buffer;
-    public int BindingOffset { get; private set; }
 
     public void Allocate(int sizeInBytes)
     {
@@ -53,8 +54,8 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
             Size = (ulong)sizeInBytes
         };
 
-        buffer = backend.Api.DeviceCreateBuffer(backend.DeviceHandle, in descriptor);
-        if (buffer is null)
+        BufferHandle = backend.Api.DeviceCreateBuffer(backend.DeviceHandle, in descriptor);
+        if (BufferHandle is null)
             throw new InvalidOperationException($"Unable to create WebGPU buffer {Description.Name}");
 
         SizeInBytes = sizeInBytes;
@@ -69,7 +70,7 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 
         var uploadOffset = reserveUploadRegion(sizeInBytes);
         var requiredSize = checked(uploadOffset + sizeInBytes);
-        if (buffer is null || SizeInBytes < requiredSize)
+        if (BufferHandle is null || SizeInBytes < requiredSize)
             Allocate(getBufferAllocationSize(requiredSize));
 
         BindingOffset = uploadOffset;
@@ -77,15 +78,13 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
         var bytes = MemoryMarshal.AsBytes(data);
         fixed (byte* source = bytes)
             backend.Api.QueueWriteBuffer(backend.QueueHandle,
-                buffer,
+                BufferHandle,
                 (ulong)uploadOffset,
                 source,
                 (nuint)sizeInBytes);
     }
 
-    public void Invalidate()
-    {
-    }
+    public void Invalidate() { }
 
     public void Dispose()
     {
@@ -97,10 +96,10 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 
     void releaseBuffer()
     {
-        if (buffer is null) return;
+        if (BufferHandle is null) return;
 
-        backend.RetireBuffer(buffer);
-        buffer = null;
+        backend.RetireBuffer(BufferHandle);
+        BufferHandle = null;
     }
 
     int reserveUploadRegion(int sizeInBytes)
@@ -126,6 +125,7 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
             throw new ArgumentOutOfRangeException(nameof(sizeInBytes),
                 sizeInBytes,
                 $"WebGPU buffer '{Description.Name}' exceeds device maxBufferSize {backend.MaxBufferSize}");
+
         if (Description.Usage is GraphicsBufferUsage.Static) return sizeInBytes;
 
         var minimum = int.Max(sizeInBytes, 256);
@@ -139,7 +139,7 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
     }
 
     static int align(int value, int alignment)
-        => (value + alignment - 1) & ~(alignment - 1);
+        => value + alignment - 1 & ~(alignment - 1);
 
     static WgpuBufferUsage toUsageFlags(GraphicsBufferTarget target)
         => target switch

@@ -6,28 +6,27 @@ using Silk.NET.OpenGL;
 
 public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
 {
-    readonly BufferTargetARB target;
     readonly BufferUsageARB usage;
 
-    uint bufferId;
     bool disposed;
 
     public OpenGlGraphicsBuffer(GraphicsBufferDescription description)
     {
         Description = description;
-        target = toOpenGlTarget(description.Target);
+        Target = toOpenGlTarget(description.Target);
         usage = toOpenGlUsage(description.Usage);
-        bufferId = OpenGlApi.GL.GenBuffer();
+        BufferId = OpenGlApi.GL.GenBuffer();
 
         if (description.SizeInBytes > 0) Allocate(description.SizeInBytes);
     }
 
-    public GraphicsResourceHandle NativeHandle => new("OpenGL", (nint)bufferId);
+    internal uint BufferId { get; private set; }
+
+    internal BufferTargetARB Target { get; }
+
+    public GraphicsResourceHandle NativeHandle => new("OpenGL", (nint)BufferId);
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
-
-    internal uint BufferId => bufferId;
-    internal BufferTargetARB Target => target;
 
     public void Allocate(int sizeInBytes)
     {
@@ -35,7 +34,7 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
         if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
 
         Bind();
-        OpenGlApi.AllocateBuffer(target, sizeInBytes, usage);
+        OpenGlApi.AllocateBuffer(Target, sizeInBytes, usage);
         SizeInBytes = sizeInBytes;
     }
 
@@ -46,8 +45,8 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
         var sizeInBytes = data.Length * Unsafe.SizeOf<T>();
         Bind();
 
-        if (data.IsEmpty) OpenGlApi.AllocateBuffer(target, sizeInBytes, usage);
-        else OpenGlApi.GL.BufferData(target, data, usage);
+        if (data.IsEmpty) OpenGlApi.AllocateBuffer(Target, sizeInBytes, usage);
+        else OpenGlApi.GL.BufferData(Target, data, usage);
 
         SizeInBytes = sizeInBytes;
     }
@@ -55,19 +54,19 @@ public sealed class OpenGlGraphicsBuffer : IGraphicsBuffer
     public void Invalidate()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (DrawState.CanInvalidate) OpenGlApi.GL.InvalidateBufferData(bufferId);
+        if (DrawState.CanInvalidate) OpenGlApi.GL.InvalidateBufferData(BufferId);
     }
-
-    internal void Bind() => OpenGlApi.GL.BindBuffer(target, bufferId);
 
     public void Dispose()
     {
         if (disposed) return;
 
-        OpenGlApi.GL.DeleteBuffer(bufferId);
-        bufferId = 0;
+        OpenGlApi.GL.DeleteBuffer(BufferId);
+        BufferId = 0;
         disposed = true;
     }
+
+    internal void Bind() => OpenGlApi.GL.BindBuffer(Target, BufferId);
 
     static BufferTargetARB toOpenGlTarget(GraphicsBufferTarget target)
         => target switch

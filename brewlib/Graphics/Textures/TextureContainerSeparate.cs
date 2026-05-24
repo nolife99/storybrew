@@ -31,6 +31,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
                     var size = texture.Size;
                     pixels += size.Width * size.Height;
                 }
+
             return pixels * 4;
         }
     }
@@ -59,6 +60,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
     public ITextureRegion Add(string filename, Image<Rgba32> bitmap, TextureOptions options = null)
     {
         if (bitmap is null) return null;
+
         filename = PathHelper.WithStandardSeparators(filename);
 
         if (textures.TryGetValue(filename, out var existing)) return existing;
@@ -70,6 +72,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
     public ITextureRegion Add(string filename, PreparedTextureUpload upload, IAsyncTextureUploader uploader)
     {
         if (upload is null || uploader is null) return null;
+
         filename = PathHelper.WithStandardSeparators(filename);
 
         if (textures.TryGetValue(filename, out var existing)) return existing;
@@ -92,6 +95,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
             {
                 [key] = candidate
             };
+
             textures = next;
             return candidate;
         }
@@ -104,6 +108,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
     public void Dispose()
     {
         if (disposed) return;
+
         foreach (var texture in textures.Values) texture?.Dispose();
         disposed = true;
     }

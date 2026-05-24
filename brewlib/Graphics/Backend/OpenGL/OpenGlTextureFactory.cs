@@ -108,6 +108,7 @@ sealed class OpenGlPreparedTextureUpload : PreparedTextureUpload
             0,
             description.ByteLength,
             UploadMapFlags);
+
         OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);
 
         if (mapped != nint.Zero) return new(description, pbo, mapped);
@@ -515,6 +516,7 @@ sealed class OpenGlTexture : Texture2dRegion, IWritableTexture
             0,
             byteCount,
             UploadMapFlags);
+
         if (mapped == nint.Zero)
         {
             OpenGlApi.GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, 0);

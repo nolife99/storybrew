@@ -41,6 +41,7 @@ public sealed class OpenGlResourceSet : IResourceSet
         textures.CopyTo(textureBinding.Textures);
         if (textureBinding.Count > textures.Length)
             Array.Clear(textureBinding.Textures, textures.Length, textureBinding.Count - textures.Length);
+
         textureBinding.Count = textures.Length;
     }
 

@@ -14,9 +14,9 @@ public sealed class TextureContainerAtlas : TextureContainer
     readonly string atlasDescription;
     readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases;
     readonly int height, padding, width;
+    readonly ResourceContainer resourceContainer;
 
     readonly ITextureFactory textureFactory;
-    readonly ResourceContainer resourceContainer;
     readonly TextureOptions textureOptions;
     readonly ConcurrentDictionary<string, ITextureRegion> textures;
     readonly ConcurrentDictionary<string, ITextureRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
@@ -33,9 +33,7 @@ public sealed class TextureContainerAtlas : TextureContainer
             width,
             height,
             padding,
-            atlasDescription)
-    {
-    }
+            atlasDescription) { }
 
     public TextureContainerAtlas(ITextureFactory textureFactory,
         ResourceContainer resourceContainer = null,
@@ -47,6 +45,7 @@ public sealed class TextureContainerAtlas : TextureContainer
     {
         this.textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
             new OpenGlTextureFactory(DrawState.Backend);
+
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;
         this.width = width;
@@ -123,6 +122,7 @@ public sealed class TextureContainerAtlas : TextureContainer
     public ITextureRegion Add(string filename, Image<Rgba32> bitmap, TextureOptions options = null)
     {
         if (bitmap is null) return null;
+
         filename = PathHelper.WithStandardSeparators(filename);
 
         if (texturesLookup.TryGetValue(filename, out var texture)) return texture;

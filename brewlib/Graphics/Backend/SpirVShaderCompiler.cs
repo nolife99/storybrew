@@ -17,7 +17,7 @@ using ReflectApi = Silk.NET.SPIRV.Reflect.Reflect;
 using ReflectResult = Silk.NET.SPIRV.Reflect.Result;
 using ShadercSourceLanguage = Silk.NET.Shaderc.SourceLanguage;
 
-internal static class SpirVShaderCompiler
+static class SpirVShaderCompiler
 {
     public static (byte[] SpirV, SpirVShaderMetadata Metadata) CompileAndReflectSpirVFromHlsl(string name,
         CompiledShaderStage stage,
@@ -68,12 +68,14 @@ internal static class SpirVShaderCompiler
             shaderc.CompileOptionsSetTargetEnv(options, TargetEnv.Vulkan, (uint)EnvVersion.Vulkan12);
             shaderc.CompileOptionsSetOptimizationLevel(options,
                 enableDebug ? OptimizationLevel.Zero : OptimizationLevel.Performance);
+
             if (sourceLanguage == ShadercSourceLanguage.Hlsl)
             {
                 shaderc.CompileOptionsSetHlslIoMapping(options, true);
                 shaderc.CompileOptionsSetHlslOffsets(options, true);
                 shaderc.CompileOptionsSetAutoCombinedImageSampler(options, true);
             }
+
             if (enableDebug) shaderc.CompileOptionsSetGenerateDebugInfo(options);
 
             var result = shaderc.CompileIntoSpv(compiler,
@@ -83,6 +85,7 @@ internal static class SpirVShaderCompiler
                 name,
                 entryPoint,
                 options);
+
             if (result is null)
                 throw new InvalidOperationException($"Unable to compile HLSL shader {name} to SPIR-V");
 
@@ -263,20 +266,24 @@ internal static class SpirVShaderCompiler
                     context,
                     cross,
                     "set GLSL version");
+
                 check(cross.CompilerOptionsSetBool(options, CompilerOption.GlslES, glslEs ? (byte)1 : (byte)0),
                     context,
                     cross,
                     glslEs ? "enable GLSL ES output" : "disable GLSL ES output");
+
                 check(cross.CompilerOptionsSetBool(options, CompilerOption.GlslVulkanSemantics, 0),
                     context,
                     cross,
                     "disable GLSL Vulkan semantics");
+
                 check(cross.CompilerOptionsSetBool(options,
                         CompilerOption.GlslEmitUniformBufferAsPlainUniforms,
                         emitUniformBuffersAsPlainUniforms ? (byte)1 : (byte)0),
                     context,
                     cross,
                     "emit uniform buffers as plain uniforms");
+
                 check(cross.CompilerInstallCompilerOptions(compiler, options),
                     context,
                     cross,
@@ -348,9 +355,9 @@ internal static class SpirVShaderCompiler
     }
 }
 
-internal unsafe delegate void SpirVGlslCompilerConfigurator(Cross cross, CrossCompiler* compiler, Context* context);
+unsafe delegate void SpirVGlslCompilerConfigurator(Cross cross, CrossCompiler* compiler, Context* context);
 
-internal sealed class SpirVShaderMetadata(
+sealed class SpirVShaderMetadata(
     string entryPoint,
     ShaderInputMetadata[] inputs,
     ShaderInputMetadata[] outputs,
@@ -364,13 +371,13 @@ internal sealed class SpirVShaderMetadata(
     public ShaderResourceMetadata Resources { get; } = resources;
 }
 
-internal readonly record struct ShaderInputMetadata(
+readonly record struct ShaderInputMetadata(
     uint SpirvId,
     uint Location,
     string Name,
     string Semantic);
 
-internal readonly record struct ShaderDescriptorMetadata(
+readonly record struct ShaderDescriptorMetadata(
     uint SpirvId,
     uint Binding,
     uint Set,
@@ -378,7 +385,7 @@ internal readonly record struct ShaderDescriptorMetadata(
     ShaderDescriptorKind Kind,
     uint Count);
 
-internal enum ShaderDescriptorKind
+enum ShaderDescriptorKind
 {
     Other,
     Sampler,
@@ -389,7 +396,7 @@ internal enum ShaderDescriptorKind
     UniformBuffer
 }
 
-internal readonly record struct ShaderResourceMetadata(
+readonly record struct ShaderResourceMetadata(
     uint Samplers,
     uint StorageTextures,
     uint StorageBuffers,

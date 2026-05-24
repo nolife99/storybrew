@@ -20,26 +20,26 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
 
     readonly WebGpuGraphicsBackend backend;
     readonly WebGpuGraphicsDevice device;
-    readonly VertexBufferBinding[] vertexBuffers;
     readonly Dictionary<BlendingFactorState, WebGpuHandle<RenderPipeline>> renderPipelines = [];
-
-    ShaderModule* vertexShader, fragmentShader;
-    BindGroupLayout* uniformBindGroupLayout, textureBindGroupLayout;
-    PipelineLayout* pipelineLayout;
-    WgpuBuffer* uniformBuffer;
-    BindGroup* uniformBindGroup;
-    byte[] uniformShadow;
+    readonly VertexBufferBinding[] vertexBuffers;
+    BlendingFactorState boundBlendState;
+    RenderPipeline* boundPipeline;
 
     uint boundRenderPassSerial = uint.MaxValue;
-    uint uniformFrameSerial;
-    uint currentUniformOffset;
     uint boundUniformOffset = uint.MaxValue;
-    int uniformOffset, currentUniformSize;
-    int uniformDirtyStart = int.MaxValue;
-    int uniformDirtyEnd;
-    RenderPipeline* boundPipeline;
-    BlendingFactorState boundBlendState;
+    uint currentUniformOffset;
     bool hasUniformValue, registeredForUniformFlush, disposed;
+    PipelineLayout* pipelineLayout;
+    BindGroup* uniformBindGroup;
+    BindGroupLayout* uniformBindGroupLayout;
+    WgpuBuffer* uniformBuffer;
+    int uniformDirtyEnd;
+    int uniformDirtyStart = int.MaxValue;
+    uint uniformFrameSerial;
+    int uniformOffset, currentUniformSize;
+    byte[] uniformShadow;
+
+    ShaderModule* vertexShader, fragmentShader;
 
     public WebGpuRenderPipeline(WebGpuGraphicsBackend backend, RenderPipelineDescription description)
     {
@@ -59,7 +59,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
             vertexShader = createShaderModule(description.ShaderSource.VertexSource);
             fragmentShader = createShaderModule(description.ShaderSource.FragmentSource);
             uniformBindGroupLayout = createUniformBindGroupLayout();
-            textureBindGroupLayout = createTextureBindGroupLayout(description.PipelineLayout);
+            TextureBindGroupLayout = createTextureBindGroupLayout(description.PipelineLayout);
             pipelineLayout = createPipelineLayout();
             createUniformBuffer();
         }
@@ -70,9 +70,10 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         }
     }
 
+    internal BindGroupLayout* TextureBindGroupLayout { get; private set; }
+
     public GraphicsResourceHandle NativeHandle => new(backend.Name, (nint)boundPipeline);
     public RenderPipelineDescription Description { get; }
-    internal BindGroupLayout* TextureBindGroupLayout => textureBindGroupLayout;
 
     public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name)
         => new WebGpuRenderUniform<T>(this, name.ToString());
@@ -90,9 +91,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (backend.TryGetReadyRenderPass(out var renderPass)) EnsureBound(renderPass);
     }
 
-    public void Unbind()
-    {
-    }
+    public void Unbind() { }
 
     public void BindVertexBuffer(int slot, IGraphicsBuffer buffer)
         => BindVertexBuffer(slot, buffer, buffer is WebGpuGraphicsBuffer webGpuBuffer ? webGpuBuffer.BindingOffset : 0);
@@ -122,6 +121,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (command.VertexCount == 0) return;
 
         if (!backend.TryRequireRenderPass(out var renderPass)) return;
+
         EnsureBound(renderPass);
         backend.Api.RenderPassEncoderDraw(renderPass,
             (uint)command.VertexCount,
@@ -135,6 +135,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (command.VertexCount == 0 || command.InstanceCount == 0) return;
 
         if (!backend.TryRequireRenderPass(out var renderPass)) return;
+
         EnsureBound(renderPass);
         backend.Api.RenderPassEncoderDraw(renderPass,
             (uint)command.VertexCount,
@@ -146,16 +147,21 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
     public void DrawIndirect(DrawIndirectCommand command)
     {
         if (command.DrawCount == 0) return;
+
         if (command.Offset < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.Offset, "Offset must be non-negative.");
+
         if (command.DrawCount < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.DrawCount, "Draw count must be non-negative.");
+
         if (command.Buffer is not WebGpuGraphicsBuffer webGpuBuffer)
             throw new InvalidOperationException($"{nameof(WebGpuRenderPipeline)} can only draw from WebGPU indirect buffers");
+
         if (webGpuBuffer.BufferHandle is null)
             return;
 
         if (!backend.TryRequireRenderPass(out var renderPass)) return;
+
         EnsureBound(renderPass);
 
         var stride = Unsafe.SizeOf<IndirectDrawCommand>();
@@ -179,7 +185,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         uniformShadow = null;
 
         if (pipelineLayout is not null) backend.Api.PipelineLayoutRelease(pipelineLayout);
-        if (textureBindGroupLayout is not null) backend.Api.BindGroupLayoutRelease(textureBindGroupLayout);
+        if (TextureBindGroupLayout is not null) backend.Api.BindGroupLayoutRelease(TextureBindGroupLayout);
         if (uniformBindGroupLayout is not null) backend.Api.BindGroupLayoutRelease(uniformBindGroupLayout);
         if (fragmentShader is not null) backend.Api.ShaderModuleRelease(fragmentShader);
         if (vertexShader is not null) backend.Api.ShaderModuleRelease(vertexShader);
@@ -188,7 +194,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         uniformBindGroup = null;
         uniformBuffer = null;
         pipelineLayout = null;
-        textureBindGroupLayout = null;
+        TextureBindGroupLayout = null;
         uniformBindGroupLayout = null;
         fragmentShader = null;
         vertexShader = null;
@@ -270,8 +276,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
             uniformDirtyEnd = 0;
         }
 
-        ref var valueByte = ref Unsafe.As<T, byte>(ref value);
-        var valueBytes = MemoryMarshal.CreateReadOnlySpan(ref valueByte, size);
+        var valueBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref value), size);
         if (hasUniformValue &&
             currentUniformSize == size &&
             uniformShadow.AsSpan((int)currentUniformOffset, size).SequenceEqual(valueBytes))
@@ -306,12 +311,12 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (uniformDirtyStart >= uniformDirtyEnd) return;
 
         var length = uniformDirtyEnd - uniformDirtyStart;
-        fixed (byte* source = uniformShadow.AsSpan(uniformDirtyStart, length))
-            backend.Api.QueueWriteBuffer(backend.QueueHandle,
-                uniformBuffer,
-                (ulong)uniformDirtyStart,
-                source,
-                (nuint)length);
+        var source = uniformShadow.AsSpan(uniformDirtyStart, length);
+        backend.Api.QueueWriteBuffer(backend.QueueHandle,
+            uniformBuffer,
+            (ulong)uniformDirtyStart,
+            source,
+            (nuint)length);
 
         uniformDirtyStart = int.MaxValue;
         uniformDirtyEnd = 0;
@@ -359,6 +364,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
                         Offset = (ulong)(element.Offset + element.Format.GetLocationOffset(column)),
                         ShaderLocation = (uint)attributeIndex
                     };
+
                     ++attributeIndex;
                 }
             }
@@ -509,6 +515,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         BindGroupLayout* layout = null;
         var validationError = backend.CaptureValidationError(() =>
             layout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
+
         if (validationError is not null)
         {
             if (layout is not null)
@@ -526,6 +533,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
     {
         var textureBindings = layout.TextureBindings;
         if (textureBindings.Length == 0) return null;
+
         if (textureBindings.Length > 1)
             throw new NotSupportedException("Core WebGPU renderer currently supports one texture binding layout");
 
@@ -546,6 +554,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
                     ViewDimension = TextureViewDimension.Dimension2D
                 }
             };
+
             entries[i * 2 + 1] = new()
             {
                 Binding = (uint)(i * 2 + 1),
@@ -568,6 +577,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
             BindGroupLayout* bindGroupLayout = null;
             var validationError = backend.CaptureValidationError(() =>
                 bindGroupLayout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
+
             if (validationError is not null)
             {
                 if (bindGroupLayout is not null)
@@ -606,6 +616,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
                 ViewDimension = TextureViewDimension.Dimension2D
             }
         };
+
         entries[1] = new()
         {
             Binding = 1,
@@ -625,6 +636,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         BindGroupLayout* bindGroupLayout = null;
         var validationError = backend.CaptureValidationError(() =>
             bindGroupLayout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
+
         if (validationError is not null)
         {
             if (bindGroupLayout is not null)
@@ -640,11 +652,11 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
 
     PipelineLayout* createPipelineLayout()
     {
-        var layoutCount = textureBindGroupLayout is null ? 1 : 2;
+        var layoutCount = TextureBindGroupLayout is null ? 1 : 2;
         var layouts = stackalloc BindGroupLayout*[layoutCount];
         layouts[0] = uniformBindGroupLayout;
-        if (textureBindGroupLayout is not null)
-            layouts[1] = textureBindGroupLayout;
+        if (TextureBindGroupLayout is not null)
+            layouts[1] = TextureBindGroupLayout;
 
         PipelineLayoutDescriptor descriptor = new()
         {
@@ -655,6 +667,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         PipelineLayout* createdLayout = null;
         var validationError = backend.CaptureValidationError(() =>
             createdLayout = backend.Api.DeviceCreatePipelineLayout(backend.DeviceHandle, in descriptor));
+
         if (validationError is not null)
         {
             if (createdLayout is not null)
@@ -702,7 +715,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
     }
 
     static int align(int value, int alignment)
-        => (value + alignment - 1) & ~(alignment - 1);
+        => value + alignment - 1 & ~(alignment - 1);
 
     static WgpuPrimitiveTopology toPrimitiveTopology(PrimitiveTopology topology)
         => topology switch

@@ -14,9 +14,7 @@ public sealed class Shader : IDisposable
     bool disposed, started;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode, IGraphicsBackend backend = null)
-        : this(new("generated", vertexShaderCode, fragmentShaderCode), backend)
-    {
-    }
+        : this(new("generated", vertexShaderCode, fragmentShaderCode), backend) { }
 
     public Shader(ShaderProgramSource source, IGraphicsBackend backend = null)
     {
@@ -27,6 +25,19 @@ public sealed class Shader : IDisposable
     }
 
     public GraphicsResourceHandle NativeHandle => program.NativeHandle;
+
+    public void Dispose()
+    {
+        if (disposed) return;
+
+        if (started) End();
+
+        program.Dispose();
+        uniforms.Clear();
+
+        disposed = true;
+        GC.SuppressFinalize(this);
+    }
 
     public void Begin()
     {
@@ -100,19 +111,6 @@ public sealed class Shader : IDisposable
         var uniform = new ShaderUniform<T>(program, info);
         uniforms.Add(identifier, uniform);
         return uniform;
-    }
-
-    public void Dispose()
-    {
-        if (disposed) return;
-
-        if (started) End();
-
-        program.Dispose();
-        uniforms.Clear();
-
-        disposed = true;
-        GC.SuppressFinalize(this);
     }
 
     static string GetUniformIdentifier(scoped ReadOnlySpan<char> name, int index, string field)

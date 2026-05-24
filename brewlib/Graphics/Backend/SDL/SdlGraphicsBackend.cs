@@ -15,15 +15,15 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 {
     const int DefaultFrameTransferBufferPageSize = 4 * 1024 * 1024;
     const uint FrameUploadLatency = 3;
+    readonly SdlGraphicsDevice device;
+    readonly List<FrameTransferPage> frameTransferPages = new();
 
     readonly List<PendingBufferUpload> pendingBufferUploads = new(256);
-    readonly List<FrameTransferPage> frameTransferPages = new();
-    readonly SdlGraphicsDevice device;
     readonly nint window;
-
-    nint swapchainTexture;
     bool framebufferHasContents, swapchainAcquireAttempted, disposed;
     Vector4 frameClearColor;
+
+    nint swapchainTexture;
     uint swapchainWidth, swapchainHeight;
 
     public SdlGraphicsBackend(nint window = 0,
@@ -54,6 +54,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         var fragmentSamplerCapacity = probeFragmentSamplerCapacity(deviceHandle,
             ShaderFormat,
             out var nativeNonUniformIndexing);
+
         var baselineSupported = fragmentSamplerCapacity > 0;
         SDL.LogInfo(LogCategory.Render,
             $"SDL GPU fragment samplers: {fragmentSamplerCapacity}; baseline probe: {baselineSupported}; non-uniform indexing: {nativeNonUniformIndexing}");
@@ -61,6 +62,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         var features = GraphicsBackendFeatures.TextureAtlases |
             GraphicsBackendFeatures.Instancing |
             GraphicsBackendFeatures.IndirectDraws;
+
         if (nativeNonUniformIndexing)
             features |= GraphicsBackendFeatures.NativeNonUniformTextureIndexing;
 
@@ -75,92 +77,6 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         TextureUploader = new SdlAsyncTextureUploader(this);
     }
 
-    static bool tryProbeFragmentShader(nint device,
-        SDL.GPUShaderFormat shaderFormat,
-        int samplerCount,
-        bool useNonUniformIndexing)
-    {
-        var probeName = $"SdlGraphicsBackend.ProbeFragment[{samplerCount}, nu={useNonUniformIndexing}]";
-        var hlsl = createFragmentProbeHlsl(samplerCount, useNonUniformIndexing);
-
-        try
-        {
-            var shader = SdlShaderCompiler.CompileGraphicsShaderFromHlsl(device,
-                shaderFormat,
-                probeName,
-                CompiledShaderStage.Fragment,
-                hlsl);
-            if (shader == nint.Zero)
-            {
-                SDL.LogInfo(LogCategory.Render, $"{probeName} SDL CreateGPUShader returned null: {SDL.GetError()}");
-                return false;
-            }
-
-            SDL.ReleaseGPUShader(device, shader);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            SDL.LogInfo(LogCategory.Render, $"{probeName} SDL shader create failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    static int probeFragmentSamplerCapacity(nint device,
-        SDL.GPUShaderFormat shaderFormat,
-        out bool nativeNonUniformIndexing)
-    {
-        nativeNonUniformIndexing = false;
-
-        ReadOnlySpan<int> candidates = [128, 64, 32, 16, 8, 4, 1];
-        foreach (var candidate in candidates)
-        {
-            if (!tryProbeFragmentShader(device, shaderFormat, candidate, useNonUniformIndexing: false))
-                continue;
-
-            if (tryProbeFragmentShader(device, shaderFormat, candidate, useNonUniformIndexing: true))
-            {
-                nativeNonUniformIndexing = true;
-                return candidate;
-            }
-
-            return int.Min(candidate, 16);
-        }
-
-        return 1;
-    }
-
-    static string createFragmentProbeHlsl(int samplerCount, bool useNonUniformIndexing)
-    {
-        var source = $$"""
-            Texture2D<float4> u_textures[{{samplerCount}}] : register(t0, space2);
-            SamplerState u_samplers[{{samplerCount}}] : register(s0, space2);
-
-            struct FragmentInput
-            {
-                float4 Position : SV_Position;
-                float2 TextureCoord : TEXCOORD0;
-                nointerpolation int TextureSlot : TEXCOORD1;
-            };
-
-            float4 main(FragmentInput input) : SV_Target0
-            {
-            """;
-
-        if (useNonUniformIndexing)
-            return source + """
-                    uint textureSlot = (uint)input.TextureSlot;
-                    return u_textures[NonUniformResourceIndex(textureSlot)].Sample(u_samplers[NonUniformResourceIndex(textureSlot)], input.TextureCoord);
-                }
-                """;
-
-        return source + $$"""
-                if (input.TextureSlot == {{samplerCount - 1}}) return u_textures[{{samplerCount - 1}}].Sample(u_samplers[{{samplerCount - 1}}], input.TextureCoord);
-                return u_textures[0].Sample(u_samplers[0], input.TextureCoord);
-            }
-            """;
-    }
-
     internal nint DeviceHandle => device.DeviceHandle;
     internal nint CommandBuffer { get; private set; }
 
@@ -171,7 +87,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     internal uint RenderPassSerial { get; private set; }
 
     internal SDL.GPUTextureFormat SwapchainFormat { get; private set; }
-    internal SDL.GPUShaderFormat ShaderFormat { get; private set; }
+    internal SDL.GPUShaderFormat ShaderFormat { get; }
     internal uint SwapchainHeight => swapchainHeight;
     internal bool HasActiveFrame => CommandBuffer != nint.Zero;
 
@@ -240,22 +156,6 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         swapchainAcquireAttempted = false;
     }
 
-    bool tryAcquireSwapchain()
-    {
-        if (swapchainTexture != nint.Zero) return true;
-        if (swapchainAcquireAttempted) return false;
-        swapchainAcquireAttempted = true;
-
-        if (!SDL.WaitAndAcquireGPUSwapchainTexture(CommandBuffer,
-            window,
-            out swapchainTexture,
-            out swapchainWidth,
-            out swapchainHeight))
-            throw new InvalidOperationException($"Unable to acquire SDL GPU swapchain texture: {SDL.GetError()}");
-
-        return swapchainTexture != nint.Zero;
-    }
-
     public void Dispose()
     {
         if (disposed) return;
@@ -276,6 +176,110 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
 
     public ILineRenderer CreateLineRenderer()
         => new LineRenderer(this);
+
+    static bool tryProbeFragmentShader(nint device,
+        SDL.GPUShaderFormat shaderFormat,
+        int samplerCount,
+        bool useNonUniformIndexing)
+    {
+        var probeName = $"SdlGraphicsBackend.ProbeFragment[{samplerCount}, nu={useNonUniformIndexing}]";
+        var hlsl = createFragmentProbeHlsl(samplerCount, useNonUniformIndexing);
+
+        try
+        {
+            var shader = SdlShaderCompiler.CompileGraphicsShaderFromHlsl(device,
+                shaderFormat,
+                probeName,
+                CompiledShaderStage.Fragment,
+                hlsl);
+
+            if (shader == nint.Zero)
+            {
+                SDL.LogInfo(LogCategory.Render, $"{probeName} SDL CreateGPUShader returned null: {SDL.GetError()}");
+                return false;
+            }
+
+            SDL.ReleaseGPUShader(device, shader);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            SDL.LogInfo(LogCategory.Render, $"{probeName} SDL shader create failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    static int probeFragmentSamplerCapacity(nint device,
+        SDL.GPUShaderFormat shaderFormat,
+        out bool nativeNonUniformIndexing)
+    {
+        nativeNonUniformIndexing = false;
+
+        ReadOnlySpan<int> candidates = [128, 64, 32, 16, 8, 4, 1];
+        foreach (var candidate in candidates)
+        {
+            if (!tryProbeFragmentShader(device, shaderFormat, candidate, false))
+                continue;
+
+            if (tryProbeFragmentShader(device, shaderFormat, candidate, true))
+            {
+                nativeNonUniformIndexing = true;
+                return candidate;
+            }
+
+            return int.Min(candidate, 16);
+        }
+
+        return 1;
+    }
+
+    static string createFragmentProbeHlsl(int samplerCount, bool useNonUniformIndexing)
+    {
+        var source = $$"""
+                       Texture2D<float4> u_textures[{{samplerCount}}] : register(t0, space2);
+                       SamplerState u_samplers[{{samplerCount}}] : register(s0, space2);
+
+                       struct FragmentInput
+                       {
+                           float4 Position : SV_Position;
+                           float2 TextureCoord : TEXCOORD0;
+                           nointerpolation int TextureSlot : TEXCOORD1;
+                       };
+
+                       float4 main(FragmentInput input) : SV_Target0
+                       {
+                       """;
+
+        if (useNonUniformIndexing)
+            return source + """
+                                uint textureSlot = (uint)input.TextureSlot;
+                                return u_textures[NonUniformResourceIndex(textureSlot)].Sample(u_samplers[NonUniformResourceIndex(textureSlot)], input.TextureCoord);
+                            }
+                            """;
+
+        return source + $$"""
+                              if (input.TextureSlot == {{samplerCount - 1}}) return u_textures[{{samplerCount - 1}}].Sample(u_samplers[{{samplerCount - 1}}], input.TextureCoord);
+                              return u_textures[0].Sample(u_samplers[0], input.TextureCoord);
+                          }
+                          """;
+    }
+
+    bool tryAcquireSwapchain()
+    {
+        if (swapchainTexture != nint.Zero) return true;
+        if (swapchainAcquireAttempted) return false;
+
+        swapchainAcquireAttempted = true;
+
+        if (!SDL.WaitAndAcquireGPUSwapchainTexture(CommandBuffer,
+            window,
+            out swapchainTexture,
+            out swapchainWidth,
+            out swapchainHeight))
+            throw new InvalidOperationException($"Unable to acquire SDL GPU swapchain texture: {SDL.GetError()}");
+
+        return swapchainTexture != nint.Zero;
+    }
 
     internal void UploadBuffer(nint transferBuffer,
         nint buffer,
@@ -320,6 +324,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (sizeInBytes < 0) throw new ArgumentOutOfRangeException(nameof(sizeInBytes), sizeInBytes, null);
+
         if (sizeInBytes == 0) return default;
 
         if (CommandBuffer == nint.Zero)
@@ -408,36 +413,42 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     internal void ReleaseBuffer(nint buffer)
     {
         if (buffer == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUBuffer(DeviceHandle, buffer);
     }
 
     internal void ReleaseTransferBuffer(nint transferBuffer)
     {
         if (transferBuffer == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUTransferBuffer(DeviceHandle, transferBuffer);
     }
 
     internal void ReleaseTexture(nint texture)
     {
         if (texture == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUTexture(DeviceHandle, texture);
     }
 
     internal void ReleaseSampler(nint sampler)
     {
         if (sampler == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUSampler(DeviceHandle, sampler);
     }
 
     internal void ReleaseShader(nint shader)
     {
         if (shader == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUShader(DeviceHandle, shader);
     }
 
     internal void ReleaseGraphicsPipeline(nint pipeline)
     {
         if (pipeline == nint.Zero || disposed) return;
+
         SDL.ReleaseGPUGraphicsPipeline(DeviceHandle, pipeline);
     }
 
@@ -482,7 +493,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         RenderPass = SDL.BeginGPURenderPass(CommandBuffer, colorTargets.AsPointer(), 1, 0);
         if (RenderPass == nint.Zero)
             throw new InvalidOperationException($"Unable to begin SDL GPU render pass: {SDL.GetError()}");
-        
+
         DrawState.CountDrawCall();
 
         ++RenderPassSerial;
@@ -682,7 +693,7 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     }
 
     static int align(int value, int alignment)
-        => (value + alignment - 1) & ~(alignment - 1);
+        => value + alignment - 1 & ~(alignment - 1);
 
     readonly record struct CopyPass(nint CommandBuffer, nint Handle, bool Standalone);
 
@@ -692,8 +703,8 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
     {
         public readonly nint Buffer = buffer;
         public readonly int Capacity = capacity;
-        public int Offset;
         public nint Mapped;
+        public int Offset;
     }
 
     readonly record struct PendingBufferUpload(
@@ -703,5 +714,4 @@ public sealed class SdlGraphicsBackend : IGraphicsBackend, IRendererFactory
         uint Offset,
         uint Size,
         bool Cycle);
-
 }

@@ -13,9 +13,9 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
     readonly OpenGlGraphicsDevice device;
     readonly Shader shader;
     readonly OpenGlTextureBindingInfo[] textureBindings;
-    readonly OpenGlVertexBufferBinding[] vertexBuffers;
     readonly List<IDisposable> uniforms = [];
     readonly uint vertexArrayId;
+    readonly OpenGlVertexBufferBinding[] vertexBuffers;
 
     bool bound, disposed;
 
@@ -29,6 +29,7 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         var shaderSource = OpenGlShaderCompiler.CreateShaderSource(description,
             backend.GlslVersion,
             backend.GlslEs);
+
         shader = new(shaderSource, backend);
         vertexArrayId = OpenGlApi.GL.GenVertexArray();
 
@@ -47,10 +48,10 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
             vertexBuffers[i] = new(vertexInputBuffers[i]);
     }
 
+    internal ReadOnlySpan<OpenGlTextureBindingInfo> TextureBindings => textureBindings;
+
     public GraphicsResourceHandle NativeHandle => shader.NativeHandle;
     public RenderPipelineDescription Description { get; }
-
-    internal ReadOnlySpan<OpenGlTextureBindingInfo> TextureBindings => textureBindings;
 
     public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name)
         => new OpenGlRenderUniform<T>(shader.GetUniform<T>(name));
@@ -137,7 +138,7 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
 
         Bind();
         OpenGlApi.GL.DrawArrays(toOpenGlPrimitiveType(Description.Topology), command.FirstVertex, (uint)command.VertexCount);
-        
+
         DrawState.CountDrawCall();
     }
 
@@ -150,21 +151,24 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
             command.FirstVertex,
             (uint)command.VertexCount,
             (uint)command.InstanceCount);
-        
+
         DrawState.CountDrawCall();
     }
 
     public unsafe void DrawIndirect(DrawIndirectCommand command)
     {
         if (command.DrawCount == 0) return;
+
         if (command.Offset < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.Offset, "Offset must be non-negative.");
+
         if (command.DrawCount < 0)
             throw new ArgumentOutOfRangeException(nameof(command), command.DrawCount, "Draw count must be non-negative.");
+
         if (command.Buffer is not OpenGlGraphicsBuffer openGlBuffer ||
             openGlBuffer.Target != BufferTargetARB.DrawIndirectBuffer)
             throw new InvalidOperationException($"{nameof(OpenGlRenderPipeline)} can only draw from OpenGL indirect buffers");
-        
+
         DrawState.CountDrawCall();
 
         Bind();
@@ -192,6 +196,7 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         OpenGlApi.GL.DeleteVertexArray(vertexArrayId);
         foreach (var uniform in uniforms)
             uniform.Dispose();
+
         uniforms.Clear();
         shader.Dispose();
         disposed = true;
@@ -238,6 +243,15 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
         uint bufferId;
         bool disposed;
 
+        public void Dispose()
+        {
+            if (disposed) return;
+
+            if (bufferId != 0) OpenGlApi.GL.DeleteBuffer(bufferId);
+            bufferId = 0;
+            disposed = true;
+        }
+
         public unsafe void SetValue(T value)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
@@ -252,16 +266,8 @@ public sealed class OpenGlRenderPipeline : IRenderPipeline
                 (nuint)size,
                 Unsafe.AsPointer(ref value),
                 BufferUsageARB.DynamicDraw);
+
             OpenGlApi.GL.BindBufferBase(BufferTargetARB.UniformBuffer, uniform.Slot, bufferId);
-        }
-
-        public void Dispose()
-        {
-            if (disposed) return;
-
-            if (bufferId != 0) OpenGlApi.GL.DeleteBuffer(bufferId);
-            bufferId = 0;
-            disposed = true;
         }
     }
 
@@ -287,7 +293,7 @@ public sealed class OpenGlRenderPipelineFactory(OpenGlGraphicsBackend backend, O
         => new OpenGlRenderPipeline(backend, device, description);
 }
 
-internal readonly record struct OpenGlTextureBindingInfo(
+readonly record struct OpenGlTextureBindingInfo(
     int Binding,
     string Name,
     int Capacity,

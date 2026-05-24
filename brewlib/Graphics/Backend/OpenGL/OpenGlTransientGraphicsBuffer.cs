@@ -18,12 +18,12 @@ sealed class OpenGlTransientGraphicsBuffer : ITransientGraphicsBuffer
 
     readonly OpenGlGraphicsBackend backend;
     readonly GraphicsBufferDescription description;
+    UploadRingAllocator allocator;
 
     OpenGlGraphicsBuffer buffer;
-    UploadRingAllocator allocator;
+    bool disposed;
     nint mapped;
     int mappedOffset, mappedSize;
-    bool disposed;
 
     public OpenGlTransientGraphicsBuffer(OpenGlGraphicsBackend backend,
         GraphicsBufferDescription description,
@@ -103,6 +103,7 @@ sealed class OpenGlTransientGraphicsBuffer : ITransientGraphicsBuffer
         var capacity = CapacityInBytes;
         while (capacity < sizeInBytes)
             capacity = checked(capacity * 2);
+
         recreateBuffer(capacity);
     }
 
@@ -119,6 +120,7 @@ sealed class OpenGlTransientGraphicsBuffer : ITransientGraphicsBuffer
             description.Target,
             GraphicsBufferUsage.Stream,
             capacityInBytes));
+
         allocator = new(capacityInBytes);
     }
 
@@ -126,8 +128,10 @@ sealed class OpenGlTransientGraphicsBuffer : ITransientGraphicsBuffer
     {
         if (allocation.Buffer != buffer)
             throw new InvalidOperationException("Transient buffer allocation belongs to another buffer");
+
         if (usedSizeInBytes < 0 || usedSizeInBytes > allocation.PrimarySize)
             throw new ArgumentOutOfRangeException(nameof(usedSizeInBytes), usedSizeInBytes, null);
+
         if (mapped != nint.Zero && (allocation.Offset != mappedOffset || allocation.PrimarySize != mappedSize))
             throw new InvalidOperationException("Transient buffer allocation is not the active mapped range");
     }
@@ -157,6 +161,7 @@ sealed class OpenGlUploadFence(nint fence) : IGpuUploadFence
         var result = OpenGlApi.GL.ClientWaitSync(fence,
             SyncObjectMask.Bit,
             ulong.MaxValue);
+
         if (result == GLEnum.WaitFailed)
             throw new InvalidOperationException($"OpenGL upload fence wait failed: {OpenGlApi.GL.GetError()}");
     }

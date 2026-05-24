@@ -45,5 +45,5 @@ public enum ShaderValueType
     UnsignedIntSamplerCube,
     UnsignedIntSampler1DArray,
     UnsignedIntSampler2DArray,
-    UnsignedIntSamplerBuffer,
+    UnsignedIntSamplerBuffer
 }

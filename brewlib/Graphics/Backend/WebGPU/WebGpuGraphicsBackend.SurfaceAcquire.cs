@@ -7,10 +7,10 @@ using Silk.NET.WebGPU;
 
 public unsafe sealed partial class WebGpuGraphicsBackend
 {
-    readonly Lock surfaceAcquireSync = new();
-    readonly SemaphoreSlim surfaceAcquireRequested = new(0);
     readonly ManualResetEventSlim surfaceAcquireReady = new(false);
-    
+    readonly SemaphoreSlim surfaceAcquireRequested = new(0);
+    readonly Lock surfaceAcquireSync = new();
+
     bool tryPrepareFrameSurfaceTexture(bool waitForAcquire = false)
     {
         while (true)
@@ -60,7 +60,7 @@ public unsafe sealed partial class WebGpuGraphicsBackend
                 if (status is SurfaceGetCurrentTextureStatus.Outdated or SurfaceGetCurrentTextureStatus.Lost)
                 {
                     surfaceConfigured = false;
-                    configureSurface(force: true);
+                    configureSurface(true);
                 }
 
                 requestSurfaceTextureAcquire();
@@ -123,6 +123,7 @@ public unsafe sealed partial class WebGpuGraphicsBackend
             IsBackground = true,
             Name = "storybrew WebGPU surface acquire"
         };
+
         surfaceAcquireThread.Start();
     }
 
@@ -153,6 +154,7 @@ public unsafe sealed partial class WebGpuGraphicsBackend
             {
                 if (textureView is not null)
                     Api.TextureViewRelease(textureView);
+
                 if (texture is not null)
                     Api.TextureRelease(texture);
 
@@ -224,6 +226,7 @@ public unsafe sealed partial class WebGpuGraphicsBackend
         releaseSurfaceTexture(texture, textureView);
         lock (surfaceAcquireSync)
             surfaceSubmissionInFlight = false;
+
         requestSurfaceTextureAcquire();
     }
 
@@ -266,6 +269,7 @@ public unsafe sealed partial class WebGpuGraphicsBackend
 
         if (textureView is not null)
             Api.TextureViewRelease(textureView);
+
         if (texture is not null)
             Api.TextureRelease(texture);
     }

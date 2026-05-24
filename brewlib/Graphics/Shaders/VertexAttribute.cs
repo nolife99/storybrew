@@ -7,9 +7,10 @@ public sealed class VertexAttribute
     public const string PositionAttributeName = "a_position", TextureCoordAttributeName = "a_textureCoord",
         ColorAttributeName = "a_color";
 
-    public int Offset;
-    public string Name;
     public VertexAttributeFormat Format = VertexAttributeFormat.Float32;
+    public string Name;
+
+    public int Offset;
     public AttributeUsage Usage = AttributeUsage.Undefined;
 
     public int ComponentSize => Format.GetComponentSize();
@@ -35,10 +36,20 @@ public sealed class VertexAttribute
                 Format = VertexAttributeFormat.Float16x2,
                 Usage = AttributeUsage.Position
             } :
-            new() { Name = PositionAttributeName, Format = VertexAttributeFormat.Float32x2, Usage = AttributeUsage.Position };
+            new()
+            {
+                Name = PositionAttributeName,
+                Format = VertexAttributeFormat.Float32x2,
+                Usage = AttributeUsage.Position
+            };
 
     public static VertexAttribute CreatePosition3d()
-        => new() { Name = PositionAttributeName, Format = VertexAttributeFormat.Float32x3, Usage = AttributeUsage.Position };
+        => new()
+        {
+            Name = PositionAttributeName,
+            Format = VertexAttributeFormat.Float32x3,
+            Usage = AttributeUsage.Position
+        };
 
     public static VertexAttribute CreateDiffuseCoord(bool packed, int index = 0)
         => packed ?
@@ -63,7 +74,12 @@ public sealed class VertexAttribute
                 Format = VertexAttributeFormat.Unorm8x4,
                 Usage = AttributeUsage.Color
             } :
-            new() { Name = ColorAttributeName, Format = VertexAttributeFormat.Float32x4, Usage = AttributeUsage.Color };
+            new()
+            {
+                Name = ColorAttributeName,
+                Format = VertexAttributeFormat.Float32x4,
+                Usage = AttributeUsage.Color
+            };
 }
 
 public enum AttributeUsage : byte

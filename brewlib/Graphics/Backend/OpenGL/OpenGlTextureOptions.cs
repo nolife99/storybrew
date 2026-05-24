@@ -30,6 +30,7 @@ static class OpenGlTextureOptions
         OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureWrapS,
             (int)toOpenGlWrap(options.TextureWrapS));
+
         OpenGlApi.GL.TexParameter(texture,
             TextureParameterName.TextureWrapT,
             (int)toOpenGlWrap(options.TextureWrapT));

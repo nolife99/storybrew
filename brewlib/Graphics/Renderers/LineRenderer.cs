@@ -26,15 +26,15 @@ public sealed class LineRenderer : ILineRenderer
 
     static readonly float[] UnitLineVertices = [0, 1];
     readonly bool bufferTransientDraws;
-    readonly bool useIndirectMultiDraws;
     readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
+    readonly List<LineIndirectBatchGroup> indirectBatchGroups;
     readonly IGraphicsBuffer indirectBuffer;
     readonly ITransientGraphicsBuffer instanceBuffer;
     readonly int instanceStride, instanceBatchCapacity;
     readonly List<LineBatch> pendingBatches;
-    readonly List<LineIndirectBatchGroup> indirectBatchGroups;
 
     readonly IRenderPipeline pipeline;
+    readonly bool useIndirectMultiDraws;
     readonly IGraphicsBuffer vertexBuffer;
 
     ICamera camera;
@@ -61,6 +61,7 @@ public sealed class LineRenderer : ILineRenderer
         indirectBatchGroups = useIndirectMultiDraws ? [] : null;
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage,
             backend.Capabilities.Has(GraphicsBackendFeatures.ManualColorCorrection)));
+
         combinedMatrixUniform = pipeline.GetUniform(CombinedMatrixUniform);
 
         vertexBuffer = backend.Buffers.CreateBuffer(new(nameof(LineRenderer) + ".Vertices",
@@ -170,6 +171,7 @@ public sealed class LineRenderer : ILineRenderer
             Unsafe.Add(ref instanceData.AsRef<LineInstance>(), instanceCount) = instance;
         else
             Unsafe.Add(ref instanceDataSecondary.AsRef<LineInstance>(), instanceCount - primaryInstanceCapacity) = instance;
+
         ++instanceCount;
     }
 

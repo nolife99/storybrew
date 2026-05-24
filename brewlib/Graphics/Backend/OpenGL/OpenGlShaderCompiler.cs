@@ -8,7 +8,7 @@ using Silk.NET.SPIRV.Cross;
 using CrossCompiler = Silk.NET.SPIRV.Cross.Compiler;
 using CrossResult = Silk.NET.SPIRV.Cross.Result;
 
-internal static unsafe class OpenGlShaderCompiler
+static unsafe class OpenGlShaderCompiler
 {
     public static ShaderProgramSource CreateShaderSource(RenderPipelineDescription description,
         uint glslVersion,
@@ -17,6 +17,7 @@ internal static unsafe class OpenGlShaderCompiler
         var source = description.ShaderSource;
         if (source.Language == ShaderSourceLanguage.Glsl)
             return source;
+
         if (source.Language != ShaderSourceLanguage.Hlsl)
             throw new NotSupportedException($"OpenGL cannot compile {source.Language} shader sources");
 
@@ -39,6 +40,7 @@ internal static unsafe class OpenGlShaderCompiler
     {
         if (source.Language == ShaderSourceLanguage.Glsl)
             return source;
+
         if (source.Language != ShaderSourceLanguage.Hlsl)
             throw new NotSupportedException($"OpenGL cannot compile {source.Language} shader sources");
 
@@ -83,8 +85,9 @@ internal static unsafe class OpenGlShaderCompiler
                 renameStageOutputs(cross, compiler, compiled.Metadata, stageInterfaceNames);
                 renameUniformBuffers(cross, compiler, compiled.Metadata);
             },
-            emitUniformBuffersAsPlainUniforms: false,
-            glslEs: glslEs);
+            false,
+            glslEs);
+
         return (glsl, compiled.Metadata);
     }
 
@@ -108,8 +111,9 @@ internal static unsafe class OpenGlShaderCompiler
                 renameTextureResources(cross, compiler, context, compiled.Metadata, description.PipelineLayout);
                 renameUniformBuffers(cross, compiler, compiled.Metadata);
             },
-            emitUniformBuffersAsPlainUniforms: false,
-            glslEs: glslEs);
+            false,
+            glslEs);
+
         return (glsl, compiled.Metadata);
     }
 
@@ -182,6 +186,7 @@ internal static unsafe class OpenGlShaderCompiler
         {
             if (descriptor.Kind is not (ShaderDescriptorKind.SampledImage or ShaderDescriptorKind.CombinedImageSampler))
                 continue;
+
             if (tryGetTextureBindingName(pipelineLayout, descriptor.Binding, out var name))
                 cross.CompilerSetName(compiler, descriptor.SpirvId, name);
         }
@@ -219,6 +224,7 @@ internal static unsafe class OpenGlShaderCompiler
         {
             if (descriptor.Kind is not (ShaderDescriptorKind.SampledImage or ShaderDescriptorKind.CombinedImageSampler))
                 continue;
+
             if (descriptor.Binding < namesByBinding.Count && namesByBinding[(int)descriptor.Binding] is { } name)
                 cross.CompilerSetName(compiler, descriptor.SpirvId, name);
         }
@@ -269,11 +275,11 @@ internal static unsafe class OpenGlShaderCompiler
         Dictionary<uint, string> namesByLocation = [];
         uint location = 0;
         foreach (var buffer in vertexInput.Buffers)
-            foreach (var element in buffer.Elements)
-            {
-                namesByLocation[location] = element.Name;
-                location += (uint)element.Format.GetLocationCount();
-            }
+        foreach (var element in buffer.Elements)
+        {
+            namesByLocation[location] = element.Name;
+            location += (uint)element.Format.GetLocationCount();
+        }
 
         return namesByLocation;
     }
