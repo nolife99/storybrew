@@ -6,8 +6,9 @@ using Ahjo.Wgpu;
 
 sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFrameExecutionMode mode) : IDisposable
 {
-    readonly AutoResetEvent available = new(true);
-    readonly AutoResetEvent queued = new(false);
+    readonly SemaphoreSlim available = new(1, 1);
+    readonly SemaphoreSlim queued = new(0);
+
     Exception exception;
     int hasPending, stop;
     PendingFrameSubmission pending;
@@ -17,19 +18,18 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
 
     public void Dispose()
     {
-        Interlocked.Exchange(ref stop, 1);
-        queued.Set();
-        thread?.Join();
+        if (Interlocked.Exchange(ref stop, 1) != 0)
+            return;
+
+        queued.Release();
+
+        var submitThread = Volatile.Read(ref thread);
+        submitThread?.Join();
+
         thread = null;
+
         available.Dispose();
         queued.Dispose();
-    }
-
-    public void Enqueue(PendingFrameSubmission submission)
-    {
-        if (!TryClaimSubmissionSlot()) return;
-
-        EnqueueClaimed(submission);
     }
 
     public bool TryClaimSubmissionSlot()
@@ -38,17 +38,20 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
             return Volatile.Read(ref stop) == 0;
 
         Start();
-        available.WaitOne();
-        if (Volatile.Read(ref stop) == 0) return true;
 
-        available.Set();
+        available.Wait();
+
+        if (Volatile.Read(ref stop) == 0)
+            return true;
+
+        available.Release();
         return false;
     }
 
     public void CancelClaimedSubmissionSlot()
     {
         if (mode != WebGpuFrameExecutionMode.Synchronous)
-            available.Set();
+            available.Release();
     }
 
     public void EnqueueClaimed(PendingFrameSubmission submission)
@@ -61,7 +64,8 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
 
         pending = submission;
         Volatile.Write(ref hasPending, 1);
-        queued.Set();
+
+        queued.Release();
     }
 
     public void SetPendingException(Exception pendingException)
@@ -76,23 +80,24 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
 
     void Start()
     {
-        if (thread is not null)
+        if (Volatile.Read(ref thread) is not null)
             return;
 
-        thread = new(Run)
+        var newThread = new Thread(Run)
         {
             IsBackground = true,
             Name = "storybrew WebGPU frame submit"
         };
 
-        thread.Start();
+        if (Interlocked.CompareExchange(ref thread, newThread, null) is null)
+            newThread.Start();
     }
 
     void Run()
     {
         while (true)
         {
-            queued.WaitOne();
+            queued.Wait();
 
             if (Volatile.Read(ref stop) != 0 && Volatile.Read(ref hasPending) == 0)
                 return;
@@ -102,9 +107,16 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
 
             var submission = pending;
             pending = default;
-            Submit(submission);
-            Volatile.Write(ref hasPending, 0);
-            available.Set();
+
+            try
+            {
+                Submit(submission);
+            }
+            finally
+            {
+                Volatile.Write(ref hasPending, 0);
+                available.Release();
+            }
         }
     }
 
@@ -119,8 +131,6 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
             backend.SubmitCommandBuffer(commandBuffer);
             commandBuffer = default;
 
-            // Recall is called here — submission thread only — keeping all vertex belt
-            // operations (Poll/WriteBuffer/Finish/Recall) on this single thread.
             backend.VertexStagingBelt.Recall();
 
             if (surfaceFrame.ShouldPresent)
@@ -132,6 +142,7 @@ sealed class WebGpuFrameSubmissionQueue(WebGpuGraphicsBackend backend, WebGpuFra
         {
             backend.MarkDeviceLost(ex);
             SetPendingException(ex);
+
             if (surfaceFrame.ShouldPresent)
                 backend.CompleteSurfaceSubmission(surfaceFrame.Texture, surfaceFrame.TextureView);
             else

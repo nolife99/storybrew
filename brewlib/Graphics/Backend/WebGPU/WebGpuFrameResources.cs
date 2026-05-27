@@ -1,18 +1,14 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
-using Tiny.PooledCollections.Generic;
+using System.Collections.Generic;
 
 sealed class WebGpuFrameResources : IDisposable
 {
-    readonly PooledList<IWebGpuCachedResourceSet> cachedResourceSets = [];
+    readonly List<IWebGpuCachedResourceSet> cachedResourceSets = [];
     WebGpuFrameFlushes flushes = WebGpuFrameFlushes.Rent();
 
-    public void Dispose()
-    {
-        flushes.Release();
-        cachedResourceSets.Dispose();
-    }
+    public void Dispose() => flushes.Release();
 
     public void RegisterPipelineForUniformFlush(WebGpuRenderPipeline pipeline)
         => flushes.Add(pipeline);
