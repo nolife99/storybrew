@@ -1,7 +1,6 @@
 namespace BrewLib.Graphics.Backend;
 
 using System;
-using System.Runtime.InteropServices;
 using Renderers;
 using Shaders;
 using Textures;
@@ -21,7 +20,6 @@ public interface IRenderPipeline : IDisposable
     void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset);
     void Draw(DrawCommand command);
     void DrawInstanced(DrawInstancedCommand command);
-    void DrawIndirect(DrawIndirectCommand command);
 }
 
 public interface IRenderPipelineFactory
@@ -144,15 +142,3 @@ public readonly record struct DrawInstancedCommand(
     int VertexCount,
     int InstanceCount,
     int FirstVertex = 0);
-
-[StructLayout(LayoutKind.Sequential)]
-public readonly record struct IndirectDrawCommand(
-    uint VertexCount,
-    uint InstanceCount,
-    uint FirstVertex = 0,
-    uint FirstInstance = 0);
-
-public readonly record struct DrawIndirectCommand(
-    IGraphicsBuffer Buffer,
-    int Offset,
-    int DrawCount);

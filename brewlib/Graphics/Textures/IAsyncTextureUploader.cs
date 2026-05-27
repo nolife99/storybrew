@@ -33,7 +33,7 @@ public abstract class PreparedTextureUpload(TextureUploadDescription description
     public int BytesPerRow => Description.BytesPerRow;
     public int ByteLength => Description.ByteLength;
 
-    internal abstract Span<byte> WritableBytes { get; }
+    internal virtual Span<byte> WritableBytes => throw new NotSupportedException($"{GetType().Name} does not expose a writable byte buffer");
 
     public abstract void Dispose();
     public Size Size => new(Width, Height);
@@ -51,6 +51,8 @@ public interface IAsyncTextureUploader : IDisposable
     ITextureRegion Upload(PreparedTextureUpload upload);
 }
 
+internal interface IPreparedTextureUploadOwnsBitmap { }
+
 public abstract class AsyncTextureUploaderBase(Func<int> maxTextureSizeProvider) : IAsyncTextureUploader
 {
     public async ValueTask<PreparedTextureUpload> PrepareAsync(string filename,
@@ -60,14 +62,26 @@ public abstract class AsyncTextureUploaderBase(Func<int> maxTextureSizeProvider)
     {
         textureOptions ??= TextureLoader.LoadTextureOptions(filename, resourceContainer);
 
-        using var bitmap = await TextureLoader.LoadBitmapAsync(filename, resourceContainer, cancellationToken)
+        var bitmap = await TextureLoader.LoadBitmapAsync(filename, resourceContainer, cancellationToken)
             .ConfigureAwait(false);
 
         if (bitmap is null) return null;
 
-        cancellationToken.ThrowIfCancellationRequested();
-        return await PrepareAsync(filename, bitmap, textureOptions ?? TextureOptions.Default, cancellationToken)
-            .ConfigureAwait(false);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var upload = await PrepareAsync(filename, bitmap, textureOptions ?? TextureOptions.Default, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (upload is IPreparedTextureUploadOwnsBitmap)
+                bitmap = null;
+
+            return upload;
+        }
+        finally
+        {
+            bitmap?.Dispose();
+        }
     }
 
     public abstract ITextureRegion Upload(PreparedTextureUpload upload);

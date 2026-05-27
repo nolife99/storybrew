@@ -1,12 +1,11 @@
 namespace BrewLib.Graphics;
 
 using System;
+using System.Numerics;
 using Backend;
-using Backend.OpenGL;
 using Cameras;
 using IO;
 using Renderers;
-using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
 using Text;
 using Textures;
@@ -16,7 +15,6 @@ public static class DrawState
     static IRenderer renderer;
     static bool flushingRenderer;
     static int drawCalls;
-    static int bufferedRendererFlushDepth;
 
     public static bool UseSrgb { get; set; }
 
@@ -34,15 +32,6 @@ public static class DrawState
 
     public static int MaxTextureSize => Backend?.Capabilities.MaxTextureSize ?? 0;
     public static int MaxTextureImageUnits => Backend?.Capabilities.MaxTextureImageUnits ?? 0;
-
-    static OpenGlGraphicsDevice OpenGlDevice => Device as OpenGlGraphicsDevice ??
-        throw new InvalidOperationException("The active graphics backend is not OpenGL");
-
-    public static int ActiveTextureUnit
-    {
-        get => OpenGlDevice.ActiveTextureUnit;
-        set => OpenGlDevice.ActiveTextureUnit = value;
-    }
 
     public static IRenderer Renderer
     {
@@ -68,11 +57,7 @@ public static class DrawState
         IGraphicsBackend backend = null)
     {
         if (backend is null)
-        {
-            backend = new OpenGlGraphicsBackend();
-            backend.Initialize(resourceContainer, textureContainer);
-            return;
-        }
+            throw new ArgumentNullException(nameof(backend), "DrawState now requires an explicit graphics backend");
 
         Backend = backend;
 
@@ -104,37 +89,26 @@ public static class DrawState
         TextGenerator.Dispose();
     }
 
-    public static int CompleteFrame()
+    // Begins a frame. Returns false if the window has no drawable area (minimized, zero size).
+    public static bool BeginFrame(Vector4 clearColor)
+        => Backend?.BeginFrame(clearColor) ?? false;
+
+    // Flushes all pending rendering, submits the frame to the GPU, and returns the draw call count.
+    public static int EndFrame()
     {
         Renderer = null;
 
-        var totalDraws = drawCalls;
+        var draws = drawCalls;
         drawCalls = 0;
 
-        Device.ResetStateCache();
+        Device?.ResetStateCache();
         RenderStates.ClearStateCache();
 
-        return totalDraws;
-    }
-
-    public static void BeginBufferedRendererFlushes()
-        => ++bufferedRendererFlushDepth;
-
-    public static void EndBufferedRendererFlushes()
-    {
-        if (bufferedRendererFlushDepth <= 0)
-            throw new InvalidOperationException("Buffered renderer flushes are not active");
-
-        --bufferedRendererFlushDepth;
+        Backend?.EndFrame(CanInvalidate);
+        return draws;
     }
 
     public static void FlushRenderer(bool canBuffer = false)
-        => flushRenderer(canBuffer || bufferedRendererFlushDepth != 0);
-
-    public static void FlushRendererImmediate()
-        => flushRenderer(false);
-
-    static void flushRenderer(bool canBuffer)
     {
         if (renderer is null || flushingRenderer) return;
 
@@ -148,6 +122,9 @@ public static class DrawState
             flushingRenderer = false;
         }
     }
+
+    public static void FlushRendererImmediate()
+        => FlushRenderer(false);
 
     internal static void CountDrawCall() => ++drawCalls;
 
@@ -167,16 +144,9 @@ public static class DrawState
     public static ITextureRegion WhitePixel { get; private set; }
     public static ITextureRegion TransparentPixel { get; private set; }
 
-    public static void BindPrimaryTexture(int textureId, TextureTarget mode = TextureTarget.Texture2D)
-        => OpenGlDevice.BindPrimaryTexture(textureId, mode);
-
     public static int BindTexture(ITexture texture) => Device.BindTexture(texture);
 
-    public static int BindTexture(int textureId) => OpenGlDevice.BindTexture(textureId);
-
     public static void UnbindTexture(ITexture texture) => Device.UnbindTexture(texture);
-
-    public static void UnbindTexture(int textureId) => OpenGlDevice.UnbindTexture(textureId);
 
     #endregion
 

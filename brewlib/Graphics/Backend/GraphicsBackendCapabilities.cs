@@ -27,7 +27,10 @@ public readonly record struct GraphicsBackendCapabilities(
     int MaxVertexTextureImageUnits,
     int MaxGeometryTextureImageUnits,
     int MaxCombinedTextureImageUnits,
-    int MaxUniformBufferSize)
+    int MaxUniformBufferSize,
+    int MaxBindGroups = 4,
+    int MaxBindingsPerBindGroup = 0,
+    int MaxVertexBuffers = 0)
 {
     public bool Has(GraphicsBackendFeatures feature) => (Features & feature) == feature;
 }

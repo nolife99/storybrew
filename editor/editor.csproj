@@ -6,7 +6,7 @@
         <AssemblyName>StorybrewEditor</AssemblyName>
         <Platforms>AnyCPU;x64</Platforms>
         <Version>1.95</Version>
-        <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+        <TargetFramework>net10.0</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
         <LangVersion>default</LangVersion>
         <DebugType>embedded</DebugType>

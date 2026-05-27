@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 public static class UnsafeMemory
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref T AsRef<T>(this nint ptr) => ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), ptr);
+    public static ref T AsRef<T>(this nint ptr) where T : allows ref struct => ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), ptr);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(this nint ptr, int length) where T : struct
@@ -30,6 +30,6 @@ public static class UnsafeMemory
         => Unsafe.ByteOffset(in Unsafe.NullRef<T>(), in pinned);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static nint AsPointerUnconstrained<T>(scoped ref readonly T pinned)
+    public static nint AsPointerUnconstrained<T>(scoped ref readonly T pinned) where T : allows ref struct
         => Unsafe.ByteOffset(in Unsafe.NullRef<T>(), in pinned);
 }

@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Backend.OpenGL;
 using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -14,7 +13,7 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
     TextureOptions textureOptions = null) : TextureContainer
 {
     readonly ITextureFactory textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
-        new OpenGlTextureFactory(DrawState.Backend);
+        throw new InvalidOperationException("Texture containers require DrawState to be initialized with a graphics backend");
 
     readonly Lock writeLock = new();
 

@@ -1,19 +1,18 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
-using Silk.NET.WebGPU;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
-using WgpuRenderPipeline = Silk.NET.WebGPU.RenderPipeline;
+using Ahjo.Wgpu;
+using WgpuBuffer = Ahjo.Wgpu.Buffer;
 
-unsafe sealed class WebGpuRenderPassState
+sealed class WebGpuRenderPassState
 {
     public BindGroupBinding[] BindGroups = new BindGroupBinding[4];
-    public WgpuRenderPipeline* Pipeline;
+    public RenderPipeline Pipeline;
     public VertexBufferBinding[] VertexBuffers = new VertexBufferBinding[8];
 
     public void Reset()
     {
-        Pipeline = null;
+        Pipeline = default;
         Array.Clear(BindGroups);
         Array.Clear(VertexBuffers);
     }
@@ -42,14 +41,14 @@ unsafe sealed class WebGpuRenderPassState
 
     public struct BindGroupBinding
     {
-        public BindGroup* BindGroup;
+        public BindGroup BindGroup;
         public uint DynamicOffsetCount;
         public uint DynamicOffset;
     }
 
     public struct VertexBufferBinding
     {
-        public WgpuBuffer* Buffer;
+        public WgpuBuffer Buffer;
         public ulong Offset;
         public ulong Size;
     }

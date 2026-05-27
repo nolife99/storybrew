@@ -43,7 +43,7 @@ public class TextureOptions : IEquatable<TextureOptions>
         }.ToFrozenDictionary();
 
     // Settings
-    public bool Srgb, PreMultiply, GenerateMipmaps;
+    public bool Srgb = true, PreMultiply, GenerateMipmaps;
 
     // Parameters
     public TextureFilter TextureMagFilter = TextureFilter.Linear;
@@ -51,14 +51,25 @@ public class TextureOptions : IEquatable<TextureOptions>
     public TextureWrap TextureWrapS = TextureWrap.ClampToEdge, TextureWrapT = TextureWrap.ClampToEdge;
 
     public bool Equals(TextureOptions other)
-        => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps &&
-            TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
-            TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
+        => other is not null &&
+            Srgb == other.Srgb &&
+            PreMultiply == other.PreMultiply &&
+            GenerateMipmaps == other.GenerateMipmaps &&
+            TextureMinFilter == other.TextureMinFilter &&
+            TextureMagFilter == other.TextureMagFilter &&
+            TextureWrapS == other.TextureWrapS &&
+            TextureWrapT == other.TextureWrapT;
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
 
     public override int GetHashCode()
-        => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
+        => HashCode.Combine(Srgb,
+            PreMultiply,
+            GenerateMipmaps,
+            TextureMinFilter,
+            TextureMagFilter,
+            TextureWrapS,
+            TextureWrapT);
 
     public static string GetOptionsFilename(string textureFilename)
         => Path.Combine(Path.GetDirectoryName(textureFilename),

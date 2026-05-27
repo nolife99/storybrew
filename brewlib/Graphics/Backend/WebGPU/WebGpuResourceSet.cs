@@ -1,18 +1,15 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
-using System.Numerics;
-using Silk.NET.WebGPU;
+using System.Runtime.CompilerServices;
+using Ahjo.Wgpu;
 using Textures;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
 using PipelineLayout = PipelineLayout;
 
-public unsafe sealed class WebGpuResourceSet : IResourceSet
+public sealed class WebGpuResourceSet : IResourceSet, IWebGpuCachedResourceSet
 {
-    const int MaxCachedBindGroups = 2048;
-
     readonly WebGpuGraphicsBackend backend;
     readonly ResourceBinding[] bindings;
     readonly ConcurrentQueue<PurgeRequest> pendingPurges = new();
@@ -32,12 +29,11 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
         {
             var binding = pipelineTextureBindings[i];
             bindings[i] = new(binding.Binding,
-                binding.Capacity,
-                backend.UseNativeNonUniformTextureIndexing);
+                binding.Capacity);
         }
 
         if (bindings.Length != 0)
-            backend.RegisterTextureResourceSet(this);
+            backend.RegisterCachedResourceSet(this);
     }
 
     public void SetTextures(int binding, scoped ReadOnlySpan<ITexture> textures)
@@ -52,72 +48,42 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
 
         if (textures.Length == 0)
         {
-            resourceBinding.ClearCurrent();
+            resourceBinding.ClearCurrent(backend);
             return;
         }
 
-        var signature = createSignature(resourceBinding.Binding, textures.Length);
+        var signature = HashCode.Combine(resourceBinding.Binding, textures.Length);
         var changed = resourceBinding.TextureCount != textures.Length;
         var previousHandleCount = resourceBinding.HandleCount;
-        GraphicsResourceHandle samplerIdentity = default;
-
-        if (backend.UseNativeNonUniformTextureIndexing)
+        for (var i = 0; i < textures.Length; ++i)
         {
-            for (var i = 0; i < textures.Length; ++i)
-            {
-                if (textures[i] is not WebGpuTexture texture)
-                    throw new InvalidOperationException($"{nameof(WebGpuResourceSet)} can only bind WebGPU textures");
+            if (textures[i] is not WebGpuTexture texture)
+                throw new InvalidOperationException($"{nameof(WebGpuResourceSet)} can only bind WebGPU textures");
 
-                if (i == 0)
-                    samplerIdentity = texture.SamplerIdentity;
-                else if (texture.SamplerIdentity != samplerIdentity)
-                    throw new InvalidOperationException(
-                        "Native WebGPU texture arrays require batches to be split by sampler state");
+            var viewHandle = texture.TextureViewHandle.NativeHandle();
+            var samplerHandle = texture.SamplerHandle.NativeHandle();
+            var handleIndex = i * 2;
 
-                var viewHandle = (nint)texture.TextureViewHandle;
-                changed |= resourceBinding.Handles[i] != viewHandle;
-                resourceBinding.Handles[i] = viewHandle;
-                signature.Add(viewHandle);
-            }
+            changed |= resourceBinding.Handles[handleIndex] != viewHandle ||
+                resourceBinding.Handles[handleIndex + 1] != samplerHandle;
 
-            var samplerHandle = (nint)((WebGpuTexture)textures[0]).SamplerHandle;
-            changed |= resourceBinding.Handles[textures.Length] != samplerHandle;
-            resourceBinding.Handles[textures.Length] = samplerHandle;
-            signature.Add(samplerHandle);
-            resourceBinding.HandleCount = textures.Length + 1;
+            resourceBinding.Handles[handleIndex] = viewHandle;
+            resourceBinding.Handles[handleIndex + 1] = samplerHandle;
+            resourceBinding.TextureViews[i] = texture.TextureViewHandle;
+            resourceBinding.Samplers[i] = texture.SamplerHandle;
+
+            signature = HashCode.Combine(signature, viewHandle, samplerHandle);
         }
-        else
-        {
-            for (var i = 0; i < textures.Length; ++i)
-            {
-                if (textures[i] is not WebGpuTexture texture)
-                    throw new InvalidOperationException($"{nameof(WebGpuResourceSet)} can only bind WebGPU textures");
 
-                var viewHandle = (nint)texture.TextureViewHandle;
-                var samplerHandle = (nint)texture.SamplerHandle;
-                var handleIndex = i * 2;
-
-                changed |= resourceBinding.Handles[handleIndex] != viewHandle ||
-                    resourceBinding.Handles[handleIndex + 1] != samplerHandle;
-
-                resourceBinding.Handles[handleIndex] = viewHandle;
-                resourceBinding.Handles[handleIndex + 1] = samplerHandle;
-
-                signature.Add(viewHandle);
-                signature.Add(samplerHandle);
-            }
-
-            resourceBinding.HandleCount = textures.Length * 2;
-        }
+        resourceBinding.HandleCount = textures.Length * 2;
 
         if (previousHandleCount > resourceBinding.HandleCount)
             Array.Clear(resourceBinding.Handles, resourceBinding.HandleCount, previousHandleCount - resourceBinding.HandleCount);
 
         resourceBinding.TextureCount = textures.Length;
-        var finalSignature = signature.ToHashCode();
-        if (changed || resourceBinding.Signature != finalSignature)
+        if (changed || resourceBinding.Signature != signature)
         {
-            resourceBinding.Signature = finalSignature;
+            resourceBinding.Signature = signature;
             resourceBinding.BindGroupDirty = true;
         }
     }
@@ -129,16 +95,14 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
 
         drainPendingPurges();
 
-        if (!backend.TryRequireRenderPass(out var renderPass)) return;
-
-        pipeline.EnsureBound(renderPass);
+        if (!backend.TryRequireRenderPass()) return;
 
         for (var i = 0; i < bindings.Length; ++i)
         {
             ref var binding = ref bindings[i];
             if (binding.TextureCount == 0) continue;
 
-            if (binding.BindGroup is null || binding.BindGroupDirty || binding.BoundSignature != binding.Signature)
+            if (binding.BindGroup.IsNull || binding.BindGroupDirty || binding.BoundSignature != binding.Signature)
                 bindOrCreateBindGroup(ref binding);
 
             backend.SetBindGroup(1, binding.BindGroup);
@@ -159,39 +123,31 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
         }
 
         if (bindings.Length != 0)
-            backend.UnregisterTextureResourceSet(this);
+            backend.UnregisterCachedResourceSet(this);
 
         disposed = true;
     }
 
-    internal void PurgeCachedBindGroupsReferencing(TextureView* textureView, Sampler* sampler)
+    public void PurgeCachedBindGroupsReferencing(WebGpuResourceReference resource)
     {
-        if (disposed) return;
+        if (disposed || resource.IsNull) return;
 
-        pendingPurges.Enqueue(new(textureView, sampler));
+        pendingPurges.Enqueue(new(resource));
     }
 
     void drainPendingPurges()
     {
         while (pendingPurges.TryDequeue(out var purge))
-            purgeCachedBindGroupsReferencing(purge.TextureView, purge.Sampler);
+            purgeCachedBindGroupsReferencing(purge.Resource);
     }
 
-    void purgeCachedBindGroupsReferencing(TextureView* textureView, Sampler* sampler)
+    void purgeCachedBindGroupsReferencing(WebGpuResourceReference resource)
     {
         for (var i = 0; i < bindings.Length; ++i)
         {
             ref var binding = ref bindings[i];
-            if (binding.Cache is null) continue;
+            if (!binding.PurgeCachedBindGroupsReferencing(backend, resource)) continue;
 
-            var removedCurrent = binding.Cache.PurgeReferences(backend,
-                textureView,
-                sampler,
-                binding.BindGroup);
-
-            if (!removedCurrent) continue;
-
-            binding.BindGroup = null;
             binding.BoundSignature = 0;
             binding.BindGroupDirty = true;
         }
@@ -199,119 +155,38 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
 
     void bindOrCreateBindGroup(ref ResourceBinding binding)
     {
-        var cache = binding.Cache ??= new(MaxCachedBindGroups);
-        if (cache.TryGet(binding.ActiveHandles,
-            binding.TextureCount,
-            binding.Signature,
-            ++binding.AccessSerial,
-            out var cachedBindGroup))
+        var frameSerial = backend.FrameSerial;
+        binding.TrimCache(backend, frameSerial);
+
+        if (binding.TryGetCachedBindGroup(frameSerial, out var bindGroup))
         {
-            binding.BindGroup = cachedBindGroup;
+            binding.BindGroup = bindGroup;
             return;
         }
 
-        binding.BindGroup = backend.UseNativeNonUniformTextureIndexing
-            ? createNativeTextureArrayBindGroup(in binding)
-            : createCoreTextureBindGroup(in binding);
-
-        cache.Add(backend,
-            binding.ActiveHandles,
-            binding.TextureCount,
-            binding.Signature,
-            binding.BindGroup,
-            ++binding.AccessSerial,
-            binding.BindGroup);
+        bindGroup = createCoreTextureBindGroup(in binding);
+        binding.CacheBindGroup(backend, bindGroup, frameSerial);
+        binding.BindGroup = bindGroup;
     }
 
-    BindGroup* createCoreTextureBindGroup(scoped ref readonly ResourceBinding binding)
+    BindGroup createCoreTextureBindGroup(scoped ref readonly ResourceBinding binding)
     {
         var capacity = binding.Capacity;
-        var handles = binding.Handles;
-        var fallbackView = (TextureView*)handles[0];
-        var fallbackSampler = (Sampler*)handles[1];
-        Span<BindGroupEntry> entries = stackalloc BindGroupEntry[checked(capacity * 2)];
-
+        var entryCount = checked(capacity * 2);
+        var fallbackView = binding.TextureViews[0];
+        var fallbackSampler = binding.Samplers[0];
+        
+        Span<BindGroupEntry> entries = stackalloc BindGroupEntry[entryCount];
         for (var i = 0; i < capacity; ++i)
         {
-            var handleIndex = i < binding.TextureCount ? i * 2 : 0;
-            entries[i * 2] = new()
-            {
-                Binding = (uint)(i * 2),
-                TextureView = i < binding.TextureCount ? (TextureView*)handles[handleIndex] : fallbackView
-            };
+            entries[i * 2] = BindGroupEntry.TextureView((uint)(i * 2),
+                i < binding.TextureCount ? binding.TextureViews[i] : fallbackView);
 
-            entries[i * 2 + 1] = new()
-            {
-                Binding = (uint)(i * 2 + 1),
-                Sampler = i < binding.TextureCount ? (Sampler*)handles[handleIndex + 1] : fallbackSampler
-            };
+            entries[i * 2 + 1] = BindGroupEntry.Sampler((uint)(i * 2 + 1),
+                i < binding.TextureCount ? binding.Samplers[i] : fallbackSampler);
         }
 
-        fixed (BindGroupEntry* entriesPointer = entries)
-        {
-            BindGroupDescriptor descriptor = new()
-            {
-                Layout = pipeline.TextureBindGroupLayout,
-                EntryCount = (nuint)entries.Length,
-                Entries = entriesPointer
-            };
-
-            var bindGroup = backend.Api.DeviceCreateBindGroup(backend.DeviceHandle, in descriptor);
-            return bindGroup is not null
-                ? bindGroup
-                : throw new InvalidOperationException("Unable to create WebGPU texture bind group");
-        }
-    }
-
-    BindGroup* createNativeTextureArrayBindGroup(scoped ref readonly ResourceBinding binding)
-    {
-        var capacity = binding.Capacity;
-        var textureViewCount = backend.UsePartiallyBoundNativeTextureArrays
-            ? binding.TextureCount
-            : capacity;
-
-        var textureViews = stackalloc TextureView*[textureViewCount];
-        var handles = binding.Handles;
-        var fallbackView = (TextureView*)handles[0];
-
-        for (var i = 0; i < textureViewCount; ++i)
-            textureViews[i] = i < binding.TextureCount ? (TextureView*)handles[i] : fallbackView;
-
-        WgpuNativeBindGroupEntryExtras textureExtras = new()
-        {
-            Chain = new()
-            {
-                SType = WebGpuNativeExtensions.NativeSType(
-                    WebGpuNativeExtensions.STypeBindGroupEntryExtras)
-            },
-            TextureViews = textureViews,
-            TextureViewCount = (nuint)textureViewCount
-        };
-
-        var entries = stackalloc BindGroupEntry[2];
-        entries[0] = new()
-        {
-            NextInChain = &textureExtras.Chain,
-            Binding = 0
-        };
-
-        entries[1] = new()
-        {
-            Binding = 1,
-            Sampler = (Sampler*)handles[binding.TextureCount]
-        };
-
-        BindGroupDescriptor descriptor = new()
-        {
-            Layout = pipeline.TextureBindGroupLayout,
-            EntryCount = 2,
-            Entries = entries
-        };
-
-        var bindGroup = backend.Api.DeviceCreateBindGroup(backend.DeviceHandle, in descriptor);
-        return bindGroup is not null
-            ? bindGroup
-            : throw new InvalidOperationException("Unable to create WebGPU texture array bind group");
+        return backend.DeviceHandle.CreateBindGroup(pipeline.TextureBindGroupLayout, entries);
     }
 
     ref ResourceBinding getBinding(int binding)
@@ -323,52 +198,61 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
         throw new ArgumentException($"Texture binding {binding} is not part of this resource set", nameof(binding));
     }
 
-    static HashCode createSignature(int binding, int count)
+    readonly struct PurgeRequest(WebGpuResourceReference resource)
     {
-        var signature = new HashCode();
-        signature.Add(HashCode.Combine(binding, count));
-        return signature;
-    }
-
-    readonly struct PurgeRequest
-    {
-        public readonly TextureView* TextureView;
-        public readonly Sampler* Sampler;
-
-        public PurgeRequest(TextureView* textureView, Sampler* sampler)
-        {
-            TextureView = textureView;
-            Sampler = sampler;
-        }
+        public readonly WebGpuResourceReference Resource = resource;
     }
 
     struct ResourceBinding
     {
-        public ResourceBinding(int binding, int capacity, bool nativeTextureArray)
+        public ResourceBinding(int binding, int capacity)
         {
             Binding = binding;
             Capacity = capacity;
-            Handles = new nint[nativeTextureArray ? capacity + 1 : capacity * 2];
+            Handles = new nint[capacity * 2];
+            TextureViews = new TextureView[capacity];
+            Samplers = new Sampler[capacity];
+            Cache = new(16, capacity * 2);
         }
 
         public readonly int Binding;
         public readonly int Capacity;
         public readonly nint[] Handles;
+        public readonly TextureView[] TextureViews;
+        public readonly Sampler[] Samplers;
+        readonly WebGpuBindGroupCache Cache;
         public int TextureCount;
         public int HandleCount;
-        public BindGroup* BindGroup;
-        public WebGpuBindGroupCache Cache;
+        public BindGroup BindGroup;
         public int Signature;
-        public ulong AccessSerial;
         public int BoundSignature;
         public bool BindGroupDirty;
-        public ReadOnlySpan<nint> ActiveHandles => Handles.AsSpan(0, HandleCount);
 
-        public void ClearCurrent()
+        public ReadOnlySpan<nint> CurrentHandles
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Handles.AsSpan(0, HandleCount);
+        }
+
+        public bool TryGetCachedBindGroup(uint frameSerial, out BindGroup bindGroup)
+            => Cache.TryGet(Signature, CurrentHandles, frameSerial, out bindGroup);
+
+        public void CacheBindGroup(WebGpuGraphicsBackend backend, BindGroup bindGroup, uint frameSerial)
+            => Cache.Store(backend, Signature, CurrentHandles, bindGroup, frameSerial);
+
+        public void TrimCache(WebGpuGraphicsBackend backend, uint frameSerial)
+            => Cache.Trim(backend, frameSerial);
+
+        public void ClearCurrent(WebGpuGraphicsBackend backend)
+        {
+            Cache.Clear(backend);
+            BindGroup = default;
+
             if (HandleCount != 0)
                 Array.Clear(Handles, 0, HandleCount);
 
+            Array.Clear(TextureViews);
+            Array.Clear(Samplers);
             HandleCount = 0;
             TextureCount = 0;
             Signature = 0;
@@ -376,260 +260,39 @@ public unsafe sealed class WebGpuResourceSet : IResourceSet
             BindGroupDirty = true;
         }
 
+        public bool References(WebGpuResourceReference resource)
+        {
+            for (var i = 0; i < HandleCount; ++i)
+                if (Handles[i] == resource.Handle)
+                    return true;
+
+            return false;
+        }
+
+        public bool PurgeCachedBindGroupsReferencing(WebGpuGraphicsBackend backend, WebGpuResourceReference resource)
+        {
+            var purged = References(resource);
+            if (purged)
+                BindGroup = default;
+
+            return Cache.PurgeReferencing(backend, resource) || purged;
+        }
+
         public void Dispose(WebGpuGraphicsBackend backend)
         {
             Cache?.Clear(backend);
-            Cache = null;
-            BindGroup = null;
+            BindGroup = default;
 
             if (Handles is not null)
                 Array.Clear(Handles);
+
+            if (TextureViews is not null)
+                Array.Clear(TextureViews);
+
+            if (Samplers is not null)
+                Array.Clear(Samplers);
+
+            Cache?.Dispose();
         }
-    }
-
-    sealed class WebGpuBindGroupCache
-    {
-        readonly CachedBindGroup[] entries;
-        readonly int mask, maxEntries;
-        int count;
-
-        public WebGpuBindGroupCache(int maxEntries)
-        {
-            this.maxEntries = int.Max(16, maxEntries);
-            var tableCapacity = nextPowerOfTwo(this.maxEntries * 2);
-            entries = new CachedBindGroup[tableCapacity];
-            mask = tableCapacity - 1;
-        }
-
-        public bool TryGet(ReadOnlySpan<nint> handles,
-            int textureCount,
-            int signature,
-            ulong accessSerial,
-            out BindGroup* bindGroup)
-        {
-            bindGroup = null;
-            if (count == 0) return false;
-
-            var index = signature & mask;
-            for (var probes = 0; probes < entries.Length; ++probes)
-            {
-                ref var entry = ref entries[index];
-                if (entry.State == CacheEntryState.Empty)
-                    return false;
-
-                if (entry.State == CacheEntryState.Occupied &&
-                    entry.Signature == signature &&
-                    entry.TextureCount == textureCount &&
-                    entry.Matches(handles))
-                {
-                    entry.LastUsedSerial = accessSerial;
-                    bindGroup = entry.BindGroup;
-                    return true;
-                }
-
-                index = index + 1 & mask;
-            }
-
-            return false;
-        }
-
-        public void Add(WebGpuGraphicsBackend backend,
-            ReadOnlySpan<nint> handles,
-            int textureCount,
-            int signature,
-            BindGroup* bindGroup,
-            ulong accessSerial,
-            BindGroup* currentBindGroup)
-        {
-            if (count >= maxEntries)
-            {
-                var evictIndex = findOldestEvictionIndex(currentBindGroup);
-                retireEntry(backend, ref entries[evictIndex]);
-                entries[evictIndex] = CachedBindGroup.Tombstone;
-                --count;
-            }
-
-            var index = findInsertIndex(signature);
-            ref var entry = ref entries[index];
-            if (entry.State == CacheEntryState.Occupied)
-            {
-                retireEntry(backend, ref entry);
-                --count;
-            }
-
-            entry = CachedBindGroup.Create(handles,
-                textureCount,
-                signature,
-                bindGroup,
-                accessSerial);
-
-            ++count;
-        }
-
-        public bool PurgeReferences(WebGpuGraphicsBackend backend,
-            TextureView* textureView,
-            Sampler* sampler,
-            BindGroup* currentBindGroup)
-        {
-            if (count == 0) return false;
-
-            var removedCurrent = false;
-            for (var i = 0; i < entries.Length; ++i)
-            {
-                ref var entry = ref entries[i];
-                if (entry.State != CacheEntryState.Occupied ||
-                    !entry.References(textureView, sampler))
-                    continue;
-
-                removedCurrent |= entry.BindGroup == currentBindGroup;
-                retireEntry(backend, ref entry);
-                entry = CachedBindGroup.Tombstone;
-                --count;
-            }
-
-            return removedCurrent;
-        }
-
-        public void Clear(WebGpuGraphicsBackend backend)
-        {
-            if (count == 0) return;
-
-            for (var i = 0; i < entries.Length; ++i)
-            {
-                ref var entry = ref entries[i];
-                if (entry.State != CacheEntryState.Occupied) continue;
-
-                retireEntry(backend, ref entry);
-                entry = default;
-            }
-
-            count = 0;
-        }
-
-        int findInsertIndex(int signature)
-        {
-            var index = signature & mask;
-            var firstTombstone = -1;
-
-            for (var probes = 0; probes < entries.Length; ++probes)
-            {
-                ref var entry = ref entries[index];
-                if (entry.State == CacheEntryState.Empty)
-                    return firstTombstone >= 0 ? firstTombstone : index;
-
-                if (entry.State == CacheEntryState.Tombstone && firstTombstone < 0)
-                    firstTombstone = index;
-
-                index = index + 1 & mask;
-            }
-
-            return firstTombstone >= 0 ? firstTombstone : 0;
-        }
-
-        int findOldestEvictionIndex(BindGroup* currentBindGroup)
-        {
-            var oldestIndex = -1;
-            var oldestSerial = ulong.MaxValue;
-
-            for (var i = 0; i < entries.Length; ++i)
-            {
-                ref var entry = ref entries[i];
-                if (entry.State != CacheEntryState.Occupied || entry.BindGroup == currentBindGroup)
-                    continue;
-
-                if (oldestIndex >= 0 && entry.LastUsedSerial >= oldestSerial) continue;
-
-                oldestIndex = i;
-                oldestSerial = entry.LastUsedSerial;
-            }
-
-            if (oldestIndex >= 0) return oldestIndex;
-
-            for (var i = 0; i < entries.Length; ++i)
-                if (entries[i].State == CacheEntryState.Occupied)
-                    return i;
-
-            return 0;
-        }
-
-        static void retireEntry(WebGpuGraphicsBackend backend, ref CachedBindGroup entry)
-        {
-            backend.RetireBindGroup(entry.BindGroup);
-            entry.ReturnSnapshot();
-        }
-
-        static int nextPowerOfTwo(int value)
-            => (int)BitOperations.RoundUpToPowerOf2((uint)value);
-    }
-
-    struct CachedBindGroup
-    {
-        public static readonly CachedBindGroup Tombstone = new()
-        {
-            State = CacheEntryState.Tombstone
-        };
-
-        public CacheEntryState State;
-        public int Signature;
-        public BindGroup* BindGroup;
-        public TempArrayInternals<nint> Handles;
-        public int TextureCount;
-        public ulong LastUsedSerial;
-
-        public static CachedBindGroup Create(ReadOnlySpan<nint> handles,
-            int textureCount,
-            int signature,
-            BindGroup* bindGroup,
-            ulong accessSerial)
-        {
-            var snapshot = TempArray.Create(handles);
-            return new()
-            {
-                State = CacheEntryState.Occupied,
-                Signature = signature,
-                BindGroup = bindGroup,
-                Handles = snapshot.TransferOwner(),
-                TextureCount = textureCount,
-                LastUsedSerial = accessSerial
-            };
-        }
-
-        public bool Matches(ReadOnlySpan<nint> handles)
-        {
-            if (Handles.Array is null || Handles.Length != handles.Length) return false;
-
-            return Handles.Array.AsSpan(0, Handles.Length).SequenceEqual(handles);
-        }
-
-        public bool References(TextureView* textureView, Sampler* sampler)
-        {
-            if (Handles.Array is null) return false;
-
-            var textureViewHandle = (nint)textureView;
-            var samplerHandle = (nint)sampler;
-            foreach (var handle in Handles.Array.AsSpan(0, Handles.Length))
-            {
-                if (textureView is not null && handle == textureViewHandle ||
-                    sampler is not null && handle == samplerHandle)
-                    return true;
-            }
-
-            return false;
-        }
-
-        public void ReturnSnapshot()
-        {
-            if (Handles.Array is null) return;
-
-            Handles.Dispose();
-            Handles = default;
-        }
-    }
-
-    enum CacheEntryState : byte
-    {
-        Empty,
-        Occupied,
-        Tombstone
     }
 }

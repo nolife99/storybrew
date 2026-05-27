@@ -1,17 +1,19 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.WebGPU;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
-using WgpuBufferUsage = Silk.NET.WebGPU.BufferUsage;
+using Ahjo.Wgpu;
+using SixLabors.ImageSharp.Memory;
+using WgpuBuffer = Ahjo.Wgpu.Buffer;
 
-public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
+public sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 {
     readonly WebGpuGraphicsBackend backend;
-
-    bool disposed;
+    bool disposed, registeredForUpload;
+    IMemoryOwner<byte> pendingUploadData;
+    int pendingUploadStart = int.MaxValue, pendingUploadEnd;
     uint streamFrameSerial;
     int streamOffset;
 
@@ -20,16 +22,16 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
         this.backend = backend;
         Description = description;
 
-        if (description.SizeInBytes > 0) Allocate(description.SizeInBytes);
+        if (description.SizeInBytes > 0)
+            Allocate(description.SizeInBytes);
     }
 
-    public WgpuBuffer* BufferHandle { get; private set; }
-
     public int BindingOffset { get; private set; }
+    public WgpuBuffer BufferHandle { get; private set; }
 
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, (nint)BufferHandle);
     public GraphicsBufferDescription Description { get; }
     public int SizeInBytes { get; private set; }
+    public GraphicsResourceHandle NativeHandle => new(backend.Name, BufferHandle.NativeHandle());
 
     public void Allocate(int sizeInBytes)
     {
@@ -54,9 +56,9 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
             Size = (ulong)sizeInBytes
         };
 
-        BufferHandle = backend.Api.DeviceCreateBuffer(backend.DeviceHandle, in descriptor);
-        if (BufferHandle is null)
-            throw new InvalidOperationException($"Unable to create WebGPU buffer {Description.Name}");
+        BufferHandle = backend.DeviceHandle.CreateBuffer(in descriptor);
+        if (BufferHandle.IsNull)
+            throw new InvalidOperationException($"Unable to create WebGPU buffer '{Description.Name}' ({sizeInBytes} bytes)");
 
         SizeInBytes = sizeInBytes;
     }
@@ -70,18 +72,14 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 
         var uploadOffset = reserveUploadRegion(sizeInBytes);
         var requiredSize = checked(uploadOffset + sizeInBytes);
-        if (BufferHandle is null || SizeInBytes < requiredSize)
+        if (BufferHandle.IsNull || SizeInBytes < requiredSize)
             Allocate(getBufferAllocationSize(requiredSize));
 
         BindingOffset = uploadOffset;
-
-        var bytes = MemoryMarshal.AsBytes(data);
-        fixed (byte* source = bytes)
-            backend.Api.QueueWriteBuffer(backend.QueueHandle,
-                BufferHandle,
-                (ulong)uploadOffset,
-                source,
-                (nuint)sizeInBytes);
+        if (Description.Usage is GraphicsBufferUsage.Stream && backend.HasActiveFrame)
+            QueueFrameUpload(data, uploadOffset, sizeInBytes);
+        else
+            backend.QueueHandle.WriteBuffer(BufferHandle, (ulong)uploadOffset, data);
     }
 
     public void Invalidate() { }
@@ -91,15 +89,78 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
         if (disposed) return;
 
         releaseBuffer();
+        releasePendingUploadData();
         disposed = true;
+    }
+
+    internal WebGpuBufferUpload DetachPendingUpload()
+    {
+        registeredForUpload = false;
+        if (disposed || pendingUploadStart >= pendingUploadEnd || pendingUploadData is null)
+            return default;
+
+        var upload = new WebGpuBufferUpload(BufferHandle,
+            pendingUploadData,
+            pendingUploadStart,
+            pendingUploadEnd - pendingUploadStart);
+
+        pendingUploadData = null;
+        pendingUploadStart = int.MaxValue;
+        pendingUploadEnd = 0;
+        return upload;
+    }
+
+    void QueueFrameUpload<T>(scoped ReadOnlySpan<T> data, int uploadOffset, int sizeInBytes) where T : unmanaged
+    {
+        EnsurePendingUploadCapacity(uploadOffset + sizeInBytes);
+        MemoryMarshal.AsBytes(data).CopyTo(pendingUploadData.Memory.Span.Slice(uploadOffset, sizeInBytes));
+        if (uploadOffset < pendingUploadStart) pendingUploadStart = uploadOffset;
+        var uploadEnd = uploadOffset + sizeInBytes;
+        if (uploadEnd > pendingUploadEnd) pendingUploadEnd = uploadEnd;
+
+        if (registeredForUpload) return;
+
+        registeredForUpload = true;
+        backend.RegisterBufferUpload(this);
+    }
+
+    void EnsurePendingUploadCapacity(int requiredSize)
+    {
+        if (pendingUploadData?.Memory is { Length: var length } && length >= requiredSize)
+            return;
+
+        var capacity = int.Max(256, pendingUploadData?.Memory.Length ?? 0);
+        while (capacity < requiredSize)
+            capacity = checked(capacity * 2);
+
+        var replacement = MemoryAllocator.Default.Allocate<byte>(capacity);
+        if (pendingUploadData is not null)
+        {
+            if (pendingUploadEnd > 0)
+                pendingUploadData.Memory[..pendingUploadEnd].CopyTo(replacement.Memory);
+
+            pendingUploadData.Dispose();
+        }
+
+        pendingUploadData = replacement;
     }
 
     void releaseBuffer()
     {
-        if (BufferHandle is null) return;
+        if (BufferHandle.IsNull) return;
 
-        backend.RetireBuffer(BufferHandle);
-        BufferHandle = null;
+        backend.DeferredReleases.Retire(BufferHandle);
+        BufferHandle = default;
+    }
+
+    void releasePendingUploadData()
+    {
+        if (pendingUploadData is null) return;
+
+        pendingUploadData.Dispose();
+        pendingUploadData = null;
+        pendingUploadStart = int.MaxValue;
+        pendingUploadEnd = 0;
     }
 
     int reserveUploadRegion(int sizeInBytes)
@@ -141,14 +202,13 @@ public unsafe sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
     static int align(int value, int alignment)
         => value + alignment - 1 & ~(alignment - 1);
 
-    static WgpuBufferUsage toUsageFlags(GraphicsBufferTarget target)
+    static BufferUsage toUsageFlags(GraphicsBufferTarget target)
         => target switch
         {
-            GraphicsBufferTarget.Vertex => WgpuBufferUsage.Vertex | WgpuBufferUsage.CopyDst,
-            GraphicsBufferTarget.Index => WgpuBufferUsage.Index | WgpuBufferUsage.CopyDst,
-            GraphicsBufferTarget.Uniform => WgpuBufferUsage.Uniform | WgpuBufferUsage.CopyDst,
-            GraphicsBufferTarget.Storage => WgpuBufferUsage.Storage | WgpuBufferUsage.CopyDst,
-            GraphicsBufferTarget.Indirect => WgpuBufferUsage.Indirect | WgpuBufferUsage.CopyDst,
+            GraphicsBufferTarget.Vertex => BufferUsage.Vertex | BufferUsage.CopyDst,
+            GraphicsBufferTarget.Index => BufferUsage.Index | BufferUsage.CopyDst,
+            GraphicsBufferTarget.Uniform => BufferUsage.Uniform | BufferUsage.CopyDst,
+            GraphicsBufferTarget.Storage => BufferUsage.Storage | BufferUsage.CopyDst,
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
 }

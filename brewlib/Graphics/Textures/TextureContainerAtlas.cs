@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using Backend.OpenGL;
 using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -27,7 +26,7 @@ public sealed class TextureContainerAtlas : TextureContainer
         int height = 1024,
         int padding = 0,
         string atlasDescription = nameof(TextureContainerAtlas))
-        : this(DrawState.Backend?.TextureFactory ?? new OpenGlTextureFactory(DrawState.Backend),
+        : this(DrawState.Backend?.TextureFactory ?? throw new InvalidOperationException("Texture containers require DrawState to be initialized with a graphics backend"),
             resourceContainer,
             textureOptions,
             width,
@@ -44,7 +43,7 @@ public sealed class TextureContainerAtlas : TextureContainer
         string atlasDescription = nameof(TextureContainerAtlas))
     {
         this.textureFactory = textureFactory ?? DrawState.Backend?.TextureFactory ??
-            new OpenGlTextureFactory(DrawState.Backend);
+            throw new InvalidOperationException("Texture containers require DrawState to be initialized with a graphics backend");
 
         this.resourceContainer = resourceContainer;
         this.textureOptions = textureOptions;

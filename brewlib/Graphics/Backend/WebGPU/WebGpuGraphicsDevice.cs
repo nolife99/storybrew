@@ -2,35 +2,36 @@ namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
 using Shaders;
-using Silk.NET.WebGPU;
 using SixLabors.ImageSharp;
 using Textures;
 
-unsafe sealed class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraphicsDevice
+sealed class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraphicsDevice
 {
     Rectangle? scissor;
     Rectangle viewport;
 
     public BlendingFactorState BlendState { get; private set; } = new(BlendingMode.AlphaBlend);
 
+    internal uint RenderPassStateSerial { get; private set; }
+
     public void InitializeTextureSlots(int textureSlotCount) { }
-    public void ResetStateCache() { }
+
+    public void ResetStateCache()
+        => ++RenderPassStateSerial;
 
     public void SetViewport(Rectangle viewport)
     {
         this.viewport = viewport;
+        ++RenderPassStateSerial;
+
         if (viewport.Width > 0 && viewport.Height > 0)
             backend.Resize((uint)viewport.Width, (uint)viewport.Height);
-
-        if (backend.RenderPass is not null)
-            applyViewport(backend.RenderPass);
     }
 
     public void SetScissor(Rectangle? region)
     {
         scissor = region;
-        if (backend.RenderPass is not null)
-            applyScissor(backend.RenderPass);
+        ++RenderPassStateSerial;
     }
 
     public void SetCapability(GraphicsCapability capability, bool enabled) { }
@@ -43,39 +44,35 @@ unsafe sealed class WebGpuGraphicsDevice(WebGpuGraphicsBackend backend) : IGraph
     public void UnbindTexture(ITexture texture) { }
     public void Dispose() { }
 
-    internal void ApplyRenderPassState(RenderPassEncoder* renderPass)
+    internal void ApplyRenderPassState()
     {
-        applyViewport(renderPass);
-        applyScissor(renderPass);
+        applyViewport();
+        applyScissor();
     }
 
-    void applyViewport(RenderPassEncoder* renderPass)
+    void applyViewport()
     {
         if (viewport.Width <= 0 || viewport.Height <= 0) return;
 
         var y = toNativeY(viewport);
-        backend.Api.RenderPassEncoderSetViewport(renderPass,
-            viewport.X,
+        backend.SetViewport(viewport.X,
             y,
             viewport.Width,
-            viewport.Height,
-            0,
-            1);
+            viewport.Height);
     }
 
-    void applyScissor(RenderPassEncoder* renderPass)
+    void applyScissor()
     {
         var region = scissor ?? viewport;
         if (!tryGetNativeScissor(region, out var x, out var y, out var width, out var height))
         {
             if (scissor.HasValue)
-                backend.Api.RenderPassEncoderSetScissorRect(renderPass, 0, 0, 0, 0);
+                backend.SetScissorRect(0, 0, 0, 0);
 
             return;
         }
 
-        backend.Api.RenderPassEncoderSetScissorRect(renderPass,
-            (uint)x,
+        backend.SetScissorRect((uint)x,
             (uint)y,
             (uint)width,
             (uint)height);

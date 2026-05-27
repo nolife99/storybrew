@@ -179,27 +179,13 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
 
     public int Draw()
     {
-        var deferRendererFlushes = DrawState.Backend.PrefersDeferredRendererFlushes;
-        if (deferRendererFlushes)
-            DrawState.BeginBufferedRendererFlushes();
+        if (!DrawState.BeginFrame(Vector4.Zero))
+            return -1;
 
-        try
-        {
-            if (!DrawState.Backend.BeginFrame(Vector4.Zero)) return -1;
+        screenLayerManager.Draw(drawContext);
+        overlay.Draw(drawContext);
 
-            screenLayerManager.Draw(drawContext);
-            overlay.Draw(drawContext);
-
-            var draws = DrawState.CompleteFrame();
-            DrawState.Backend.EndFrame(DrawState.CanInvalidate);
-
-            return draws;
-        }
-        finally
-        {
-            if (deferRendererFlushes)
-                DrawState.EndBufferedRendererFlushes();
-        }
+        return DrawState.EndFrame();
     }
 
     #region Overlay

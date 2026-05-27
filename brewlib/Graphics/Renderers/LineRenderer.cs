@@ -10,7 +10,6 @@ using Cameras;
 using Shaders;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Util;
 
 public sealed class LineRenderer : ILineRenderer
 {
@@ -25,24 +24,15 @@ public sealed class LineRenderer : ILineRenderer
     static readonly ShaderAttributeBinding ColorAttribute = new("a_color", ShaderValueType.FloatVec4);
 
     static readonly float[] UnitLineVertices = [0, 1];
-    readonly bool bufferTransientDraws;
-    readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
-    readonly List<LineIndirectBatchGroup> indirectBatchGroups;
-    readonly IGraphicsBuffer indirectBuffer;
-    readonly ITransientGraphicsBuffer instanceBuffer;
-    readonly int instanceStride, instanceBatchCapacity;
-    readonly List<LineBatch> pendingBatches;
 
+    readonly IRenderUniform<Matrix4x4> combinedMatrixUniform;
+    readonly IGraphicsBuffer instanceBuffer;
+    readonly List<LineInstance> instances;
     readonly IRenderPipeline pipeline;
-    readonly bool useIndirectMultiDraws;
     readonly IGraphicsBuffer vertexBuffer;
 
     ICamera camera;
     bool disposed, rendering;
-    IndirectDrawCommand[] indirectCommands;
-    TransientBufferAllocation instanceAllocation;
-    int instanceCount, primaryInstanceCapacity;
-    nint instanceData, instanceDataSecondary;
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
     public LineRenderer(IGraphicsBackend backend = null, int initialBatchCapacity = 256)
@@ -53,14 +43,11 @@ public sealed class LineRenderer : ILineRenderer
         backend ??= DrawState.Backend ??
             throw new InvalidOperationException("A graphics backend must be initialized before creating renderers");
 
-        instanceStride = Unsafe.SizeOf<LineInstance>();
-        instanceBatchCapacity = int.Max(1, initialBatchCapacity);
-        bufferTransientDraws = backend.PrefersBufferedTransientDraws;
-        useIndirectMultiDraws = bufferTransientDraws && backend.Capabilities.Has(GraphicsBackendFeatures.IndirectDraws);
-        pendingBatches = bufferTransientDraws ? [] : null;
-        indirectBatchGroups = useIndirectMultiDraws ? [] : null;
+        instances = new(initialBatchCapacity);
+
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage,
-            backend.Capabilities.Has(GraphicsBackendFeatures.ManualColorCorrection)));
+            backend.Capabilities.Has(GraphicsBackendFeatures.ManualColorCorrection),
+            backend.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer)));
 
         combinedMatrixUniform = pipeline.GetUniform(CombinedMatrixUniform);
 
@@ -68,22 +55,13 @@ public sealed class LineRenderer : ILineRenderer
             GraphicsBufferTarget.Vertex,
             GraphicsBufferUsage.Static));
 
-        instanceBuffer = backend.TransientBuffers.CreateBuffer(new(nameof(LineRenderer) + ".Instances",
-                GraphicsBufferTarget.Vertex,
-                GraphicsBufferUsage.Stream),
-            getRingCapacity(instanceStride * instanceBatchCapacity));
-
-        if (useIndirectMultiDraws)
-        {
-            indirectCommands = new IndirectDrawCommand[2];
-            indirectBuffer = backend.Buffers.CreateBuffer(new(nameof(LineRenderer) + ".Indirect",
-                GraphicsBufferTarget.Indirect,
-                GraphicsBufferUsage.Stream));
-        }
+        instanceBuffer = backend.Buffers.CreateBuffer(new(nameof(LineRenderer) + ".Instances",
+            GraphicsBufferTarget.Vertex,
+            GraphicsBufferUsage.Stream,
+            Unsafe.SizeOf<LineInstance>() * initialBatchCapacity));
 
         vertexBuffer.SetData(UnitLineVertices);
         pipeline.BindVertexBuffer(0, vertexBuffer);
-        pipeline.BindVertexBuffer(1, instanceBuffer.Buffer);
     }
 
     public Matrix4x4 TransformMatrix
@@ -126,28 +104,14 @@ public sealed class LineRenderer : ILineRenderer
 
     void IRenderer.EndRendering()
     {
-        if (instanceCount != 0) ((IRenderer)this).Flush(bufferTransientDraws);
-        replayPendingBatches();
-
+        if (instances.Count != 0) drawCurrentBatch();
         pipeline.Unbind();
         rendering = false;
     }
 
     void IRenderer.Flush(bool canBuffer)
     {
-        if (instanceCount == 0)
-        {
-            if (!canBuffer) replayPendingBatches();
-            return;
-        }
-
-        if (bufferTransientDraws && canBuffer)
-        {
-            queueCurrentBatch();
-            return;
-        }
-
-        replayPendingBatches();
+        if (instances.Count == 0) return;
         drawCurrentBatch();
     }
 
@@ -155,24 +119,12 @@ public sealed class LineRenderer : ILineRenderer
         scoped ref readonly Vector3 end,
         scoped ref readonly Color color)
     {
-        if (instanceCount == instanceBatchCapacity)
-            DrawState.FlushRenderer(true);
-
-        ensureInstanceBatch();
-
-        var instance = new LineInstance
+        instances.Add(new LineInstance
         {
             From = start,
             To = end,
             Color = color.ToPixel<Rgba32>()
-        };
-
-        if (instanceCount < primaryInstanceCapacity)
-            Unsafe.Add(ref instanceData.AsRef<LineInstance>(), instanceCount) = instance;
-        else
-            Unsafe.Add(ref instanceDataSecondary.AsRef<LineInstance>(), instanceCount - primaryInstanceCapacity) = instance;
-
-        ++instanceCount;
+        });
     }
 
     public void Dispose()
@@ -181,221 +133,26 @@ public sealed class LineRenderer : ILineRenderer
         GC.SuppressFinalize(this);
     }
 
-    void queueCurrentBatch()
-    {
-        var usedBytes = instanceCount * instanceStride;
-        instanceBuffer.Commit(in instanceAllocation, usedBytes);
-
-        pendingBatches.Add(new(instanceAllocation,
-            instanceCount,
-            usedBytes,
-            transformMatrix * camera.ProjectionView));
-
-        instanceBuffer.MarkSubmitted(in instanceAllocation, usedBytes);
-        resetInstanceBatch();
-    }
-
     void drawCurrentBatch()
     {
-        var usedBytes = instanceCount * instanceStride;
-        instanceBuffer.Commit(in instanceAllocation, usedBytes);
+        var span = CollectionsMarshal.AsSpan(instances);
+        instanceBuffer.SetData(span);
 
-        var allocation = instanceAllocation;
-        var combinedMatrix = transformMatrix * camera.ProjectionView;
-        drawBatch(in allocation,
-            instanceCount,
-            usedBytes,
-            in combinedMatrix);
+        combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
+        pipeline.BindVertexBuffer(1, instanceBuffer);
+        pipeline.DrawInstanced(new(VertexPerLine, span.Length));
 
-        resetInstanceBatch();
+        instances.Clear();
     }
 
-    void replayPendingBatches()
-    {
-        if (pendingBatches is null || pendingBatches.Count == 0) return;
-
-        if (tryReplayPendingBatchesIndirect())
-        {
-            pendingBatches.Clear();
-            return;
-        }
-
-        for (var i = 0; i < pendingBatches.Count; ++i)
-        {
-            var batch = pendingBatches[i];
-            var allocation = batch.Allocation;
-            var combinedMatrix = batch.CombinedMatrix;
-            drawBatch(in allocation,
-                batch.InstanceCount,
-                batch.UsedBytes,
-                in combinedMatrix,
-                false);
-        }
-
-        pendingBatches.Clear();
-    }
-
-    bool tryReplayPendingBatchesIndirect()
-    {
-        if (!useIndirectMultiDraws || pendingBatches.Count == 0) return false;
-
-        var totalCommandCount = 0;
-        var commandStride = Unsafe.SizeOf<IndirectDrawCommand>();
-        indirectBatchGroups.Clear();
-
-        var groupCommandOffset = 0;
-        var groupCommandCount = 0;
-        var groupMatrix = pendingBatches[0].CombinedMatrix;
-        var groupBuffer = pendingBatches[0].Allocation.Buffer;
-
-        for (var i = 0; i < pendingBatches.Count; ++i)
-        {
-            var batch = pendingBatches[i];
-            // Groups must share the underlying instance buffer; otherwise the merged
-            // indirect draw reads from the wrong buffer (the transient ring spans
-            // multiple pages once exhausted).
-            if (batch.CombinedMatrix != groupMatrix ||
-                !ReferenceEquals(batch.Allocation.Buffer, groupBuffer))
-            {
-                if (groupCommandCount != 0)
-                    indirectBatchGroups.Add(new(groupMatrix, groupBuffer, groupCommandOffset * commandStride, groupCommandCount));
-
-                groupMatrix = batch.CombinedMatrix;
-                groupBuffer = batch.Allocation.Buffer;
-                groupCommandOffset = totalCommandCount;
-                groupCommandCount = 0;
-            }
-
-            var allocation = batch.Allocation;
-            var primaryCount = getPrimaryInstanceCount(in allocation, batch.InstanceCount);
-            ensureIndirectCommandCapacity(totalCommandCount + 2);
-            var commandCount = writeIndirectSplitCommands(in allocation,
-                batch.InstanceCount,
-                primaryCount,
-                indirectCommands.AsSpan(totalCommandCount));
-
-            totalCommandCount += commandCount;
-            groupCommandCount += commandCount;
-        }
-
-        if (groupCommandCount != 0)
-            indirectBatchGroups.Add(new(groupMatrix, groupBuffer, groupCommandOffset * commandStride, groupCommandCount));
-
-        if (totalCommandCount == 0) return false;
-
-        indirectBuffer.SetData(indirectCommands.AsSpan(0, totalCommandCount));
-
-        foreach (var group in indirectBatchGroups)
-        {
-            var combinedMatrix = group.CombinedMatrix;
-            combinedMatrixUniform.SetValue(combinedMatrix);
-            pipeline.BindVertexBuffer(1, group.InstanceBuffer, 0);
-            pipeline.DrawIndirect(new(indirectBuffer, group.CommandOffset, group.CommandCount));
-        }
-
-        return true;
-    }
-
-    void drawBatch(scoped ref readonly TransientBufferAllocation allocation,
-        int count,
-        int usedBytes,
-        scoped ref readonly Matrix4x4 combinedMatrix,
-        bool markSubmitted = true,
-        DrawIndirectCommand preparedIndirectCommand = default,
-        bool allowInlineIndirectUpload = true)
-    {
-        var primaryCount = getPrimaryInstanceCount(in allocation, count);
-
-        var indirectCommand = preparedIndirectCommand;
-        if (indirectCommand.DrawCount != 0 ||
-            allowInlineIndirectUpload && tryPrepareIndirectSplitDraw(in allocation, count, primaryCount, out indirectCommand))
-        {
-            combinedMatrixUniform.SetValue(combinedMatrix);
-            pipeline.BindVertexBuffer(1, allocation.Buffer, 0);
-            pipeline.DrawIndirect(indirectCommand);
-
-            if (markSubmitted) instanceBuffer.MarkSubmitted(in allocation, usedBytes);
-            return;
-        }
-
-        combinedMatrixUniform.SetValue(combinedMatrix);
-
-        pipeline.BindVertexBuffer(1, allocation.Buffer, allocation.Offset);
-        pipeline.DrawInstanced(new(VertexPerLine, primaryCount));
-
-        if (allocation.IsSplit && count > primaryCount)
-        {
-            pipeline.BindVertexBuffer(1, allocation.Buffer, 0);
-            pipeline.DrawInstanced(new(VertexPerLine, count - primaryCount));
-        }
-
-        if (markSubmitted) instanceBuffer.MarkSubmitted(in allocation, usedBytes);
-    }
-
-    bool tryPrepareIndirectSplitDraw(scoped ref readonly TransientBufferAllocation allocation,
-        int count,
-        int primaryCount,
-        out DrawIndirectCommand command)
-    {
-        command = default;
-        if (!canUseIndirectSplitDraw(in allocation, count, primaryCount))
-            return false;
-
-        ensureIndirectCommandCapacity(2);
-        var commandCount = writeIndirectSplitCommands(in allocation,
-            count,
-            primaryCount,
-            indirectCommands);
-
-        indirectBuffer.SetData(indirectCommands.AsSpan(0, commandCount));
-        command = new(indirectBuffer, 0, commandCount);
-        return true;
-    }
-
-    int writeIndirectSplitCommands(scoped ref readonly TransientBufferAllocation allocation,
-        int count,
-        int primaryCount,
-        Span<IndirectDrawCommand> commands)
-    {
-        var commandCount = 0;
-        if (primaryCount > 0)
-            commands[commandCount++] = new(VertexPerLine,
-                (uint)primaryCount,
-                0,
-                checked((uint)(allocation.Offset / instanceStride)));
-
-        var secondaryCount = count - primaryCount;
-        if (secondaryCount > 0)
-            commands[commandCount++] = new(VertexPerLine, (uint)secondaryCount);
-
-        return commandCount;
-    }
-
-    int getPrimaryInstanceCount(scoped ref readonly TransientBufferAllocation allocation, int count)
-        => allocation.IsSplit ? int.Min(count, allocation.PrimarySize / instanceStride) : count;
-
-    bool canUseIndirectSplitDraw(scoped ref readonly TransientBufferAllocation allocation,
-        int count,
-        int primaryCount)
-        => useIndirectMultiDraws && allocation.IsSplit && count > primaryCount;
-
-    void ensureIndirectCommandCapacity(int commandCount)
-    {
-        if (indirectCommands.Length >= commandCount) return;
-
-        var capacity = indirectCommands.Length;
-        while (capacity < commandCount)
-            capacity = checked(capacity * 2);
-
-        Array.Resize(ref indirectCommands, capacity);
-    }
-
-    static RenderPipelineDescription CreatePipelineDescription(ShaderSourceLanguage language, bool useManualColorCorrection)
+    static RenderPipelineDescription CreatePipelineDescription(ShaderSourceLanguage language,
+        bool useManualColorCorrection,
+        bool useSrgbFramebuffer)
     {
         var instanceStride = Unsafe.SizeOf<LineInstance>();
 
         return new(nameof(LineRenderer),
-            createShaderSource(language, useManualColorCorrection),
+            createShaderSource(language, useManualColorCorrection, useSrgbFramebuffer),
             new(),
             new(
                 new VertexBufferLayout(0,
@@ -411,51 +168,17 @@ public sealed class LineRenderer : ILineRenderer
             PrimitiveTopology.Lines);
     }
 
-    static ShaderProgramSource createShaderSource(ShaderSourceLanguage language, bool useManualColorCorrection)
+    static ShaderProgramSource createShaderSource(ShaderSourceLanguage language,
+        bool useManualColorCorrection,
+        bool useSrgbFramebuffer)
         => language switch
         {
-            ShaderSourceLanguage.Hlsl => new(nameof(LineRenderer),
-                createHlslVertexShader(),
-                createHlslFragmentShader(useManualColorCorrection)),
             ShaderSourceLanguage.Wgsl => new(nameof(LineRenderer),
                 createWgslVertexShader(),
-                createWgslFragmentShader(),
+                createWgslFragmentShader(useSrgbFramebuffer),
                 ShaderSourceLanguage.Wgsl),
             _ => throw new ArgumentOutOfRangeException(nameof(language), language, null)
         };
-
-    static string createHlslVertexShader()
-        => """
-           #pragma pack_matrix(row_major)
-
-           cbuffer TransformUniforms : register(b0, space1)
-           {
-               float4x4 u_combinedMatrix;
-           };
-
-           struct VertexInput
-           {
-               [[vk::location(0)]] float Vertex : TEXCOORD0;
-               [[vk::location(1)]] float3 From : TEXCOORD1;
-               [[vk::location(2)]] float3 To : TEXCOORD2;
-               [[vk::location(3)]] float4 Color : TEXCOORD3;
-           };
-
-           struct VertexOutput
-           {
-               float4 Position : SV_Position;
-               float4 Color : COLOR0;
-           };
-
-           VertexOutput main(VertexInput input)
-           {
-               VertexOutput output;
-               float3 position = lerp(input.From, input.To, input.Vertex);
-               output.Position = mul(float4(position, 1), u_combinedMatrix);
-               output.Color = input.Color;
-               return output;
-           }
-           """;
 
     static string createWgslVertexShader()
         => """
@@ -495,48 +218,38 @@ public sealed class LineRenderer : ILineRenderer
            }
            """;
 
-    static string createWgslFragmentShader()
-        => """
-           struct FragmentInput {
-               @location(0) color: vec4<f32>,
-           };
-
-           @fragment
-           fn main(input: FragmentInput) -> @location(0) vec4<f32> {
-               return input.color;
-           }
-           """;
-
-    static string createHlslFragmentShader(bool useManualColorCorrection)
-        => useManualColorCorrection
+    static string createWgslFragmentShader(bool useSrgbFramebuffer)
+        => useSrgbFramebuffer
             ? """
-              struct FragmentInput
-              {
-                  float4 Position : SV_Position;
-                  float4 Color : COLOR0;
+              struct FragmentInput {
+                  @location(0) color: vec4<f32>,
               };
 
-              float4 apply_output_color(float4 color)
-              {
-                  color.rgb = pow(saturate(color.rgb), float3(2.2, 2.2, 2.2));
-                  return color;
+              fn srgb_to_linear_channel(value: f32) -> f32 {
+                  let v = clamp(value, 0.0, 1.0);
+                  return select(pow((v + 0.055) / 1.055, 2.4), v / 12.92, v <= 0.04045);
               }
 
-              float4 main(FragmentInput input) : SV_Target0
-              {
-                  return apply_output_color(input.Color);
+              fn srgb_to_linear(color: vec3<f32>) -> vec3<f32> {
+                  return vec3<f32>(
+                      srgb_to_linear_channel(color.r),
+                      srgb_to_linear_channel(color.g),
+                      srgb_to_linear_channel(color.b));
+              }
+
+              @fragment
+              fn main(input: FragmentInput) -> @location(0) vec4<f32> {
+                  return vec4<f32>(srgb_to_linear(input.color.rgb), input.color.a);
               }
               """
             : """
-              struct FragmentInput
-              {
-                  float4 Position : SV_Position;
-                  float4 Color : COLOR0;
+              struct FragmentInput {
+                  @location(0) color: vec4<f32>,
               };
 
-              float4 main(FragmentInput input) : SV_Target0
-              {
-                  return input.Color;
+              @fragment
+              fn main(input: FragmentInput) -> @location(0) vec4<f32> {
+                  return input.color;
               }
               """;
 
@@ -548,7 +261,6 @@ public sealed class LineRenderer : ILineRenderer
 
         if (rendering) ((IRenderer)this).EndRendering();
 
-        indirectBuffer?.Dispose();
         vertexBuffer.Dispose();
         instanceBuffer.Dispose();
         pipeline.Dispose();
@@ -556,30 +268,8 @@ public sealed class LineRenderer : ILineRenderer
         disposed = true;
     }
 
-    void ensureInstanceBatch()
-    {
-        if (instanceData != nint.Zero) return;
-
-        instanceAllocation = instanceBuffer.Allocate(instanceStride * instanceBatchCapacity);
-        instanceData = instanceAllocation.Data;
-        instanceDataSecondary = instanceAllocation.SecondaryData;
-        primaryInstanceCapacity = instanceAllocation.PrimarySize / instanceStride;
-    }
-
-    void resetInstanceBatch()
-    {
-        instanceAllocation = default;
-        instanceData = nint.Zero;
-        instanceDataSecondary = nint.Zero;
-        instanceCount = 0;
-        primaryInstanceCapacity = 0;
-    }
-
     static int OffsetOf(string fieldName)
         => (int)Marshal.OffsetOf<LineInstance>(fieldName);
-
-    static int getRingCapacity(int batchSizeInBytes)
-        => int.Max(checked(batchSizeInBytes * 8), 64 * 1024);
 
     [StructLayout(LayoutKind.Sequential)]
     struct LineInstance
@@ -588,16 +278,4 @@ public sealed class LineRenderer : ILineRenderer
         public Vector3 To;
         public Rgba32 Color;
     }
-
-    readonly record struct LineBatch(
-        TransientBufferAllocation Allocation,
-        int InstanceCount,
-        int UsedBytes,
-        Matrix4x4 CombinedMatrix);
-
-    readonly record struct LineIndirectBatchGroup(
-        Matrix4x4 CombinedMatrix,
-        IGraphicsBuffer InstanceBuffer,
-        int CommandOffset,
-        int CommandCount);
 }

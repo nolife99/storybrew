@@ -5,14 +5,16 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Ahjo.Wgpu;
+using Ahjo.Wgpu.Native;
+using Renderers;
 using Shaders;
-using Silk.NET.WebGPU;
-using PrimitiveTopology = Renderers.PrimitiveTopology;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
-using WgpuPrimitiveTopology = Silk.NET.WebGPU.PrimitiveTopology;
-using WgpuVertexAttribute = Silk.NET.WebGPU.VertexAttribute;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
+using WgpuBuffer = Ahjo.Wgpu.Buffer;
+using VertexAttribute = Ahjo.Wgpu.VertexAttribute;
 
-public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
+public sealed class WebGpuRenderPipeline : IRenderPipeline
 {
     const int UniformBufferSize = 1024 * 1024;
     const int UniformBindingSize = 256;
@@ -20,26 +22,27 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
 
     readonly WebGpuGraphicsBackend backend;
     readonly WebGpuGraphicsDevice device;
-    readonly Dictionary<BlendingFactorState, WebGpuHandle<RenderPipeline>> renderPipelines = [];
+    readonly Dictionary<BlendingFactorState, RenderPipeline> renderPipelines = [];
     readonly VertexBufferBinding[] vertexBuffers;
     BlendingFactorState boundBlendState;
-    RenderPipeline* boundPipeline;
+    RenderPipeline boundPipeline;
 
     uint boundRenderPassSerial = uint.MaxValue;
+    uint boundRenderStateSerial = uint.MaxValue;
     uint boundUniformOffset = uint.MaxValue;
     uint currentUniformOffset;
     bool hasUniformValue, registeredForUniformFlush, disposed;
-    PipelineLayout* pipelineLayout;
-    BindGroup* uniformBindGroup;
-    BindGroupLayout* uniformBindGroupLayout;
-    WgpuBuffer* uniformBuffer;
+    PipelineLayout pipelineLayout;
+    BindGroup uniformBindGroup;
+    BindGroupLayout uniformBindGroupLayout;
+    WgpuBuffer uniformBuffer;
     int uniformDirtyEnd;
     int uniformDirtyStart = int.MaxValue;
     uint uniformFrameSerial;
     int uniformOffset, currentUniformSize;
     byte[] uniformShadow;
 
-    ShaderModule* vertexShader, fragmentShader;
+    ShaderModule vertexShader, fragmentShader;
 
     public WebGpuRenderPipeline(WebGpuGraphicsBackend backend, RenderPipelineDescription description)
     {
@@ -70,9 +73,11 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         }
     }
 
-    internal BindGroupLayout* TextureBindGroupLayout { get; private set; }
+    static ReadOnlySpan<byte> MainEntryPoint => "main"u8;
 
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, (nint)boundPipeline);
+    internal BindGroupLayout TextureBindGroupLayout { get; private set; }
+
+    public GraphicsResourceHandle NativeHandle => new(backend.Name, boundPipeline.NativeHandle());
     public RenderPipelineDescription Description { get; }
 
     public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name)
@@ -87,8 +92,8 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
     public void Bind()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-
-        if (backend.TryGetReadyRenderPass(out var renderPass)) EnsureBound(renderPass);
+        if (backend.HasReadyRenderPass)
+            EnsureBound();
     }
 
     public void Unbind() { }
@@ -119,57 +124,19 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
     public void Draw(DrawCommand command)
     {
         if (command.VertexCount == 0) return;
+        if (!backend.TryRequireRenderPass()) return;
 
-        if (!backend.TryRequireRenderPass(out var renderPass)) return;
-
-        EnsureBound(renderPass);
-        backend.Api.RenderPassEncoderDraw(renderPass,
-            (uint)command.VertexCount,
-            1,
-            (uint)command.FirstVertex,
-            0);
+        EnsureBound();
+        backend.Draw((uint)command.VertexCount, 1, (uint)command.FirstVertex);
     }
 
     public void DrawInstanced(DrawInstancedCommand command)
     {
         if (command.VertexCount == 0 || command.InstanceCount == 0) return;
+        if (!backend.TryRequireRenderPass()) return;
 
-        if (!backend.TryRequireRenderPass(out var renderPass)) return;
-
-        EnsureBound(renderPass);
-        backend.Api.RenderPassEncoderDraw(renderPass,
-            (uint)command.VertexCount,
-            (uint)command.InstanceCount,
-            (uint)command.FirstVertex,
-            0);
-    }
-
-    public void DrawIndirect(DrawIndirectCommand command)
-    {
-        if (command.DrawCount == 0) return;
-
-        if (command.Offset < 0)
-            throw new ArgumentOutOfRangeException(nameof(command), command.Offset, "Offset must be non-negative.");
-
-        if (command.DrawCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(command), command.DrawCount, "Draw count must be non-negative.");
-
-        if (command.Buffer is not WebGpuGraphicsBuffer webGpuBuffer)
-            throw new InvalidOperationException($"{nameof(WebGpuRenderPipeline)} can only draw from WebGPU indirect buffers");
-
-        if (webGpuBuffer.BufferHandle is null)
-            return;
-
-        if (!backend.TryRequireRenderPass(out var renderPass)) return;
-
-        EnsureBound(renderPass);
-
-        var stride = Unsafe.SizeOf<IndirectDrawCommand>();
-        var offset = webGpuBuffer.BindingOffset + command.Offset;
-        for (var i = 0; i < command.DrawCount; ++i)
-            backend.Api.RenderPassEncoderDrawIndirect(renderPass,
-                webGpuBuffer.BufferHandle,
-                (ulong)(offset + i * stride));
+        EnsureBound();
+        backend.Draw((uint)command.VertexCount, (uint)command.InstanceCount, (uint)command.FirstVertex);
     }
 
     public void Dispose()
@@ -177,48 +144,50 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (disposed) return;
 
         foreach (var pipeline in renderPipelines.Values)
-            backend.RetireRenderPipeline(pipeline.Pointer);
+            backend.DeferredReleases.Retire(pipeline);
 
-        if (uniformBindGroup is not null) backend.RetireBindGroup(uniformBindGroup);
-        if (uniformBuffer is not null) backend.RetireBuffer(uniformBuffer);
+        if (!uniformBindGroup.IsNull) backend.DeferredReleases.Retire(uniformBindGroup);
+        if (!uniformBuffer.IsNull) backend.DeferredReleases.Retire(uniformBuffer);
 
         uniformShadow = null;
 
-        if (pipelineLayout is not null) backend.Api.PipelineLayoutRelease(pipelineLayout);
-        if (TextureBindGroupLayout is not null) backend.Api.BindGroupLayoutRelease(TextureBindGroupLayout);
-        if (uniformBindGroupLayout is not null) backend.Api.BindGroupLayoutRelease(uniformBindGroupLayout);
-        if (fragmentShader is not null) backend.Api.ShaderModuleRelease(fragmentShader);
-        if (vertexShader is not null) backend.Api.ShaderModuleRelease(vertexShader);
+        if (!pipelineLayout.IsNull) pipelineLayout.Dispose();
+        if (!TextureBindGroupLayout.IsNull) TextureBindGroupLayout.Dispose();
+        if (!uniformBindGroupLayout.IsNull) uniformBindGroupLayout.Dispose();
+        if (!fragmentShader.IsNull) fragmentShader.Dispose();
+        if (!vertexShader.IsNull) vertexShader.Dispose();
 
         renderPipelines.Clear();
-        uniformBindGroup = null;
-        uniformBuffer = null;
-        pipelineLayout = null;
-        TextureBindGroupLayout = null;
-        uniformBindGroupLayout = null;
-        fragmentShader = null;
-        vertexShader = null;
+        uniformBindGroup = default;
+        uniformBuffer = default;
+        pipelineLayout = default;
+        TextureBindGroupLayout = default;
+        uniformBindGroupLayout = default;
+        fragmentShader = default;
+        vertexShader = default;
         disposed = true;
     }
 
-    internal void EnsureBound(RenderPassEncoder* renderPass)
+    internal void EnsureBound()
     {
         var currentSerial = backend.RenderPassSerial;
         var newPass = boundRenderPassSerial != currentSerial;
         var blendState = device.BlendState;
         var pipeline = getRenderPipeline(blendState);
 
-        if (newPass || boundPipeline != pipeline || boundBlendState != blendState)
+        if (newPass || boundPipeline.NativeHandle() != pipeline.NativeHandle() || boundBlendState != blendState)
         {
             backend.SetRenderPipeline(pipeline);
             boundPipeline = pipeline;
             boundBlendState = blendState;
         }
 
-        if (newPass)
+        var renderStateSerial = device.RenderPassStateSerial;
+        if (newPass || boundRenderStateSerial != renderStateSerial)
         {
-            device.ApplyRenderPassState(renderPass);
+            device.ApplyRenderPassState();
             boundRenderPassSerial = currentSerial;
+            boundRenderStateSerial = renderStateSerial;
             boundUniformOffset = uint.MaxValue;
         }
 
@@ -241,9 +210,9 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
                 throw new InvalidOperationException($"Vertex buffer slot {layouts[i].Slot} is not bound");
 
             var handle = webGpuBuffer.BufferHandle;
-            if (handle is null) continue;
+            if (handle.IsNull) continue;
             if (binding.BoundSerial == currentSerial &&
-                binding.BoundHandle == handle &&
+                binding.BoundHandle.NativeHandle() == handle.NativeHandle() &&
                 binding.BoundOffset == binding.Offset)
                 continue;
 
@@ -298,11 +267,10 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         var end = offset + size;
         if (end > uniformDirtyEnd) uniformDirtyEnd = end;
 
-        if (!registeredForUniformFlush)
-        {
-            backend.RegisterPipelineForUniformFlush(this);
-            registeredForUniformFlush = true;
-        }
+        if (registeredForUniformFlush) return;
+
+        backend.RegisterPipelineForUniformFlush(this);
+        registeredForUniformFlush = true;
     }
 
     internal void FlushUniforms()
@@ -311,35 +279,32 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         if (uniformDirtyStart >= uniformDirtyEnd) return;
 
         var length = uniformDirtyEnd - uniformDirtyStart;
-        var source = uniformShadow.AsSpan(uniformDirtyStart, length);
-        backend.Api.QueueWriteBuffer(backend.QueueHandle,
-            uniformBuffer,
+        backend.QueueHandle.WriteBuffer(uniformBuffer,
             (ulong)uniformDirtyStart,
-            source,
-            (nuint)length);
+            uniformShadow.AsSpan(uniformDirtyStart, length));
 
         uniformDirtyStart = int.MaxValue;
         uniformDirtyEnd = 0;
     }
 
-    RenderPipeline* getRenderPipeline(BlendingFactorState blendState)
+    RenderPipeline getRenderPipeline(BlendingFactorState blendState)
     {
-        if (renderPipelines.TryGetValue(blendState, out var pipeline)) return pipeline.Pointer;
+        if (renderPipelines.TryGetValue(blendState, out var pipeline)) return pipeline;
 
         var renderPipeline = createRenderPipeline(blendState);
-        renderPipelines.Add(blendState, new(renderPipeline));
+        renderPipelines.Add(blendState, renderPipeline);
         return renderPipeline;
     }
 
-    RenderPipeline* createRenderPipeline(BlendingFactorState blendState)
+    RenderPipeline createRenderPipeline(BlendingFactorState blendState)
     {
         var attributeCount = 0;
         foreach (var buffer in Description.VertexInput.Buffers)
         foreach (var element in buffer.Elements)
             attributeCount += element.Format.GetLocationCount();
 
-        var bufferLayouts = new VertexBufferLayout[Description.VertexInput.Buffers.Length];
-        var attributes = new WgpuVertexAttribute[attributeCount];
+        Span<VertexBufferLayout> bufferLayouts = stackalloc VertexBufferLayout[Description.VertexInput.Buffers.Length];
+        Span<VertexAttribute> attributes = stackalloc VertexAttribute[attributeCount];
         var attributeIndex = 0;
 
         for (var i = 0; i < Description.VertexInput.Buffers.Length; ++i)
@@ -347,338 +312,130 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
             var layout = Description.VertexInput.Buffers[i];
             var firstAttribute = attributeIndex;
 
-            bufferLayouts[i] = new()
-            {
-                ArrayStride = (ulong)layout.Stride,
-                StepMode = toStepMode(layout.InputRate)
-            };
-
             foreach (var element in layout.Elements)
             {
                 var locationCount = element.Format.GetLocationCount();
                 for (var column = 0; column < locationCount; ++column)
                 {
-                    attributes[attributeIndex] = new()
-                    {
-                        Format = toVertexFormat(element.Format),
-                        Offset = (ulong)(element.Offset + element.Format.GetLocationOffset(column)),
-                        ShaderLocation = (uint)attributeIndex
-                    };
+                    attributes[attributeIndex] = new(toVertexFormat(element.Format),
+                        (ulong)(element.Offset + element.Format.GetLocationOffset(column)),
+                        (uint)attributeIndex);
 
                     ++attributeIndex;
                 }
             }
 
-            bufferLayouts[i].AttributeCount = (nuint)(attributeIndex - firstAttribute);
+            bufferLayouts[i] = new((ulong)layout.Stride,
+                attributeIndex - firstAttribute,
+                toStepMode(layout.InputRate));
         }
 
-        fixed (WgpuVertexAttribute* attributesPointer = attributes)
-        {
-            attributeIndex = 0;
-            for (var i = 0; i < bufferLayouts.Length; ++i)
-            {
-                bufferLayouts[i].Attributes = attributesPointer + attributeIndex;
-                attributeIndex += (int)bufferLayouts[i].AttributeCount;
-            }
-
-            return createRenderPipeline(blendState, bufferLayouts);
-        }
+        return createRenderPipeline(blendState, bufferLayouts, attributes);
     }
 
-    RenderPipeline* createRenderPipeline(BlendingFactorState blendState,
-        VertexBufferLayout[] bufferLayouts)
+    RenderPipeline createRenderPipeline(BlendingFactorState blendState,
+        scoped ReadOnlySpan<VertexBufferLayout> bufferLayouts,
+        scoped ReadOnlySpan<VertexAttribute> attributes)
     {
-        var entryPoint = "main\0"u8.ToArray();
-
-        fixed (byte* entryPointPointer = entryPoint)
-        fixed (VertexBufferLayout* bufferLayoutsPointer = bufferLayouts)
+        var blend = new WGPUBlendState
         {
-            BlendState blend = new()
+            color = new()
             {
-                Color = new()
-                {
-                    Operation = BlendOperation.Add,
-                    SrcFactor = toBlendFactor(blendState.Source),
-                    DstFactor = toBlendFactor(blendState.Destination)
-                },
-                Alpha = new()
-                {
-                    Operation = BlendOperation.Add,
-                    SrcFactor = toBlendFactor(blendState.AlphaSource),
-                    DstFactor = toBlendFactor(blendState.AlphaDestination)
-                }
-            };
-
-            ColorTargetState colorTarget = new()
+                operation = WGPUBlendOperation.Add,
+                srcFactor = toBlendFactor(blendState.Source),
+                dstFactor = toBlendFactor(blendState.Destination)
+            },
+            alpha = new()
             {
-                Format = backend.SurfaceFormat,
-                Blend = blendState.Enabled ? &blend : null,
-                WriteMask = ColorWriteMask.All
-            };
-
-            FragmentState fragmentState = new()
-            {
-                Module = fragmentShader,
-                EntryPoint = entryPointPointer,
-                TargetCount = 1,
-                Targets = &colorTarget
-            };
-
-            RenderPipelineDescriptor descriptor = new()
-            {
-                Layout = pipelineLayout,
-                Vertex = new()
-                {
-                    Module = vertexShader,
-                    EntryPoint = entryPointPointer,
-                    BufferCount = (nuint)bufferLayouts.Length,
-                    Buffers = bufferLayoutsPointer
-                },
-                Primitive = new()
-                {
-                    Topology = toPrimitiveTopology(Description.Topology),
-                    FrontFace = FrontFace.Ccw,
-                    CullMode = CullMode.None
-                },
-                Multisample = new()
-                {
-                    Count = 1,
-                    Mask = uint.MaxValue
-                },
-                Fragment = &fragmentState
-            };
-
-            RenderPipeline* pipeline = null;
-            var validationError = backend.CaptureValidationError(() =>
-                pipeline = backend.Api.DeviceCreateRenderPipeline(backend.DeviceHandle, in descriptor));
-
-            if (validationError is not null)
-            {
-                if (pipeline is not null)
-                    backend.Api.RenderPipelineRelease(pipeline);
-
-                throw new InvalidOperationException(
-                    $"Unable to create WebGPU render pipeline {Description.Name}: {validationError}");
-            }
-
-            return pipeline is not null
-                ? pipeline
-                : throw new InvalidOperationException($"Unable to create WebGPU render pipeline {Description.Name}");
-        }
-    }
-
-    ShaderModule* createShaderModule(string source)
-    {
-        var bytes = Encoding.UTF8.GetBytes(source + "\0");
-        fixed (byte* sourcePointer = bytes)
-        {
-            ShaderModuleWGSLDescriptor wgslDescriptor = new()
-            {
-                Chain = new()
-                {
-                    SType = SType.ShaderModuleWgslDescriptor
-                },
-                Code = sourcePointer
-            };
-
-            ShaderModuleDescriptor descriptor = new()
-            {
-                NextInChain = &wgslDescriptor.Chain
-            };
-
-            var shader = backend.Api.DeviceCreateShaderModule(backend.DeviceHandle, in descriptor);
-            return shader is not null
-                ? shader
-                : throw new InvalidOperationException($"Unable to create WebGPU shader module {Description.Name}");
-        }
-    }
-
-    BindGroupLayout* createUniformBindGroupLayout()
-    {
-        BindGroupLayoutEntry entry = new()
-        {
-            Binding = 0,
-            Visibility = ShaderStage.Vertex,
-            Buffer = new()
-            {
-                Type = BufferBindingType.Uniform,
-                HasDynamicOffset = true
+                operation = WGPUBlendOperation.Add,
+                srcFactor = toBlendFactor(blendState.AlphaSource),
+                dstFactor = toBlendFactor(blendState.AlphaDestination)
             }
         };
 
-        BindGroupLayoutDescriptor descriptor = new()
+        Span<ColorTargetState> targets = stackalloc ColorTargetState[1];
+        targets[0] = new(backend.SurfaceFormat)
         {
-            EntryCount = 1,
-            Entries = &entry
+            Blend = blendState.Enabled ? blend : null,
+            WriteMask = ColorWriteMask.All
         };
 
-        BindGroupLayout* layout = null;
-        var validationError = backend.CaptureValidationError(() =>
-            layout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
-
-        if (validationError is not null)
+        var primitive = new PrimitiveState
         {
-            if (layout is not null)
-                backend.Api.BindGroupLayoutRelease(layout);
+            Topology = toPrimitiveTopology(Description.Topology),
+            FrontFace = WGPUFrontFace.CCW,
+            CullMode = WGPUCullMode.None
+        };
 
-            throw new InvalidOperationException($"Unable to create WebGPU uniform bind group layout: {validationError}");
-        }
-
-        return layout is not null
-            ? layout
-            : throw new InvalidOperationException("Unable to create WebGPU uniform bind group layout");
+        return backend.DeviceHandle.CreateRenderPipeline(vertexShader,
+            MainEntryPoint,
+            fragmentShader,
+            MainEntryPoint,
+            targets,
+            bufferLayouts,
+            attributes,
+            pipelineLayout,
+            primitive,
+            MultisampleState.Default);
     }
 
-    BindGroupLayout* createTextureBindGroupLayout(Backend.PipelineLayout layout)
+    ShaderModule createShaderModule(string source)
+    {
+        var bytes = Encoding.UTF8.GetBytes(source);
+        var descriptor = new ShaderModuleDescriptor
+        {
+            Source = ShaderSource.FromWgsl(bytes)
+        };
+
+        return backend.DeviceHandle.CreateShaderModule(in descriptor);
+    }
+
+    BindGroupLayout createUniformBindGroupLayout() 
+        => backend.DeviceHandle.CreateBindGroupLayout([BindGroupLayoutEntry.Buffer(0,
+        ShaderStage.Vertex,
+        WGPUBufferBindingType.Uniform,
+        true)]);
+
+    BindGroupLayout createTextureBindGroupLayout(Backend.PipelineLayout layout)
     {
         var textureBindings = layout.TextureBindings;
-        if (textureBindings.Length == 0) return null;
+        if (textureBindings.Length == 0) return default;
 
         if (textureBindings.Length > 1)
             throw new NotSupportedException("Core WebGPU renderer currently supports one texture binding layout");
 
-        var capacity = textureBindings[0].Capacity;
-        if (backend.UseNativeNonUniformTextureIndexing)
-            return createNativeTextureArrayBindGroupLayout(capacity);
+        return createCoreTextureBindGroupLayout(textureBindings[0].Capacity);
+    }
 
-        var entries = new BindGroupLayoutEntry[checked(capacity * 2)];
+    BindGroupLayout createCoreTextureBindGroupLayout(int capacity)
+    {
+        var entryCount = checked(capacity * 2);
+        if (backend.MaxBindingsPerBindGroup != 0 && entryCount > backend.MaxBindingsPerBindGroup)
+            throw new InvalidOperationException($"Texture binding layout requires {entryCount} bindings, but device limit is {backend.MaxBindingsPerBindGroup}");
+
+        using var entries = TempList.Create<BindGroupLayoutEntry>(entryCount);
         for (var i = 0; i < capacity; ++i)
-        {
-            entries[i * 2] = new()
-            {
-                Binding = (uint)(i * 2),
-                Visibility = ShaderStage.Fragment,
-                Texture = new()
-                {
-                    SampleType = TextureSampleType.Float,
-                    ViewDimension = TextureViewDimension.Dimension2D
-                }
-            };
+            entries.AddRange([
+                BindGroupLayoutEntry.Texture((uint)(i * 2),
+                    ShaderStage.Fragment),
+                BindGroupLayoutEntry.Sampler((uint)(i * 2 + 1),
+                    ShaderStage.Fragment)
+            ]);
 
-            entries[i * 2 + 1] = new()
-            {
-                Binding = (uint)(i * 2 + 1),
-                Visibility = ShaderStage.Fragment,
-                Sampler = new()
-                {
-                    Type = SamplerBindingType.Filtering
-                }
-            };
-        }
-
-        fixed (BindGroupLayoutEntry* entriesPointer = entries)
-        {
-            BindGroupLayoutDescriptor descriptor = new()
-            {
-                EntryCount = (nuint)entries.Length,
-                Entries = entriesPointer
-            };
-
-            BindGroupLayout* bindGroupLayout = null;
-            var validationError = backend.CaptureValidationError(() =>
-                bindGroupLayout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
-
-            if (validationError is not null)
-            {
-                if (bindGroupLayout is not null)
-                    backend.Api.BindGroupLayoutRelease(bindGroupLayout);
-
-                throw new InvalidOperationException($"Unable to create WebGPU texture bind group layout: {validationError}");
-            }
-
-            return bindGroupLayout is not null
-                ? bindGroupLayout
-                : throw new InvalidOperationException("Unable to create WebGPU texture bind group layout");
-        }
+        return backend.DeviceHandle.CreateBindGroupLayout(entries.AsReadOnlySpan());
     }
 
-    BindGroupLayout* createNativeTextureArrayBindGroupLayout(int capacity)
+    PipelineLayout createPipelineLayout()
     {
-        var entries = stackalloc BindGroupLayoutEntry[2];
-        WgpuNativeBindGroupLayoutEntryExtras textureExtras = new()
-        {
-            Chain = new()
-            {
-                SType = WebGpuNativeExtensions.NativeSType(
-                    WebGpuNativeExtensions.STypeBindGroupLayoutEntryExtras)
-            },
-            Count = (uint)capacity
-        };
+        var layouts = TextureBindGroupLayout.IsNull
+            ? stackalloc BindGroupLayout[1]
+            : stackalloc BindGroupLayout[2];
 
-        entries[0] = new()
-        {
-            NextInChain = &textureExtras.Chain,
-            Binding = 0,
-            Visibility = ShaderStage.Fragment,
-            Texture = new()
-            {
-                SampleType = TextureSampleType.Float,
-                ViewDimension = TextureViewDimension.Dimension2D
-            }
-        };
-
-        entries[1] = new()
-        {
-            Binding = 1,
-            Visibility = ShaderStage.Fragment,
-            Sampler = new()
-            {
-                Type = SamplerBindingType.Filtering
-            }
-        };
-
-        BindGroupLayoutDescriptor descriptor = new()
-        {
-            EntryCount = 2,
-            Entries = entries
-        };
-
-        BindGroupLayout* bindGroupLayout = null;
-        var validationError = backend.CaptureValidationError(() =>
-            bindGroupLayout = backend.Api.DeviceCreateBindGroupLayout(backend.DeviceHandle, in descriptor));
-
-        if (validationError is not null)
-        {
-            if (bindGroupLayout is not null)
-                backend.Api.BindGroupLayoutRelease(bindGroupLayout);
-
-            throw new InvalidOperationException($"Unable to create WebGPU texture array bind group layout: {validationError}");
-        }
-
-        return bindGroupLayout is not null
-            ? bindGroupLayout
-            : throw new InvalidOperationException("Unable to create WebGPU texture array bind group layout");
-    }
-
-    PipelineLayout* createPipelineLayout()
-    {
-        var layoutCount = TextureBindGroupLayout is null ? 1 : 2;
-        var layouts = stackalloc BindGroupLayout*[layoutCount];
         layouts[0] = uniformBindGroupLayout;
-        if (TextureBindGroupLayout is not null)
+        if (!TextureBindGroupLayout.IsNull)
             layouts[1] = TextureBindGroupLayout;
 
-        PipelineLayoutDescriptor descriptor = new()
-        {
-            BindGroupLayoutCount = (nuint)layoutCount,
-            BindGroupLayouts = layouts
-        };
-
-        PipelineLayout* createdLayout = null;
-        var validationError = backend.CaptureValidationError(() =>
-            createdLayout = backend.Api.DeviceCreatePipelineLayout(backend.DeviceHandle, in descriptor));
-
-        if (validationError is not null)
-        {
-            if (createdLayout is not null)
-                backend.Api.PipelineLayoutRelease(createdLayout);
-
-            throw new InvalidOperationException($"Unable to create WebGPU pipeline layout: {validationError}");
-        }
-
-        return createdLayout is not null
-            ? createdLayout
-            : throw new InvalidOperationException("Unable to create WebGPU pipeline layout");
+        return backend.DeviceHandle.CreatePipelineLayout(layouts);
     }
 
     void createUniformBuffer()
@@ -689,70 +446,51 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
             Size = UniformBufferSize
         };
 
-        uniformBuffer = backend.Api.DeviceCreateBuffer(backend.DeviceHandle, in bufferDescriptor);
-        if (uniformBuffer is null)
-            throw new InvalidOperationException("Unable to create WebGPU uniform buffer");
-
+        uniformBuffer = backend.DeviceHandle.CreateBuffer(in bufferDescriptor);
         uniformShadow = GC.AllocateUninitializedArray<byte>(UniformBufferSize);
-
-        BindGroupEntry entry = new()
-        {
-            Binding = 0,
-            Buffer = uniformBuffer,
-            Size = UniformBindingSize
-        };
-
-        BindGroupDescriptor descriptor = new()
-        {
-            Layout = uniformBindGroupLayout,
-            EntryCount = 1,
-            Entries = &entry
-        };
-
-        uniformBindGroup = backend.Api.DeviceCreateBindGroup(backend.DeviceHandle, in descriptor);
-        if (uniformBindGroup is null)
-            throw new InvalidOperationException("Unable to create WebGPU uniform bind group");
+        uniformBindGroup = backend.DeviceHandle.CreateBindGroup(uniformBindGroupLayout, [BindGroupEntry.Buffer(0, uniformBuffer, 0, UniformBindingSize)]);
     }
 
     static int align(int value, int alignment)
         => value + alignment - 1 & ~(alignment - 1);
 
-    static WgpuPrimitiveTopology toPrimitiveTopology(PrimitiveTopology topology)
+    static WGPUPrimitiveTopology toPrimitiveTopology(PrimitiveTopology topology)
         => topology switch
         {
-            PrimitiveTopology.Lines => WgpuPrimitiveTopology.LineList,
-            PrimitiveTopology.Triangles => WgpuPrimitiveTopology.TriangleList,
+            PrimitiveTopology.Lines => WGPUPrimitiveTopology.LineList,
+            PrimitiveTopology.Triangles => WGPUPrimitiveTopology.TriangleList,
             _ => throw new ArgumentOutOfRangeException(nameof(topology), topology, null)
         };
 
-    static VertexStepMode toStepMode(VertexInputRate inputRate)
+    static WGPUVertexStepMode toStepMode(VertexInputRate inputRate)
         => inputRate switch
         {
-            VertexInputRate.Vertex => VertexStepMode.Vertex,
-            VertexInputRate.Instance => VertexStepMode.Instance,
+            VertexInputRate.Vertex => WGPUVertexStepMode.Vertex,
+            VertexInputRate.Instance => WGPUVertexStepMode.Instance,
             _ => throw new ArgumentOutOfRangeException(nameof(inputRate), inputRate, null)
         };
 
-    static VertexFormat toVertexFormat(VertexAttributeFormat format)
+    static WGPUVertexFormat toVertexFormat(VertexAttributeFormat format)
         => format switch
         {
-            VertexAttributeFormat.Float32 => VertexFormat.Float32,
-            VertexAttributeFormat.Float32x2 or VertexAttributeFormat.Float32Mat3x2 => VertexFormat.Float32x2,
-            VertexAttributeFormat.Float32x3 => VertexFormat.Float32x3,
-            VertexAttributeFormat.Float32x4 => VertexFormat.Float32x4,
-            VertexAttributeFormat.Float16x2 => VertexFormat.Float16x2,
-            VertexAttributeFormat.Float16x4 => VertexFormat.Float16x4,
-            VertexAttributeFormat.Unorm8x4 => VertexFormat.Unorm8x4,
+            VertexAttributeFormat.Float32 => WGPUVertexFormat.Float32,
+            VertexAttributeFormat.Float32x2 => WGPUVertexFormat.Float32x2,
+            VertexAttributeFormat.Float32Mat3x2 => WGPUVertexFormat.Float32x2,
+            VertexAttributeFormat.Float32x3 => WGPUVertexFormat.Float32x3,
+            VertexAttributeFormat.Float32x4 => WGPUVertexFormat.Float32x4,
+            VertexAttributeFormat.Float16x2 => WGPUVertexFormat.Float16x2,
+            VertexAttributeFormat.Float16x4 => WGPUVertexFormat.Float16x4,
+            VertexAttributeFormat.Unorm8x4 => WGPUVertexFormat.Unorm8x4,
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
         };
 
-    static BlendFactor toBlendFactor(Graphics.BlendFactor factor)
+    static WGPUBlendFactor toBlendFactor(BlendFactor factor)
         => factor switch
         {
-            Graphics.BlendFactor.Zero => BlendFactor.Zero,
-            Graphics.BlendFactor.One => BlendFactor.One,
-            Graphics.BlendFactor.SrcAlpha => BlendFactor.SrcAlpha,
-            Graphics.BlendFactor.OneMinusSrcAlpha => BlendFactor.OneMinusSrcAlpha,
+            BlendFactor.Zero => WGPUBlendFactor.Zero,
+            BlendFactor.One => WGPUBlendFactor.One,
+            BlendFactor.SrcAlpha => WGPUBlendFactor.SrcAlpha,
+            BlendFactor.OneMinusSrcAlpha => WGPUBlendFactor.OneMinusSrcAlpha,
             _ => throw new ArgumentOutOfRangeException(nameof(factor), factor, null)
         };
 
@@ -767,7 +505,7 @@ public unsafe sealed class WebGpuRenderPipeline : IRenderPipeline
         public WebGpuGraphicsBuffer Buffer;
         public int Offset;
         public uint BoundSerial;
-        public WgpuBuffer* BoundHandle;
+        public WgpuBuffer BoundHandle;
         public int BoundOffset;
     }
 }

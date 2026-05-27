@@ -10,8 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Graphics.Backend;
-using BrewLib.Graphics.Backend.OpenGL;
-using BrewLib.Graphics.Backend.SDL;
 using BrewLib.Graphics.Backend.WebGPU;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -88,8 +86,6 @@ public static class Program
 
     enum GraphicsBackendKind
     {
-        OpenGl,
-        SdlGpu,
         WebGpu
     }
 
@@ -114,7 +110,7 @@ public static class Program
 
         var displayDeviceVal = displayDevice.Value;
         var backendKind = getGraphicsBackendKind();
-        var window = createWindow(displayDeviceVal, backendKind, out var context);
+        var window = createWindow(backendKind);
         var graphicsBackend = createGraphicsBackend(backendKind, window);
         Settings = settingsTask.Result;
 
@@ -131,7 +127,6 @@ public static class Program
             using (AudioManager = audioCreateTask.Result)
                 runMainLoop(window,
                     editor,
-                    backendKind == GraphicsBackendKind.OpenGl,
                     TimeSpan.FromSeconds(1) / (Settings.UpdateRate > 0 ?
                         Settings.UpdateRate :
                         displayDeviceVal.RefreshRate),
@@ -143,12 +138,6 @@ public static class Program
         }
 
         Settings.Save();
-
-        if (context != 0)
-        {
-            SDL.GLDestroyContext(context);
-            SDL.GLUnloadLibrary();
-        }
 
         SDL.DestroyWindow(window);
         SDL.Quit();
@@ -162,96 +151,33 @@ public static class Program
     static IGraphicsBackend createGraphicsBackend(GraphicsBackendKind backendKind, nint window)
         => backendKind switch
         {
-            GraphicsBackendKind.OpenGl => new OpenGlGraphicsBackend(),
-            GraphicsBackendKind.SdlGpu => new SdlGraphicsBackend(window,
-#if DEBUG
-                true
-#else
-                false
-#endif
-            ),
             GraphicsBackendKind.WebGpu => new WebGpuGraphicsBackend(window),
             _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
         };
 
-    static nint createWindow(DisplayMode displayDevice, GraphicsBackendKind backendKind, out nint glContext)
+    static nint createWindow(GraphicsBackendKind backendKind)
         => backendKind switch
         {
-            GraphicsBackendKind.OpenGl => createOpenGlWindow(displayDevice, out glContext),
-            GraphicsBackendKind.SdlGpu => createSdlWindow(out glContext),
-            GraphicsBackendKind.WebGpu => createWebGpuWindow(out glContext),
+            GraphicsBackendKind.WebGpu => createWebGpuWindow(),
             _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
         };
 
-    static nint createWebGpuWindow(out nint glContext)
+    static nint createWebGpuWindow()
     {
         var flags = WindowFlags.Resizable | WindowFlags.Hidden;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             flags |= WindowFlags.Metal;
 
-        return createSdlWindow(out glContext, flags);
+        return createSdlWindow(flags);
     }
 
-    static nint createSdlWindow(out nint glContext)
-        => createSdlWindow(out glContext, WindowFlags.Resizable | WindowFlags.Hidden);
-
-    static nint createSdlWindow(out nint glContext, WindowFlags flags)
+    static nint createSdlWindow(WindowFlags flags)
     {
-        glContext = 0;
-
         var window = SDL.CreateWindow(Name, 0, 0, flags);
         if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
 
         Native.InitializeHandle(window);
         return window;
-    }
-
-    static nint createOpenGlWindow(DisplayMode displayDevice, out nint glContext)
-    {
-        if (!SDL.GLLoadLibrary(null)) throw new InvalidOperationException($"Unable to load OpenGL: {SDL.GetError()}");
-
-        const GLContextFlag contextFlags =
-#if DEBUG
-            GLContextFlag.Debug;
-#else
-            0;
-#endif
-
-        SetAttributeSafe(GLAttr.ContextProfileMask, (int)GLProfile.ES);
-        SetAttributeSafe(GLAttr.ContextFlags, (int)contextFlags);
-        SetAttributeSafe(GLAttr.ContextMajorVersion, 3);
-        SetAttributeSafe(GLAttr.ContextMinorVersion, 0);
-
-        ref var format = ref SDL.GetPixelFormatDetails(displayDevice.Format).AsRef<SDL.PixelFormatDetails>();
-        SetAttributeSafe(GLAttr.RedSize, format.RBits);
-        SetAttributeSafe(GLAttr.GreenSize, format.GBits);
-        SetAttributeSafe(GLAttr.BlueSize, format.BBits);
-        SetAttributeSafe(GLAttr.AlphaSize, format.ABits);
-        SetAttributeSafe(GLAttr.DepthSize, 0);
-        SetAttributeSafe(GLAttr.FrameBufferSRGBCapable, 0);
-
-        var window = SDL.CreateWindow(Name, 0, 0, WindowFlags.OpenGL | WindowFlags.Resizable | WindowFlags.Hidden);
-
-        if (window == 0) throw new InvalidOperationException($"Unable to create window: {SDL.GetError()}");
-
-        glContext = SDL.GLCreateContext(window);
-        if (glContext == 0)
-            throw new InvalidOperationException($"Unable to create OpenGL context: {SDL.GetError()}");
-
-        if (!SDL.GLMakeCurrent(window, glContext))
-            throw new InvalidOperationException($"Unable to make OpenGL context current: {SDL.GetError()}");
-
-        SDL.GLSetSwapInterval(0);
-        SDL.GLResetAttributes();
-
-        Native.InitializeHandle(window);
-        return window;
-
-        static void SetAttributeSafe(GLAttr attr, int val)
-        {
-            if (!SDL.GLSetAttribute(attr, val))
-                throw new InvalidOperationException($"Failed to set attribute {Enum.GetName(attr)}: {SDL.GetError()}");
-        }
     }
 
     static AudioManager createAudioManager()
@@ -268,7 +194,6 @@ public static class Program
 
     static void runMainLoop(nint window,
         Editor editor,
-        bool swapOpenGlWindow,
         TimeSpan fixedRateUpdate,
         TimeSpan targetFrame)
     {
@@ -300,8 +225,6 @@ public static class Program
                 editor.Update(cur, false);
 
             var draws = editor.Draw();
-            if (swapOpenGlWindow && !SDL.GLSwapWindow(window))
-                throw new InvalidOperationException($"Unable to swap framebuffer: {SDL.GetError()}");
 
             if (Monitor.TryEnter(scheduledActions))
             {
@@ -315,7 +238,7 @@ public static class Program
             var active = Stopwatch.GetElapsedTime(startT) - cur;
             var sleepTime = (windowFocus ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > TimeSpan.Zero) SDL.DelayNS((ulong)sleepTime.Ticks * TimeSpan.NanosecondsPerTick);
+            if (sleepTime > TimeSpan.Zero) SDL.DelayNS((ulong)sleepTime.Ticks * (TimeSpan.NanosecondsPerTick - 5));
 
             var frameTime = cur - prev;
             prev = cur;
