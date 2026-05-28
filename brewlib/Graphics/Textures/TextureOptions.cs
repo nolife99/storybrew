@@ -43,7 +43,7 @@ public class TextureOptions : IEquatable<TextureOptions>
         }.ToFrozenDictionary();
 
     // Settings
-    public bool Srgb = true, PreMultiply, GenerateMipmaps;
+    public bool Srgb, PreMultiply, GenerateMipmaps;
 
     // Parameters
     public TextureFilter TextureMagFilter = TextureFilter.Linear;

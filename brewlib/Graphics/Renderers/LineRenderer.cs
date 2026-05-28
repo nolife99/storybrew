@@ -61,7 +61,6 @@ public sealed class LineRenderer : ILineRenderer
             Unsafe.SizeOf<LineInstance>() * initialBatchCapacity));
 
         vertexBuffer.SetData(UnitLineVertices);
-        pipeline.BindVertexBuffer(0, vertexBuffer);
     }
 
     public Matrix4x4 TransformMatrix
@@ -98,14 +97,12 @@ public sealed class LineRenderer : ILineRenderer
 
     void IRenderer.BeginRendering()
     {
-        pipeline.Bind();
         rendering = true;
     }
 
     void IRenderer.EndRendering()
     {
         if (instances.Count != 0) drawCurrentBatch();
-        pipeline.Unbind();
         rendering = false;
     }
 
@@ -139,8 +136,7 @@ public sealed class LineRenderer : ILineRenderer
         instanceBuffer.SetData(span);
 
         combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
-        pipeline.BindVertexBuffer(1, instanceBuffer);
-        pipeline.DrawInstanced(new(VertexPerLine, span.Length));
+        pipeline.DrawInstanced(new(VertexPerLine, span.Length), [new(0, vertexBuffer), new(1, instanceBuffer)]);
 
         instances.Clear();
     }

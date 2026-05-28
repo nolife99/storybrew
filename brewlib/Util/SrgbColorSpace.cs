@@ -1,4 +1,4 @@
-namespace BrewLib.Graphics.Backend.WebGPU;
+namespace BrewLib.Util;
 
 using System;
 using System.Numerics;

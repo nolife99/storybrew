@@ -16,7 +16,6 @@ public interface ITextureExtent
 public interface ITexture : IDisposable, ITextureExtent
 {
     IGraphicsBackend Backend { get; }
-    GraphicsResourceHandle NativeHandle { get; }
 }
 
 interface ITextureSamplerIdentity
@@ -28,6 +27,7 @@ public interface IWritableTexture : ITexture, ITextureRegion
 {
     void Update(Color color, int x, int y, int width, int height);
     void Update(Image<Rgba32> bitmap, int x, int y);
+    void Update(scoped ReadOnlySpan<byte> data, int width, int height, int x, int y, int bytesPerRow);
 }
 
 public interface ITextureRegion : IDisposable, ITextureExtent
@@ -42,4 +42,5 @@ public interface ITextureFactory
 {
     ITextureRegion Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null);
     IWritableTexture Create(Color color, int width = 1, int height = 1, TextureOptions textureOptions = null);
+    IWritableTexture CreateEmpty(int width, int height, TextureOptions textureOptions = null);
 }

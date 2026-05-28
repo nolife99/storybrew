@@ -7,9 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ahjo.Wgpu;
 using Ahjo.Wgpu.Native;
+using BrewLib.Graphics.Textures;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Textures;
 using Color = SixLabors.ImageSharp.Color;
 
 public sealed class WebGpuTextureFactory(WebGpuGraphicsBackend backend) : ITextureFactory
@@ -17,20 +17,17 @@ public sealed class WebGpuTextureFactory(WebGpuGraphicsBackend backend) : ITextu
     public ITextureRegion Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
         => WebGpuTexture.Load(backend, bitmap, textureOptions);
 
-    public IWritableTexture Create(Color color,
-        int width = 1,
-        int height = 1,
-        TextureOptions textureOptions = null)
+    public IWritableTexture Create(Color color, int width = 1, int height = 1, TextureOptions textureOptions = null)
         => WebGpuTexture.Create(backend, color, width, height, textureOptions);
+
+    public IWritableTexture CreateEmpty(int width, int height, TextureOptions textureOptions = null)
+        => WebGpuTexture.CreateEmpty(backend, width, height, textureOptions);
 }
 
 public sealed class WebGpuAsyncTextureUploader(WebGpuGraphicsBackend backend)
     : AsyncTextureUploaderBase(() => backend.Capabilities.MaxTextureSize)
 {
-    protected override ValueTask<PreparedTextureUpload> PrepareAsync(string source,
-        Image<Rgba32> bitmap,
-        TextureOptions textureOptions,
-        CancellationToken cancellationToken)
+    protected override ValueTask<PreparedTextureUpload> PrepareAsync(string source, Image<Rgba32> bitmap, TextureOptions textureOptions, CancellationToken cancellationToken)
     {
         var description = CreateDescription(source, bitmap, textureOptions);
         cancellationToken.ThrowIfCancellationRequested();
@@ -40,12 +37,9 @@ public sealed class WebGpuAsyncTextureUploader(WebGpuGraphicsBackend backend)
     public override ITextureRegion Upload(PreparedTextureUpload upload)
     {
         if (upload is not WebGpuPreparedTextureUpload webGpuUpload)
-            throw new InvalidOperationException("WebGPU async texture uploader received an upload prepared by another backend");
+            throw new InvalidOperationException("WebGPU uploader received an upload prepared by another backend");
 
-        try
-        {
-            return WebGpuTexture.Load(backend, webGpuUpload);
-        }
+        try { return WebGpuTexture.Load(backend, webGpuUpload); }
         catch
         {
             webGpuUpload.Dispose();
@@ -78,7 +72,6 @@ sealed class WebGpuPreparedTextureUpload : PreparedTextureUpload, IPreparedTextu
     public override void Dispose()
     {
         if (disposed) return;
-
         disposed = true;
         bitmap?.Dispose();
         bitmap = null;
@@ -96,7 +89,7 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
         Texture texture,
         TextureView textureView,
         Sampler sampler,
-        WGPUTextureFormat textureFormat,
+        WGPUTextureFormat format,
         int width,
         int height,
         TextureOptions textureOptions)
@@ -106,54 +99,47 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
         TextureHandle = texture;
         TextureViewHandle = textureView;
         SamplerHandle = sampler;
-        TextureFormat = textureFormat;
+        TextureFormat = format;
         this.textureOptions = textureOptions;
         samplerIdentity = getSamplerIdentity(textureOptions);
     }
 
+    internal WebGpuGraphicsBackend OwnerBackend => backend;
+    internal bool IsDisposed => disposedTexture;
     public Texture TextureHandle { get; private set; }
-
-    public WGPUTextureFormat TextureFormat { get; private set; }
-
     public TextureView TextureViewHandle { get; private set; }
-
     public Sampler SamplerHandle { get; private set; }
-
+    public WGPUTextureFormat TextureFormat { get; private set; }
     public GraphicsResourceHandle SamplerIdentity => new(backend.Name, samplerIdentity);
     public IGraphicsBackend Backend => backend;
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, TextureHandle.NativeHandle());
 
     public void Update(Color color, int x, int y, int width, int height)
     {
         ObjectDisposedException.ThrowIf(disposedTexture, this);
-        backend.ThrowIfDeviceLost();
-
+        WebGpuResourceValidation.ValidateTextureRegion(this, x, y, width, height, "Texture color update");
         uploadColor(getUploadPixel(color, textureOptions), width, height, x, y);
     }
 
     public void Update(Image<Rgba32> bitmap, int x, int y)
     {
         ObjectDisposedException.ThrowIf(disposedTexture, this);
-        backend.ThrowIfDeviceLost();
-
-        var width = int.Min(bitmap.Width, Width - x);
-        var height = int.Min(bitmap.Height, Height - y);
-        uploadBitmapRows(bitmap, width, height, x, y);
+        ArgumentNullException.ThrowIfNull(bitmap);
+        WebGpuResourceValidation.ValidateTextureRegion(this, x, y, bitmap.Width, bitmap.Height, "Texture bitmap update");
+        uploadBitmapRows(bitmap, bitmap.Width, bitmap.Height, x, y);
     }
 
-    public static WebGpuTexture Create(WebGpuGraphicsBackend backend,
-        Color color,
-        int width = 1,
-        int height = 1,
-        TextureOptions textureOptions = null)
+    public void Update(scoped ReadOnlySpan<byte> data, int width, int height, int x, int y, int bytesPerRow)
     {
-        if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
+        ObjectDisposedException.ThrowIf(disposedTexture, this);
+        WebGpuResourceValidation.ValidateTextureRegion(this, x, y, width, height, "Texture byte update");
+        WebGpuResourceValidation.ValidateTextureUploadData(data, width, height, 4, bytesPerRow, "Texture byte update");
+        uploadBytes(data, width, height, x, y, bytesPerRow);
+    }
 
-        backend.ThrowIfDeviceLost();
-
+    public static WebGpuTexture Create(WebGpuGraphicsBackend backend, Color color, int width = 1, int height = 1, TextureOptions textureOptions = null)
+    {
         textureOptions ??= TextureOptions.Default;
         var texture = createEmptyTexture(backend, width, height, textureOptions);
-
         try
         {
             texture.uploadColor(getUploadPixel(color, textureOptions), width, height, 0, 0);
@@ -166,18 +152,19 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
         }
     }
 
-    public static WebGpuTexture Load(WebGpuGraphicsBackend backend,
-        Image<Rgba32> bitmap,
-        TextureOptions textureOptions = null)
+    public static WebGpuTexture CreateEmpty(WebGpuGraphicsBackend backend, int width, int height, TextureOptions textureOptions = null)
     {
-        backend.ThrowIfDeviceLost();
+        textureOptions ??= TextureOptions.Default;
+        return createEmptyTexture(backend, width, height, textureOptions);
+    }
 
+    public static WebGpuTexture Load(WebGpuGraphicsBackend backend, Image<Rgba32> bitmap, TextureOptions textureOptions = null)
+    {
+        ArgumentNullException.ThrowIfNull(bitmap);
+        textureOptions ??= TextureOptions.Default;
         var width = int.Min(backend.Capabilities.MaxTextureSize, bitmap.Width);
         var height = int.Min(backend.Capabilities.MaxTextureSize, bitmap.Height);
-
-        textureOptions ??= TextureOptions.Default;
         var texture = createEmptyTexture(backend, width, height, textureOptions);
-
         try
         {
             texture.uploadBitmapRows(bitmap, width, height, 0, 0);
@@ -194,15 +181,11 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
     {
         if (upload.Width < 1 || upload.Height < 1)
             throw new InvalidOperationException($"Invalid texture size: {upload.Width}x{upload.Height}");
-
         if (upload.Format != TextureUploadFormat.Rgba8)
             throw new NotSupportedException($"Unsupported WebGPU texture upload format: {upload.Format}");
 
-        backend.ThrowIfDeviceLost();
-
         var textureOptions = upload.Options ?? TextureOptions.Default;
         var texture = createEmptyTexture(backend, upload.Width, upload.Height, textureOptions);
-
         try
         {
             texture.uploadBitmapRows(upload.Bitmap, upload.Width, upload.Height, 0, 0);
@@ -220,13 +203,9 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
     {
         if (!disposedTexture)
         {
-            backend.PurgeCachedBindGroupsReferencing(WebGpuResourceReference.Of(TextureViewHandle));
-            backend.PurgeCachedBindGroupsReferencing(WebGpuResourceReference.Of(SamplerHandle));
-
-            if (!TextureViewHandle.IsNull) backend.DeferredReleases.Retire(TextureViewHandle);
-            if (!SamplerHandle.IsNull) backend.DeferredReleases.Retire(SamplerHandle);
-            if (!TextureHandle.IsNull) backend.DeferredReleases.Retire(TextureHandle);
-
+            backend.RetireAfterSubmit(TextureViewHandle);
+            backend.RetireAfterSubmit(SamplerHandle);
+            backend.RetireAfterSubmit(TextureHandle);
             TextureHandle = default;
             TextureViewHandle = default;
             SamplerHandle = default;
@@ -237,12 +216,10 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
         base.Dispose(disposing);
     }
 
-    static WebGpuTexture createEmptyTexture(WebGpuGraphicsBackend backend,
-        int width,
-        int height,
-        TextureOptions textureOptions)
+    static WebGpuTexture createEmptyTexture(WebGpuGraphicsBackend backend, int width, int height, TextureOptions textureOptions)
     {
-        TextureDescriptor textureDescriptor = new()
+        validateTextureSize(backend, width, height);
+        TextureDescriptor descriptor = new()
         {
             Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst,
             Dimension = WGPUTextureDimension._2D,
@@ -252,63 +229,59 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
                 height = (uint)height,
                 depthOrArrayLayers = 1
             },
-            Format = textureOptions.Srgb && DrawState.ColorCorrected
-                ? WGPUTextureFormat.RGBA8UnormSrgb
-                : WGPUTextureFormat.RGBA8Unorm,
+            Format = textureOptions.Srgb && DrawState.ColorCorrected ? WGPUTextureFormat.RGBA8UnormSrgb : WGPUTextureFormat.RGBA8Unorm,
             MipLevelCount = 1,
             SampleCount = 1
         };
 
-        var texture = backend.DeviceHandle.CreateTexture(in textureDescriptor);
-
-        TextureViewDescriptor viewDescriptor = new()
-        {
-            Format = textureDescriptor.Format,
-            Dimension = WGPUTextureViewDimension._2D,
-            MipLevelCount = 1,
-            ArrayLayerCount = 1,
-            Aspect = WGPUTextureAspect.All,
-            Usage = TextureUsage.TextureBinding
-        };
-
+        var texture = backend.DeviceHandle.CreateTexture(in descriptor);
         TextureView view = default;
         Sampler sampler = default;
         try
         {
+            TextureViewDescriptor viewDescriptor = new()
+            {
+                Format = descriptor.Format,
+                Dimension = WGPUTextureViewDimension._2D,
+                MipLevelCount = 1,
+                ArrayLayerCount = 1,
+                Aspect = WGPUTextureAspect.All,
+                Usage = TextureUsage.TextureBinding
+            };
+
             view = texture.CreateView(in viewDescriptor);
-            var samplerDescriptor = createSamplerDescriptor(textureOptions);
-            sampler = backend.DeviceHandle.CreateSampler(in samplerDescriptor);
-            return new(backend, texture, view, sampler, textureDescriptor.Format, width, height, textureOptions);
+            sampler = backend.DeviceHandle.CreateSampler(createSamplerDescriptor(textureOptions));
+            return new(backend, texture, view, sampler, descriptor.Format, width, height, textureOptions);
         }
         catch
         {
-            if (!backend.IsDeviceLost)
-            {
-                if (!sampler.IsNull) sampler.Dispose();
-                if (!view.IsNull) view.Dispose();
-                if (!texture.IsNull) texture.Dispose();
-            }
-
+            if (!sampler.IsNull) sampler.Dispose();
+            if (!view.IsNull) view.Dispose();
+            if (!texture.IsNull) texture.Dispose();
             throw;
         }
+    }
+
+    static void validateTextureSize(WebGpuGraphicsBackend backend, int width, int height)
+    {
+        if (width < 1 || height < 1)
+            throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
+        var max = backend.Capabilities.MaxTextureSize;
+        if (width > max || height > max)
+            throw new ArgumentOutOfRangeException(nameof(width), $"Texture size {width}x{height} exceeds backend max texture size {max}");
     }
 
     void uploadColor(Rgba32 pixel, int width, int height, int x, int y)
     {
         if (width <= 0 || height <= 0) return;
-
         var rowBytes = checked(width * 4);
         var byteLength = checked(rowBytes * height);
         byte[] rented = null;
-        var bytes = byteLength <= 4096
-            ? stackalloc byte[byteLength]
-            : (rented = ArrayPool<byte>.Shared.Rent(byteLength)).AsSpan(0, byteLength);
-
+        var bytes = byteLength <= 4096 ? stackalloc byte[byteLength] : (rented = ArrayPool<byte>.Shared.Rent(byteLength)).AsSpan(0, byteLength);
         try
         {
-            var pixels = MemoryMarshal.Cast<byte, Rgba32>(bytes[..byteLength]);
-            pixels.Fill(pixel);
-            uploadBytes(bytes[..byteLength], width, height, x, y, rowBytes);
+            MemoryMarshal.Cast<byte, Rgba32>(bytes).Fill(pixel);
+            uploadBytes(bytes, width, height, x, y, rowBytes);
         }
         finally
         {
@@ -321,41 +294,23 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
     {
         if (width <= 0 || height <= 0) return;
 
-        ObjectDisposedException.ThrowIf(disposedTexture, this);
-        backend.ThrowIfDeviceLost();
-        backend.UploadTextureRowsWithStagingBelt(TextureHandle, TextureFormat, bitmap, width, height, x, y);
-    }
-
-
-    void uploadBytes(ReadOnlySpan<byte> data, int width, int height, int x, int y, int bytesPerRow)
-    {
-        ObjectDisposedException.ThrowIf(disposedTexture, this);
-        backend.ThrowIfDeviceLost();
-        if (width <= 0 || height <= 0) return;
-
-        bytesPerRow = bytesPerRow <= 0 ? checked(width * 4) : bytesPerRow;
         var rowBytes = checked(width * 4);
-        var requiredBytes = checked((height - 1) * bytesPerRow + rowBytes);
-        if (data.Length < requiredBytes)
-            throw new ArgumentException("Texture upload data is smaller than the requested upload region", nameof(data));
-
-        var packedByteLength = checked(rowBytes * height);
+        var byteLength = checked(rowBytes * height);
         byte[] rented = null;
-        ReadOnlySpan<byte> packedData;
-
-        if (bytesPerRow == rowBytes)
-            packedData = data[..packedByteLength];
-        else
-        {
-            rented = ArrayPool<byte>.Shared.Rent(packedByteLength);
-            var target = rented.AsSpan(0, packedByteLength);
-            copyRowsToPacked(data[..requiredBytes], bytesPerRow, rowBytes, height, target);
-            packedData = target;
-        }
+        Span<byte> packed = byteLength <= 16 * 1024
+            ? stackalloc byte[byteLength]
+            : (rented = ArrayPool<byte>.Shared.Rent(byteLength)).AsSpan(0, byteLength);
 
         try
         {
-            backend.UploadTextureWithStagingBelt(TextureHandle, TextureFormat, packedData, width, height, x, y);
+            var source = bitmap.Frames.RootFrame.PixelBuffer;
+            for (var row = 0; row < height; ++row)
+            {
+                var sourceRow = MemoryMarshal.AsBytes(source.DangerousGetRowSpan(row)[..width]);
+                sourceRow.CopyTo(packed.Slice(row * rowBytes, rowBytes));
+            }
+
+            writePacked(packed, width, height, x, y);
         }
         finally
         {
@@ -364,27 +319,50 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
         }
     }
 
-    static void copyRowsToPacked(ReadOnlySpan<byte> source,
-        int sourceBytesPerRow,
-        int rowBytes,
-        int height,
-        Span<byte> target)
+    void uploadBytes(ReadOnlySpan<byte> data, int width, int height, int x, int y, int bytesPerRow)
     {
-        if (sourceBytesPerRow == rowBytes && source.Length >= checked(rowBytes * height))
+        if (width <= 0 || height <= 0) return;
+        bytesPerRow = bytesPerRow <= 0 ? checked(width * 4) : bytesPerRow;
+        var rowBytes = checked(width * 4);
+        var requiredBytes = checked((height - 1) * bytesPerRow + rowBytes);
+        if (data.Length < requiredBytes)
+            throw new ArgumentException("Texture upload data is smaller than the requested upload region", nameof(data));
+
+        if (bytesPerRow == rowBytes)
         {
-            source[..checked(rowBytes * height)].CopyTo(target);
+            writePacked(data[..checked(rowBytes * height)], width, height, x, y);
             return;
         }
 
-        for (var row = 0; row < height; ++row)
-            source.Slice(row * sourceBytesPerRow, rowBytes)
-                .CopyTo(target.Slice(row * rowBytes, rowBytes));
+        byte[] rented = ArrayPool<byte>.Shared.Rent(checked(rowBytes * height));
+        try
+        {
+            var packed = rented.AsSpan(0, checked(rowBytes * height));
+            for (var row = 0; row < height; ++row)
+                data.Slice(row * bytesPerRow, rowBytes).CopyTo(packed.Slice(row * rowBytes, rowBytes));
+            writePacked(packed, width, height, x, y);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
+    }
+
+    void writePacked(ReadOnlySpan<byte> packed, int width, int height, int x, int y)
+    {
+        var extent = new WGPUExtent3D
+        {
+            width = (uint)width,
+            height = (uint)height,
+            depthOrArrayLayers = 1
+        };
+        var origin = new WGPUOrigin3D { x = (uint)x, y = (uint)y, z = 0 };
+        backend.QueueWriteTexture(TextureHandle, packed, checked(width * 4), height, origin, extent);
     }
 
     static Rgba32 getUploadPixel(Color color, TextureOptions textureOptions)
     {
         if (!textureOptions.PreMultiply) return color.ToPixel<Rgba32>();
-
         var vec = color.ToScaledVector4();
         return Color.FromScaledVector(new(vec.X * vec.W, vec.Y * vec.W, vec.Z * vec.W, vec.W)).ToPixel<Rgba32>();
     }
@@ -404,9 +382,9 @@ public sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureS
 
     static nint getSamplerIdentity(TextureOptions options)
         => (int)options.TextureMinFilter |
-            (int)options.TextureMagFilter << 4 |
-            (int)options.TextureWrapS << 8 |
-            (int)options.TextureWrapT << 12;
+           (int)options.TextureMagFilter << 4 |
+           (int)options.TextureWrapS << 8 |
+           (int)options.TextureWrapT << 12;
 
     static WGPUFilterMode toFilter(TextureFilter filter)
         => filter is TextureFilter.Nearest or TextureFilter.NearestMipmapNearest or TextureFilter.NearestMipmapLinear

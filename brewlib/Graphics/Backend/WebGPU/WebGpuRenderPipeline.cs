@@ -1,47 +1,33 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Ahjo.Wgpu;
 using Ahjo.Wgpu.Native;
-using Renderers;
-using Shaders;
-using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
+using BrewLib.Graphics.Renderers;
+using BrewLib.Graphics.Shaders;
+using BrewLib.Graphics.Textures;
 using WgpuBuffer = Ahjo.Wgpu.Buffer;
-using VertexAttribute = Ahjo.Wgpu.VertexAttribute;
+using WgpuPipelineLayout = Ahjo.Wgpu.PipelineLayout;
+using WgpuRenderPipeline = Ahjo.Wgpu.RenderPipeline;
+using WgpuVertexAttribute = Ahjo.Wgpu.VertexAttribute;
+using WgpuVertexBufferLayout = Ahjo.Wgpu.VertexBufferLayout;
 
 public sealed class WebGpuRenderPipeline : IRenderPipeline
 {
-    const int UniformBufferSize = 1024 * 1024;
-    const int UniformBindingSize = 256;
-    const int UniformAlignment = 256;
-
     readonly WebGpuGraphicsBackend backend;
     readonly WebGpuGraphicsDevice device;
-    readonly Dictionary<BlendingFactorState, RenderPipeline> renderPipelines = [];
-    readonly VertexBufferBinding[] vertexBuffers;
-    BlendingFactorState boundBlendState;
-    RenderPipeline boundPipeline;
-
-    uint boundRenderPassSerial = uint.MaxValue;
-    uint boundRenderStateSerial = uint.MaxValue;
-    uint boundUniformOffset = uint.MaxValue;
-    uint currentUniformOffset;
-    bool hasUniformValue, registeredForUniformFlush, disposed;
-    PipelineLayout pipelineLayout;
-    BindGroup uniformBindGroup;
+    readonly Dictionary<BlendingFactorState, WgpuRenderPipeline> pipelines = [];
+    readonly Dictionary<string, UniformValue> uniforms = new(StringComparer.Ordinal);
+    bool disposed;
+    BindGroupLayout textureBindGroupLayout;
+    WebGpuTextureBindingInfo[] textureBindingInfos = [];
     BindGroupLayout uniformBindGroupLayout;
-    WgpuBuffer uniformBuffer;
-    int uniformDirtyEnd;
-    int uniformDirtyStart = int.MaxValue;
-    uint uniformFrameSerial;
-    int uniformOffset, currentUniformSize;
-    byte[] uniformShadow;
-
+    WgpuPipelineLayout pipelineLayout;
     ShaderModule vertexShader, fragmentShader;
 
     public WebGpuRenderPipeline(WebGpuGraphicsBackend backend, RenderPipelineDescription description)
@@ -52,19 +38,14 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
         this.backend = backend;
         device = (WebGpuGraphicsDevice)backend.Device;
         Description = description;
-        vertexBuffers = new VertexBufferBinding[description.VertexInput.Buffers.Length];
-
-        for (var i = 0; i < vertexBuffers.Length; ++i)
-            vertexBuffers[i].Layout = description.VertexInput.Buffers[i];
 
         try
         {
             vertexShader = createShaderModule(description.ShaderSource.VertexSource);
             fragmentShader = createShaderModule(description.ShaderSource.FragmentSource);
             uniformBindGroupLayout = createUniformBindGroupLayout();
-            TextureBindGroupLayout = createTextureBindGroupLayout(description.PipelineLayout);
+            textureBindGroupLayout = createTextureBindGroupLayout(description.PipelineLayout);
             pipelineLayout = createPipelineLayout();
-            createUniformBuffer();
         }
         catch
         {
@@ -73,11 +54,7 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
         }
     }
 
-    static ReadOnlySpan<byte> MainEntryPoint => "main"u8;
-
-    internal BindGroupLayout TextureBindGroupLayout { get; private set; }
-
-    public GraphicsResourceHandle NativeHandle => new(backend.Name, boundPipeline.NativeHandle());
+    internal BindGroupLayout TextureBindGroupLayout => textureBindGroupLayout;
     public RenderPipelineDescription Description { get; }
 
     public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name)
@@ -89,142 +66,49 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
     public IResourceSet CreateResourceSet()
         => new WebGpuResourceSet(backend, this, Description.PipelineLayout);
 
-    public void Bind()
+    public void Draw(DrawCommand command, scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers, IResourceSet resources = null)
     {
-        ObjectDisposedException.ThrowIf(disposed, this);
-        if (backend.HasReadyRenderPass)
-            EnsureBound();
-    }
-
-    public void Unbind() { }
-
-    public void BindVertexBuffer(int slot, IGraphicsBuffer buffer)
-        => BindVertexBuffer(slot, buffer, buffer is WebGpuGraphicsBuffer webGpuBuffer ? webGpuBuffer.BindingOffset : 0);
-
-    public void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset)
-    {
-        ObjectDisposedException.ThrowIf(disposed, this);
-        if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-        if (buffer is not WebGpuGraphicsBuffer webGpuBuffer)
-            throw new InvalidOperationException($"{nameof(WebGpuRenderPipeline)} can only bind WebGPU buffers");
-
-        for (var i = 0; i < vertexBuffers.Length; ++i)
-            if (vertexBuffers[i].Layout.Slot == slot)
-            {
-                vertexBuffers[i].Buffer = webGpuBuffer;
-                vertexBuffers[i].Offset = offset;
-                vertexBuffers[i].BoundSerial = uint.MaxValue;
-                return;
-            }
-
-        throw new ArgumentException($"Vertex buffer slot {slot} is not part of this render pipeline", nameof(slot));
-    }
-
-    public void Draw(DrawCommand command)
-    {
+        validateDrawCommand(command);
         if (command.VertexCount == 0) return;
-        if (!backend.TryRequireRenderPass()) return;
-
-        EnsureBound();
-        backend.Draw((uint)command.VertexCount, 1, (uint)command.FirstVertex);
+        draw(command.VertexCount, 1, command.FirstVertex, vertexBuffers, resources);
     }
 
-    public void DrawInstanced(DrawInstancedCommand command)
+    public void DrawInstanced(DrawInstancedCommand command, scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers, IResourceSet resources = null)
     {
+        validateDrawInstancedCommand(command);
         if (command.VertexCount == 0 || command.InstanceCount == 0) return;
-        if (!backend.TryRequireRenderPass()) return;
-
-        EnsureBound();
-        backend.Draw((uint)command.VertexCount, (uint)command.InstanceCount, (uint)command.FirstVertex);
+        draw(command.VertexCount, command.InstanceCount, command.FirstVertex, vertexBuffers, resources);
     }
 
     public void Dispose()
     {
         if (disposed) return;
-
-        foreach (var pipeline in renderPipelines.Values)
-            backend.DeferredReleases.Retire(pipeline);
-
-        if (!uniformBindGroup.IsNull) backend.DeferredReleases.Retire(uniformBindGroup);
-        if (!uniformBuffer.IsNull) backend.DeferredReleases.Retire(uniformBuffer);
-
-        uniformShadow = null;
-
-        if (!pipelineLayout.IsNull) pipelineLayout.Dispose();
-        if (!TextureBindGroupLayout.IsNull) TextureBindGroupLayout.Dispose();
-        if (!uniformBindGroupLayout.IsNull) uniformBindGroupLayout.Dispose();
-        if (!fragmentShader.IsNull) fragmentShader.Dispose();
-        if (!vertexShader.IsNull) vertexShader.Dispose();
-
-        renderPipelines.Clear();
-        uniformBindGroup = default;
-        uniformBuffer = default;
-        pipelineLayout = default;
-        TextureBindGroupLayout = default;
-        uniformBindGroupLayout = default;
-        fragmentShader = default;
-        vertexShader = default;
         disposed = true;
+
+        foreach (var pipeline in pipelines.Values)
+            backend.DeferredReleases.Retire(pipeline);
+        pipelines.Clear();
+
+        backend.DeferredReleases.Retire(pipelineLayout);
+        backend.DeferredReleases.Retire(textureBindGroupLayout);
+        backend.DeferredReleases.Retire(uniformBindGroupLayout);
+        backend.DeferredReleases.Retire(vertexShader);
+        backend.DeferredReleases.Retire(fragmentShader);
+
+        pipelineLayout = default;
+        textureBindGroupLayout = default;
+        uniformBindGroupLayout = default;
+        vertexShader = default;
+        fragmentShader = default;
+        uniforms.Clear();
     }
 
-    internal void EnsureBound()
+    internal WebGpuTextureBindingInfo GetTextureBindingInfo(ShaderSamplerBinding slot)
     {
-        var currentSerial = backend.RenderPassSerial;
-        var newPass = boundRenderPassSerial != currentSerial;
-        var blendState = device.BlendState;
-        var pipeline = getRenderPipeline(blendState);
-
-        if (newPass || boundPipeline.NativeHandle() != pipeline.NativeHandle() || boundBlendState != blendState)
-        {
-            backend.SetRenderPipeline(pipeline);
-            boundPipeline = pipeline;
-            boundBlendState = blendState;
-        }
-
-        var renderStateSerial = device.RenderPassStateSerial;
-        if (newPass || boundRenderStateSerial != renderStateSerial)
-        {
-            device.ApplyRenderPassState();
-            boundRenderPassSerial = currentSerial;
-            boundRenderStateSerial = renderStateSerial;
-            boundUniformOffset = uint.MaxValue;
-        }
-
-        if (hasUniformValue)
-        {
-            var dynamicOffset = currentUniformOffset;
-            if (newPass || boundUniformOffset != dynamicOffset)
-            {
-                backend.SetBindGroup(0, uniformBindGroup, dynamicOffset);
-                boundUniformOffset = dynamicOffset;
-            }
-        }
-
-        var layouts = Description.VertexInput.Buffers;
-        for (var i = 0; i < vertexBuffers.Length; ++i)
-        {
-            ref var binding = ref vertexBuffers[i];
-            var webGpuBuffer = binding.Buffer;
-            if (webGpuBuffer is null)
-                throw new InvalidOperationException($"Vertex buffer slot {layouts[i].Slot} is not bound");
-
-            var handle = webGpuBuffer.BufferHandle;
-            if (handle.IsNull) continue;
-            if (binding.BoundSerial == currentSerial &&
-                binding.BoundHandle.NativeHandle() == handle.NativeHandle() &&
-                binding.BoundOffset == binding.Offset)
-                continue;
-
-            backend.SetVertexBuffer((uint)layouts[i].Slot,
-                handle,
-                (ulong)binding.Offset,
-                ulong.MaxValue);
-
-            binding.BoundSerial = currentSerial;
-            binding.BoundHandle = handle;
-            binding.BoundOffset = binding.Offset;
-        }
+        foreach (var info in textureBindingInfos)
+            if (info.Name == slot.Name)
+                return info;
+        throw new ArgumentException($"Texture binding '{slot.Name}' is not part of pipeline '{Description.Name}'", nameof(slot));
     }
 
     internal void SetUniform<T>(string name, T value)
@@ -233,78 +117,188 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
             throw new NotSupportedException($"WebGPU uniform '{name}' must be an unmanaged value");
 
         var size = Unsafe.SizeOf<T>();
-        if (size > UniformBindingSize)
-            throw new NotSupportedException($"WebGPU uniform '{name}' is {size} bytes; max supported size is {UniformBindingSize}");
+        if (size > backend.UniformBindingSize)
+            throw new NotSupportedException($"WebGPU uniform '{name}' is {size} bytes; max supported size is {backend.UniformBindingSize}");
 
-        var frameSerial = backend.FrameSerial;
-        if (uniformFrameSerial != frameSerial)
+        if (!uniforms.TryGetValue(name, out var uniform) || uniform.Bytes.Length != size)
         {
-            uniformFrameSerial = frameSerial;
-            uniformOffset = 0;
-            uniformDirtyStart = int.MaxValue;
-            uniformDirtyEnd = 0;
+            uniform = new(size);
+            uniforms[name] = uniform;
         }
 
-        var valueBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref value), size);
-        if (hasUniformValue &&
-            currentUniformSize == size &&
-            uniformShadow.AsSpan((int)currentUniformOffset, size).SequenceEqual(valueBytes))
+        MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref value), size).CopyTo(uniform.Bytes);
+    }
+
+    void draw(int vertexCount,
+        int instanceCount,
+        int firstVertex,
+        scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers,
+        IResourceSet resources)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+
+        backend.RequireFrame();
+        device.RecordState();
+        backend.RecordPipeline(getPipeline(device.BlendState));
+
+        bindUniforms();
+        bindResources(resources);
+        bindVertexBuffers(vertexBuffers, vertexCount, instanceCount, firstVertex);
+        backend.RecordDraw((uint)vertexCount, (uint)instanceCount, (uint)firstVertex, 0);
+
+        backend.RetainForFrame(this);
+    }
+
+    void bindUniforms()
+    {
+        // Still correctness-first: one small uniform buffer per draw. The CPU shadow block is
+        // stack/local-pooled now, so this path no longer allocates a byte[] per draw.
+        var size = backend.UniformBindingSize;
+        byte[] rented = null;
+        Span<byte> shadow = size <= 1024
+            ? stackalloc byte[size]
+            : (rented = ArrayPool<byte>.Shared.Rent(size)).AsSpan(0, size);
+
+        try
+        {
+            shadow.Clear();
+
+            if (uniforms.TryGetValue("u_combinedMatrix", out var matrix))
+                matrix.Bytes.CopyTo(shadow[..matrix.Bytes.Length]);
+            else if (uniforms.Count != 0)
+            {
+                var offset = 0;
+                foreach (var value in uniforms.Values)
+                {
+                    if (offset + value.Bytes.Length > shadow.Length) break;
+                    value.Bytes.CopyTo(shadow.Slice(offset, value.Bytes.Length));
+                    offset = WebGpuResourceValidation.Align(offset + value.Bytes.Length, 16);
+                }
+            }
+
+            BufferDescriptor descriptor = new()
+            {
+                Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+                Size = (ulong)size
+            };
+
+            var uniformBuffer = backend.DeviceHandle.CreateBuffer(in descriptor);
+            Span<BindGroupEntry> entries = stackalloc BindGroupEntry[1];
+            entries[0] = BindGroupEntry.Buffer(0, uniformBuffer, 0, (ulong)size);
+            var bindGroup = backend.DeviceHandle.CreateBindGroup(uniformBindGroupLayout, entries);
+
+            backend.QueueWriteBuffer(uniformBuffer, 0, shadow);
+            backend.RecordBindGroup(0, bindGroup);
+
+            backend.RetireAfterSubmit(bindGroup);
+            backend.RetireAfterSubmit(uniformBuffer);
+        }
+        finally
+        {
+            if (rented is not null)
+                ArrayPool<byte>.Shared.Return(rented);
+        }
+    }
+
+    void bindResources(IResourceSet resources)
+    {
+        if (resources is null)
+        {
+            if (!textureBindGroupLayout.IsNull)
+                throw new InvalidOperationException($"Pipeline '{Description.Name}' requires a resource set");
             return;
+        }
 
-        var offset = align(uniformOffset, UniformAlignment);
-        var nextOffset = checked(offset + UniformBindingSize);
-        if (nextOffset > UniformBufferSize)
-            throw new InvalidOperationException("WebGPU uniform ring exhausted for this frame");
+        if (textureBindGroupLayout.IsNull)
+            throw new InvalidOperationException($"Pipeline '{Description.Name}' has no texture bindings but a resource set was supplied");
 
-        uniformOffset = nextOffset;
-        currentUniformOffset = (uint)offset;
-        currentUniformSize = size;
-        hasUniformValue = true;
+        if (resources is not WebGpuResourceSet webGpuResourceSet)
+            throw new InvalidOperationException($"{nameof(WebGpuRenderPipeline)} can only use WebGPU resource sets");
+        if (!ReferenceEquals(webGpuResourceSet.OwnerBackend, backend))
+            throw new InvalidOperationException("Resource set belongs to another backend");
+        ObjectDisposedException.ThrowIf(webGpuResourceSet.IsDisposed, webGpuResourceSet);
+        if (!ReferenceEquals(webGpuResourceSet.Pipeline, this))
+            throw new InvalidOperationException("Resource set was created for a different render pipeline");
 
-        valueBytes.CopyTo(uniformShadow.AsSpan(offset, size));
-
-        if (offset < uniformDirtyStart) uniformDirtyStart = offset;
-        var end = offset + size;
-        if (end > uniformDirtyEnd) uniformDirtyEnd = end;
-
-        if (registeredForUniformFlush) return;
-
-        backend.RegisterPipelineForUniformFlush(this);
-        registeredForUniformFlush = true;
+        var bindGroup = webGpuResourceSet.GetBindGroup();
+        backend.RecordBindGroup(1, bindGroup);
+        webGpuResourceSet.RetainForFrame();
     }
 
-    internal void FlushUniforms()
+    void bindVertexBuffers(scoped ReadOnlySpan<RenderVertexBufferBinding> suppliedBindings,
+        int vertexCount,
+        int instanceCount,
+        int firstVertex)
     {
-        registeredForUniformFlush = false;
-        if (uniformDirtyStart >= uniformDirtyEnd) return;
+        var layouts = Description.VertexInput.Buffers;
 
-        var length = uniformDirtyEnd - uniformDirtyStart;
-        backend.QueueHandle.WriteBuffer(uniformBuffer,
-            (ulong)uniformDirtyStart,
-            uniformShadow.AsSpan(uniformDirtyStart, length));
+        for (var i = 0; i < suppliedBindings.Length; ++i)
+        {
+            var supplied = suppliedBindings[i];
+            if (supplied.Slot < 0)
+                throw new ArgumentOutOfRangeException(nameof(suppliedBindings), supplied.Slot, "Vertex buffer slot is negative");
 
-        uniformDirtyStart = int.MaxValue;
-        uniformDirtyEnd = 0;
+            var matched = false;
+            foreach (var layout in layouts)
+                if (layout.Slot == supplied.Slot)
+                    matched = true;
+
+            if (!matched)
+                throw new InvalidOperationException($"Vertex buffer slot {supplied.Slot} is not part of pipeline '{Description.Name}'");
+
+            for (var j = i + 1; j < suppliedBindings.Length; ++j)
+                if (suppliedBindings[j].Slot == supplied.Slot)
+                    throw new InvalidOperationException($"Vertex buffer slot {supplied.Slot} is supplied more than once for pipeline '{Description.Name}'");
+        }
+
+        foreach (var layout in layouts)
+        {
+            var suppliedIndex = -1;
+            for (var i = 0; i < suppliedBindings.Length; ++i)
+            {
+                if (suppliedBindings[i].Slot != layout.Slot) continue;
+                suppliedIndex = i;
+                break;
+            }
+
+            if (suppliedIndex < 0)
+                throw new InvalidOperationException($"Vertex buffer slot {layout.Slot} is not supplied for pipeline '{Description.Name}'");
+
+            var supplied = suppliedBindings[suppliedIndex];
+            var buffer = WebGpuResourceValidation.RequireBuffer(backend, supplied.Buffer, $"Vertex buffer slot {layout.Slot}");
+            var offset = supplied.Offset >= 0 ? supplied.Offset : buffer.BindingOffset;
+            var elementCount = layout.InputRate switch
+            {
+                VertexInputRate.Vertex => checked(firstVertex + vertexCount),
+                VertexInputRate.Instance => instanceCount,
+                _ => throw new ArgumentOutOfRangeException(nameof(layout.InputRate), layout.InputRate, null)
+            };
+
+            var requiredBytes = checked((long)elementCount * layout.Stride);
+            WebGpuResourceValidation.ValidateBufferRange(buffer, offset, requiredBytes, $"Vertex buffer slot {layout.Slot}");
+
+            backend.RecordVertexBuffer((uint)layout.Slot, buffer.BufferHandle, (ulong)offset, (ulong)(buffer.SizeInBytes - offset));
+            backend.RetainForFrame(buffer);
+        }
     }
 
-    RenderPipeline getRenderPipeline(BlendingFactorState blendState)
+    WgpuRenderPipeline getPipeline(BlendingFactorState blendState)
     {
-        if (renderPipelines.TryGetValue(blendState, out var pipeline)) return pipeline;
-
-        var renderPipeline = createRenderPipeline(blendState);
-        renderPipelines.Add(blendState, renderPipeline);
-        return renderPipeline;
+        if (pipelines.TryGetValue(blendState, out var pipeline)) return pipeline;
+        pipeline = createRenderPipeline(blendState);
+        pipelines.Add(blendState, pipeline);
+        return pipeline;
     }
 
-    RenderPipeline createRenderPipeline(BlendingFactorState blendState)
+    WgpuRenderPipeline createRenderPipeline(BlendingFactorState blendState)
     {
         var attributeCount = 0;
         foreach (var buffer in Description.VertexInput.Buffers)
         foreach (var element in buffer.Elements)
             attributeCount += element.Format.GetLocationCount();
 
-        Span<VertexBufferLayout> bufferLayouts = stackalloc VertexBufferLayout[Description.VertexInput.Buffers.Length];
-        Span<VertexAttribute> attributes = stackalloc VertexAttribute[attributeCount];
+        Span<WgpuVertexBufferLayout> bufferLayouts = stackalloc WgpuVertexBufferLayout[Description.VertexInput.Buffers.Length];
+        Span<WgpuVertexAttribute> attributes = stackalloc WgpuVertexAttribute[attributeCount];
         var attributeIndex = 0;
 
         for (var i = 0; i < Description.VertexInput.Buffers.Length; ++i)
@@ -320,7 +314,6 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
                     attributes[attributeIndex] = new(toVertexFormat(element.Format),
                         (ulong)(element.Offset + element.Format.GetLocationOffset(column)),
                         (uint)attributeIndex);
-
                     ++attributeIndex;
                 }
             }
@@ -333,9 +326,9 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
         return createRenderPipeline(blendState, bufferLayouts, attributes);
     }
 
-    RenderPipeline createRenderPipeline(BlendingFactorState blendState,
-        scoped ReadOnlySpan<VertexBufferLayout> bufferLayouts,
-        scoped ReadOnlySpan<VertexAttribute> attributes)
+    WgpuRenderPipeline createRenderPipeline(BlendingFactorState blendState,
+        scoped ReadOnlySpan<WgpuVertexBufferLayout> bufferLayouts,
+        scoped ReadOnlySpan<WgpuVertexAttribute> attributes)
     {
         var blend = new WGPUBlendState
         {
@@ -367,10 +360,13 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
             CullMode = WGPUCullMode.None
         };
 
+        var vertexEntryPoint = Encoding.UTF8.GetBytes(Description.ShaderSource.VertexEntryPoint);
+        var fragmentEntryPoint = Encoding.UTF8.GetBytes(Description.ShaderSource.FragmentEntryPoint);
+
         return backend.DeviceHandle.CreateRenderPipeline(vertexShader,
-            MainEntryPoint,
+            vertexEntryPoint,
             fragmentShader,
-            MainEntryPoint,
+            fragmentEntryPoint,
             targets,
             bufferLayouts,
             attributes,
@@ -382,77 +378,74 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
     ShaderModule createShaderModule(string source)
     {
         var bytes = Encoding.UTF8.GetBytes(source);
-        var descriptor = new ShaderModuleDescriptor
-        {
-            Source = ShaderSource.FromWgsl(bytes)
-        };
-
+        var descriptor = new ShaderModuleDescriptor { Source = ShaderSource.FromWgsl(bytes) };
         return backend.DeviceHandle.CreateShaderModule(in descriptor);
     }
 
-    BindGroupLayout createUniformBindGroupLayout() 
-        => backend.DeviceHandle.CreateBindGroupLayout([BindGroupLayoutEntry.Buffer(0,
-        ShaderStage.Vertex,
-        WGPUBufferBindingType.Uniform,
-        true)]);
+    BindGroupLayout createUniformBindGroupLayout()
+        => backend.DeviceHandle.CreateBindGroupLayout([
+            BindGroupLayoutEntry.Buffer(0, ShaderStage.Vertex, WGPUBufferBindingType.Uniform, false)
+        ]);
 
     BindGroupLayout createTextureBindGroupLayout(Backend.PipelineLayout layout)
     {
         var textureBindings = layout.TextureBindings;
+        textureBindingInfos = new WebGpuTextureBindingInfo[textureBindings.Length];
         if (textureBindings.Length == 0) return default;
 
-        if (textureBindings.Length > 1)
-            throw new NotSupportedException("Core WebGPU renderer currently supports one texture binding layout");
+        var entryCount = 0;
+        foreach (var binding in textureBindings)
+        {
+            if (string.IsNullOrWhiteSpace(binding.Name))
+                throw new ArgumentException("Texture binding layout has an empty logical name", nameof(layout));
+            if (binding.Capacity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(layout), binding.Capacity, $"Texture binding '{binding.Name}' must have positive capacity");
+            entryCount = checked(entryCount + binding.Capacity * 2);
+        }
 
-        return createCoreTextureBindGroupLayout(textureBindings[0].Capacity);
-    }
-
-    BindGroupLayout createCoreTextureBindGroupLayout(int capacity)
-    {
-        var entryCount = checked(capacity * 2);
         if (backend.MaxBindingsPerBindGroup != 0 && entryCount > backend.MaxBindingsPerBindGroup)
             throw new InvalidOperationException($"Texture binding layout requires {entryCount} bindings, but device limit is {backend.MaxBindingsPerBindGroup}");
 
-        using var entries = TempList.Create<BindGroupLayoutEntry>(entryCount);
-        for (var i = 0; i < capacity; ++i)
-            entries.AddRange([
-                BindGroupLayoutEntry.Texture((uint)(i * 2),
-                    ShaderStage.Fragment),
-                BindGroupLayoutEntry.Sampler((uint)(i * 2 + 1),
-                    ShaderStage.Fragment)
-            ]);
+        var entries = new BindGroupLayoutEntry[entryCount];
+        var nextBinding = 0;
+        var entryIndex = 0;
 
-        return backend.DeviceHandle.CreateBindGroupLayout(entries.AsReadOnlySpan());
+        for (var bindingIndex = 0; bindingIndex < textureBindings.Length; ++bindingIndex)
+        {
+            var binding = textureBindings[bindingIndex];
+            var baseBinding = nextBinding;
+            textureBindingInfos[bindingIndex] = new(binding.Name, binding.Capacity, baseBinding);
+
+            for (var i = 0; i < binding.Capacity; ++i)
+            {
+                entries[entryIndex++] = BindGroupLayoutEntry.Texture((uint)nextBinding++, ShaderStage.Fragment);
+                entries[entryIndex++] = BindGroupLayoutEntry.Sampler((uint)nextBinding++, ShaderStage.Fragment);
+            }
+        }
+
+        return backend.DeviceHandle.CreateBindGroupLayout(entries);
     }
 
-    PipelineLayout createPipelineLayout()
+    WgpuPipelineLayout createPipelineLayout()
     {
-        var layouts = TextureBindGroupLayout.IsNull
-            ? stackalloc BindGroupLayout[1]
-            : stackalloc BindGroupLayout[2];
-
-        layouts[0] = uniformBindGroupLayout;
-        if (!TextureBindGroupLayout.IsNull)
-            layouts[1] = TextureBindGroupLayout;
-
+        BindGroupLayout[] layouts = textureBindGroupLayout.IsNull
+            ? [uniformBindGroupLayout]
+            : [uniformBindGroupLayout, textureBindGroupLayout];
         return backend.DeviceHandle.CreatePipelineLayout(layouts);
     }
 
-    void createUniformBuffer()
+    static void validateDrawCommand(DrawCommand command)
     {
-        BufferDescriptor bufferDescriptor = new()
-        {
-            Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
-            Size = UniformBufferSize
-        };
-
-        uniformBuffer = backend.DeviceHandle.CreateBuffer(in bufferDescriptor);
-        uniformShadow = GC.AllocateUninitializedArray<byte>(UniformBufferSize);
-        uniformBindGroup = backend.DeviceHandle.CreateBindGroup(uniformBindGroupLayout, [BindGroupEntry.Buffer(0, uniformBuffer, 0, UniformBindingSize)]);
+        if (command.VertexCount < 0) throw new ArgumentOutOfRangeException(nameof(command), command.VertexCount, "VertexCount is negative");
+        if (command.FirstVertex < 0) throw new ArgumentOutOfRangeException(nameof(command), command.FirstVertex, "FirstVertex is negative");
     }
 
-    static int align(int value, int alignment)
-        => value + alignment - 1 & ~(alignment - 1);
+    static void validateDrawInstancedCommand(DrawInstancedCommand command)
+    {
+        if (command.VertexCount < 0) throw new ArgumentOutOfRangeException(nameof(command), command.VertexCount, "VertexCount is negative");
+        if (command.InstanceCount < 0) throw new ArgumentOutOfRangeException(nameof(command), command.InstanceCount, "InstanceCount is negative");
+        if (command.FirstVertex < 0) throw new ArgumentOutOfRangeException(nameof(command), command.FirstVertex, "FirstVertex is negative");
+    }
 
     static WGPUPrimitiveTopology toPrimitiveTopology(PrimitiveTopology topology)
         => topology switch
@@ -474,8 +467,7 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
         => format switch
         {
             VertexAttributeFormat.Float32 => WGPUVertexFormat.Float32,
-            VertexAttributeFormat.Float32x2 => WGPUVertexFormat.Float32x2,
-            VertexAttributeFormat.Float32Mat3x2 => WGPUVertexFormat.Float32x2,
+            VertexAttributeFormat.Float32x2 or VertexAttributeFormat.Float32Mat3x2 => WGPUVertexFormat.Float32x2,
             VertexAttributeFormat.Float32x3 => WGPUVertexFormat.Float32x3,
             VertexAttributeFormat.Float32x4 => WGPUVertexFormat.Float32x4,
             VertexAttributeFormat.Float16x2 => WGPUVertexFormat.Float16x2,
@@ -494,18 +486,192 @@ public sealed class WebGpuRenderPipeline : IRenderPipeline
             _ => throw new ArgumentOutOfRangeException(nameof(factor), factor, null)
         };
 
+    sealed class UniformValue
+    {
+        public UniformValue(int size) => Bytes = GC.AllocateUninitializedArray<byte>(size);
+        public byte[] Bytes { get; }
+    }
+
     readonly struct WebGpuRenderUniform<T>(WebGpuRenderPipeline pipeline, string name) : IRenderUniform<T>
     {
         public void SetValue(T value) => pipeline.SetUniform(name, value);
     }
+}
 
-    struct VertexBufferBinding
+readonly record struct WebGpuTextureBindingInfo(string Name, int Capacity, int BaseBinding);
+
+public sealed class WebGpuResourceSet : IResourceSet
+{
+    readonly WebGpuGraphicsBackend backend;
+    readonly ResourceBinding[] bindings;
+    readonly WebGpuRenderPipeline pipeline;
+    BindGroup cachedBindGroup;
+    bool disposed;
+
+    public WebGpuResourceSet(WebGpuGraphicsBackend backend, WebGpuRenderPipeline pipeline, Backend.PipelineLayout layout)
     {
-        public Backend.VertexBufferLayout Layout;
-        public WebGpuGraphicsBuffer Buffer;
-        public int Offset;
-        public uint BoundSerial;
-        public WgpuBuffer BoundHandle;
-        public int BoundOffset;
+        this.backend = backend;
+        this.pipeline = pipeline;
+
+        var pipelineTextureBindings = layout.TextureBindings;
+        bindings = new ResourceBinding[pipelineTextureBindings.Length];
+        for (var i = 0; i < pipelineTextureBindings.Length; ++i)
+        {
+            var layoutBinding = pipelineTextureBindings[i];
+            var backendBinding = pipeline.GetTextureBindingInfo(layoutBinding.Slot);
+            bindings[i] = new(layoutBinding.Slot, backendBinding.BaseBinding, backendBinding.Capacity);
+        }
     }
+
+    internal bool IsDisposed => disposed;
+    internal WebGpuGraphicsBackend OwnerBackend => backend;
+    internal WebGpuRenderPipeline Pipeline => pipeline;
+
+    public void SetTextures(ShaderSamplerBinding slot, scoped ReadOnlySpan<ITexture> textures)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+
+        ref var binding = ref getBinding(slot);
+        if (textures.Length > binding.Capacity)
+            throw new ArgumentException($"Texture binding '{slot.Name}' accepts at most {binding.Capacity} textures", nameof(textures));
+
+        var changed = binding.TextureCount != textures.Length;
+        if (textures.Length == 0)
+        {
+            if (binding.TextureCount != 0)
+                binding.Clear();
+            if (changed)
+                InvalidateBindGroup();
+            return;
+        }
+
+        for (var i = 0; i < textures.Length; ++i)
+        {
+            var texture = WebGpuResourceValidation.RequireTexture(backend, textures[i], $"Texture binding '{slot.Name}'[{i}]");
+            if (!ReferenceEquals(binding.Textures[i], texture))
+            {
+                binding.Textures[i] = texture;
+                changed = true;
+            }
+        }
+
+        if (binding.TextureCount > textures.Length)
+            Array.Clear(binding.Textures, textures.Length, binding.TextureCount - textures.Length);
+        binding.TextureCount = textures.Length;
+
+        if (changed)
+            InvalidateBindGroup();
+    }
+
+    internal BindGroup GetBindGroup()
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        if (bindings.Length == 0) return default;
+        if (!cachedBindGroup.IsNull) return cachedBindGroup;
+
+        var entryCount = 0;
+        foreach (var binding in bindings)
+        {
+            if (binding.TextureCount == 0)
+                throw new InvalidOperationException($"Texture binding '{binding.Name}' has no textures assigned");
+            entryCount = checked(entryCount + binding.Capacity * 2);
+        }
+
+        Span<BindGroupEntry> entries = stackalloc BindGroupEntry[entryCount];
+        var entryIndex = 0;
+        foreach (var binding in bindings)
+        {
+            var fallback = WebGpuResourceValidation.RequireTexture(backend, binding.Textures[0], $"Texture binding '{binding.Name}'[0]");
+            for (var i = 0; i < binding.Capacity; ++i)
+            {
+                var texture = i < binding.TextureCount
+                    ? WebGpuResourceValidation.RequireTexture(backend, binding.Textures[i], $"Texture binding '{binding.Name}'[{i}]")
+                    : fallback;
+
+                entries[entryIndex++] = BindGroupEntry.TextureView((uint)(binding.BaseBinding + i * 2), texture.TextureViewHandle);
+                entries[entryIndex++] = BindGroupEntry.Sampler((uint)(binding.BaseBinding + i * 2 + 1), texture.SamplerHandle);
+            }
+        }
+
+        cachedBindGroup = backend.DeviceHandle.CreateBindGroup(pipeline.TextureBindGroupLayout, entries);
+        return cachedBindGroup;
+    }
+
+    internal void RetainForFrame()
+    {
+        backend.RetainForFrame(this);
+        foreach (var binding in bindings)
+        {
+            var fallback = binding.TextureCount != 0 ? binding.Textures[0] : null;
+            for (var i = 0; i < binding.Capacity; ++i)
+            {
+                var texture = i < binding.TextureCount ? binding.Textures[i] : fallback;
+                if (texture is not null)
+                    backend.RetainForFrame(texture);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        InvalidateBindGroup();
+        foreach (var binding in bindings)
+            binding.Dispose();
+        disposed = true;
+    }
+
+    void InvalidateBindGroup()
+    {
+        if (cachedBindGroup.IsNull) return;
+        backend.RetireAfterSubmit(cachedBindGroup);
+        cachedBindGroup = default;
+    }
+
+    ref ResourceBinding getBinding(ShaderSamplerBinding slot)
+    {
+        for (var i = 0; i < bindings.Length; ++i)
+            if (bindings[i].Name == slot.Name)
+                return ref bindings[i];
+        throw new ArgumentException($"Texture binding '{slot.Name}' is not part of this resource set", nameof(slot));
+    }
+
+    struct ResourceBinding
+    {
+        public ResourceBinding(ShaderSamplerBinding slot, int baseBinding, int capacity)
+        {
+            Slot = slot;
+            BaseBinding = baseBinding;
+            Capacity = capacity;
+            Textures = new WebGpuTexture[capacity];
+            TextureCount = 0;
+        }
+
+        public readonly ShaderSamplerBinding Slot;
+        public readonly string Name => Slot.Name;
+        public readonly int BaseBinding;
+        public readonly int Capacity;
+        public readonly WebGpuTexture[] Textures;
+        public int TextureCount;
+
+        public void Clear()
+        {
+            if (TextureCount != 0)
+                Array.Clear(Textures, 0, TextureCount);
+            TextureCount = 0;
+        }
+
+        public void Dispose()
+        {
+            if (Textures is not null)
+                Array.Clear(Textures);
+            TextureCount = 0;
+        }
+    }
+}
+
+public sealed class WebGpuRenderPipelineFactory(WebGpuGraphicsBackend backend) : IRenderPipelineFactory
+{
+    public IRenderPipeline CreateRenderPipeline(RenderPipelineDescription description)
+        => new WebGpuRenderPipeline(backend, description);
 }

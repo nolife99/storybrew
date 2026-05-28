@@ -4,7 +4,6 @@ using System;
 
 public interface IGraphicsBuffer : IDisposable
 {
-    GraphicsResourceHandle NativeHandle { get; }
     GraphicsBufferDescription Description { get; }
     int SizeInBytes { get; }
 

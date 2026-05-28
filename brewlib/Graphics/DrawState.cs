@@ -14,22 +14,16 @@ public static class DrawState
 {
     static IRenderer renderer;
     static bool flushingRenderer;
-    static int drawCalls;
+    static int renderPasses;
 
     public static bool UseSrgb { get; set; }
 
     public static IGraphicsBackend Backend { get; private set; }
     public static IGraphicsDevice Device => Backend?.Device;
 
-    public static bool SupportsImmutable
-        => Backend?.Capabilities.Has(GraphicsBackendFeatures.ImmutableBuffers) ?? false;
-
-    public static bool CanInvalidate
-        => Backend?.Capabilities.Has(GraphicsBackendFeatures.FramebufferInvalidation) ?? false;
-
-    public static bool ColorCorrected
-        => Backend?.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer) ?? false;
-
+    public static bool SupportsImmutable => Backend?.Capabilities.Has(GraphicsBackendFeatures.ImmutableBuffers) ?? false;
+    public static bool CanInvalidate => Backend?.Capabilities.Has(GraphicsBackendFeatures.FramebufferInvalidation) ?? false;
+    public static bool ColorCorrected => Backend?.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer) ?? false;
     public static int MaxTextureSize => Backend?.Capabilities.MaxTextureSize ?? 0;
     public static int MaxTextureImageUnits => Backend?.Capabilities.MaxTextureImageUnits ?? 0;
 
@@ -38,23 +32,26 @@ public static class DrawState
         get => renderer;
         set
         {
-            if (renderer == value) return;
+            if (ReferenceEquals(renderer, value))
+                return;
 
             FlushRenderer(true);
 
             flushingRenderer = true;
-            renderer?.EndRendering();
-
-            renderer = value;
-
-            renderer?.BeginRendering();
-            flushingRenderer = false;
+            try
+            {
+                renderer?.EndRendering();
+                renderer = value;
+                renderer?.BeginRendering();
+            }
+            finally
+            {
+                flushingRenderer = false;
+            }
         }
     }
 
-    public static void Initialize(ResourceContainer resourceContainer,
-        TextureContainer textureContainer,
-        IGraphicsBackend backend = null)
+    public static void Initialize(ResourceContainer resourceContainer, TextureContainer textureContainer, IGraphicsBackend backend = null)
     {
         if (backend is null)
             throw new ArgumentNullException(nameof(backend), "DrawState now requires an explicit graphics backend");
@@ -62,20 +59,16 @@ public static class DrawState
         Backend = backend;
 
         var textureFactory = Backend.TextureFactory;
-
-        WhitePixel = textureFactory.Create(Color.White,
-            textureOptions: new()
-            {
-                TextureMagFilter = TextureFilter.Nearest,
-                TextureMinFilter = TextureFilter.Nearest
-            });
-
-        TransparentPixel = textureFactory.Create(Color.Transparent,
-            textureOptions: new()
-            {
-                TextureMagFilter = TextureFilter.Nearest,
-                TextureMinFilter = TextureFilter.Nearest
-            });
+        WhitePixel = textureFactory.Create(Color.White, textureOptions: new()
+        {
+            TextureMagFilter = TextureFilter.Nearest,
+            TextureMinFilter = TextureFilter.Nearest
+        });
+        TransparentPixel = textureFactory.Create(Color.Transparent, textureOptions: new()
+        {
+            TextureMagFilter = TextureFilter.Nearest,
+            TextureMinFilter = TextureFilter.Nearest
+        });
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
@@ -83,34 +76,47 @@ public static class DrawState
 
     public static void Cleanup()
     {
-        WhitePixel.Dispose();
-        TransparentPixel.Dispose();
-        TextFontManager.Dispose();
-        TextGenerator.Dispose();
+        Renderer = null;
+
+        WhitePixel?.Dispose();
+        TransparentPixel?.Dispose();
+        WhitePixel = null;
+        TransparentPixel = null;
+
+        Backend = null;
     }
 
-    // Begins a frame. Returns false if the window has no drawable area (minimized, zero size).
-    public static bool BeginFrame(Vector4 clearColor)
-        => Backend?.BeginFrame(clearColor) ?? false;
+    public static DrawFrame BeginFrame(Vector4 clearColor)
+        => new(Backend?.BeginFrame(clearColor) ?? false);
 
-    // Flushes all pending rendering, submits the frame to the GPU, and returns the draw call count.
-    public static int EndFrame()
+    public static int DrawFrame(Vector4 clearColor, Action draw)
+    {
+        using var frame = BeginFrame(clearColor);
+        if (!frame.IsActive)
+            return -1;
+
+        draw();
+        return frame.End();
+    }
+
+    internal static int EndFrame()
     {
         Renderer = null;
 
-        var draws = drawCalls;
-        drawCalls = 0;
+        var passes = renderPasses;
+        renderPasses = 0;
 
         Device?.ResetStateCache();
         RenderStates.ClearStateCache();
-
         Backend?.EndFrame(CanInvalidate);
-        return draws;
+
+        return passes;
     }
 
     public static void FlushRenderer(bool canBuffer = false)
     {
-        if (renderer is null || flushingRenderer) return;
+        if (renderer is null || flushingRenderer)
+            return;
 
         flushingRenderer = true;
         try
@@ -123,12 +129,12 @@ public static class DrawState
         }
     }
 
-    public static void FlushRendererImmediate()
-        => FlushRenderer(false);
+    public static void FlushRendererImmediate() => FlushRenderer(false);
 
-    internal static void CountDrawCall() => ++drawCalls;
+    internal static void CountRenderPass() => ++renderPasses;
 
-    public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates) where T : IRenderer
+    public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates)
+        where T : IRenderer
     {
         Renderer = nextRenderer;
         renderer.Camera = camera;
@@ -136,8 +142,7 @@ public static class DrawState
         return nextRenderer;
     }
 
-    public static bool SupportsShaderExtension(string extensionName)
-        => Backend?.SupportsShaderExtension(extensionName) ?? false;
+    public static bool SupportsShaderExtension(string extensionName) => Backend?.SupportsShaderExtension(extensionName) ?? false;
 
     #region Texture states
 
@@ -145,7 +150,6 @@ public static class DrawState
     public static ITextureRegion TransparentPixel { get; private set; }
 
     public static int BindTexture(ITexture texture) => Device.BindTexture(texture);
-
     public static void UnbindTexture(ITexture texture) => Device.UnbindTexture(texture);
 
     #endregion
@@ -159,11 +163,11 @@ public static class DrawState
         get => viewport;
         set
         {
-            if (viewport == value) return;
+            if (viewport == value)
+                return;
 
             FlushRendererImmediate();
             viewport = value;
-
             Device.SetViewport(viewport);
             ViewportChanged?.Invoke();
         }
@@ -178,32 +182,31 @@ public static class DrawState
         get => clipRegion;
         set
         {
-            if (clipRegion == value) return;
+            if (clipRegion == value)
+                return;
 
             FlushRendererImmediate();
             clipRegion = value;
-
-            Device.SetScissor(clipRegion.HasValue ?
-                Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), viewport) :
-                null);
+            Device.SetScissor(clipRegion.HasValue
+                ? Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), viewport)
+                : null);
         }
     }
 
     static Rectangle? Clip(Rectangle? newRegion)
     {
         var previousClipRegion = clipRegion;
-        ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
-            Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion),
-                Nullable.GetValueRefOrDefaultRef(ref newRegion)) :
-            newRegion;
-
+        ClipRegion = clipRegion.HasValue && newRegion.HasValue
+            ? Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), Nullable.GetValueRefOrDefaultRef(ref newRegion))
+            : newRegion;
         return previousClipRegion;
     }
 
     public static Rectangle? Clip(RectangleF bounds, ICamera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
-        return Clip(new(float.ConvertToIntegerNative<int>(screenBounds.X),
+        return Clip(new(
+            float.ConvertToIntegerNative<int>(screenBounds.X),
             viewport.Height - float.ConvertToIntegerNative<int>(screenBounds.Y + screenBounds.Height),
             float.ConvertToIntegerNative<int>(screenBounds.Width),
             float.ConvertToIntegerNative<int>(screenBounds.Height)));
@@ -211,31 +214,16 @@ public static class DrawState
 
     public static RectangleF? GetClipRegion(ICamera camera)
     {
-        if (!clipRegion.HasValue) return null;
+        if (!clipRegion.HasValue)
+            return null;
 
         var bounds = camera.FromScreen(Nullable.GetValueRefOrDefaultRef(ref clipRegion));
-        return RectangleF.FromLTRB(bounds.X,
-            camera.ExtendedViewport.Height - bounds.Bottom,
-            bounds.Right,
+        return RectangleF.FromLTRB(bounds.X, camera.ExtendedViewport.Height - bounds.Bottom, bounds.Right,
             camera.ExtendedViewport.Height - bounds.Y);
     }
 
-    static int programId;
-
-    public static int ProgramId
-    {
-        get => programId;
-        set
-        {
-            if (programId == value) return;
-
-            programId = value;
-            Device.UseProgram(programId);
-        }
-    }
-
     #endregion
-
+    
     #region Utilities
 
     public static TextGenerator TextGenerator { get; private set; }
@@ -244,7 +232,40 @@ public static class DrawState
     #endregion
 }
 
+public sealed class DrawFrame : IDisposable
+{
+    bool ended;
+
+    internal DrawFrame(bool isActive)
+    {
+        IsActive = isActive;
+    }
+
+    public bool IsActive { get; }
+
+    public int End()
+    {
+        if (ended)
+            throw new InvalidOperationException("The draw frame has already ended");
+
+        ended = true;
+        return IsActive ? DrawState.EndFrame() : -1;
+    }
+
+    public void Dispose()
+    {
+        if (!ended && IsActive)
+            End();
+    }
+}
+
 public enum BlendingMode
 {
-    Off, AlphaBlend, Color, Additive, BlendAdd, Premultiply, Premultiplied
+    Off,
+    AlphaBlend,
+    Color,
+    Additive,
+    BlendAdd,
+    Premultiply,
+    Premultiplied
 }

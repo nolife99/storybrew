@@ -7,19 +7,14 @@ using Textures;
 
 public interface IRenderPipeline : IDisposable
 {
-    GraphicsResourceHandle NativeHandle { get; }
     RenderPipelineDescription Description { get; }
 
     IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name);
     IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform);
     IResourceSet CreateResourceSet();
 
-    void Bind();
-    void Unbind();
-    void BindVertexBuffer(int slot, IGraphicsBuffer buffer);
-    void BindVertexBuffer(int slot, IGraphicsBuffer buffer, int offset);
-    void Draw(DrawCommand command);
-    void DrawInstanced(DrawInstancedCommand command);
+    void Draw(DrawCommand command, scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers, IResourceSet resources = null);
+    void DrawInstanced(DrawInstancedCommand command, scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers, IResourceSet resources = null);
 }
 
 public interface IRenderPipelineFactory
@@ -34,8 +29,7 @@ public interface IRenderUniform<in T>
 
 public interface IResourceSet : IDisposable
 {
-    void SetTextures(int binding, scoped ReadOnlySpan<ITexture> textures);
-    void Bind();
+    void SetTextures(ShaderSamplerBinding slot, scoped ReadOnlySpan<ITexture> textures);
 }
 
 public sealed class RenderPipelineDescription(
@@ -56,31 +50,29 @@ public sealed class PipelineLayout(params TextureBindingLayout[] textureBindings
 {
     public ReadOnlySpan<TextureBindingLayout> TextureBindings => textureBindings;
 
-    public TextureBindingLayout GetTextureBinding(int binding)
+    public TextureBindingLayout GetTextureBinding(ShaderSamplerBinding slot)
     {
         foreach (var textureBinding in textureBindings)
-            if (textureBinding.Binding == binding)
+            if (textureBinding.Slot.Name == slot.Name)
                 return textureBinding;
 
-        throw new ArgumentException($"Texture binding {binding} is not part of this pipeline layout", nameof(binding));
+        throw new ArgumentException($"Texture binding '{slot.Name}' is not part of this pipeline layout", nameof(slot));
     }
 }
 
 public readonly record struct TextureBindingLayout
 {
-    public TextureBindingLayout(int binding, string name, int capacity)
-        : this(binding, new ShaderSamplerBinding(name), capacity) { }
+    public TextureBindingLayout(string name, int capacity)
+        : this(new ShaderSamplerBinding(name), capacity) { }
 
-    public TextureBindingLayout(int binding, ShaderSamplerBinding sampler, int capacity)
+    public TextureBindingLayout(ShaderSamplerBinding slot, int capacity)
     {
-        Binding = binding;
-        Sampler = sampler;
+        Slot = slot;
         Capacity = capacity;
     }
 
-    public int Binding { get; }
-    public ShaderSamplerBinding Sampler { get; }
-    public string Name => Sampler.Name;
+    public ShaderSamplerBinding Slot { get; }
+    public string Name => Slot.Name;
     public int Capacity { get; }
 }
 
@@ -133,6 +125,11 @@ public enum VertexInputRate
     Vertex,
     Instance
 }
+
+public readonly record struct RenderVertexBufferBinding(
+    int Slot,
+    IGraphicsBuffer Buffer,
+    int Offset = -1);
 
 public readonly record struct DrawCommand(
     int VertexCount,

@@ -165,7 +165,7 @@ public static class Program
     static nint createWebGpuWindow()
     {
         var flags = WindowFlags.Resizable | WindowFlags.Hidden;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        if (OperatingSystem.IsOSPlatform(OSPlatform.OSX.ToString()))
             flags |= WindowFlags.Metal;
 
         return createSdlWindow(flags);

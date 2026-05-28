@@ -179,13 +179,14 @@ public sealed class Editor(nint window, IGraphicsBackend graphicsBackend) : Inpu
 
     public int Draw()
     {
-        if (!DrawState.BeginFrame(Vector4.Zero))
+        using var frame = DrawState.BeginFrame(Vector4.Zero);
+        if (!frame.IsActive)
             return -1;
 
         screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
 
-        return DrawState.EndFrame();
+        return frame.End();
     }
 
     #region Overlay
