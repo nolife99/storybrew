@@ -12,7 +12,6 @@ public interface IGraphicsDevice : IDisposable
 
     void SetViewport(Rectangle viewport);
     void SetScissor(Rectangle? region);
-    void SetCapability(GraphicsCapability capability, bool enabled);
     void SetBlendState(BlendingFactorState state);
 
     void UseProgram(int programId);

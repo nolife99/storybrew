@@ -59,16 +59,19 @@ public static class DrawState
         Backend = backend;
 
         var textureFactory = Backend.TextureFactory;
-        WhitePixel = textureFactory.Create(Color.White, textureOptions: new()
-        {
-            TextureMagFilter = TextureFilter.Nearest,
-            TextureMinFilter = TextureFilter.Nearest
-        });
-        TransparentPixel = textureFactory.Create(Color.Transparent, textureOptions: new()
-        {
-            TextureMagFilter = TextureFilter.Nearest,
-            TextureMinFilter = TextureFilter.Nearest
-        });
+        WhitePixel = textureFactory.Create(Color.White,
+            textureOptions: new()
+            {
+                TextureMagFilter = TextureFilter.Nearest,
+                TextureMinFilter = TextureFilter.Nearest
+            });
+
+        TransparentPixel = textureFactory.Create(Color.Transparent,
+            textureOptions: new()
+            {
+                TextureMagFilter = TextureFilter.Nearest,
+                TextureMinFilter = TextureFilter.Nearest
+            });
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
@@ -129,7 +132,7 @@ public static class DrawState
         }
     }
 
-    public static void FlushRendererImmediate() => FlushRenderer(false);
+    public static void FlushRendererImmediate() => FlushRenderer();
 
     internal static void CountRenderPass() => ++renderPasses;
 
@@ -199,6 +202,7 @@ public static class DrawState
         ClipRegion = clipRegion.HasValue && newRegion.HasValue
             ? Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), Nullable.GetValueRefOrDefaultRef(ref newRegion))
             : newRegion;
+
         return previousClipRegion;
     }
 
@@ -218,12 +222,14 @@ public static class DrawState
             return null;
 
         var bounds = camera.FromScreen(Nullable.GetValueRefOrDefaultRef(ref clipRegion));
-        return RectangleF.FromLTRB(bounds.X, camera.ExtendedViewport.Height - bounds.Bottom, bounds.Right,
+        return RectangleF.FromLTRB(bounds.X,
+            camera.ExtendedViewport.Height - bounds.Bottom,
+            bounds.Right,
             camera.ExtendedViewport.Height - bounds.Y);
     }
 
     #endregion
-    
+
     #region Utilities
 
     public static TextGenerator TextGenerator { get; private set; }
@@ -232,13 +238,14 @@ public static class DrawState
     #endregion
 }
 
-public sealed class DrawFrame : IDisposable
+public ref struct DrawFrame
 {
     bool ended;
 
     internal DrawFrame(bool isActive)
     {
         IsActive = isActive;
+        ended = false;
     }
 
     public bool IsActive { get; }

@@ -1,0 +1,310 @@
+namespace BrewLib.Graphics.Backend.WebGPU;
+
+using System;
+using System.Collections.Generic;
+using Ahjo.Wgpu;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
+
+sealed class WebGpuBindGroupCache : IDisposable
+{
+    readonly WebGpuBackend backend;
+    readonly Device device;
+
+    readonly Dictionary<IWebGpuTexture, List<TextureCacheKey>> textureBacklinks = new(ReferenceEqualityComparer.Instance);
+    readonly Dictionary<TextureCacheKey, TextureCacheEntry> textureCache = new(EqualityComparer<TextureCacheKey>.Default);
+    readonly BindGroupLayout textureLayout;
+
+    readonly Dictionary<WebGpuGraphicsBuffer, List<UniformCacheKey>> uniformBacklinks = new(ReferenceEqualityComparer.Instance);
+    readonly Dictionary<UniformCacheKey, UniformCacheEntry> uniformCache = new(EqualityComparer<UniformCacheKey>.Default);
+    readonly BindGroupLayout uniformLayout;
+
+    bool disposed;
+
+    public WebGpuBindGroupCache(WebGpuBackend backend,
+        Device device,
+        BindGroupLayout textureLayout,
+        uint textureGroupIndex,
+        bool hasTextureGroup,
+        BindGroupLayout uniformLayout,
+        uint uniformGroupIndex,
+        bool hasUniformGroup)
+    {
+        this.backend = backend ?? throw new ArgumentNullException(nameof(backend));
+        this.device = device;
+        this.textureLayout = textureLayout;
+        this.uniformLayout = uniformLayout;
+        TextureGroupIndex = textureGroupIndex;
+        UniformGroupIndex = uniformGroupIndex;
+        HasTextureGroup = hasTextureGroup;
+        HasUniformGroup = hasUniformGroup;
+    }
+
+    public uint TextureGroupIndex { get; }
+
+    public uint UniformGroupIndex { get; }
+
+    public bool HasTextureGroup { get; }
+
+    public bool HasUniformGroup { get; }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+
+        disposed = true;
+
+        foreach (var (texture, _) in textureBacklinks)
+            texture.Disposing -= OnTextureDisposing;
+
+        textureBacklinks.Clear();
+
+        foreach (var (buffer, _) in uniformBacklinks)
+        {
+            buffer.Disposing -= OnUniformBufferDisposing;
+            buffer.Resized -= OnUniformBufferResized;
+        }
+
+        uniformBacklinks.Clear();
+
+        foreach (var entry in textureCache.Values) Retire(entry.Group);
+        textureCache.Clear();
+
+        foreach (var entry in uniformCache.Values) Retire(entry.Group);
+        uniformCache.Clear();
+    }
+
+    public BindGroup GetTextureBindGroup(scoped ReadOnlySpan<IWebGpuTexture> textures)
+    {
+        if (!HasTextureGroup)
+            throw new InvalidOperationException("This pipeline has no texture bind group");
+
+        if (textures.Length == 0)
+            throw new ArgumentException("At least one texture is required", nameof(textures));
+
+        var samplerIdentity = textures[0].SamplerIdentity;
+        TextureCacheKey key = new(textures, samplerIdentity);
+
+        if (textureCache.TryGetValue(key, out var existing))
+            return existing.Group;
+
+        var bindCount = textures.Length * 2;
+        using var entries = TempArray.Create<BindGroupEntry>(bindCount);
+
+        var sharedSampler = textures[0].SamplerEntry.Sampler;
+        for (var i = 0; i < textures.Length; ++i)
+        {
+            entries[i * 2] = BindGroupEntry.TextureView((uint)(i * 2), textures[i].View);
+            entries[i * 2 + 1] = BindGroupEntry.Sampler((uint)(i * 2 + 1), sharedSampler);
+        }
+
+        var group = device.CreateBindGroup(textureLayout, entries.AsReadOnlySpan());
+
+        var capturedTextures = new IWebGpuTexture[textures.Length];
+        for (var i = 0; i < textures.Length; ++i) capturedTextures[i] = textures[i];
+
+        var entry = new TextureCacheEntry(group, capturedTextures);
+        textureCache[key] = entry;
+
+        foreach (var texture in capturedTextures)
+        {
+            if (!textureBacklinks.TryGetValue(texture, out var list))
+            {
+                list = new(2);
+                textureBacklinks[texture] = list;
+                texture.Disposing += OnTextureDisposing;
+            }
+
+            list.Add(key);
+        }
+
+        return group;
+    }
+
+    public BindGroup GetUniformBindGroup(WebGpuGraphicsBuffer buffer, ulong bindingSize, bool dynamicOffset)
+    {
+        if (!HasUniformGroup)
+            throw new InvalidOperationException("This pipeline has no uniform bind group");
+
+        ArgumentNullException.ThrowIfNull(buffer);
+
+        var key = new UniformCacheKey(buffer, buffer.Buffer.GetHashCode(), bindingSize, dynamicOffset);
+        if (uniformCache.TryGetValue(key, out var existing))
+            return existing.Group;
+
+        var group = device.CreateBindGroup(uniformLayout, [BindGroupEntry.Buffer(0, buffer.Buffer, 0, dynamicOffset ? bindingSize : 0)]);
+        var entry = new UniformCacheEntry(group, buffer);
+        uniformCache[key] = entry;
+
+        if (!uniformBacklinks.TryGetValue(buffer, out var list))
+        {
+            list = new(2);
+            uniformBacklinks[buffer] = list;
+
+            buffer.Disposing += OnUniformBufferDisposing;
+            buffer.Resized += OnUniformBufferResized;
+        }
+
+        list.Add(key);
+
+        return group;
+    }
+
+    void OnTextureDisposing(IWebGpuTexture texture)
+    {
+        if (!textureBacklinks.TryGetValue(texture, out var list)) return;
+
+        using var keys = list.AsValueEnumerable().ToArrayPool();
+        list.Clear();
+
+        textureBacklinks.Remove(texture);
+        texture.Disposing -= OnTextureDisposing;
+
+        foreach (var key in keys.Span)
+        {
+            if (!textureCache.Remove(key, out var entry)) continue;
+
+            Retire(entry.Group);
+
+            foreach (var t in entry.Textures)
+            {
+                if (ReferenceEquals(t, texture)) continue;
+                if (!textureBacklinks.TryGetValue(t, out var otherList)) continue;
+
+                otherList.Remove(key);
+                if (otherList.Count == 0)
+                {
+                    textureBacklinks.Remove(t);
+                    t.Disposing -= OnTextureDisposing;
+                }
+            }
+        }
+    }
+
+    void OnUniformBufferDisposing(WebGpuGraphicsBuffer buffer) => EvictUniformsFor(buffer, true);
+
+    void OnUniformBufferResized(WebGpuGraphicsBuffer buffer) => EvictUniformsFor(buffer, false);
+
+    void EvictUniformsFor(WebGpuGraphicsBuffer buffer, bool unsubscribe)
+    {
+        if (!uniformBacklinks.TryGetValue(buffer, out var list)) return;
+
+        using var keys = list.AsValueEnumerable().ToArrayPool();
+        list.Clear();
+
+        foreach (var key in keys.Span)
+        {
+            if (uniformCache.Remove(key, out var entry))
+                Retire(entry.Group);
+        }
+
+        if (unsubscribe)
+        {
+            uniformBacklinks.Remove(buffer);
+            buffer.Disposing -= OnUniformBufferDisposing;
+            buffer.Resized -= OnUniformBufferResized;
+        }
+    }
+
+
+    void Retire(BindGroup group)
+    {
+        if (group.IsNull) return;
+
+        backend.EnqueueDeferredDisposal(new DisposableBindGroup(group));
+    }
+
+    sealed class DisposableBindGroup : IDisposable
+    {
+        BindGroup group;
+
+        public DisposableBindGroup(BindGroup group) => this.group = group;
+
+        public void Dispose()
+        {
+            if (group.IsNull) return;
+
+            group.Dispose();
+            group = default;
+        }
+    }
+
+    readonly record struct TextureCacheEntry(BindGroup Group, IWebGpuTexture[] Textures);
+
+    readonly record struct UniformCacheEntry(BindGroup Group, WebGpuGraphicsBuffer Buffer);
+
+    readonly struct TextureCacheKey : IEquatable<TextureCacheKey>
+    {
+        readonly IWebGpuTexture _t0, _t1, _t2, _t3;
+        readonly IWebGpuTexture[] _extras;
+        readonly int _count;
+        readonly GraphicsResourceHandle _sampler;
+
+        public TextureCacheKey(scoped ReadOnlySpan<IWebGpuTexture> textures, GraphicsResourceHandle sampler)
+        {
+            _count = textures.Length;
+            _sampler = sampler;
+            _t0 = textures.Length > 0 ? textures[0] : null;
+            _t1 = textures.Length > 1 ? textures[1] : null;
+            _t2 = textures.Length > 2 ? textures[2] : null;
+            _t3 = textures.Length > 3 ? textures[3] : null;
+            if (textures.Length > 4)
+            {
+                _extras = new IWebGpuTexture[textures.Length - 4];
+                for (var i = 0; i < _extras.Length; ++i) _extras[i] = textures[i + 4];
+            }
+            else
+            {
+                _extras = null;
+            }
+        }
+
+        public bool Equals(TextureCacheKey other)
+        {
+            if (_count != other._count) return false;
+            if (!_sampler.Equals(other._sampler)) return false;
+            if (!ReferenceEquals(_t0, other._t0)) return false;
+            if (!ReferenceEquals(_t1, other._t1)) return false;
+            if (!ReferenceEquals(_t2, other._t2)) return false;
+            if (!ReferenceEquals(_t3, other._t3)) return false;
+            if (_extras is null) return other._extras is null;
+            if (other._extras is null || _extras.Length != other._extras.Length) return false;
+
+            for (var i = 0; i < _extras.Length; ++i)
+                if (!ReferenceEquals(_extras[i], other._extras[i]))
+                    return false;
+
+            return true;
+        }
+
+        public override bool Equals(object obj) => obj is TextureCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.Add(_count);
+            hash.Add(_sampler);
+            hash.Add(RuntimeHelpers.Identity(_t0));
+            hash.Add(RuntimeHelpers.Identity(_t1));
+            hash.Add(RuntimeHelpers.Identity(_t2));
+            hash.Add(RuntimeHelpers.Identity(_t3));
+            if (_extras is not null)
+                foreach (var t in _extras)
+                    hash.Add(RuntimeHelpers.Identity(t));
+
+            return hash.ToHashCode();
+        }
+    }
+
+    readonly record struct UniformCacheKey(WebGpuGraphicsBuffer Buffer,
+        int BufferHandleHash,
+        ulong BindingSize,
+        bool DynamicOffset);
+
+    static class RuntimeHelpers
+    {
+        public static int Identity(object obj)
+            => obj is null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+    }
+}

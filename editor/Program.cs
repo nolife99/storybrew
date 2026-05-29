@@ -143,15 +143,12 @@ public static class Program
         SDL.Quit();
     }
 
-    static GraphicsBackendKind getGraphicsBackendKind()
-    {
-        return GraphicsBackendKind.WebGpu;
-    }
+    static GraphicsBackendKind getGraphicsBackendKind() => GraphicsBackendKind.WebGpu;
 
     static IGraphicsBackend createGraphicsBackend(GraphicsBackendKind backendKind, nint window)
         => backendKind switch
         {
-            GraphicsBackendKind.WebGpu => new WebGpuGraphicsBackend(window),
+            GraphicsBackendKind.WebGpu => new WebGpuBackend(window),
             _ => throw new ArgumentOutOfRangeException(nameof(backendKind), backendKind, null)
         };
 
@@ -437,11 +434,7 @@ public static class Program
             }
             finally
             {
-                if (show)
-                {
-                    SDL.Quit();
-                    Environment.FailFast(null, e);
-                }
+                if (show) SDL.Quit();
 
                 insideErrorHandler = false;
             }
