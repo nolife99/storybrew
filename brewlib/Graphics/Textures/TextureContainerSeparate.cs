@@ -106,10 +106,18 @@ public sealed class TextureContainerSeparate(ITextureFactory textureFactory,
 
     public void Dispose()
     {
-        if (disposed) return;
+        Dictionary<string, ITextureRegion> snapshot;
+        lock (writeLock)
+        {
+            if (disposed) return;
 
-        foreach (var texture in textures.Values) texture?.Dispose();
-        disposed = true;
+            disposed = true;
+            snapshot = textures;
+            textures = new(StringComparer.OrdinalIgnoreCase);
+        }
+
+        foreach (var texture in snapshot.Values) texture?.Dispose();
+        snapshot.Clear();
     }
 
     #endregion

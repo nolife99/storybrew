@@ -42,6 +42,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
     readonly IGraphicsBuffer instanceBuffer;
     readonly List<TexturedQuadInstance> instances;
     readonly IRenderPipeline pipeline;
+    readonly IResourceSet resources;
     readonly IGraphicsBuffer vertexBuffer;
 
     ICamera camera;
@@ -70,6 +71,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             backend.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer)));
 
         combinedMatrixUniform = pipeline.GetUniform(CombinedMatrixUniform);
+        resources = pipeline.CreateResourceSet();
 
         vertexBuffer = backend.Buffers.CreateBuffer(new(nameof(TexturedQuadRenderer) + ".Vertices",
             GraphicsBufferTarget.Vertex,
@@ -175,7 +177,6 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
         combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
 
-        using var resources = pipeline.CreateResourceSet();
         resources.SetTextures(TexturesSampler, [batchTexture]);
         pipeline.DrawInstanced(new(VertexPerQuad, span.Length), [new(0, vertexBuffer), new(1, instanceBuffer)], resources);
 
@@ -389,6 +390,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
         if (rendering) ((IRenderer)this).EndRendering();
 
+        resources.Dispose();
         vertexBuffer.Dispose();
         instanceBuffer.Dispose();
         pipeline.Dispose();

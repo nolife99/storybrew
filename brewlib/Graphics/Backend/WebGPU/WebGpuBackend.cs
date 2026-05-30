@@ -1,8 +1,10 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Ahjo.Wgpu;
 using Ahjo.Wgpu.Native;
 using IO;
@@ -20,6 +22,7 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     readonly HashSet<WebGpuGraphicsBuffer> ringBuffers = new(ReferenceEqualityComparer.Instance);
     readonly IntPtr sdlWindow;
     WebGpuBufferFactory bufferFactory;
+    WebGpuUniformRing uniformRing;
 
     WGPUColor clear;
 
@@ -66,6 +69,8 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     internal bool IsFrameActive => frameContext is not null && frameContext.IsFrameActive;
     internal WebGpuFrameRecorder Recorder { get; private set; }
 
+    internal WebGpuUniformRing UniformRing => uniformRing;
+
     internal WGPUTextureFormat SurfaceFormat { get; private set; }
 
     internal BlendingFactorState CurrentBlendState { get; private set; } = new(BlendingMode.AlphaBlend);
@@ -96,13 +101,45 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     public override IQuadRenderer CreateQuadRenderer() => new TexturedQuadRenderer(this);
     public override ILineRenderer CreateLineRenderer() => new LineRenderer(this);
 
-    internal void EnqueueDeferredDisposal(IDisposable resource) => frameContext?.EnqueueDeferred(resource);
+    internal void EnqueueDeferredDisposal(Ahjo.Wgpu.Buffer buffer) => frameContext?.EnqueueDeferred(buffer);
+    internal void EnqueueDeferredDisposal(BindGroup bindGroup) => frameContext?.EnqueueDeferred(bindGroup);
+
+    internal void StageBufferWrite(Ahjo.Wgpu.Buffer buffer, ulong offset, scoped ReadOnlySpan<byte> data)
+        => StageBufferWrite(buffer, offset, data, data.Length);
+
+    internal void StageBufferWrite(Ahjo.Wgpu.Buffer buffer, ulong offset, scoped ReadOnlySpan<byte> data, int paddedLength)
+    {
+        if (frameContext is not null && frameContext.IsFrameActive)
+        {
+            frameContext.StageBufferWrite(buffer, offset, data, paddedLength);
+            return;
+        }
+
+        if (paddedLength == data.Length)
+        {
+            deviceContext.Queue.WriteBuffer(buffer, offset, data);
+            return;
+        }
+
+        using var owner = Configuration.Default.MemoryAllocator.Allocate<byte>(paddedLength);
+        var padded = owner.Memory.Span.Slice(0, paddedLength);
+        data.CopyTo(padded);
+        padded.Slice(data.Length).Clear();
+        deviceContext.Queue.WriteBuffer(buffer, offset, padded);
+    }
 
     internal void RegisterPipeline(WebGpuRenderPipeline pipeline) => pipelines.Add(pipeline);
     internal void UnregisterPipeline(WebGpuRenderPipeline pipeline) => pipelines.Remove(pipeline);
 
     internal void RegisterRingBuffer(WebGpuGraphicsBuffer buffer) => ringBuffers.Add(buffer);
     internal void UnregisterRingBuffer(WebGpuGraphicsBuffer buffer) => ringBuffers.Remove(buffer);
+
+    /// <summary>
+    ///     Begins background compilation of the GPU block-compression compute pipelines so the first scene load
+    ///     doesn't stall on the slow DX12 BC7 build. Done automatically at startup when GPU compression is enabled;
+    ///     call this explicitly if you enable it after the backend has been created. Idempotent and non-blocking.
+    /// </summary>
+    public void PrewarmGpuCompression() => textureFactory?.PrewarmGpuCompression();
 
     internal bool TryGetViewport(out float x, out float y, out float w, out float h)
     {
@@ -189,6 +226,7 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         frameContext.BeginFrame();
         Recorder.Reset();
 
+        uniformRing.ResetFrame();
         foreach (var buffer in ringBuffers) buffer.ResetFrame();
         foreach (var pipeline in pipelines) pipeline.OnFrameBegin();
 
@@ -207,8 +245,20 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     {
         if (!IsFrameActive) return;
 
-        using (var encoder = deviceContext.Device.CreateCommandEncoder())
+        if (!surfaceContext.AcquireFrame())
         {
+            Recorder.Reset();
+            frameContext.AbortFrame();
+            return;
+        }
+
+        try
+        {
+            using var encoder = deviceContext.Device.CreateCommandEncoder();
+
+            if (frameContext.FlushUploads(encoder))
+                frameContext.FinishUploads();
+
             Recorder.Replay(encoder,
                 surfaceContext.CurrentView,
                 in clear,
@@ -217,34 +267,33 @@ public sealed class WebGpuBackend : GraphicsBackendBase
 
             using var cmd = encoder.Finish();
             deviceContext.Queue.Submit(cmd);
-        }
 
-        surfaceContext.EndFrame();
-        frameContext.EndFrame();
+            surfaceContext.EndFrame(discardFramebuffer);
+            frameContext.EndFrame();
+        }
+        catch
+        {
+            surfaceContext.AbortFrame();
+            frameContext.AbortFrame();
+            throw;
+        }
     }
 
     void InitializeGpu()
     {
-        var instanceDesc = new InstanceDescriptor
-        {
-            Flags = InstanceFlags.DevDefault,
-            Backends = InstanceBackends.Primary
-        };
-
-        instance = Instance.Create(in instanceDesc);
-
         Surface surface;
         Adapter adapter;
         Device wgpuDevice;
+
+        var preferredBackends = ChoosePreferredBackends();
         try
         {
-            surface = instance.CreateSurface(SdlSurfaceFactory.Create(sdlWindow));
-            adapter = instance.RequestAdapterBlocking(surface);
+            CreateInstanceSurfaceAdapter(preferredBackends, out surface, out adapter);
         }
-        catch
+        catch when (!EqualityComparer<InstanceBackends>.Default.Equals(preferredBackends, InstanceBackends.Primary))
         {
-            instance.Dispose();
-            throw;
+            SDL.LogInfo(LogCategory.Render, "WebGPU preferred (Vulkan) adapter unavailable; falling back to default backend selection");
+            CreateInstanceSurfaceAdapter(InstanceBackends.Primary, out surface, out adapter);
         }
 
         var caps = surface.GetCapabilities(adapter);
@@ -305,6 +354,9 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         samplerCache = new(wgpuDevice, Name);
         device = new(this);
         bufferFactory = new(this, deviceContext);
+        // Create the single shared uniform ring now, before any texture loading, so it takes an early/low allocation
+        // slot rather than landing in a device-local block later vacated by transient textures (see WebGpuUniformRing).
+        uniformRing = new(this, deviceContext);
         pipelineFactory = new(this, deviceContext);
         textureFactory = new(deviceContext, samplerCache, this);
         textureUploader = new(this,
@@ -312,10 +364,49 @@ public sealed class WebGpuBackend : GraphicsBackendBase
             deviceContext,
             () => (int)deviceLimits.maxTextureDimension2D);
 
+        // If GPU block compression is enabled, start compiling its compute pipelines in the background now (the DX12
+        // BC7 build is slow), so the first scene load blocks on it as little as possible instead of hitching.
+        if (WebGpuTextureFactory.UseGpuCompression)
+            textureFactory.PrewarmGpuCompression();
+
         Capabilities = BuildCapabilities(deviceLimits,
             srgbFramebuffer,
             manualColorCorrection,
             deviceCapabilities.HasNonUniformIndexing || deviceCapabilities.HasTextureBindingArray);
+    }
+
+
+    void CreateInstanceSurfaceAdapter(InstanceBackends backends, out Surface surface, out Adapter adapter)
+    {
+        var instanceDesc = new InstanceDescriptor
+        {
+            Flags = InstanceFlags.DevDefault,
+            Backends = backends
+        };
+
+        instance = Instance.Create(in instanceDesc);
+        try
+        {
+            surface = instance.CreateSurface(SdlSurfaceFactory.Create(sdlWindow));
+            adapter = instance.RequestAdapterBlocking(surface);
+        }
+        catch
+        {
+            instance.Dispose();
+            instance = null;
+            throw;
+        }
+    }
+
+    static InstanceBackends ChoosePreferredBackends()
+    {
+        // Prefer Vulkan on Windows instead of the previous DX12 preference: the BC7 compute-pipeline build stalls for
+        // minutes under DX12/DXC but is instant on Vulkan, and the target RDNA hardware runs Vulkan natively. If a
+        // Vulkan adapter can't be created, the caller retries with the default backend set (Primary).
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return InstanceBackends.Vulkan;
+
+        return InstanceBackends.Primary;
     }
 
     static WGPUTextureFormat ChooseSurfaceFormat(SurfaceCapabilities caps,
@@ -392,7 +483,10 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         pipelines.Clear();
         ringBuffers.Clear();
 
+        uniformRing?.Dispose();
+
         textureUploader?.Dispose();
+        textureFactory?.Dispose();
         samplerCache?.Dispose();
         device?.Dispose();
         frameContext?.Dispose();

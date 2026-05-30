@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using IO;
 using SDL3;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
@@ -36,8 +37,15 @@ public static class TextureLoader
                 FileOptions.Asynchronous | FileOptions.SequentialScan) :
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
+        var config = Configuration.Default.Clone();
+        config.PreferContiguousImageBuffers = true;
+        
+        var decoderOptions = new DecoderOptions()
+        {
+            Configuration = config
+        };
         if (stream is not null)
-            return await Image.LoadAsync<Rgba32>(stream, cancellationToken).ConfigureAwait(false);
+            return await Image.LoadAsync<Rgba32>(decoderOptions, stream, cancellationToken).ConfigureAwait(false);
 
         SDL.LogWarn(LogCategory.Video, $"Texture not found: {filename}");
         return null;

@@ -95,16 +95,25 @@ sealed class WebGpuSurfaceContext : IDisposable
     public bool BeginFrame()
     {
         if (HasActiveFrame)
-            throw new InvalidOperationException("BeginFrame called while a frame was already active");
+            throw new InvalidOperationException("BeginFrame called while a surface frame was already active");
 
         QueryPixelSize(out var w, out var h);
         if (w == 0 || h == 0)
-        {
             return false;
-        }
 
         if (w != Width || h != Height)
             Configure();
+
+        return Width != 0 && Height != 0;
+    }
+
+    public bool AcquireFrame()
+    {
+        if (HasActiveFrame)
+            throw new InvalidOperationException("AcquireFrame called while a surface frame was already active");
+
+        if (Width == 0 || Height == 0)
+            return false;
 
         var result = surface.GetCurrentTexture();
         if (TryHandleAcquire(in result, out var usable))
@@ -154,12 +163,27 @@ sealed class WebGpuSurfaceContext : IDisposable
         }
     }
 
-    public void EndFrame()
+    public void EndFrame(bool discardFramebuffer)
     {
         if (!HasActiveFrame) return;
 
         HasActiveFrame = false;
-        surface.Present();
+
+        if (!discardFramebuffer)
+            surface.Present();
+
+        CurrentView.Dispose();
+        CurrentView = default;
+
+        CurrentTexture.Dispose();
+        CurrentTexture = default;
+    }
+
+    public void AbortFrame()
+    {
+        if (!HasActiveFrame) return;
+
+        HasActiveFrame = false;
 
         CurrentView.Dispose();
         CurrentView = default;

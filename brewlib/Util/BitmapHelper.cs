@@ -22,6 +22,16 @@ public static class BitmapHelper
             : isFullyTransparentDiscontiguous(buffer);
     }
 
+    public static bool IsFullyOpaque(this Image<Rgba32> source)
+    {
+        var buffer = source.Frames.RootFrame.PixelBuffer;
+        return buffer.MemoryGroup.Count == 1
+            ? isFullyOpaqueContiguous(MemoryMarshal.CreateReadOnlySpan(
+                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)),
+                buffer.Width * buffer.Height))
+            : isFullyOpaqueDiscontiguous(buffer);
+    }
+
     public static Rectangle FindTransparencyBounds(Image<Rgba32> source)
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
@@ -123,6 +133,47 @@ public static class BitmapHelper
     {
         for (var y = 0; y < buffer.Height; ++y)
             if (!isFullyTransparentContiguous(buffer.DangerousGetRowSpan(y)))
+                return false;
+        return true;
+    }
+
+    static bool isFullyOpaqueContiguous(scoped ReadOnlySpan<Rgba32> buffer)
+    {
+        var len = buffer.Length;
+        if (len == 0) return true;
+
+        if (Vector.IsHardwareAccelerated && len >= Vector<int>.Count)
+        {
+            var vectorSize = Vector<int>.Count;
+            ref var first = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(buffer));
+            var alphaMask = new Vector<int>(AlphaMask);
+
+            int offset = 0;
+            while (offset + vectorSize <= len)
+            {
+                if (!Vector.EqualsAll(Vector.LoadUnsafe(ref first, (nuint)offset) & alphaMask, alphaMask))
+                    return false;
+                offset += vectorSize;
+            }
+
+            if (offset < len)
+            {
+                if (!Vector.EqualsAll(Vector.LoadUnsafe(ref first, (nuint)(len - vectorSize)) & alphaMask, alphaMask))
+                    return false;
+            }
+            return true;
+        }
+
+        foreach (ref readonly var pixel in buffer)
+            if (pixel.A != 255)
+                return false;
+        return true;
+    }
+
+    static bool isFullyOpaqueDiscontiguous(Buffer2D<Rgba32> buffer)
+    {
+        for (var y = 0; y < buffer.Height; ++y)
+            if (!isFullyOpaqueContiguous(buffer.DangerousGetRowSpan(y)))
                 return false;
         return true;
     }

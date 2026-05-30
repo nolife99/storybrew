@@ -31,17 +31,7 @@ sealed class WebGpuResourceSet : IResourceSet
             this.textures = new IWebGpuTexture[textures.Length];
 
         for (var i = 0; i < textures.Length; ++i)
-        {
-            if (textures[i] is not IWebGpuTexture wgpuTexture)
-            {
-                if (textures[i] is ITextureRegion region && region.Texture is IWebGpuTexture inner)
-                    wgpuTexture = inner;
-                else
-                    throw new InvalidOperationException("Texture is not from the WebGPU backend");
-            }
-
-            this.textures[i] = wgpuTexture;
-        }
+            this.textures[i] = ResolveTexture(textures[i]);
 
         textureCount = textures.Length;
     }
@@ -49,6 +39,17 @@ sealed class WebGpuResourceSet : IResourceSet
     public void Dispose()
     {
         // No-op: the bind-group cache owns the lifetime of every bind group
+    }
+
+    static IWebGpuTexture ResolveTexture(ITexture texture)
+    {
+        if (texture is IWebGpuTexture wgpuTexture)
+            return wgpuTexture;
+
+        if (texture is ITextureRegion region && region.Texture is IWebGpuTexture inner)
+            return inner;
+
+        throw new InvalidOperationException("Texture is not from the WebGPU backend");
     }
 
     public (BindGroup Group, uint GroupIndex) ResolveBindGroup()

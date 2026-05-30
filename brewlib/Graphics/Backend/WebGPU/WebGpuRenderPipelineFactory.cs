@@ -67,7 +67,6 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
             payloadSize > 0 ? WebGpuUniformState.Strategy.DynamicOffsetBuffer : WebGpuUniformState.Strategy.None;
 
         var pushConstantBytes = 0u;
-        WebGpuGraphicsBuffer dedicatedUniformBuffer = null;
 
         using var layoutList = TempList.Create<BindGroupLayout>();
         switch (strategy)
@@ -89,14 +88,6 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
                 ownsUniformLayout = true;
                 layoutList.Add(uniformLayout);
                 if (hasTextureGroup) layoutList.Add(textureLayout);
-
-                dedicatedUniformBuffer = new(backend,
-                    deviceContext,
-                    new(
-                        description.Name + ".Uniforms",
-                        GraphicsBufferTarget.Uniform,
-                        GraphicsBufferUsage.Stream,
-                        (int)WgpuMapper.AlignUp(payloadSize, deviceContext.MinUniformOffsetAlignment) * 8));
 
                 break;
 
@@ -121,8 +112,6 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
         var wgpuPipelineLayout = deviceContext.Device.CreatePipelineLayout(layoutList.AsReadOnlySpan(), pushConstantBytes);
 
         var uniformState = new WebGpuUniformState(deviceContext, strategy, payloadSize);
-        if (strategy == WebGpuUniformState.Strategy.DynamicOffsetBuffer)
-            uniformState.AttachUniformBuffer(dedicatedUniformBuffer);
 
         var pipeline = new WebGpuRenderPipeline(backend,
             deviceContext,
@@ -143,8 +132,7 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
             UniformGroupIndex,
             strategy == WebGpuUniformState.Strategy.DynamicOffsetBuffer,
             vertexPlan,
-            uniformState,
-            dedicatedUniformBuffer);
+            uniformState);
 
         backend.RegisterPipeline(pipeline);
         return pipeline;

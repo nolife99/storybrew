@@ -6,14 +6,13 @@ using System.Text;
 using Ahjo.Wgpu;
 using Ahjo.Wgpu.Native;
 using Shaders;
-using AhjoVertexAttribute = Ahjo.Wgpu.VertexAttribute;
-using AhjoVertexBufferLayout = Ahjo.Wgpu.VertexBufferLayout;
+using WgpuVertexAttribute = Ahjo.Wgpu.VertexAttribute;
+using WgpuVertexBufferLayout = Ahjo.Wgpu.VertexBufferLayout;
 
 sealed class WebGpuRenderPipeline : IRenderPipeline
 {
     readonly WebGpuBackend backend;
     readonly WebGpuBindGroupCache bindCache;
-    readonly WebGpuGraphicsBuffer dedicatedUniformBuffer;
     readonly WebGpuDeviceContext deviceContext;
     readonly BindGroupLayout emptyGroup0Layout;
     readonly byte[] fragmentEntryUtf8;
@@ -55,8 +54,7 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         uint uniformGroupIndex,
         bool hasUniformGroup,
         WgpuVertexLayoutPlan vertexPlan,
-        WebGpuUniformState uniformState,
-        WebGpuGraphicsBuffer dedicatedUniformBuffer)
+        WebGpuUniformState uniformState)
     {
         this.backend = backend;
         this.deviceContext = deviceContext;
@@ -75,7 +73,6 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         this.ownsEmptyLayout = ownsEmptyLayout;
         this.vertexPlan = vertexPlan;
         UniformState = uniformState;
-        this.dedicatedUniformBuffer = dedicatedUniformBuffer;
 
         bindCache = new(backend,
             deviceContext.Device,
@@ -91,12 +88,12 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
 
     public RenderPipelineDescription Description { get; }
 
-    public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name)
+    public IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name) where T : struct
     {
         return new WebGpuRenderUniform<T>(UniformState);
     }
 
-    public IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform)
+    public IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform) where T : struct
         => GetUniform<T>(uniform.Name.AsSpan());
 
     public IResourceSet CreateResourceSet() => new WebGpuResourceSet(this, bindCache);
@@ -115,7 +112,7 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         EncodeDraw(vertexBuffers, resources, command.InstanceCount, command.VertexCount, command.FirstVertex);
     }
 
-    public unsafe void Dispose()
+    public void Dispose()
     {
         if (disposed) return;
 
@@ -129,7 +126,6 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         variants.Clear();
 
         UniformState.Dispose();
-        dedicatedUniformBuffer?.Dispose();
 
         wgpuPipelineLayout.Dispose();
         if (ownsTextureLayout && !textureBindLayout.IsNull) textureBindLayout.Dispose();
@@ -137,8 +133,7 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         if (ownsEmptyLayout && !emptyGroup0Layout.IsNull) emptyGroup0Layout.Dispose();
 
         vertexModule.Dispose();
-        if (!fragmentModule.IsNull && fragmentModule.Handle != vertexModule.Handle)
-            fragmentModule.Dispose();
+        if (!fragmentModule.IsNull) fragmentModule.Dispose();
     }
 
     public void OnFrameBegin() => UniformState.BeginFrame();
@@ -196,7 +191,7 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
             case WebGpuUniformState.Strategy.DynamicOffsetBuffer:
                 if (UniformState.HasValueWritten)
                 {
-                    var (ugroup, uoffset) = UniformState.StageDynamic(bindCache);
+                    var (ugroup, uoffset) = UniformState.StageDynamic(backend, bindCache);
                     draw.UniformKind = UniformKind.DynamicOffset;
                     draw.UniformGroup = ugroup;
                     draw.UniformGroupIndex = bindCache.UniformGroupIndex;
@@ -267,14 +262,14 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
     }
 }
 
-sealed class WgpuVertexLayoutPlan
+readonly struct WgpuVertexLayoutPlan
 {
-    public WgpuVertexLayoutPlan(AhjoVertexBufferLayout[] buffers, AhjoVertexAttribute[] attributes)
+    public WgpuVertexLayoutPlan(WgpuVertexBufferLayout[] buffers, WgpuVertexAttribute[] attributes)
     {
         Buffers = buffers;
         Attributes = attributes;
     }
 
-    public AhjoVertexBufferLayout[] Buffers { get; }
-    public AhjoVertexAttribute[] Attributes { get; }
+    public WgpuVertexBufferLayout[] Buffers { get; }
+    public WgpuVertexAttribute[] Attributes { get; }
 }

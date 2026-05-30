@@ -146,6 +146,7 @@ public sealed class TextureContainerAtlas : TextureContainer
 
         foreach (var atlas in atlases.Values) atlas.Dispose();
         atlases.Dispose();
+        textures.Clear();
 
         disposed = true;
     }

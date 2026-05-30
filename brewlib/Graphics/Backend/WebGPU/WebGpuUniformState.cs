@@ -2,6 +2,7 @@ namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ahjo.Wgpu;
 
 /// <summary>
@@ -36,11 +37,6 @@ sealed class WebGpuUniformState : IDisposable
 
     // Push-constant path: a single CPU staging area, refreshed on every SetValue.
     readonly byte[] pushConstantStaging;
-
-    int frameWriteCursor;
-
-    // Dynamic-offset path:
-    WebGpuGraphicsBuffer uniformBuffer;
 
     public WebGpuUniformState(WebGpuDeviceContext deviceContext, Strategy strategy, uint payloadSize)
     {
@@ -82,19 +78,9 @@ sealed class WebGpuUniformState : IDisposable
         // We don't own the uniform buffer — the pipeline does.
     }
 
-    /// <summary>Attach the dynamic-offset uniform buffer (created by the factory after the cache is in place).</summary>
-    public void AttachUniformBuffer(WebGpuGraphicsBuffer buffer)
-    {
-        if (ActiveStrategy != Strategy.DynamicOffsetBuffer)
-            throw new InvalidOperationException("Uniform buffer attach is only valid for the dynamic-offset strategy");
-
-        uniformBuffer = buffer;
-    }
-
-    /// <summary>Reset per-frame ring state. Called at frame start.</summary>
+    /// <summary>Reset per-frame state. Called at frame start. The shared ring's cursor is reset by the backend.</summary>
     public void BeginFrame()
     {
-        frameWriteCursor = 0;
         HasValueWritten = false;
     }
 
@@ -136,45 +122,33 @@ sealed class WebGpuUniformState : IDisposable
     ///     Dynamic-offset path only: write the current value into the per-frame uniform ring with a queue-ordered
     ///     <c>WriteBuffer</c> and return the bind group + dynamic offset for the draw to record.
     /// </summary>
-    public (BindGroup Group, uint Offset) StageDynamic(WebGpuBindGroupCache cache)
+    public (BindGroup Group, uint Offset) StageDynamic(WebGpuBackend backend, WebGpuBindGroupCache cache)
     {
         if (ActiveStrategy != Strategy.DynamicOffsetBuffer)
             throw new InvalidOperationException("StageDynamic is only valid for the dynamic-offset strategy");
 
-        if (uniformBuffer is null)
-            throw new InvalidOperationException("Uniform buffer hasn't been attached");
+        // Sub-allocate this draw's slot from the single process-wide uniform ring (created early, shared by all
+        // pipelines) rather than a per-pipeline buffer — so only one long-lived uniform suballocation exists.
+        var (buffer, offset) = backend.UniformRing.Allocate(AlignedSlotSize);
 
-        var offset = (uint)frameWriteCursor;
-        var nextCursor = (int)(offset + AlignedSlotSize);
-        EnsureRingCapacity(nextCursor);
+        // A mid-frame grow reallocates the ring (generation bump + Resized), which evicts and rebuilds dependent bind
+        // groups; earlier draws keep binding the prior buffer, which stays alive until this frame's submit, so this
+        // returns a fresh/valid group either way.
+        var group = cache.GetUniformBindGroup(buffer, AlignedSlotSize, true);
 
-        // The buffer's underlying allocation may have changed (grow) — Resized events already invalidated any
-        // dependent bind groups, so this returns a fresh/valid group.
-        var group = cache.GetUniformBindGroup(uniformBuffer, AlignedSlotSize, true);
+        // Frame buffer uploads are batched and flushed with queue-ordered WriteBuffer calls before the render submit.
+        backend.StageBufferWrite(buffer.Buffer, offset, dynamicStaging.AsSpan(0, (int)AlignedSlotSize));
 
-        // Queue.WriteBuffer is queue-ordered before the next submit, so the slot is visible to this frame's draws.
-        deviceContext.Queue.WriteBuffer(uniformBuffer.Buffer, offset, dynamicStaging.AsSpan(0, (int)AlignedSlotSize));
-
-        frameWriteCursor = nextCursor;
         return (group, offset);
-    }
-
-    void EnsureRingCapacity(int requiredBytes)
-    {
-        if (uniformBuffer.CapacityBytes >= requiredBytes) return;
-
-        var slots = Math.Max(8, requiredBytes / (int)AlignedSlotSize + 1);
-        uniformBuffer.Allocate(slots * (int)AlignedSlotSize);
     }
 }
 
 /// <summary>
 ///     Concrete <see cref="IRenderUniform{T}" />. Forwards to the pipeline's shared <see cref="WebGpuUniformState" />.
 ///     The <c>IRenderUniform&lt;T&gt;</c> interface places no <c>unmanaged</c> constraint on <typeparamref name="T" />,
-///     so we validate at construction that it's blittable and serialise with <see cref="Unsafe.WriteUnaligned" />
-///     (a safe managed API — no pointers, no <c>unsafe</c> blocks).
+///     so we validate at construction that it's blittable before exposing it as bytes.
 /// </summary>
-sealed class WebGpuRenderUniform<T> : IRenderUniform<T>
+sealed class WebGpuRenderUniform<T> : IRenderUniform<T> where T : struct
 {
     readonly WebGpuUniformState state;
 
@@ -191,9 +165,6 @@ sealed class WebGpuRenderUniform<T> : IRenderUniform<T>
 
     public void SetValue(T value)
     {
-        var size = Unsafe.SizeOf<T>();
-        var tmp = size <= 256 ? stackalloc byte[size] : new byte[size];
-        Unsafe.WriteUnaligned(ref tmp[0], value);
-        state.SetValueBytes(tmp);
+        state.SetValueBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref value, 1)));
     }
 }

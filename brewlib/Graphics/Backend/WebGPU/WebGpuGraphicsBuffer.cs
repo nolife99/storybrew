@@ -55,6 +55,8 @@ sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 
     public WgpuBuffer Buffer => wgpuBuffer;
 
+    public int Generation { get; private set; }
+
     public int CurrentReadOffset { get; private set; }
 
     public GraphicsBufferDescription Description => description;
@@ -116,7 +118,7 @@ sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
 
         if (!wgpuBuffer.IsNull)
         {
-            backend.EnqueueDeferredDisposal(new DisposableHandle(wgpuBuffer));
+            backend.EnqueueDeferredDisposal(wgpuBuffer);
             wgpuBuffer = default;
         }
 
@@ -175,17 +177,7 @@ sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
             EnsureCapacity(newCap, false);
         }
 
-        if (paddedLen == bytes.Length)
-        {
-            deviceContext.Queue.WriteBuffer(wgpuBuffer, (ulong)offset, bytes);
-        }
-        else
-        {
-            var tmp = paddedLen <= 1024 ? stackalloc byte[paddedLen] : new byte[paddedLen];
-            bytes.CopyTo(tmp);
-            tmp[bytes.Length..].Clear();
-            deviceContext.Queue.WriteBuffer(wgpuBuffer, (ulong)offset, tmp);
-        }
+        backend.StageBufferWrite(wgpuBuffer, (ulong)offset, bytes, paddedLen);
 
         CurrentReadOffset = offset;
         SizeInBytes = bytes.Length;
@@ -210,10 +202,11 @@ sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
     void ReplaceWith(WgpuBuffer fresh, int newCapacity)
     {
         if (!wgpuBuffer.IsNull)
-            backend.EnqueueDeferredDisposal(new DisposableHandle(wgpuBuffer));
+            backend.EnqueueDeferredDisposal(wgpuBuffer);
 
         wgpuBuffer = fresh;
         CapacityBytes = newCapacity;
+        unchecked { Generation++; }
 
         try
         {
@@ -246,17 +239,4 @@ sealed class WebGpuGraphicsBuffer : IGraphicsBuffer
         return flags;
     }
 
-    sealed class DisposableHandle : IDisposable
-    {
-        WgpuBuffer buffer;
-        public DisposableHandle(WgpuBuffer b) => buffer = b;
-
-        public void Dispose()
-        {
-            if (buffer.IsNull) return;
-
-            buffer.Dispose();
-            buffer = default;
-        }
-    }
 }

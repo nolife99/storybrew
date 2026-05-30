@@ -1,6 +1,7 @@
 namespace BrewLib.Graphics.Backend.WebGPU;
 
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Ahjo.Wgpu;
@@ -49,27 +50,47 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
 
     public IGraphicsBackend Backend { get; }
 
+    // Uploads at or below this size are cheap enough to push straight through Queue.WriteTexture and flush
+    // immediately; larger standalone uploads are streamed through the bounded stager instead so wgpu never
+    // allocates a big transient staging buffer. In-frame uploads always use WriteTexture (flushed at EndFrame).
+    internal const long StageThresholdBytes = 1 << 20;
+
+    bool IsInFrame => Backend is WebGpuBackend { IsFrameActive: true };
+
+    bool ShouldStage(long bytes) => !IsInFrame && bytes > StageThresholdBytes;
+
+    void FlushIfStandalone()
+    {
+        if (!IsInFrame)
+            deviceContext.FlushQueuedWrites();
+    }
+
     public void Update(Color color, int x, int y, int width, int height)
     {
         if (width <= 0 || height <= 0) return;
 
         var pixel = color.ToPixel<Rgba32>();
-        const int stackRowPixelLimit = 2048;
+        const int stackPixelLimit = 2048;
+        var chunkWidth = Math.Min(width, stackPixelLimit);
+        Span<Rgba32> chunk = stackalloc Rgba32[chunkWidth];
+        chunk.Fill(pixel);
+        var chunkBytes = MemoryMarshal.AsBytes(chunk);
 
-        if (width <= stackRowPixelLimit)
+        for (var row = 0; row < height; ++row)
         {
-            Span<Rgba32> row = stackalloc Rgba32[width];
-            row.Fill(pixel);
-            WriteRowRepeated(MemoryMarshal.AsBytes(row), x, y, width, height);
-        }
-        else
-        {
-            var rowArr = new Rgba32[width];
-            rowArr.AsSpan().Fill(pixel);
-            WriteRowRepeated(MemoryMarshal.AsBytes(rowArr.AsSpan()), x, y, width, height);
+            var remaining = width;
+            var destX = x;
+            while (remaining > 0)
+            {
+                var writeWidth = Math.Min(remaining, stackPixelLimit);
+                WriteRegion(chunkBytes[..(writeWidth * 4)], destX, y + row, writeWidth, 1);
+                destX += writeWidth;
+                remaining -= writeWidth;
+            }
         }
 
         InvalidateMipsIfFull(x, y, width, height);
+        FlushIfStandalone();
     }
 
     public void Update(Image<Rgba32> bitmap, int x, int y)
@@ -90,17 +111,18 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
         if (data.Length < (long)bytesPerRow * height)
             throw new ArgumentException("Source data is shorter than bytesPerRow * height", nameof(data));
 
-        if (bytesPerRow == packedBytesPerRow)
+        if (ShouldStage((long)width * height * 4))
         {
-            WriteRegion(data[..(packedBytesPerRow * height)], x, y, width, height);
-        }
-        else
-        {
-            for (var row = 0; row < height; ++row)
-                WriteRegion(data.Slice(row * bytesPerRow, packedBytesPerRow), x, y + row, width, 1);
+            deviceContext.TextureStager.UploadRaw(this, data, width, height, x, y, bytesPerRow);
+            InvalidateMipsIfFull(x, y, width, height);
+            return;
         }
 
+        for (var row = 0; row < height; ++row)
+            WriteRegion(data.Slice(row * bytesPerRow, packedBytesPerRow), x, y + row, width, 1);
+
         InvalidateMipsIfFull(x, y, width, height);
+        FlushIfStandalone();
     }
 
     public void GenerateMipsIfNeeded(CommandEncoder encoder)
@@ -120,27 +142,22 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
         var h = Math.Min(Height - destY, bitmap.Height);
         if (w <= 0 || h <= 0) return;
 
-        if (w == bitmap.Width && h == bitmap.Height && bitmap.DangerousTryGetSinglePixelMemory(out var pixels))
+        if (ShouldStage((long)w * h * 4))
         {
-            WriteRegion(MemoryMarshal.AsBytes(pixels.Span), destX, destY, w, h);
+            deviceContext.TextureStager.UploadImage(this, bitmap, destX, destY);
+            InvalidateMipsIfFull(destX, destY, w, h);
+            return;
         }
-        else
+
+        var src = bitmap.Frames.RootFrame.PixelBuffer;
+        for (var row = 0; row < h; ++row)
         {
-            var src = bitmap.Frames.RootFrame.PixelBuffer;
-            for (var row = 0; row < h; ++row)
-            {
-                var rowSpan = MemoryMarshal.AsBytes(src.DangerousGetRowSpan(row)[..w]);
-                WriteRegion(rowSpan, destX, destY + row, w, 1);
-            }
+            var rowSpan = MemoryMarshal.AsBytes(src.DangerousGetRowSpan(row)[..w]);
+            WriteRegion(rowSpan, destX, destY + row, w, 1);
         }
 
         InvalidateMipsIfFull(destX, destY, w, h);
-    }
-
-    void WriteRowRepeated(scoped ReadOnlySpan<byte> oneRow, int x, int y, int width, int height)
-    {
-        for (var row = 0; row < height; ++row)
-            WriteRegion(oneRow, x, y + row, width, 1);
+        FlushIfStandalone();
     }
 
     void WriteRegion(scoped ReadOnlySpan<byte> tightlyPackedRgba, int x, int y, int width, int height)
@@ -211,4 +228,62 @@ interface IWebGpuTexture
     WebGpuSamplerCache.Entry SamplerEntry { get; }
     GraphicsResourceHandle SamplerIdentity { get; }
     event Action<IWebGpuTexture> Disposing;
+}
+
+/// <summary>
+///     A logical sub-region over a physical <see cref="WebGpuTexture"/> whose GPU dimensions were rounded up for
+///     block-compression alignment (BC formats require multiple-of-4 sizes). It reports the original logical size and
+///     disposes the backing texture along with it. The region's BindableTexture is the physical texture, so binding
+///     resolves to the real GPU resource and UVs normalize against the physical size — sampling covers only the real
+///     pixels and excludes the edge-replicated padding.
+/// </summary>
+sealed class WebGpuTextureRegion : Texture2dRegion
+{
+    readonly WebGpuTexture backing;
+
+    public WebGpuTextureRegion(WebGpuTexture backing, int width, int height)
+        : base(backing, new(0, 0, width, height))
+        => this.backing = backing;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) backing.Dispose();
+        base.Dispose(disposing);
+    }
+}
+
+/// <summary>
+///     A region whose backing texture stores only the opaque content sub-rect of a larger logical image (the
+///     transparent margin was trimmed off before upload to save VRAM). It reports the <i>original</i> logical size so
+///     sprite positioning is unchanged, exposes the content's offset/size via <see cref="ContentBounds"/>, and maps
+///     UVs against the backing texture's (block-padded) physical size — so it also absorbs any BC block-padding. The
+///     quad renderer offsets the draw by the content origin so the stored pixels land exactly where the full image's
+///     pixels would have. Not a <see cref="Texture2dRegion"/> because its size/UVs aren't derived from a single bounds.
+/// </summary>
+sealed class WebGpuTrimmedRegion : ITrimmedTextureRegion
+{
+    readonly WebGpuTexture backing;
+
+    public WebGpuTrimmedRegion(WebGpuTexture backing, int originalWidth, int originalHeight, Rectangle contentBounds)
+    {
+        this.backing = backing;
+        Size = new Size(originalWidth, originalHeight);
+        ContentBounds = contentBounds;
+
+        // Content sits at (0,0) of the backing texture; normalize against the backing's physical (padded) size so the
+        // BC padding columns/rows are never sampled.
+        UvOrigin = Vector2.Zero;
+        UvRatio = Vector2.One / new Vector2(backing.Size.Width, backing.Size.Height);
+    }
+
+    public ITexture Texture => backing;
+    public Rectangle Bounds => new(0, 0, Size.Width, Size.Height);
+    public Rectangle ContentBounds { get; }
+    public Vector2 UvOrigin { get; }
+    public Vector2 UvRatio { get; }
+    public Size Size { get; }
+    public int Width => Size.Width;
+    public int Height => Size.Height;
+
+    public void Dispose() => backing.Dispose();
 }

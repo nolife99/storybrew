@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Ahjo.Wgpu;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using ZLinq;
 
 sealed class WebGpuBindGroupCache : IDisposable
 {
@@ -101,23 +100,11 @@ sealed class WebGpuBindGroupCache : IDisposable
 
         var group = device.CreateBindGroup(textureLayout, entries.AsReadOnlySpan());
 
-        var capturedTextures = new IWebGpuTexture[textures.Length];
-        for (var i = 0; i < textures.Length; ++i) capturedTextures[i] = textures[i];
-
-        var entry = new TextureCacheEntry(group, capturedTextures);
+        var entry = new TextureCacheEntry(group, textures);
         textureCache[key] = entry;
 
-        foreach (var texture in capturedTextures)
-        {
-            if (!textureBacklinks.TryGetValue(texture, out var list))
-            {
-                list = new(2);
-                textureBacklinks[texture] = list;
-                texture.Disposing += OnTextureDisposing;
-            }
-
-            list.Add(key);
-        }
+        for (var i = 0; i < textures.Length; ++i)
+            AddTextureBacklink(textures[i], key);
 
         return group;
     }
@@ -129,7 +116,7 @@ sealed class WebGpuBindGroupCache : IDisposable
 
         ArgumentNullException.ThrowIfNull(buffer);
 
-        var key = new UniformCacheKey(buffer, buffer.Buffer.GetHashCode(), bindingSize, dynamicOffset);
+        var key = new UniformCacheKey(buffer, buffer.Generation, bindingSize, dynamicOffset);
         if (uniformCache.TryGetValue(key, out var existing))
             return existing.Group;
 
@@ -155,31 +142,18 @@ sealed class WebGpuBindGroupCache : IDisposable
     {
         if (!textureBacklinks.TryGetValue(texture, out var list)) return;
 
-        using var keys = list.AsValueEnumerable().ToArrayPool();
-        list.Clear();
-
-        textureBacklinks.Remove(texture);
-        texture.Disposing -= OnTextureDisposing;
-
-        foreach (var key in keys.Span)
+        for (var i = 0; i < list.Count; ++i)
         {
+            var key = list[i];
             if (!textureCache.Remove(key, out var entry)) continue;
 
             Retire(entry.Group);
-
-            foreach (var t in entry.Textures)
-            {
-                if (ReferenceEquals(t, texture)) continue;
-                if (!textureBacklinks.TryGetValue(t, out var otherList)) continue;
-
-                otherList.Remove(key);
-                if (otherList.Count == 0)
-                {
-                    textureBacklinks.Remove(t);
-                    t.Disposing -= OnTextureDisposing;
-                }
-            }
+            RemoveTextureBacklinksExcept(in entry, texture, in key);
         }
+
+        list.Clear();
+        textureBacklinks.Remove(texture);
+        texture.Disposing -= OnTextureDisposing;
     }
 
     void OnUniformBufferDisposing(WebGpuGraphicsBuffer buffer) => EvictUniformsFor(buffer, true);
@@ -190,14 +164,14 @@ sealed class WebGpuBindGroupCache : IDisposable
     {
         if (!uniformBacklinks.TryGetValue(buffer, out var list)) return;
 
-        using var keys = list.AsValueEnumerable().ToArrayPool();
-        list.Clear();
-
-        foreach (var key in keys.Span)
+        for (var i = 0; i < list.Count; ++i)
         {
+            var key = list[i];
             if (uniformCache.Remove(key, out var entry))
                 Retire(entry.Group);
         }
+
+        list.Clear();
 
         if (unsubscribe)
         {
@@ -208,31 +182,87 @@ sealed class WebGpuBindGroupCache : IDisposable
     }
 
 
+    void AddTextureBacklink(IWebGpuTexture texture, in TextureCacheKey key)
+    {
+        if (!textureBacklinks.TryGetValue(texture, out var list))
+        {
+            list = new(2);
+            textureBacklinks[texture] = list;
+            texture.Disposing += OnTextureDisposing;
+        }
+
+        list.Add(key);
+    }
+
+    void RemoveTextureBacklinksExcept(in TextureCacheEntry entry, IWebGpuTexture except, in TextureCacheKey key)
+    {
+        RemoveTextureBacklink(entry.T0, except, in key);
+        RemoveTextureBacklink(entry.T1, except, in key);
+        RemoveTextureBacklink(entry.T2, except, in key);
+        RemoveTextureBacklink(entry.T3, except, in key);
+
+        if (entry.Extras is null) return;
+        foreach (var texture in entry.Extras)
+            RemoveTextureBacklink(texture, except, in key);
+    }
+
+    void RemoveTextureBacklink(IWebGpuTexture texture, IWebGpuTexture except, in TextureCacheKey key)
+    {
+        if (texture is null || ReferenceEquals(texture, except)) return;
+        if (!textureBacklinks.TryGetValue(texture, out var list)) return;
+
+        list.Remove(key);
+        if (list.Count != 0) return;
+
+        textureBacklinks.Remove(texture);
+        texture.Disposing -= OnTextureDisposing;
+    }
+
     void Retire(BindGroup group)
     {
         if (group.IsNull) return;
 
-        backend.EnqueueDeferredDisposal(new DisposableBindGroup(group));
+        backend.EnqueueDeferredDisposal(group);
     }
 
-    sealed class DisposableBindGroup : IDisposable
+
+    readonly struct TextureCacheEntry
     {
-        BindGroup group;
+        public readonly BindGroup Group;
+        public readonly IWebGpuTexture T0, T1, T2, T3;
+        public readonly IWebGpuTexture[] Extras;
 
-        public DisposableBindGroup(BindGroup group) => this.group = group;
-
-        public void Dispose()
+        public TextureCacheEntry(BindGroup group, scoped ReadOnlySpan<IWebGpuTexture> textures)
         {
-            if (group.IsNull) return;
+            Group = group;
+            T0 = textures.Length > 0 ? textures[0] : null;
+            T1 = textures.Length > 1 ? textures[1] : null;
+            T2 = textures.Length > 2 ? textures[2] : null;
+            T3 = textures.Length > 3 ? textures[3] : null;
 
-            group.Dispose();
-            group = default;
+            if (textures.Length > 4)
+            {
+                Extras = new IWebGpuTexture[textures.Length - 4];
+                for (var i = 0; i < Extras.Length; ++i) Extras[i] = textures[i + 4];
+            }
+            else
+            {
+                Extras = null;
+            }
         }
     }
 
-    readonly record struct TextureCacheEntry(BindGroup Group, IWebGpuTexture[] Textures);
+    readonly struct UniformCacheEntry
+    {
+        public readonly BindGroup Group;
+        public readonly WebGpuGraphicsBuffer Buffer;
 
-    readonly record struct UniformCacheEntry(BindGroup Group, WebGpuGraphicsBuffer Buffer);
+        public UniformCacheEntry(BindGroup group, WebGpuGraphicsBuffer buffer)
+        {
+            Group = group;
+            Buffer = buffer;
+        }
+    }
 
     readonly struct TextureCacheKey : IEquatable<TextureCacheKey>
     {
@@ -263,7 +293,7 @@ sealed class WebGpuBindGroupCache : IDisposable
         public bool Equals(TextureCacheKey other)
         {
             if (_count != other._count) return false;
-            if (!_sampler.Equals(other._sampler)) return false;
+            if (_sampler.Value != other._sampler.Value || !string.Equals(_sampler.BackendName, other._sampler.BackendName, StringComparison.Ordinal)) return false;
             if (!ReferenceEquals(_t0, other._t0)) return false;
             if (!ReferenceEquals(_t1, other._t1)) return false;
             if (!ReferenceEquals(_t2, other._t2)) return false;
@@ -284,7 +314,8 @@ sealed class WebGpuBindGroupCache : IDisposable
         {
             var hash = new HashCode();
             hash.Add(_count);
-            hash.Add(_sampler);
+            hash.Add(_sampler.Value);
+            hash.Add(_sampler.BackendName);
             hash.Add(RuntimeHelpers.Identity(_t0));
             hash.Add(RuntimeHelpers.Identity(_t1));
             hash.Add(RuntimeHelpers.Identity(_t2));
@@ -297,10 +328,32 @@ sealed class WebGpuBindGroupCache : IDisposable
         }
     }
 
-    readonly record struct UniformCacheKey(WebGpuGraphicsBuffer Buffer,
-        int BufferHandleHash,
-        ulong BindingSize,
-        bool DynamicOffset);
+    readonly struct UniformCacheKey : IEquatable<UniformCacheKey>
+    {
+        readonly WebGpuGraphicsBuffer buffer;
+        readonly int bufferGeneration;
+        readonly ulong bindingSize;
+        readonly bool dynamicOffset;
+
+        public UniformCacheKey(WebGpuGraphicsBuffer buffer, int bufferGeneration, ulong bindingSize, bool dynamicOffset)
+        {
+            this.buffer = buffer;
+            this.bufferGeneration = bufferGeneration;
+            this.bindingSize = bindingSize;
+            this.dynamicOffset = dynamicOffset;
+        }
+
+        public bool Equals(UniformCacheKey other)
+            => ReferenceEquals(buffer, other.buffer) &&
+               bufferGeneration == other.bufferGeneration &&
+               bindingSize == other.bindingSize &&
+               dynamicOffset == other.dynamicOffset;
+
+        public override bool Equals(object obj) => obj is UniformCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+            => HashCode.Combine(RuntimeHelpers.Identity(buffer), bufferGeneration, bindingSize, dynamicOffset);
+    }
 
     static class RuntimeHelpers
     {

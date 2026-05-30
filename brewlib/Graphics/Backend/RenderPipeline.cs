@@ -9,8 +9,8 @@ public interface IRenderPipeline : IDisposable
 {
     RenderPipelineDescription Description { get; }
 
-    IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name);
-    IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform);
+    IRenderUniform<T> GetUniform<T>(scoped ReadOnlySpan<char> name) where T : struct;
+    IRenderUniform<T> GetUniform<T>(ShaderUniformBinding<T> uniform) where T : struct;
     IResourceSet CreateResourceSet();
 
     void Draw(DrawCommand command, scoped ReadOnlySpan<RenderVertexBufferBinding> vertexBuffers, IResourceSet resources = null);
@@ -22,7 +22,7 @@ public interface IRenderPipelineFactory
     IRenderPipeline CreateRenderPipeline(RenderPipelineDescription description);
 }
 
-public interface IRenderUniform<in T>
+public interface IRenderUniform<in T> where T : struct
 {
     void SetValue(T value);
 }
