@@ -50,11 +50,27 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
         var textureBindings = description.PipelineLayout.TextureBindings;
         var hasTextureGroup = textureBindings.Length > 0;
 
+        var textureSlotCount = 0;
+        var textureArrayed = false;
+        foreach (var binding in textureBindings)
+        {
+            textureSlotCount += Math.Max(1, binding.Capacity);
+            textureArrayed |= binding.Arrayed;
+        }
+
+        if (textureArrayed && textureBindings.Length > 1)
+            throw new NotSupportedException(
+                "A binding_array texture group must be the only texture binding in the layout");
+
+        if (textureArrayed && !deviceContext.HasTextureBindingArray)
+            throw new InvalidOperationException(
+                "Pipeline requested a binding_array texture group, but the device has no texture-binding-array support");
+
         BindGroupLayout textureLayout = default;
         var ownsTextureLayout = false;
         if (hasTextureGroup)
         {
-            textureLayout = BuildTextureBindGroupLayout(textureBindings);
+            textureLayout = BuildTextureBindGroupLayout(textureBindings, textureArrayed);
             ownsTextureLayout = true;
         }
 
@@ -124,6 +140,8 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
             textureLayout,
             hasTextureGroup,
             ownsTextureLayout,
+            textureSlotCount,
+            textureArrayed,
             uniformLayout,
             ownsUniformLayout,
             emptyLayout,
@@ -160,12 +178,30 @@ sealed class WebGpuRenderPipelineFactory : IRenderPipelineFactory
         return deviceContext.Device.CreateShaderModule(in descriptor);
     }
 
-    BindGroupLayout BuildTextureBindGroupLayout(scoped ReadOnlySpan<TextureBindingLayout> bindings)
+    BindGroupLayout BuildTextureBindGroupLayout(scoped ReadOnlySpan<TextureBindingLayout> bindings, bool arrayed)
     {
         var totalSlots = 0;
         foreach (var binding in bindings)
             totalSlots += Math.Max(1, binding.Capacity);
 
+        // Bindless: a single binding_array<texture_2d, totalSlots> at binding 0 plus one
+        // shared sampler at binding 1. ArraySize > 0 makes Ahjo chain a
+        // WGPUBindGroupLayoutEntryExtras carrying the element count.
+        if (arrayed)
+        {
+            var arrayEntry = BindGroupLayoutEntry.Texture(0, ShaderStage.Fragment);
+            arrayEntry.ArraySize = (uint)totalSlots;
+
+            ReadOnlySpan<BindGroupLayoutEntry> arrayedEntries =
+            [
+                arrayEntry,
+                BindGroupLayoutEntry.Sampler(1, ShaderStage.Fragment)
+            ];
+
+            return deviceContext.Device.CreateBindGroupLayout(arrayedEntries);
+        }
+
+        // Waterfall: totalSlots discrete (texture, sampler) pairs.
         using var entries = TempArray.Create<BindGroupLayoutEntry>(totalSlots * 2);
         for (var i = 0; i < totalSlots; ++i)
         {

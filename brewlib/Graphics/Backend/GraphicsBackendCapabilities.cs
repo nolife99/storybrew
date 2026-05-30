@@ -1,6 +1,7 @@
 namespace BrewLib.Graphics.Backend;
 
 using System;
+using Textures;
 
 [Flags]
 public enum GraphicsBackendFeatures
@@ -30,7 +31,12 @@ public readonly record struct GraphicsBackendCapabilities(
     int MaxUniformBufferSize,
     int MaxBindGroups = 4,
     int MaxBindingsPerBindGroup = 0,
-    int MaxVertexBuffers = 0)
+    int MaxVertexBuffers = 0,
+    int MaxTextureArrayElements = 0,
+    TextureCompressionFormats Compression = TextureCompressionFormats.None)
 {
     public bool Has(GraphicsBackendFeatures feature) => (Features & feature) == feature;
+
+    /// <summary>True if the backend can sample every compressed format in <paramref name="formats"/>.</summary>
+    public bool Supports(TextureCompressionFormats formats) => (Compression & formats) == formats;
 }

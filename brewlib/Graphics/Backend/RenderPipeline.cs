@@ -62,18 +62,27 @@ public sealed class PipelineLayout(params TextureBindingLayout[] textureBindings
 
 public readonly record struct TextureBindingLayout
 {
-    public TextureBindingLayout(string name, int capacity)
-        : this(new ShaderSamplerBinding(name), capacity) { }
+    public TextureBindingLayout(string name, int capacity, bool arrayed = false)
+        : this(new ShaderSamplerBinding(name), capacity, arrayed) { }
 
-    public TextureBindingLayout(ShaderSamplerBinding slot, int capacity)
+    public TextureBindingLayout(ShaderSamplerBinding slot, int capacity, bool arrayed = false)
     {
         Slot = slot;
         Capacity = capacity;
+        Arrayed = arrayed;
     }
 
     public ShaderSamplerBinding Slot { get; }
     public string Name => Slot.Name;
     public int Capacity { get; }
+
+    /// <summary>
+    /// When true the binding is a single <c>binding_array&lt;texture_2d, Capacity&gt;</c> at the
+    /// slot's base binding plus one shared sampler at base+1 (the bindless/non-uniform path).
+    /// When false the binding expands to <c>Capacity</c> discrete (texture, sampler) pairs
+    /// occupying bindings <c>0..2*Capacity</c> (the waterfall path).
+    /// </summary>
+    public bool Arrayed { get; }
 }
 
 public sealed class VertexInputLayout(params VertexBufferLayout[] buffers)

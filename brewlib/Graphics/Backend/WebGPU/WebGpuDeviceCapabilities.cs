@@ -9,11 +9,18 @@ using Tiny.PooledCollections.Generic.Temporary;
 
 readonly struct WebGpuDeviceCapabilities
 {
+    // Descriptor-pool sanity ceiling for binding_array layout size, shared between the device-
+    // creation request (this type) and the public-capability clamp (WebGpuBackend). Some drivers
+    // report maxBindingArrayElementsPerShaderStage in the millions; we never request or declare
+    // arrays larger than this, and partial binding then populates only what each batch uses.
+    public const int TextureArrayElementCeiling = 256;
+
     public WebGpuDeviceCapabilities(
         WGPUFeatureName[] availableFeatures,
         WGPUFeatureName[] requiredFeatures,
         WGPULimits requiredLimits,
         WGPUNativeLimits nativeLimits,
+        WGPUNativeLimits? requiredNativeLimits,
         bool hasImmediates,
         bool hasTextureBindingArray,
         bool hasNonUniformIndexing,
@@ -24,6 +31,7 @@ readonly struct WebGpuDeviceCapabilities
         RequiredFeatures = requiredFeatures;
         RequiredLimits = requiredLimits;
         NativeLimits = nativeLimits;
+        RequiredNativeLimits = requiredNativeLimits;
         HasImmediates = hasImmediates;
         HasTextureBindingArray = hasTextureBindingArray;
         HasNonUniformIndexing = hasNonUniformIndexing;
@@ -35,6 +43,13 @@ readonly struct WebGpuDeviceCapabilities
     public WGPUFeatureName[] RequiredFeatures { get; }
     public WGPULimits RequiredLimits { get; }
     public WGPUNativeLimits NativeLimits { get; }
+
+    /// <summary>
+    /// Native limits to chain onto the device-creation descriptor, or null when none need
+    /// requesting. Carries <c>maxBindingArrayElementsPerShaderStage</c> so the created device
+    /// actually permits binding_array layouts (the limit defaults to 0 otherwise).
+    /// </summary>
+    public WGPUNativeLimits? RequiredNativeLimits { get; }
 
     public bool HasImmediates { get; }
     public bool HasTextureBindingArray { get; }
@@ -52,13 +67,26 @@ readonly struct WebGpuDeviceCapabilities
         if (!hasImmediates)
             deviceLimits.maxImmediateSize = 0u;
 
+        // Re-confirm feature grants against the CREATED device, not just what was requested of
+        // the adapter. If the array feature wasn't granted, drop the requested array limit so the
+        // bindless path can't engage.
+        var hasTextureBindingArray = HasTextureBindingArray &&
+            device.HasFeature((WGPUFeatureName)WGPUNativeFeature.TextureBindingArray);
+
+        // The created device grants exactly the native limits we requested (RequestDevice fails
+        // otherwise), so the requested struct IS the granted value — Ahjo's Device.GetLimits
+        // doesn't chain native limits back, so there's nothing to read back. If the array feature
+        // wasn't granted, drop the requested array limit so the bindless path can't engage.
+        var requiredNativeLimits = hasTextureBindingArray ? RequiredNativeLimits : null;
+
         return new(
             AvailableFeatures,
             RequiredFeatures,
             deviceLimits,
             NativeLimits,
+            requiredNativeLimits,
             hasImmediates,
-            HasTextureBindingArray,
+            hasTextureBindingArray,
             HasNonUniformIndexing,
             HasMultiDrawIndirect,
             HasBcCompression);
@@ -183,12 +211,35 @@ readonly struct WebGpuDeviceCapabilities
 
         var reqFeatures = requestedFeatures.ToArray();
         requestedFeatures.Dispose();
-        
+
+        // Native limits must be REQUESTED at device creation or wgpu defaults them to 0. In
+        // particular maxBindingArrayElementsPerShaderStage starts at 0, so a binding_array layout
+        // is rejected ("limit is 0") even on hardware that supports the feature. Request the
+        // element count we actually intend to declare — the adapter's reported max clamped to our
+        // descriptor-budget ceiling — and only when the binding-array feature was granted.
+        WGPUNativeLimits? requiredNativeLimits = null;
+        if (hasTextureBindingArray)
+        {
+            var requestedArrayElements = nativeLimits.maxBindingArrayElementsPerShaderStage;
+            if (requestedArrayElements > TextureArrayElementCeiling)
+                requestedArrayElements = TextureArrayElementCeiling;
+
+            requiredNativeLimits = new WGPUNativeLimits
+            {
+                // Carry the immediates request in the same chained struct so it stays internally
+                // complete; harmless when immediates is unused (the base-limits path also sets it).
+                maxImmediateSize = hasImmediates ? nativeLimits.maxImmediateSize : 0u,
+                maxNonSamplerBindings = nativeLimits.maxNonSamplerBindings,
+                maxBindingArrayElementsPerShaderStage = requestedArrayElements
+            };
+        }
+
         return new(
             supportedFeatures,
             reqFeatures,
             requiredLimits,
             nativeLimits,
+            requiredNativeLimits,
             hasImmediates,
             hasTextureBindingArray,
             hasNonUniformIndexing,

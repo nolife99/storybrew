@@ -42,7 +42,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="ZLinq" Version="1.5.4"/>
+    <PackageReference Include="ZLinq" Version="1.5.6" />
   </ItemGroup>
 
 </Project>

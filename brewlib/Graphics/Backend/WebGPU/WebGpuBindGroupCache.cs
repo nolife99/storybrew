@@ -11,6 +11,9 @@ sealed class WebGpuBindGroupCache : IDisposable
     readonly WebGpuBackend backend;
     readonly Device device;
 
+    readonly int textureSlotCount;
+    readonly bool textureArrayed;
+
     readonly Dictionary<IWebGpuTexture, List<TextureCacheKey>> textureBacklinks = new(ReferenceEqualityComparer.Instance);
     readonly Dictionary<TextureCacheKey, TextureCacheEntry> textureCache = new(EqualityComparer<TextureCacheKey>.Default);
     readonly BindGroupLayout textureLayout;
@@ -26,6 +29,8 @@ sealed class WebGpuBindGroupCache : IDisposable
         BindGroupLayout textureLayout,
         uint textureGroupIndex,
         bool hasTextureGroup,
+        int textureSlotCount,
+        bool textureArrayed,
         BindGroupLayout uniformLayout,
         uint uniformGroupIndex,
         bool hasUniformGroup)
@@ -33,6 +38,8 @@ sealed class WebGpuBindGroupCache : IDisposable
         this.backend = backend ?? throw new ArgumentNullException(nameof(backend));
         this.device = device;
         this.textureLayout = textureLayout;
+        this.textureSlotCount = textureSlotCount;
+        this.textureArrayed = textureArrayed;
         this.uniformLayout = uniformLayout;
         TextureGroupIndex = textureGroupIndex;
         UniformGroupIndex = uniformGroupIndex;
@@ -82,23 +89,20 @@ sealed class WebGpuBindGroupCache : IDisposable
         if (textures.Length == 0)
             throw new ArgumentException("At least one texture is required", nameof(textures));
 
+        if (textures.Length > textureSlotCount)
+            throw new ArgumentException(
+                $"Batch supplies {textures.Length} textures but the pipeline layout has only {textureSlotCount} slots",
+                nameof(textures));
+
         var samplerIdentity = textures[0].SamplerIdentity;
         TextureCacheKey key = new(textures, samplerIdentity);
 
         if (textureCache.TryGetValue(key, out var existing))
             return existing.Group;
 
-        var bindCount = textures.Length * 2;
-        using var entries = TempArray.Create<BindGroupEntry>(bindCount);
-
-        var sharedSampler = textures[0].SamplerEntry.Sampler;
-        for (var i = 0; i < textures.Length; ++i)
-        {
-            entries[i * 2] = BindGroupEntry.TextureView((uint)(i * 2), textures[i].View);
-            entries[i * 2 + 1] = BindGroupEntry.Sampler((uint)(i * 2 + 1), sharedSampler);
-        }
-
-        var group = device.CreateBindGroup(textureLayout, entries.AsReadOnlySpan());
+        var group = textureArrayed
+            ? CreateArrayedBindGroup(textures)
+            : CreateWaterfallBindGroup(textures);
 
         var entry = new TextureCacheEntry(group, textures);
         textureCache[key] = entry;
@@ -107,6 +111,51 @@ sealed class WebGpuBindGroupCache : IDisposable
             AddTextureBacklink(textures[i], key);
 
         return group;
+    }
+
+    // Waterfall: the layout is fixed at textureSlotCount (texture, sampler) pairs, so every
+    // binding must be supplied. Unused slots are padded with slot 0's view; the shader never
+    // samples them (instances only reference assigned slots), and padding adds no new
+    // lifetime since slot 0 is already a member of this set.
+    BindGroup CreateWaterfallBindGroup(scoped ReadOnlySpan<IWebGpuTexture> textures)
+    {
+        var bindCount = textureSlotCount * 2;
+        using var entries = TempArray.Create<BindGroupEntry>(bindCount);
+
+        var sharedSampler = textures[0].SamplerEntry.Sampler;
+        var padView = textures[0].View;
+        for (var i = 0; i < textureSlotCount; ++i)
+        {
+            var view = i < textures.Length ? textures[i].View : padView;
+            entries[i * 2] = BindGroupEntry.TextureView((uint)(i * 2), view);
+            entries[i * 2 + 1] = BindGroupEntry.Sampler((uint)(i * 2 + 1), sharedSampler);
+        }
+
+        return device.CreateBindGroup(textureLayout, entries.AsReadOnlySpan());
+    }
+
+    // Bindless: one shared sampler at binding 1, and a binding_array of exactly textureSlotCount
+    // views at binding 0. Every declared element is supplied — unused tail slots are padded with
+    // slot 0's view. Padding adds no new lifetime (slot 0 is already a member of this set) and
+    // those indices are never sampled (the slotter only hands out slots in [0, count)). Full
+    // population is what keeps this safe on D3D12, whose STATIC descriptor ranges fault on any
+    // uninitialized descriptor. Ahjo's CreateBindGroupBindless appends the array entry and chains
+    // WGPUBindGroupEntryExtras carrying the view pointer + count.
+    BindGroup CreateArrayedBindGroup(scoped ReadOnlySpan<IWebGpuTexture> textures)
+    {
+        var sharedSampler = textures[0].SamplerEntry.Sampler;
+
+        using var views = TempArray.Create<TextureView>(textureSlotCount);
+        var padView = textures[0].View;
+        for (var i = 0; i < textureSlotCount; ++i)
+            views[i] = i < textures.Length ? textures[i].View : padView;
+
+        ReadOnlySpan<BindGroupEntry> samplerEntry = [BindGroupEntry.Sampler(1, sharedSampler)];
+
+        return device.CreateBindGroupBindless(textureLayout,
+            samplerEntry,
+            0,
+            views.AsReadOnlySpan());
     }
 
     public BindGroup GetUniformBindGroup(WebGpuGraphicsBuffer buffer, ulong bindingSize, bool dynamicOffset)

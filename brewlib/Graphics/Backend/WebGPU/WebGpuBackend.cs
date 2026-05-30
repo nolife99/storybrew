@@ -134,13 +134,6 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     internal void RegisterRingBuffer(WebGpuGraphicsBuffer buffer) => ringBuffers.Add(buffer);
     internal void UnregisterRingBuffer(WebGpuGraphicsBuffer buffer) => ringBuffers.Remove(buffer);
 
-    /// <summary>
-    ///     Begins background compilation of the GPU block-compression compute pipelines so the first scene load
-    ///     doesn't stall on the slow DX12 BC7 build. Done automatically at startup when GPU compression is enabled;
-    ///     call this explicitly if you enable it after the backend has been created. Idempotent and non-blocking.
-    /// </summary>
-    public void PrewarmGpuCompression() => textureFactory?.PrewarmGpuCompression();
-
     internal bool TryGetViewport(out float x, out float y, out float w, out float h)
     {
         x = vpX;
@@ -304,7 +297,8 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         var deviceDesc = new DeviceDescriptor
         {
             RequiredFeatures = requestedCapabilities.RequiredFeatures,
-            RequiredLimits = requestedCapabilities.RequiredLimits
+            RequiredLimits = requestedCapabilities.RequiredLimits,
+            RequiredNativeLimits = requestedCapabilities.RequiredNativeLimits
         };
 
         try
@@ -354,8 +348,6 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         samplerCache = new(wgpuDevice, Name);
         device = new(this);
         bufferFactory = new(this, deviceContext);
-        // Create the single shared uniform ring now, before any texture loading, so it takes an early/low allocation
-        // slot rather than landing in a device-local block later vacated by transient textures (see WebGpuUniformRing).
         uniformRing = new(this, deviceContext);
         pipelineFactory = new(this, deviceContext);
         textureFactory = new(deviceContext, samplerCache, this);
@@ -364,12 +356,15 @@ public sealed class WebGpuBackend : GraphicsBackendBase
             deviceContext,
             () => (int)deviceLimits.maxTextureDimension2D);
 
-        // If GPU block compression is enabled, start compiling its compute pipelines in the background now (the DX12
-        // BC7 build is slow), so the first scene load blocks on it as little as possible instead of hitching.
-        if (WebGpuTextureFactory.UseGpuCompression)
-            textureFactory.PrewarmGpuCompression();
+        // The device grants exactly the binding-array element count we requested (0 when the
+        // feature/limit wasn't requested). Use that, not the adapter's raw native report, so the
+        // public cap matches what the device will actually accept in a layout.
+        var grantedArrayElements = deviceCapabilities.HasTextureBindingArray
+            ? deviceCapabilities.RequiredNativeLimits?.maxBindingArrayElementsPerShaderStage ?? 0u
+            : 0u;
 
         Capabilities = BuildCapabilities(deviceLimits,
+            grantedArrayElements,
             srgbFramebuffer,
             manualColorCorrection,
             deviceCapabilities.HasNonUniformIndexing || deviceCapabilities.HasTextureBindingArray);
@@ -380,7 +375,7 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     {
         var instanceDesc = new InstanceDescriptor
         {
-            Flags = InstanceFlags.DevDefault,
+            Flags = InstanceFlags.None,
             Backends = backends
         };
 
@@ -400,13 +395,10 @@ public sealed class WebGpuBackend : GraphicsBackendBase
 
     static InstanceBackends ChoosePreferredBackends()
     {
-        // Prefer Vulkan on Windows instead of the previous DX12 preference: the BC7 compute-pipeline build stalls for
-        // minutes under DX12/DXC but is instant on Vulkan, and the target RDNA hardware runs Vulkan natively. If a
-        // Vulkan adapter can't be created, the caller retries with the default backend set (Primary).
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return InstanceBackends.Vulkan;
-
-        return InstanceBackends.Primary;
+        if (OperatingSystem.IsWindowsVersionAtLeast(10)) return InstanceBackends.Dx12;
+        if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS()) return InstanceBackends.Metal;
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) return InstanceBackends.Vulkan;
+        return InstanceBackends.GL;
     }
 
     static WGPUTextureFormat ChooseSurfaceFormat(SurfaceCapabilities caps,
@@ -441,6 +433,7 @@ public sealed class WebGpuBackend : GraphicsBackendBase
     }
 
     static GraphicsBackendCapabilities BuildCapabilities(WGPULimits limits,
+        uint grantedArrayElements,
         bool srgbFramebuffer,
         bool manualColorCorrection,
         bool nonUniformIndexing)
@@ -457,6 +450,11 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         static int Clamp(ulong value) => value > int.MaxValue ? int.MaxValue : (int)value;
         var sampledPerStage = (int)limits.maxSampledTexturesPerShaderStage;
 
+        // Already capped to the descriptor budget at request time; clamp defensively in case the
+        // device somehow reports more than asked. 0 means binding arrays weren't granted.
+        var arrayElements = Math.Min(Clamp(grantedArrayElements),
+            WebGpuDeviceCapabilities.TextureArrayElementCeiling);
+
         return new(
             features,
             (int)limits.maxTextureDimension2D,
@@ -467,7 +465,8 @@ public sealed class WebGpuBackend : GraphicsBackendBase
             Clamp(limits.maxUniformBufferBindingSize),
             (int)limits.maxBindGroups,
             (int)limits.maxBindingsPerBindGroup,
-            (int)limits.maxVertexBuffers);
+            (int)limits.maxVertexBuffers,
+            arrayElements);
     }
 
     public override void Dispose()
@@ -486,7 +485,6 @@ public sealed class WebGpuBackend : GraphicsBackendBase
         uniformRing?.Dispose();
 
         textureUploader?.Dispose();
-        textureFactory?.Dispose();
         samplerCache?.Dispose();
         device?.Dispose();
         frameContext?.Dispose();

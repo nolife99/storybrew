@@ -3,17 +3,6 @@ namespace BrewLib.Graphics.Backend.WebGPU;
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-///     Rewrites the conventional uniform block declaration in a WGSL shader so it uses wgpu-native's
-///     <c>var&lt;immediate&gt;</c> address space instead of a uniform buffer binding.
-///     The renderers in this project always emit a uniform block at <c>@group(0) @binding(0)</c> when they have
-///     a single transform uniform. This rewriter detects that exact pattern and replaces it. If the pattern doesn't
-///     match (for example, the renderer uses multiple uniforms or a different group/binding), the source is returned
-///     unchanged and the backend falls back to a dynamic-offset uniform buffer.
-///     The rewrite is intentionally conservative — it only touches declarations that match the simple grammar
-///     <c>@group(0) @binding(0) var&lt;uniform&gt; name : Type ;</c> (whitespace flexible) and won't fire on anything more
-///     complex. False negatives are safe (we just take the slower path); false positives would produce invalid WGSL.
-/// </summary>
 static class WgslPushConstantRewriter
 {
     public static RewriteResult TryRewrite(string source)
@@ -21,9 +10,6 @@ static class WgslPushConstantRewriter
         if (string.IsNullOrEmpty(source))
             return new(source, null, null, false);
 
-        // Walk the source looking for the well-known declaration shape. We need to be careful not to match
-        // inside comments or strings; for the renderer-generated shaders in this project that's not a concern,
-        // but to be defensive we strip line comments before searching.
         var stripped = StripLineComments(source);
 
         var match = FindUniformDeclaration(stripped);
@@ -31,8 +17,7 @@ static class WgslPushConstantRewriter
 
         var (start, end, name, type) = match.Value;
 
-        // Map the location in the stripped source back to the original — they differ in whitespace only because
-        // we replaced comments with spaces of equal length, preserving offsets.
+        // Map the location in the stripped source back to the original
         var replacement = $"var<immediate> {name}: {type};";
         var rewritten = string.Concat(source.AsSpan(0, start), replacement, source.AsSpan(end));
 
@@ -72,10 +57,6 @@ static class WgslPushConstantRewriter
         return new(chars);
     }
 
-    /// <summary>
-    ///     Locate one <c>@group(0) @binding(0) var&lt;uniform&gt; name : Type ;</c> declaration. The two attributes may
-    ///     appear in either order.
-    /// </summary>
     static (int Start, int End, string Name, string Type)? FindUniformDeclaration(string s)
     {
         // We scan for '@group(0)' or '@binding(0)' as the anchor; the surrounding token must form a valid pair.
@@ -278,11 +259,6 @@ static class WgslPushConstantRewriter
         return true;
     }
 
-    /// <summary>
-    ///     Conservative byte-size estimate for the WGSL types the renderers actually use. Returns 0 if unknown
-    ///     (caller should treat as "doesn't fit in push constants"). The naming convention matches what the
-    ///     renderer WGSL declarations produce.
-    /// </summary>
     public static uint EstimateTypeSize(string typeName,
         IReadOnlyDictionary<string, uint> structSizes = null)
     {
@@ -472,9 +448,6 @@ static class WgslPushConstantRewriter
         return i;
     }
 
-    /// <summary>
-    ///     Describes one uniform that was found at group 0 / binding 0 and rewritten.
-    /// </summary>
     public readonly record struct RewriteResult(string TransformedSource,
         string UniformName,
         string UniformTypeName,

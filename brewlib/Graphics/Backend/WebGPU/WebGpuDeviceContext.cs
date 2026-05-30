@@ -38,8 +38,6 @@ sealed class WebGpuDeviceContext : IDisposable
         HasBcCompression = hasBcCompression;
 
         MipmapGenerator = new(device);
-
-        // Pages are allocated lazily on first large upload, so merely constructing this reserves nothing.
         TextureStager = new(this);
 
         MinUniformOffsetAlignment = limits.minUniformBufferOffsetAlignment == 0
@@ -71,11 +69,6 @@ sealed class WebGpuDeviceContext : IDisposable
 
     public WebGpuTextureStager TextureStager { get; }
 
-    /// <summary>
-    ///     Submits an empty command buffer to flush wgpu's pending queue writes (the staging buffers backing
-    ///     <c>Queue.WriteTexture</c>/<c>WriteBuffer</c>) so they are consumed and recycled immediately instead of
-    ///     accumulating until the next real submit. Used after standalone (non-frame) uploads.
-    /// </summary>
     public void FlushQueuedWrites()
     {
         using var encoder = Device.CreateCommandEncoder();

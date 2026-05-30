@@ -46,6 +46,8 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
         BindGroupLayout textureBindLayout,
         bool hasTextureGroup,
         bool ownsTextureLayout,
+        int textureSlotCount,
+        bool textureArrayed,
         BindGroupLayout uniformBindLayout,
         bool ownsUniformLayout,
         BindGroupLayout emptyGroup0Layout,
@@ -79,6 +81,8 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
             textureBindLayout,
             textureGroupIndex,
             hasTextureGroup,
+            textureSlotCount,
+            textureArrayed,
             uniformBindLayout,
             uniformGroupIndex,
             hasUniformGroup);
@@ -124,8 +128,6 @@ sealed class WebGpuRenderPipeline : IRenderPipeline
 
         foreach (var variant in variants.Values) variant.Dispose();
         variants.Clear();
-
-        UniformState.Dispose();
 
         wgpuPipelineLayout.Dispose();
         if (ownsTextureLayout && !textureBindLayout.IsNull) textureBindLayout.Dispose();

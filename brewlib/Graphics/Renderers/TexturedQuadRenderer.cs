@@ -16,6 +16,7 @@ using Textures;
 public sealed class TexturedQuadRenderer : IQuadRenderer
 {
     const int VertexPerQuad = 6;
+    const int BindlessTextureSlots = 64;
 
     static readonly ShaderUniformBinding<Matrix4x4> CombinedMatrixUniform = new("u_combinedMatrix",
         ShaderValueType.FloatMat4);
@@ -43,11 +44,11 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
     readonly List<TexturedQuadInstance> instances;
     readonly IRenderPipeline pipeline;
     readonly IResourceSet resources;
+    readonly TextureSlotter slotter;
     readonly IGraphicsBuffer vertexBuffer;
 
     ICamera camera;
     bool disposed, rendering;
-    ITexture batchTexture;
     bool textureBatchHasSamplerIdentity;
     GraphicsResourceHandle textureBatchSamplerIdentity;
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
@@ -64,9 +65,29 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             throw new InvalidOperationException("A graphics backend must be initialized before creating renderers");
 
         instances = new(initialBatchCapacity);
+
+        var useNonUniformTextureIndexing =
+            backend.Capabilities.Has(GraphicsBackendFeatures.NonUniformTextureIndexing) &&
+            backend.Capabilities.MaxTextureArrayElements > 1;
+
+        var sampledCeiling = Math.Max(1, backend.Capabilities.MaxTextureImageUnits);
+
+        int slotCount;
+        if (useNonUniformTextureIndexing)
+        {
+            var arrayCeiling = Math.Max(1, backend.Capabilities.MaxTextureArrayElements);
+            slotCount = Math.Min(BindlessTextureSlots, Math.Min(arrayCeiling, sampledCeiling));
+        }
+        else
+        {
+            slotCount = Math.Min(sampledCeiling, 1);
+        }
+
+        slotter = new(slotCount);
+
         pipeline = backend.RenderPipelines.CreateRenderPipeline(CreatePipelineDescription(backend.ShaderSourceLanguage,
-            1,
-            false,
+            slotCount,
+            useNonUniformTextureIndexing,
             backend.Capabilities.Has(GraphicsBackendFeatures.ManualColorCorrection),
             backend.Capabilities.Has(GraphicsBackendFeatures.SrgbFramebuffer)));
 
@@ -140,13 +161,20 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
     void IQuadRenderer.Draw(scoped ref readonly QuadInstance source, ITextureRegion texture)
     {
         var textureResource = texture.Texture;
-        if (batchTexture is not null && !ReferenceEquals(batchTexture, textureResource))
-            DrawState.FlushRenderer(true);
 
+        // A batch shares one sampler (the bind group binds a single sampler to every slot),
+        // so a differing sampler identity forces a flush before this texture can join.
         if (shouldSplitBatchForSampler(textureResource))
             DrawState.FlushRenderer(true);
 
-        batchTexture ??= textureResource;
+        // Assign this texture a slot in the current batch, flushing to start a fresh batch
+        // when the slots are exhausted.
+        if (!slotter.TryGetSlot(textureResource, out var slot))
+        {
+            DrawState.FlushRenderer(true);
+            slotter.TryGetSlot(textureResource, out slot);
+        }
+
         trackSamplerState(textureResource);
 
         instances.Add(new()
@@ -157,7 +185,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
             UAxis = source.UAxis,
             VAxis = source.VAxis,
             Color = source.Color,
-            TextureSlot = 0
+            TextureSlot = slot
         });
     }
 
@@ -169,15 +197,15 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void drawCurrentBatch()
     {
-        if (batchTexture is null)
-            throw new InvalidOperationException("Cannot draw a textured quad batch without a texture");
+        if (slotter.Count == 0)
+            return;
 
         var span = CollectionsMarshal.AsSpan(instances);
         instanceBuffer.SetData(span);
 
         combinedMatrixUniform.SetValue(transformMatrix * camera.ProjectionView);
 
-        resources.SetTextures(TexturesSampler, [batchTexture]);
+        resources.SetTextures(TexturesSampler, slotter.Textures);
         pipeline.DrawInstanced(new(VertexPerQuad, span.Length), [new(0, vertexBuffer), new(1, instanceBuffer)], resources);
 
         instances.Clear();
@@ -200,7 +228,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
     void clearTextureBatchState()
     {
-        batchTexture = null;
+        slotter.Clear();
         textureBatchSamplerIdentity = default;
         textureBatchHasSamplerIdentity = false;
     }
@@ -215,7 +243,7 @@ public sealed class TexturedQuadRenderer : IQuadRenderer
 
         return new(nameof(TexturedQuadRenderer),
             createShaderSource(language, textureSlots, useNonUniformTextureIndexing, useManualColorCorrection, useSrgbFramebuffer),
-            new(new TextureBindingLayout(TexturesSampler, textureSlots)),
+            new(new TextureBindingLayout(TexturesSampler, textureSlots, useNonUniformTextureIndexing)),
             new(
                 new VertexBufferLayout(0,
                     Unsafe.SizeOf<Vector2>(),

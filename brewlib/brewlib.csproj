@@ -30,7 +30,7 @@
 
     <ItemGroup>
         <PackageReference Include="Ahjo.Wgpu" Version="0.7.0"/>
-        <PackageReference Include="BCnEncoder.Net" Version="2.3.0" />
+        <PackageReference Include="BasisBlockEncoder" Version="0.2.1" />
         <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

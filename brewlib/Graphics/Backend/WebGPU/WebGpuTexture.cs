@@ -50,14 +50,9 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
 
     public IGraphicsBackend Backend { get; }
 
-    // Uploads at or below this size are cheap enough to push straight through Queue.WriteTexture and flush
-    // immediately; larger standalone uploads are streamed through the bounded stager instead so wgpu never
-    // allocates a big transient staging buffer. In-frame uploads always use WriteTexture (flushed at EndFrame).
-    internal const long StageThresholdBytes = 1 << 20;
-
     bool IsInFrame => Backend is WebGpuBackend { IsFrameActive: true };
 
-    bool ShouldStage(long bytes) => !IsInFrame && bytes > StageThresholdBytes;
+    bool ShouldStage() => !IsInFrame;
 
     void FlushIfStandalone()
     {
@@ -111,7 +106,7 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
         if (data.Length < (long)bytesPerRow * height)
             throw new ArgumentException("Source data is shorter than bytesPerRow * height", nameof(data));
 
-        if (ShouldStage((long)width * height * 4))
+        if (ShouldStage())
         {
             deviceContext.TextureStager.UploadRaw(this, data, width, height, x, y, bytesPerRow);
             InvalidateMipsIfFull(x, y, width, height);
@@ -142,7 +137,7 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
         var h = Math.Min(Height - destY, bitmap.Height);
         if (w <= 0 || h <= 0) return;
 
-        if (ShouldStage((long)w * h * 4))
+        if (ShouldStage())
         {
             deviceContext.TextureStager.UploadImage(this, bitmap, destX, destY);
             InvalidateMipsIfFull(destX, destY, w, h);
@@ -201,7 +196,7 @@ sealed class WebGpuTexture : Texture2dRegion, IWritableTexture, ITextureSamplerI
         }
         catch (Exception ex)
         {
-            SDL.LogError(LogCategory.Render, $"WebGpuTexture.Disposing handler threw: {ex.Message}");
+            SDL.LogError(LogCategory.Render, $"WebGpuTexture.Disposing handler threw: {ex}");
         }
 
         Disposing = null;
@@ -230,13 +225,6 @@ interface IWebGpuTexture
     event Action<IWebGpuTexture> Disposing;
 }
 
-/// <summary>
-///     A logical sub-region over a physical <see cref="WebGpuTexture"/> whose GPU dimensions were rounded up for
-///     block-compression alignment (BC formats require multiple-of-4 sizes). It reports the original logical size and
-///     disposes the backing texture along with it. The region's BindableTexture is the physical texture, so binding
-///     resolves to the real GPU resource and UVs normalize against the physical size — sampling covers only the real
-///     pixels and excludes the edge-replicated padding.
-/// </summary>
 sealed class WebGpuTextureRegion : Texture2dRegion
 {
     readonly WebGpuTexture backing;
@@ -252,14 +240,6 @@ sealed class WebGpuTextureRegion : Texture2dRegion
     }
 }
 
-/// <summary>
-///     A region whose backing texture stores only the opaque content sub-rect of a larger logical image (the
-///     transparent margin was trimmed off before upload to save VRAM). It reports the <i>original</i> logical size so
-///     sprite positioning is unchanged, exposes the content's offset/size via <see cref="ContentBounds"/>, and maps
-///     UVs against the backing texture's (block-padded) physical size — so it also absorbs any BC block-padding. The
-///     quad renderer offsets the draw by the content origin so the stored pixels land exactly where the full image's
-///     pixels would have. Not a <see cref="Texture2dRegion"/> because its size/UVs aren't derived from a single bounds.
-/// </summary>
 sealed class WebGpuTrimmedRegion : ITrimmedTextureRegion
 {
     readonly WebGpuTexture backing;
@@ -267,11 +247,9 @@ sealed class WebGpuTrimmedRegion : ITrimmedTextureRegion
     public WebGpuTrimmedRegion(WebGpuTexture backing, int originalWidth, int originalHeight, Rectangle contentBounds)
     {
         this.backing = backing;
-        Size = new Size(originalWidth, originalHeight);
+        Size = new(originalWidth, originalHeight);
         ContentBounds = contentBounds;
 
-        // Content sits at (0,0) of the backing texture; normalize against the backing's physical (padded) size so the
-        // BC padding columns/rows are never sampled.
         UvOrigin = Vector2.Zero;
         UvRatio = Vector2.One / new Vector2(backing.Size.Width, backing.Size.Height);
     }
